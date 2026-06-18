@@ -1,0 +1,160 @@
+"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+
+export default function AuthModal({ open, onClose, initialMode = "signin", onSuccess }) {
+  const [mode, setMode] = useState(initialMode);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  if (!open) return null;
+
+  const resetForm = () => {
+    setError("");
+    setName("");
+    setEmail("");
+    setPassword("");
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    resetForm();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      if (mode === "signup") {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Could not create account.");
+        }
+      }
+
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error(
+          mode === "signup"
+            ? "Account created, but sign-in failed. Try signing in."
+            : "Invalid email or password."
+        );
+      }
+
+      resetForm();
+      onSuccess?.();
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-card auth-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+      >
+        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+
+        <h2 id="auth-modal-title" className="modal-title">
+          {mode === "signup" ? "Create an account" : "Sign in"}
+        </h2>
+        <p className="modal-subtitle">
+          {mode === "signup"
+            ? "Save your scores and track progress across games."
+            : "Sign in to save scores and track your progress."}
+        </p>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          {mode === "signup" && (
+            <label className="auth-field">
+              <span>Name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                autoComplete="name"
+                required
+              />
+            </label>
+          )}
+
+          <label className="auth-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
+              required
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              minLength={mode === "signup" ? 8 : undefined}
+              required
+            />
+          </label>
+
+          {error && <p className="auth-error">{error}</p>}
+
+          <button type="submit" className="primary-btn" disabled={loading}>
+            {loading
+              ? "Please wait…"
+              : mode === "signup"
+                ? "Create account"
+                : "Sign in"}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          {mode === "signup" ? (
+            <>
+              Already have an account?{" "}
+              <button type="button" className="link-btn" onClick={() => switchMode("signin")}>
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              New here?{" "}
+              <button type="button" className="link-btn" onClick={() => switchMode("signup")}>
+                Create an account
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,1672 @@
+{
+  "version": 1,
+  "description": "Editable country list for the geography game. Set enabled: false to remove a country from play.",
+  "countries": [
+    {
+      "iso3": "AFG",
+      "name": "Afghanistan",
+      "capital": "Kabul",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "ALA",
+      "name": "Aland",
+      "capital": "Mariehamn",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "ALB",
+      "name": "Albania",
+      "capital": "Tirana",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "DZA",
+      "name": "Algeria",
+      "capital": "Algiers",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ASM",
+      "name": "American Samoa",
+      "capital": "Pago Pago",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "AND",
+      "name": "Andorra",
+      "capital": "Andorra la Vella",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "AGO",
+      "name": "Angola",
+      "capital": "Luanda",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "AIA",
+      "name": "Anguilla",
+      "capital": "The Valley",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "ATG",
+      "name": "Antigua and Barbuda",
+      "capital": "St. John's",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "ARG",
+      "name": "Argentina",
+      "capital": "Buenos Aires",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "ARM",
+      "name": "Armenia",
+      "capital": "Yerevan",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "ABW",
+      "name": "Aruba",
+      "capital": "Oranjestad",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "AUS",
+      "name": "Australia",
+      "capital": "Canberra",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "AUT",
+      "name": "Austria",
+      "capital": "Vienna",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "AZE",
+      "name": "Azerbaijan",
+      "capital": "Baku",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BHR",
+      "name": "Bahrain",
+      "capital": "Manama",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BGD",
+      "name": "Bangladesh",
+      "capital": "Dhaka",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BRB",
+      "name": "Barbados",
+      "capital": "Bridgetown",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "BLR",
+      "name": "Belarus",
+      "capital": "Minsk",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "BEL",
+      "name": "Belgium",
+      "capital": "Brussels",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "BLZ",
+      "name": "Belize",
+      "capital": "Belmopan",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "BEN",
+      "name": "Benin",
+      "capital": "Porto-Novo",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "BMU",
+      "name": "Bermuda",
+      "capital": "Hamilton",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "BTN",
+      "name": "Bhutan",
+      "capital": "Thimphu",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BOL",
+      "name": "Bolivia",
+      "capital": "Sucre",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "BIH",
+      "name": "Bosnia and Herzegovina",
+      "capital": "Sarajevo",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "BWA",
+      "name": "Botswana",
+      "capital": "Gaborone",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "BRA",
+      "name": "Brazil",
+      "capital": "Brasilia",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "IOT",
+      "name": "British Indian Ocean Territory",
+      "capital": "Diego Garcia",
+      "enabled": false,
+      "region": "africa"
+    },
+    {
+      "iso3": "VGB",
+      "name": "British Virgin Islands",
+      "capital": "Road Town",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "BRN",
+      "name": "Brunei",
+      "capital": "Bandar Seri Begawan",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BGR",
+      "name": "Bulgaria",
+      "capital": "Sofia",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "BFA",
+      "name": "Burkina Faso",
+      "capital": "Ouagadougou",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "BDI",
+      "name": "Burundi",
+      "capital": "Bujumbura",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "KHM",
+      "name": "Cambodia",
+      "capital": "Phnom Penh",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "CMR",
+      "name": "Cameroon",
+      "capital": "Yaounde",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "CAN",
+      "name": "Canada",
+      "capital": "Ottawa",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "CPV",
+      "name": "Cape Verde",
+      "capital": "Praia",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "CYM",
+      "name": "Cayman Islands",
+      "capital": "George Town",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "CAF",
+      "name": "Central African Republic",
+      "capital": "Bangui",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "TCD",
+      "name": "Chad",
+      "capital": "N'Djamena",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "CHL",
+      "name": "Chile",
+      "capital": "Santiago",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "CHN",
+      "name": "China",
+      "capital": "Beijing",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "COL",
+      "name": "Colombia",
+      "capital": "Bogotá",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "COM",
+      "name": "Comoros",
+      "capital": "Moroni",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "COK",
+      "name": "Cook Islands",
+      "capital": "Avarua",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "CRI",
+      "name": "Costa Rica",
+      "capital": "San Jose",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "HRV",
+      "name": "Croatia",
+      "capital": "Zagreb",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "CUB",
+      "name": "Cuba",
+      "capital": "Havana",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "CUW",
+      "name": "Curaçao",
+      "capital": "Willemstad",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "CYP",
+      "name": "Cyprus",
+      "capital": "Nicosia",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "CZE",
+      "name": "Czech Republic",
+      "capital": "Prague",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "COD",
+      "name": "Democratic Republic of the Congo",
+      "capital": "Kinshasa",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "DNK",
+      "name": "Denmark",
+      "capital": "Copenhagen",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "DJI",
+      "name": "Djibouti",
+      "capital": "Djibouti",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "DMA",
+      "name": "Dominica",
+      "capital": "Roseau",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "DOM",
+      "name": "Dominican Republic",
+      "capital": "Santo Domingo",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "TLS",
+      "name": "East Timor",
+      "capital": "Dili",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "ECU",
+      "name": "Ecuador",
+      "capital": "Quito",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "EGY",
+      "name": "Egypt",
+      "capital": "Cairo",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SLV",
+      "name": "El Salvador",
+      "capital": "San Salvador",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "GNQ",
+      "name": "Equatorial Guinea",
+      "capital": "Malabo",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ERI",
+      "name": "Eritrea",
+      "capital": "Asmara",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "EST",
+      "name": "Estonia",
+      "capital": "Tallinn",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "SWZ",
+      "name": "eSwatini",
+      "capital": "Mbabane",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ETH",
+      "name": "Ethiopia",
+      "capital": "Addis Ababa",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "FLK",
+      "name": "Falkland Islands",
+      "capital": "Stanley",
+      "enabled": false,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "FRO",
+      "name": "Faroe Islands",
+      "capital": "Torshavn",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "FSM",
+      "name": "Federated States of Micronesia",
+      "capital": "Palikir",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "FJI",
+      "name": "Fiji",
+      "capital": "Suva",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "FIN",
+      "name": "Finland",
+      "capital": "Helsinki",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "FRA",
+      "name": "France",
+      "capital": "Paris",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "PYF",
+      "name": "French Polynesia",
+      "capital": "Papeete",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "ATF",
+      "name": "French Southern and Antarctic Lands",
+      "capital": "Port-aux-Francais",
+      "enabled": false,
+      "region": "africa"
+    },
+    {
+      "iso3": "GAB",
+      "name": "Gabon",
+      "capital": "Libreville",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "GMB",
+      "name": "Gambia",
+      "capital": "Banjul",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "GEO",
+      "name": "Georgia",
+      "capital": "Tbilisi",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "DEU",
+      "name": "Germany",
+      "capital": "Berlin",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "GHA",
+      "name": "Ghana",
+      "capital": "Accra",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "GIB",
+      "name": "Gibraltar",
+      "capital": "Gibraltar",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "GRC",
+      "name": "Greece",
+      "capital": "Athens",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "GRL",
+      "name": "Greenland",
+      "capital": "Nuuk",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "GRD",
+      "name": "Grenada",
+      "capital": "St. George's",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "GUM",
+      "name": "Guam",
+      "capital": "Hagatna",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "GTM",
+      "name": "Guatemala",
+      "capital": "Guatemala City",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "GGY",
+      "name": "Guernsey",
+      "capital": "St Peter Port",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "GIN",
+      "name": "Guinea",
+      "capital": "Conakry",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "GNB",
+      "name": "Guinea-Bissau",
+      "capital": "Bissau",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "GUY",
+      "name": "Guyana",
+      "capital": "Georgetown",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "HTI",
+      "name": "Haiti",
+      "capital": "Port-au-Prince",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "HMD",
+      "name": "Heard Island and McDonald Islands",
+      "capital": "",
+      "enabled": false,
+      "region": "world"
+    },
+    {
+      "iso3": "HND",
+      "name": "Honduras",
+      "capital": "Tegucigalpa",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "HKG",
+      "name": "Hong Kong S.A.R.",
+      "capital": "Hong Kong",
+      "enabled": false,
+      "region": "asia"
+    },
+    {
+      "iso3": "HUN",
+      "name": "Hungary",
+      "capital": "Budapest",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "ISL",
+      "name": "Iceland",
+      "capital": "Reykjavik",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "IND",
+      "name": "India",
+      "capital": "New Delhi",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "IDN",
+      "name": "Indonesia",
+      "capital": "Jakarta",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "IRN",
+      "name": "Iran",
+      "capital": "Tehran",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "capital": "Baghdad",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "IRL",
+      "name": "Ireland",
+      "capital": "Dublin",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "IMN",
+      "name": "Isle of Man",
+      "capital": "Douglas, Isle of Man",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "ISR",
+      "name": "Israel",
+      "capital": "Jerusalem",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "ITA",
+      "name": "Italy",
+      "capital": "Rome",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "CIV",
+      "name": "Ivory Coast",
+      "capital": "Yamoussoukro",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "JAM",
+      "name": "Jamaica",
+      "capital": "Kingston",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "JPN",
+      "name": "Japan",
+      "capital": "Tokyo",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "JEY",
+      "name": "Jersey",
+      "capital": "Saint Helier",
+      "enabled": false,
+      "region": "europe"
+    },
+    {
+      "iso3": "JOR",
+      "name": "Jordan",
+      "capital": "Amman",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "KAZ",
+      "name": "Kazakhstan",
+      "capital": "Astana",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "KEN",
+      "name": "Kenya",
+      "capital": "Nairobi",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "KIR",
+      "name": "Kiribati",
+      "capital": "Tarawa",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "XKX",
+      "name": "Kosovo",
+      "capital": "Pristina",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "KWT",
+      "name": "Kuwait",
+      "capital": "Kuwait City",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "KGZ",
+      "name": "Kyrgyzstan",
+      "capital": "Bishkek",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "LAO",
+      "name": "Laos",
+      "capital": "Vientiane",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "LVA",
+      "name": "Latvia",
+      "capital": "Riga",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "LBN",
+      "name": "Lebanon",
+      "capital": "Beirut",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "LSO",
+      "name": "Lesotho",
+      "capital": "Maseru",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "LBR",
+      "name": "Liberia",
+      "capital": "Monrovia",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "LBY",
+      "name": "Libya",
+      "capital": "Tripolis",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "LIE",
+      "name": "Liechtenstein",
+      "capital": "Vaduz",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "LTU",
+      "name": "Lithuania",
+      "capital": "Vilnius",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "LUX",
+      "name": "Luxembourg",
+      "capital": "Luxembourg",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MAC",
+      "name": "Macao S.A.R",
+      "capital": "Macao",
+      "enabled": false,
+      "region": "asia"
+    },
+    {
+      "iso3": "MDG",
+      "name": "Madagascar",
+      "capital": "Antananarivo",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MWI",
+      "name": "Malawi",
+      "capital": "Lilongwe",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MYS",
+      "name": "Malaysia",
+      "capital": "Kuala Lumpur",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "MDV",
+      "name": "Maldives",
+      "capital": "Male",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "MLI",
+      "name": "Mali",
+      "capital": "Bamako",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MLT",
+      "name": "Malta",
+      "capital": "Valletta",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MHL",
+      "name": "Marshall Islands",
+      "capital": "Majuro",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "MRT",
+      "name": "Mauritania",
+      "capital": "Nouakchott",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MUS",
+      "name": "Mauritius",
+      "capital": "Port Louis",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MEX",
+      "name": "Mexico",
+      "capital": "Ciudad de México",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "MDA",
+      "name": "Moldova",
+      "capital": "Chisinau",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MCO",
+      "name": "Monaco",
+      "capital": "Monaco",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MNG",
+      "name": "Mongolia",
+      "capital": "Ulan Bator",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "MNE",
+      "name": "Montenegro",
+      "capital": "Podgorica",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MSR",
+      "name": "Montserrat",
+      "capital": "Plymouth",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "MAR",
+      "name": "Morocco",
+      "capital": "Rabat",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MOZ",
+      "name": "Mozambique",
+      "capital": "Maputo",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "MMR",
+      "name": "Myanmar",
+      "capital": "Nay Pyi Taw",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "NAM",
+      "name": "Namibia",
+      "capital": "Windhoek",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "NRU",
+      "name": "Nauru",
+      "capital": "Yaren",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "NPL",
+      "name": "Nepal",
+      "capital": "Kathmandu",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "NLD",
+      "name": "Netherlands",
+      "capital": "Amsterdam",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "NCL",
+      "name": "New Caledonia",
+      "capital": "Noumea",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "NZL",
+      "name": "New Zealand",
+      "capital": "Wellington",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "NIC",
+      "name": "Nicaragua",
+      "capital": "Managua",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "NER",
+      "name": "Niger",
+      "capital": "Niamey",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "NGA",
+      "name": "Nigeria",
+      "capital": "Abuja",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "NIU",
+      "name": "Niue",
+      "capital": "Alofi",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "NFK",
+      "name": "Norfolk Island",
+      "capital": "Kingston",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "PRK",
+      "name": "North Korea",
+      "capital": "Pyongyang",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "MKD",
+      "name": "North Macedonia",
+      "capital": "Skopje",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "MNP",
+      "name": "Northern Mariana Islands",
+      "capital": "Saipan",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "NOR",
+      "name": "Norway",
+      "capital": "Oslo",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "OMN",
+      "name": "Oman",
+      "capital": "Muscat",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "PAK",
+      "name": "Pakistan",
+      "capital": "Islamabad",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "PLW",
+      "name": "Palau",
+      "capital": "Melekeok",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "PSE",
+      "name": "Palestine",
+      "capital": "East Jerusalem",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "PAN",
+      "name": "Panama",
+      "capital": "Panama City",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "PNG",
+      "name": "Papua New Guinea",
+      "capital": "Port Moresby",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "PRY",
+      "name": "Paraguay",
+      "capital": "Asunción",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "PER",
+      "name": "Peru",
+      "capital": "Lima",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "PHL",
+      "name": "Philippines",
+      "capital": "Manila",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "PCN",
+      "name": "Pitcairn Islands",
+      "capital": "Adamstown",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "POL",
+      "name": "Poland",
+      "capital": "Warsaw",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "PRT",
+      "name": "Portugal",
+      "capital": "Lisbon",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "PRI",
+      "name": "Puerto Rico",
+      "capital": "San Juan",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "QAT",
+      "name": "Qatar",
+      "capital": "Doha",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "SRB",
+      "name": "Republic of Serbia",
+      "capital": "Belgrade",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "COG",
+      "name": "Republic of the Congo",
+      "capital": "Brazzaville",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ROU",
+      "name": "Romania",
+      "capital": "Bucharest",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "RUS",
+      "name": "Russia",
+      "capital": "Moscow",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "RWA",
+      "name": "Rwanda",
+      "capital": "Kigali",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "BLM",
+      "name": "Saint Barthelemy",
+      "capital": "Gustavia",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "SHN",
+      "name": "Saint Helena",
+      "capital": "Jamestown",
+      "enabled": false,
+      "region": "africa"
+    },
+    {
+      "iso3": "MAF",
+      "name": "Saint Martin",
+      "capital": "Marigot",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "SPM",
+      "name": "Saint Pierre and Miquelon",
+      "capital": "Saint-Pierre",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "WSM",
+      "name": "Samoa",
+      "capital": "Apia",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "SMR",
+      "name": "San Marino",
+      "capital": "San Marino",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "STP",
+      "name": "São Tomé and Principe",
+      "capital": "Sao Tome",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SAU",
+      "name": "Saudi Arabia",
+      "capital": "Riyadh",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "SEN",
+      "name": "Senegal",
+      "capital": "Dakar",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SYC",
+      "name": "Seychelles",
+      "capital": "Victoria",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SLE",
+      "name": "Sierra Leone",
+      "capital": "Freetown",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SGP",
+      "name": "Singapore",
+      "capital": "Singapur",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "SXM",
+      "name": "Sint Maarten",
+      "capital": "Philipsburg",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "SVK",
+      "name": "Slovakia",
+      "capital": "Bratislava",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "SVN",
+      "name": "Slovenia",
+      "capital": "Ljubljana",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "SLB",
+      "name": "Solomon Islands",
+      "capital": "Honiara",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "SOM",
+      "name": "Somalia",
+      "capital": "Mogadishu",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ZAF",
+      "name": "South Africa",
+      "capital": "Pretoria",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SGS",
+      "name": "South Georgia and the Islands",
+      "capital": "Grytviken",
+      "enabled": false,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "KOR",
+      "name": "South Korea",
+      "capital": "Seoul",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "SSD",
+      "name": "South Sudan",
+      "capital": "Juba",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ESP",
+      "name": "Spain",
+      "capital": "Madrid",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "LKA",
+      "name": "Sri Lanka",
+      "capital": "Colombo",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "KNA",
+      "name": "St. Kitts and Nevis",
+      "capital": "Basseterre",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "LCA",
+      "name": "St. Lucia",
+      "capital": "Castries",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "VCT",
+      "name": "St. Vincent and the Grenadines",
+      "capital": "Kingstown",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "SDN",
+      "name": "Sudan",
+      "capital": "Khartoum",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "SUR",
+      "name": "Suriname",
+      "capital": "Paramaribo",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "SWE",
+      "name": "Sweden",
+      "capital": "Stockholm",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "CHE",
+      "name": "Switzerland",
+      "capital": "Bern",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "SYR",
+      "name": "Syria",
+      "capital": "Damascus",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "TWN",
+      "name": "Taiwan",
+      "capital": "Taipei",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "TJK",
+      "name": "Tajikistan",
+      "capital": "Dushanbe",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "THA",
+      "name": "Thailand",
+      "capital": "Bangkok",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "BHS",
+      "name": "The Bahamas",
+      "capital": "Nassau",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "TGO",
+      "name": "Togo",
+      "capital": "Lome",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "TON",
+      "name": "Tonga",
+      "capital": "Nuku'alofa",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "TTO",
+      "name": "Trinidad and Tobago",
+      "capital": "Port of Spain",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "TUN",
+      "name": "Tunisia",
+      "capital": "Tunis",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "TUR",
+      "name": "Turkey",
+      "capital": "Ankara",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "TKM",
+      "name": "Turkmenistan",
+      "capital": "Ashgabat",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "TCA",
+      "name": "Turks and Caicos Islands",
+      "capital": "Cockburn Town",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "TUV",
+      "name": "Tuvalu",
+      "capital": "Funafuti",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "UGA",
+      "name": "Uganda",
+      "capital": "Kampala",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "UKR",
+      "name": "Ukraine",
+      "capital": "Kyiv",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "ARE",
+      "name": "United Arab Emirates",
+      "capital": "Abu Dhabi",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "GBR",
+      "name": "United Kingdom",
+      "capital": "London",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "TZA",
+      "name": "United Republic of Tanzania",
+      "capital": "Dodoma",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "USA",
+      "name": "United States",
+      "capital": "Washington",
+      "enabled": true,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "UMI",
+      "name": "United States Minor Outlying Islands",
+      "capital": "",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "VIR",
+      "name": "United States Virgin Islands",
+      "capital": "Charlotte Amalie",
+      "enabled": false,
+      "region": "northAmerica"
+    },
+    {
+      "iso3": "URY",
+      "name": "Uruguay",
+      "capital": "Montevideo",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "UZB",
+      "name": "Uzbekistan",
+      "capital": "Tashkent",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "VUT",
+      "name": "Vanuatu",
+      "capital": "Port Vila",
+      "enabled": true,
+      "region": "oceania"
+    },
+    {
+      "iso3": "VAT",
+      "name": "Vatican",
+      "capital": "Vatican City",
+      "enabled": true,
+      "region": "europe"
+    },
+    {
+      "iso3": "VEN",
+      "name": "Venezuela",
+      "capital": "Caracas",
+      "enabled": true,
+      "region": "southAmerica"
+    },
+    {
+      "iso3": "VNM",
+      "name": "Vietnam",
+      "capital": "Hanoi",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "WLF",
+      "name": "Wallis and Futuna",
+      "capital": "Mata Utu",
+      "enabled": false,
+      "region": "oceania"
+    },
+    {
+      "iso3": "ESH",
+      "name": "Western Sahara",
+      "capital": "El-Aaiun",
+      "enabled": false,
+      "region": "africa"
+    },
+    {
+      "iso3": "YEM",
+      "name": "Yemen",
+      "capital": "Sanaa",
+      "enabled": true,
+      "region": "asia"
+    },
+    {
+      "iso3": "ZMB",
+      "name": "Zambia",
+      "capital": "Lusaka",
+      "enabled": true,
+      "region": "africa"
+    },
+    {
+      "iso3": "ZWE",
+      "name": "Zimbabwe",
+      "capital": "Harare",
+      "enabled": true,
+      "region": "africa"
+    }
+  ]
+}

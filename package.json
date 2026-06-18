@@ -1,0 +1,21 @@
+{
+  "name": "geography-game",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "generate-countries": "node scripts/generate-countries.js",
+    "db:setup": "node scripts/setup-db.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "mapbox-gl": "^3.9.4",
+    "next": "^15.1.0",
+    "next-auth": "^5.0.0-beta.25",
+    "pg": "^8.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
