@@ -371,6 +371,34 @@ body {
   width: min(100%, 28rem);
 }
 
+.start-level-sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2rem;
+  width: 100%;
+}
+
+.start-level-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 16rem;
+  max-width: 22rem;
+}
+
+.start-level-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.start-level-section .start-level-list {
+  width: 100%;
+}
+
 .start-game-type-list {
   width: min(100%, 28rem);
 }

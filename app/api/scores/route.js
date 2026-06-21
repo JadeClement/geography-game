@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { getScoreForGame, getScoresForUser, upsertScore } from "@/lib/db";
+import { isValidLevel } from "@/lib/levels";
 
-const DEFAULT_LEVEL = 1;
+const DEFAULT_LEVEL = "F1";
 
 export async function GET() {
   const session = await auth();
@@ -30,7 +31,7 @@ export async function POST(request) {
     const { mode, region, score } = body;
     const level = body.level ?? DEFAULT_LEVEL;
 
-    if (!mode || !region || typeof score !== "number" || score < 0) {
+    if (!mode || !region || typeof score !== "number" || score < 0 || !isValidLevel(level)) {
       return Response.json({ error: "Invalid score data." }, { status: 400 });
     }
 

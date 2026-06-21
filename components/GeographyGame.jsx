@@ -19,6 +19,7 @@ import { getSpellingSuggestion } from "@/lib/spelling";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
 import { getBoundsFromCountries, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES } from "@/lib/gameTypes";
+import { GAME_TYPE_FOR_STATS } from "@/lib/mastery";
 import { buildLearningQueue } from "@/lib/learning";
 import {
   COUNTRY_FLASH_MS,
@@ -244,6 +245,9 @@ export default function GeographyGame() {
         level: session.level,
         outcome,
         responseTimeMs,
+        gameType: session.review
+          ? GAME_TYPE_FOR_STATS.REVIEW
+          : (session.gameType ?? GAME_TYPES.TEST),
       }).catch((error) => {
         console.error("Failed to record country stat:", error);
       });
@@ -446,34 +450,39 @@ export default function GeographyGame() {
     [startGame]
   );
 
+  const buildLearningCountries = useCallback(
+    async ({ mode, level, region, learningSessionSize }) => {
+      const data = await fetchWeakCountryStats({ mode, level, region });
+      if ((data.weakCount ?? 0) === 0) return null;
+
+      const queueIds = buildLearningQueue(
+        data.stats,
+        learningSessionSize ?? data.weakCount
+      );
+      const regionPool = filterCountriesByRegion(allCountries, region);
+      const countries = queueIds
+        .map((id) => regionPool.find((country) => country.id === id))
+        .filter(Boolean);
+
+      if (countries.length === 0) return null;
+      return { countries, queueIds };
+    },
+    [allCountries]
+  );
+
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.gameType === GAME_TYPES.LEARNING) {
-        const data = await fetchWeakCountryStats({
-          mode: config.mode,
-          level: config.level,
-          region: config.region,
-        });
-
-        if ((data.weakCount ?? 0) === 0) {
-          return;
-        }
-
-        const queueIds = buildLearningQueue(data.stats, config.learningSessionSize);
-        const regionPool = filterCountriesByRegion(allCountries, config.region);
-        const countries = queueIds
-          .map((id) => regionPool.find((country) => country.id === id))
-          .filter(Boolean);
-
-        if (countries.length === 0) return;
+        const learning = await buildLearningCountries(config);
+        if (!learning) return;
 
         startGame({
           gameType: GAME_TYPES.LEARNING,
           mode: config.mode,
           region: config.region,
           level: config.level,
-          countries,
-          learningCountryIds: queueIds,
+          countries: learning.countries,
+          learningCountryIds: learning.queueIds,
           learningSessionSize: config.learningSessionSize,
         });
         return;
@@ -481,7 +490,7 @@ export default function GeographyGame() {
 
       beginSession(config);
     },
-    [allCountries, beginSession, startGame]
+    [beginSession, buildLearningCountries, startGame]
   );
 
   const handleBackToMenu = () => {
@@ -534,35 +543,24 @@ export default function GeographyGame() {
   const startLearningAgain = useCallback(async () => {
     if (!session || !isLearningGame) return;
 
-    const data = await fetchWeakCountryStats({
+    const learning = await buildLearningCountries({
       mode: session.mode,
       level: session.level,
       region: session.region,
+      learningSessionSize: session.learningSessionSize,
     });
-
-    if ((data.weakCount ?? 0) === 0) return;
-
-    const queueIds = buildLearningQueue(
-      data.stats,
-      session.learningSessionSize ?? data.weakCount
-    );
-    const regionPool = filterCountriesByRegion(allCountries, session.region);
-    const countries = queueIds
-      .map((id) => regionPool.find((country) => country.id === id))
-      .filter(Boolean);
-
-    if (countries.length === 0) return;
+    if (!learning) return;
 
     startGame({
       gameType: GAME_TYPES.LEARNING,
       mode: session.mode,
       region: session.region,
       level: session.level,
-      countries,
-      learningCountryIds: queueIds,
+      countries: learning.countries,
+      learningCountryIds: learning.queueIds,
       learningSessionSize: session.learningSessionSize,
     });
-  }, [allCountries, isLearningGame, session, startGame]);
+  }, [buildLearningCountries, isLearningGame, session, startGame]);
 
   const handlePlayAgain = () => {
     if (!session) return;

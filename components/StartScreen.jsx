@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
-import { LEVEL_OPTIONS } from "@/lib/levels";
+import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS } from "@/lib/regions";
 
 export default function StartScreen({ onStart, disabled }) {
@@ -124,7 +124,7 @@ export default function StartScreen({ onStart, disabled }) {
         <h1 className="start-title">Learning session</h1>
         <p className="start-subtitle">
           {selectedMode === GAME_MODES.CAPITALS ? "Capitals" : "Countries"} · {regionLabel} ·{" "}
-          {LEVEL_OPTIONS.find((option) => option.level === selectedLevel)?.title}
+          {getLevelLabel(selectedLevel)}
         </p>
 
         {weakLoading && <p className="start-subtitle">Checking your learning list…</p>}
@@ -198,28 +198,35 @@ export default function StartScreen({ onStart, disabled }) {
           {REGIONS.find((region) => region.id === selectedRegion)?.label}
         </p>
 
-        <div className="start-section start-level-list">
-          {LEVEL_OPTIONS.map((option) => (
-            <button
-              key={option.level}
-              type="button"
-              className={`choice-btn choice-btn-level ${
-                isLearning && selectedLevel === option.level ? "selected" : ""
-              }`}
-              disabled={disabled}
-              onClick={() => {
-                if (isLearning) {
-                  setSelectedLevel(option.level);
-                  setSelectedSessionSize(null);
-                  setStep("learningSize");
-                  return;
-                }
-                handleTestStart(option.level);
-              }}
-            >
-              <span className="choice-btn-level-title">{option.title}</span>
-              <span className="choice-btn-level-desc">{option.description}</span>
-            </button>
+        <div className="start-level-sections">
+          {LEVEL_SECTIONS.map((section) => (
+            <div key={section.id} className="start-level-section">
+              <h2 className="start-level-section-title">{section.title}</h2>
+              <div className="start-section start-level-list">
+                {section.levels.map((option) => (
+                  <button
+                    key={option.level}
+                    type="button"
+                    className={`choice-btn choice-btn-level ${
+                      isLearning && selectedLevel === option.level ? "selected" : ""
+                    }`}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (isLearning) {
+                        setSelectedLevel(option.level);
+                        setSelectedSessionSize(null);
+                        setStep("learningSize");
+                        return;
+                      }
+                      handleTestStart(option.level);
+                    }}
+                  >
+                    <span className="choice-btn-level-title">{option.title}</span>
+                    <span className="choice-btn-level-desc">{option.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 

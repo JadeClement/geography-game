@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
+import { getLevelShortLabel } from "@/lib/levels";
 import { GAME_MODES, REGIONS, formatGameScore } from "@/lib/regions";
 import { fetchScores, LEVELS } from "@/lib/scores";
 
@@ -19,7 +20,7 @@ function ScoreTable({ title, mode, scoreMap }) {
               <th scope="col">Region</th>
               {LEVELS.map((level) => (
                 <th key={level} scope="col">
-                  Level {level}
+                  {getLevelShortLabel(level)}
                 </th>
               ))}
             </tr>
