@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { getCountryStatsForUser } from "@/lib/db";
-import { getEffectiveMastery } from "@/lib/mastery";
+import { getDecayAdjustedMastery, isEffectivelyGraduated } from "@/lib/mastery";
 
 export async function GET(request) {
   const session = await auth();
@@ -21,8 +21,8 @@ export async function GET(request) {
     const mastery = stats.map((stat) => ({
       countryId: stat.countryId,
       level: stat.level,
-      masteryScore: getEffectiveMastery(stat),
-      graduated: stat.graduated,
+      masteryScore: getDecayAdjustedMastery(stat),
+      graduated: isEffectivelyGraduated(stat),
     }));
 
     return Response.json({ mastery });

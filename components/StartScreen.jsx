@@ -369,7 +369,6 @@ export default function StartScreen({ onStart, disabled }) {
       <SpinningGlobe />
       <div className="start-screen-content">
         <h1 className="start-title">Geography Game</h1>
-        <p className="start-subtitle">Choose how you want to play</p>
 
         <div className="start-section start-game-type-list">
         <button

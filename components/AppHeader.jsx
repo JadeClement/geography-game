@@ -16,6 +16,9 @@ function ProfileDropdown({ signedIn, userName, onClose, onSignIn, onSignOut }) {
 
       {signedIn ? (
         <>
+          <Link href="/mastery" className="dropdown-item" onClick={onClose}>
+            Mastery Map
+          </Link>
           <Link href="/results" className="dropdown-item" onClick={onClose}>
             Results
           </Link>

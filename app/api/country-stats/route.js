@@ -1,8 +1,7 @@
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { getCountryStatsForUser, recordCountryPerformance } from "@/lib/db";
-import { isEligibleForLearning } from "@/lib/learning";
-import { buildCascadedStat, GAME_TYPE_FOR_STATS } from "@/lib/mastery";
+import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
 import countriesManifest from "@/data/countries.json";
 
@@ -60,7 +59,7 @@ export async function GET(request) {
       const provingStats = countryStats.filter((s) => provingLevels.includes(s.level));
       const effectiveStat = buildCascadedStat(countryId, ownStat, provingStats);
 
-      if (isEligibleForLearning(effectiveStat)) {
+      if (hasEverStruggled(ownStat) && !effectiveStat.graduated) {
         eligibleStats.push(effectiveStat);
       }
     }

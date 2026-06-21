@@ -52,9 +52,8 @@ import {
 import { formatElapsedTime } from "@/lib/time";
 import { useSession } from "next-auth/react";
 
-// A country counts as already mastered for a level if it has graduated at that
-// level or at a level that proves it (the harder no-fill tier proves the fill
-// tier within the same section).
+// A country counts as already mastered for a level if it is effectively
+// graduated at that level or at a proving level (the mastery API applies decay).
 function getMasteredCountryIds(masteryRows, level) {
   const relevantLevels = new Set([level, ...getMasteryProvingLevels(level)]);
   const mastered = new Set();
