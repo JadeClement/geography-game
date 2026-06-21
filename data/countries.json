@@ -1,11 +1,24 @@
 {
-  "version": 1,
+  "version": 2,
   "description": "Editable country list for the geography game. Set enabled: false to remove a country from play.",
   "countries": [
     {
       "iso3": "AFG",
       "name": "Afghanistan",
       "capital": "Kabul",
+      "population": 43844000,
+      "languages": [
+        "Dari",
+        "Pashto"
+      ],
+      "neighbors": [
+        "IRN",
+        "PAK",
+        "TKM",
+        "UZB",
+        "TJK",
+        "CHN"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -13,6 +26,11 @@
       "iso3": "ALA",
       "name": "Aland",
       "capital": "Mariehamn",
+      "population": 30654,
+      "languages": [
+        "Swedish"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "europe"
     },
@@ -20,6 +38,16 @@
       "iso3": "ALB",
       "name": "Albania",
       "capital": "Tirana",
+      "population": 2363314,
+      "languages": [
+        "Albanian"
+      ],
+      "neighbors": [
+        "MNE",
+        "GRC",
+        "MKD",
+        "UNK"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -27,6 +55,19 @@
       "iso3": "DZA",
       "name": "Algeria",
       "capital": "Algiers",
+      "population": 47400000,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "TUN",
+        "LBY",
+        "NER",
+        "ESH",
+        "MRT",
+        "MLI",
+        "MAR"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -34,6 +75,12 @@
       "iso3": "ASM",
       "name": "American Samoa",
       "capital": "Pago Pago",
+      "population": 49710,
+      "languages": [
+        "English",
+        "Samoan"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -41,6 +88,14 @@
       "iso3": "AND",
       "name": "Andorra",
       "capital": "Andorra la Vella",
+      "population": 88306,
+      "languages": [
+        "Catalan"
+      ],
+      "neighbors": [
+        "FRA",
+        "ESP"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -48,6 +103,16 @@
       "iso3": "AGO",
       "name": "Angola",
       "capital": "Luanda",
+      "population": 36170961,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [
+        "COG",
+        "COD",
+        "ZMB",
+        "NAM"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -55,6 +120,11 @@
       "iso3": "AIA",
       "name": "Anguilla",
       "capital": "The Valley",
+      "population": 16010,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -62,6 +132,11 @@
       "iso3": "ATG",
       "name": "Antigua and Barbuda",
       "capital": "St. John's",
+      "population": 103603,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -69,6 +144,18 @@
       "iso3": "ARG",
       "name": "Argentina",
       "capital": "Buenos Aires",
+      "population": 46735004,
+      "languages": [
+        "Guaraní",
+        "Spanish"
+      ],
+      "neighbors": [
+        "BOL",
+        "BRA",
+        "CHL",
+        "PRY",
+        "URY"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -76,6 +163,16 @@
       "iso3": "ARM",
       "name": "Armenia",
       "capital": "Yerevan",
+      "population": 3081100,
+      "languages": [
+        "Armenian"
+      ],
+      "neighbors": [
+        "AZE",
+        "GEO",
+        "IRN",
+        "TUR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -83,6 +180,12 @@
       "iso3": "ABW",
       "name": "Aruba",
       "capital": "Oranjestad",
+      "population": 107566,
+      "languages": [
+        "Dutch",
+        "Papiamento"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -90,6 +193,11 @@
       "iso3": "AUS",
       "name": "Australia",
       "capital": "Canberra",
+      "population": 27400013,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -97,6 +205,20 @@
       "iso3": "AUT",
       "name": "Austria",
       "capital": "Vienna",
+      "population": 9200931,
+      "languages": [
+        "Austro-Bavarian German"
+      ],
+      "neighbors": [
+        "CZE",
+        "DEU",
+        "HUN",
+        "ITA",
+        "LIE",
+        "SVK",
+        "SVN",
+        "CHE"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -104,6 +226,18 @@
       "iso3": "AZE",
       "name": "Azerbaijan",
       "capital": "Baku",
+      "population": 10241722,
+      "languages": [
+        "Azerbaijani",
+        "Russian"
+      ],
+      "neighbors": [
+        "ARM",
+        "GEO",
+        "IRN",
+        "RUS",
+        "TUR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -111,6 +245,11 @@
       "iso3": "BHR",
       "name": "Bahrain",
       "capital": "Manama",
+      "population": 1594654,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -118,6 +257,14 @@
       "iso3": "BGD",
       "name": "Bangladesh",
       "capital": "Dhaka",
+      "population": 169828911,
+      "languages": [
+        "Bengali"
+      ],
+      "neighbors": [
+        "MMR",
+        "IND"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -125,6 +272,11 @@
       "iso3": "BRB",
       "name": "Barbados",
       "capital": "Bridgetown",
+      "population": 267800,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -132,6 +284,18 @@
       "iso3": "BLR",
       "name": "Belarus",
       "capital": "Minsk",
+      "population": 9109280,
+      "languages": [
+        "Belarusian",
+        "Russian"
+      ],
+      "neighbors": [
+        "LVA",
+        "LTU",
+        "POL",
+        "RUS",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -139,6 +303,17 @@
       "iso3": "BEL",
       "name": "Belgium",
       "capital": "Brussels",
+      "population": 11825551,
+      "languages": [
+        "German",
+        "French"
+      ],
+      "neighbors": [
+        "FRA",
+        "DEU",
+        "LUX",
+        "NLD"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -146,6 +321,15 @@
       "iso3": "BLZ",
       "name": "Belize",
       "capital": "Belmopan",
+      "population": 417634,
+      "languages": [
+        "Belizean Creole",
+        "English"
+      ],
+      "neighbors": [
+        "GTM",
+        "MEX"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -153,6 +337,16 @@
       "iso3": "BEN",
       "name": "Benin",
       "capital": "Porto-Novo",
+      "population": 13224860,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "BFA",
+        "NER",
+        "NGA",
+        "TGO"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -160,6 +354,11 @@
       "iso3": "BMU",
       "name": "Bermuda",
       "capital": "Hamilton",
+      "population": 64055,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -167,6 +366,14 @@
       "iso3": "BTN",
       "name": "Bhutan",
       "capital": "Thimphu",
+      "population": 784043,
+      "languages": [
+        "Dzongkha"
+      ],
+      "neighbors": [
+        "CHN",
+        "IND"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -174,6 +381,18 @@
       "iso3": "BOL",
       "name": "Bolivia",
       "capital": "Sucre",
+      "population": 11312620,
+      "languages": [
+        "Aymara",
+        "Guaraní"
+      ],
+      "neighbors": [
+        "ARG",
+        "BRA",
+        "CHL",
+        "PRY",
+        "PER"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -181,6 +400,16 @@
       "iso3": "BIH",
       "name": "Bosnia and Herzegovina",
       "capital": "Sarajevo",
+      "population": 3422000,
+      "languages": [
+        "Bosnian",
+        "Croatian"
+      ],
+      "neighbors": [
+        "HRV",
+        "MNE",
+        "SRB"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -188,6 +417,17 @@
       "iso3": "BWA",
       "name": "Botswana",
       "capital": "Gaborone",
+      "population": 2359609,
+      "languages": [
+        "English",
+        "Tswana"
+      ],
+      "neighbors": [
+        "NAM",
+        "ZAF",
+        "ZMB",
+        "ZWE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -195,6 +435,22 @@
       "iso3": "BRA",
       "name": "Brazil",
       "capital": "Brasilia",
+      "population": 213421037,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [
+        "ARG",
+        "BOL",
+        "COL",
+        "GUF",
+        "GUY",
+        "PRY",
+        "PER",
+        "SUR",
+        "URY",
+        "VEN"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -202,6 +458,11 @@
       "iso3": "IOT",
       "name": "British Indian Ocean Territory",
       "capital": "Diego Garcia",
+      "population": null,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "africa"
     },
@@ -209,6 +470,11 @@
       "iso3": "VGB",
       "name": "British Virgin Islands",
       "capital": "Road Town",
+      "population": 39471,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -216,6 +482,13 @@
       "iso3": "BRN",
       "name": "Brunei",
       "capital": "Bandar Seri Begawan",
+      "population": 455500,
+      "languages": [
+        "Malay"
+      ],
+      "neighbors": [
+        "MYS"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -223,6 +496,17 @@
       "iso3": "BGR",
       "name": "Bulgaria",
       "capital": "Sofia",
+      "population": 6437360,
+      "languages": [
+        "Bulgarian"
+      ],
+      "neighbors": [
+        "GRC",
+        "MKD",
+        "ROU",
+        "SRB",
+        "TUR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -230,6 +514,18 @@
       "iso3": "BFA",
       "name": "Burkina Faso",
       "capital": "Ouagadougou",
+      "population": 24070553,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "BEN",
+        "CIV",
+        "GHA",
+        "MLI",
+        "NER",
+        "TGO"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -237,6 +533,16 @@
       "iso3": "BDI",
       "name": "Burundi",
       "capital": "Bujumbura",
+      "population": 12332788,
+      "languages": [
+        "French",
+        "Kirundi"
+      ],
+      "neighbors": [
+        "COD",
+        "RWA",
+        "TZA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -244,6 +550,15 @@
       "iso3": "KHM",
       "name": "Cambodia",
       "capital": "Phnom Penh",
+      "population": 17577760,
+      "languages": [
+        "Khmer"
+      ],
+      "neighbors": [
+        "LAO",
+        "THA",
+        "VNM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -251,6 +566,19 @@
       "iso3": "CMR",
       "name": "Cameroon",
       "capital": "Yaounde",
+      "population": 29442327,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [
+        "CAF",
+        "TCD",
+        "COG",
+        "GNQ",
+        "GAB",
+        "NGA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -258,6 +586,14 @@
       "iso3": "CAN",
       "name": "Canada",
       "capital": "Ottawa",
+      "population": 41548787,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [
+        "USA"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -265,6 +601,11 @@
       "iso3": "CPV",
       "name": "Cape Verde",
       "capital": "Praia",
+      "population": 491233,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -272,6 +613,11 @@
       "iso3": "CYM",
       "name": "Cayman Islands",
       "capital": "George Town",
+      "population": 84738,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -279,6 +625,19 @@
       "iso3": "CAF",
       "name": "Central African Republic",
       "capital": "Bangui",
+      "population": 6470307,
+      "languages": [
+        "French",
+        "Sango"
+      ],
+      "neighbors": [
+        "CMR",
+        "TCD",
+        "COD",
+        "COG",
+        "SSD",
+        "SDN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -286,6 +645,19 @@
       "iso3": "TCD",
       "name": "Chad",
       "capital": "N'Djamena",
+      "population": 19340757,
+      "languages": [
+        "Arabic",
+        "French"
+      ],
+      "neighbors": [
+        "CMR",
+        "CAF",
+        "LBY",
+        "NER",
+        "NGA",
+        "SDN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -293,6 +665,15 @@
       "iso3": "CHL",
       "name": "Chile",
       "capital": "Santiago",
+      "population": 20206953,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "ARG",
+        "BOL",
+        "PER"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -300,6 +681,28 @@
       "iso3": "CHN",
       "name": "China",
       "capital": "Beijing",
+      "population": 1408280000,
+      "languages": [
+        "Chinese"
+      ],
+      "neighbors": [
+        "AFG",
+        "BTN",
+        "MMR",
+        "HKG",
+        "IND",
+        "KAZ",
+        "NPL",
+        "PRK",
+        "KGZ",
+        "LAO",
+        "MAC",
+        "MNG",
+        "PAK",
+        "RUS",
+        "TJK",
+        "VNM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -307,6 +710,17 @@
       "iso3": "COL",
       "name": "Colombia",
       "capital": "Bogotá",
+      "population": 53057212,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "BRA",
+        "ECU",
+        "PAN",
+        "PER",
+        "VEN"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -314,6 +728,12 @@
       "iso3": "COM",
       "name": "Comoros",
       "capital": "Moroni",
+      "population": 870038,
+      "languages": [
+        "Arabic",
+        "French"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -321,6 +741,12 @@
       "iso3": "COK",
       "name": "Cook Islands",
       "capital": "Avarua",
+      "population": 15040,
+      "languages": [
+        "English",
+        "Cook Islands Māori"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -328,6 +754,14 @@
       "iso3": "CRI",
       "name": "Costa Rica",
       "capital": "San Jose",
+      "population": 5309625,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "NIC",
+        "PAN"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -335,6 +769,17 @@
       "iso3": "HRV",
       "name": "Croatia",
       "capital": "Zagreb",
+      "population": 3866233,
+      "languages": [
+        "Croatian"
+      ],
+      "neighbors": [
+        "BIH",
+        "HUN",
+        "MNE",
+        "SRB",
+        "SVN"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -342,6 +787,11 @@
       "iso3": "CUB",
       "name": "Cuba",
       "capital": "Havana",
+      "population": 9748007,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -349,6 +799,12 @@
       "iso3": "CUW",
       "name": "Curaçao",
       "capital": "Willemstad",
+      "population": 156115,
+      "languages": [
+        "English",
+        "Dutch"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -356,6 +812,12 @@
       "iso3": "CYP",
       "name": "Cyprus",
       "capital": "Nicosia",
+      "population": 966400,
+      "languages": [
+        "Greek",
+        "Turkish"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "europe"
     },
@@ -363,6 +825,17 @@
       "iso3": "CZE",
       "name": "Czech Republic",
       "capital": "Prague",
+      "population": 10876875,
+      "languages": [
+        "Czech",
+        "Slovak"
+      ],
+      "neighbors": [
+        "AUT",
+        "DEU",
+        "POL",
+        "SVK"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -370,6 +843,22 @@
       "iso3": "COD",
       "name": "Democratic Republic of the Congo",
       "capital": "Kinshasa",
+      "population": 112832000,
+      "languages": [
+        "French",
+        "Kikongo"
+      ],
+      "neighbors": [
+        "AGO",
+        "BDI",
+        "CAF",
+        "COG",
+        "RWA",
+        "SSD",
+        "TZA",
+        "UGA",
+        "ZMB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -377,6 +866,13 @@
       "iso3": "DNK",
       "name": "Denmark",
       "capital": "Copenhagen",
+      "population": 6004342,
+      "languages": [
+        "Danish"
+      ],
+      "neighbors": [
+        "DEU"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -384,6 +880,16 @@
       "iso3": "DJI",
       "name": "Djibouti",
       "capital": "Djibouti",
+      "population": 1066809,
+      "languages": [
+        "Arabic",
+        "French"
+      ],
+      "neighbors": [
+        "ERI",
+        "ETH",
+        "SOM"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -391,6 +897,11 @@
       "iso3": "DMA",
       "name": "Dominica",
       "capital": "Roseau",
+      "population": 67408,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -398,6 +909,13 @@
       "iso3": "DOM",
       "name": "Dominican Republic",
       "capital": "Santo Domingo",
+      "population": 10771504,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "HTI"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -405,6 +923,14 @@
       "iso3": "TLS",
       "name": "East Timor",
       "capital": "Dili",
+      "population": 1391221,
+      "languages": [
+        "Portuguese",
+        "Tetum"
+      ],
+      "neighbors": [
+        "IDN"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -412,6 +938,14 @@
       "iso3": "ECU",
       "name": "Ecuador",
       "capital": "Quito",
+      "population": 18103660,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "COL",
+        "PER"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -419,6 +953,16 @@
       "iso3": "EGY",
       "name": "Egypt",
       "capital": "Cairo",
+      "population": 107271260,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "ISR",
+        "LBY",
+        "PSE",
+        "SDN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -426,6 +970,14 @@
       "iso3": "SLV",
       "name": "El Salvador",
       "capital": "San Salvador",
+      "population": 6029976,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "GTM",
+        "HND"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -433,6 +985,15 @@
       "iso3": "GNQ",
       "name": "Equatorial Guinea",
       "capital": "Malabo",
+      "population": 1668768,
+      "languages": [
+        "French",
+        "Portuguese"
+      ],
+      "neighbors": [
+        "CMR",
+        "GAB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -440,6 +1001,16 @@
       "iso3": "ERI",
       "name": "Eritrea",
       "capital": "Asmara",
+      "population": 3607000,
+      "languages": [
+        "Arabic",
+        "English"
+      ],
+      "neighbors": [
+        "DJI",
+        "ETH",
+        "SDN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -447,6 +1018,14 @@
       "iso3": "EST",
       "name": "Estonia",
       "capital": "Tallinn",
+      "population": 1369995,
+      "languages": [
+        "Estonian"
+      ],
+      "neighbors": [
+        "LVA",
+        "RUS"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -454,6 +1033,15 @@
       "iso3": "SWZ",
       "name": "eSwatini",
       "capital": "Mbabane",
+      "population": 1235549,
+      "languages": [
+        "English",
+        "Swazi"
+      ],
+      "neighbors": [
+        "MOZ",
+        "ZAF"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -461,6 +1049,18 @@
       "iso3": "ETH",
       "name": "Ethiopia",
       "capital": "Addis Ababa",
+      "population": 111652998,
+      "languages": [
+        "Amharic"
+      ],
+      "neighbors": [
+        "DJI",
+        "ERI",
+        "KEN",
+        "SOM",
+        "SSD",
+        "SDN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -468,6 +1068,11 @@
       "iso3": "FLK",
       "name": "Falkland Islands",
       "capital": "Stanley",
+      "population": 3662,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "southAmerica"
     },
@@ -475,6 +1080,12 @@
       "iso3": "FRO",
       "name": "Faroe Islands",
       "capital": "Torshavn",
+      "population": 55146,
+      "languages": [
+        "Danish",
+        "Faroese"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "europe"
     },
@@ -482,6 +1093,11 @@
       "iso3": "FSM",
       "name": "Federated States of Micronesia",
       "capital": "Palikir",
+      "population": 105564,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -489,6 +1105,12 @@
       "iso3": "FJI",
       "name": "Fiji",
       "capital": "Suva",
+      "population": 900869,
+      "languages": [
+        "English",
+        "Fijian"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -496,6 +1118,16 @@
       "iso3": "FIN",
       "name": "Finland",
       "capital": "Helsinki",
+      "population": 5645651,
+      "languages": [
+        "Finnish",
+        "Swedish"
+      ],
+      "neighbors": [
+        "NOR",
+        "SWE",
+        "RUS"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -503,6 +1135,20 @@
       "iso3": "FRA",
       "name": "France",
       "capital": "Paris",
+      "population": 68688000,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "AND",
+        "BEL",
+        "DEU",
+        "ITA",
+        "LUX",
+        "MCO",
+        "ESP",
+        "CHE"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -510,6 +1156,11 @@
       "iso3": "PYF",
       "name": "French Polynesia",
       "capital": "Papeete",
+      "population": 279500,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -517,6 +1168,11 @@
       "iso3": "ATF",
       "name": "French Southern and Antarctic Lands",
       "capital": "Port-aux-Francais",
+      "population": null,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "africa"
     },
@@ -524,6 +1180,15 @@
       "iso3": "GAB",
       "name": "Gabon",
       "capital": "Libreville",
+      "population": 2469296,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "CMR",
+        "COG",
+        "GNQ"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -531,6 +1196,13 @@
       "iso3": "GMB",
       "name": "Gambia",
       "capital": "Banjul",
+      "population": 2422712,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "SEN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -538,6 +1210,16 @@
       "iso3": "GEO",
       "name": "Georgia",
       "capital": "Tbilisi",
+      "population": 3704500,
+      "languages": [
+        "Georgian"
+      ],
+      "neighbors": [
+        "ARM",
+        "AZE",
+        "RUS",
+        "TUR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -545,6 +1227,21 @@
       "iso3": "DEU",
       "name": "Germany",
       "capital": "Berlin",
+      "population": 83517030,
+      "languages": [
+        "German"
+      ],
+      "neighbors": [
+        "AUT",
+        "BEL",
+        "CZE",
+        "DNK",
+        "FRA",
+        "LUX",
+        "NLD",
+        "POL",
+        "CHE"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -552,6 +1249,15 @@
       "iso3": "GHA",
       "name": "Ghana",
       "capital": "Accra",
+      "population": 33742380,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "BFA",
+        "CIV",
+        "TGO"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -559,6 +1265,13 @@
       "iso3": "GIB",
       "name": "Gibraltar",
       "capital": "Gibraltar",
+      "population": 38000,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "ESP"
+      ],
       "enabled": false,
       "region": "europe"
     },
@@ -566,6 +1279,16 @@
       "iso3": "GRC",
       "name": "Greece",
       "capital": "Athens",
+      "population": 10400720,
+      "languages": [
+        "Greek"
+      ],
+      "neighbors": [
+        "ALB",
+        "BGR",
+        "TUR",
+        "MKD"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -573,6 +1296,11 @@
       "iso3": "GRL",
       "name": "Greenland",
       "capital": "Nuuk",
+      "population": 56542,
+      "languages": [
+        "Greenlandic"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -580,6 +1308,11 @@
       "iso3": "GRD",
       "name": "Grenada",
       "capital": "St. George's",
+      "population": 109021,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -587,6 +1320,12 @@
       "iso3": "GUM",
       "name": "Guam",
       "capital": "Hagatna",
+      "population": 153836,
+      "languages": [
+        "Chamorro",
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -594,6 +1333,16 @@
       "iso3": "GTM",
       "name": "Guatemala",
       "capital": "Guatemala City",
+      "population": 18079810,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "BLZ",
+        "SLV",
+        "HND",
+        "MEX"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -601,6 +1350,12 @@
       "iso3": "GGY",
       "name": "Guernsey",
       "capital": "St Peter Port",
+      "population": 64781,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "europe"
     },
@@ -608,6 +1363,18 @@
       "iso3": "GIN",
       "name": "Guinea",
       "capital": "Conakry",
+      "population": 14363931,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "CIV",
+        "GNB",
+        "LBR",
+        "MLI",
+        "SEN",
+        "SLE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -615,6 +1382,15 @@
       "iso3": "GNB",
       "name": "Guinea-Bissau",
       "capital": "Bissau",
+      "population": 1781308,
+      "languages": [
+        "Portuguese",
+        "Upper Guinea Creole"
+      ],
+      "neighbors": [
+        "GIN",
+        "SEN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -622,6 +1398,15 @@
       "iso3": "GUY",
       "name": "Guyana",
       "capital": "Georgetown",
+      "population": 772975,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "BRA",
+        "SUR",
+        "VEN"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -629,6 +1414,14 @@
       "iso3": "HTI",
       "name": "Haiti",
       "capital": "Port-au-Prince",
+      "population": 11867032,
+      "languages": [
+        "French",
+        "Haitian Creole"
+      ],
+      "neighbors": [
+        "DOM"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -636,6 +1429,11 @@
       "iso3": "HMD",
       "name": "Heard Island and McDonald Islands",
       "capital": "",
+      "population": null,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "world"
     },
@@ -643,6 +1441,15 @@
       "iso3": "HND",
       "name": "Honduras",
       "capital": "Tegucigalpa",
+      "population": 9892632,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "GTM",
+        "SLV",
+        "NIC"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -650,6 +1457,14 @@
       "iso3": "HKG",
       "name": "Hong Kong S.A.R.",
       "capital": "Hong Kong",
+      "population": 7527500,
+      "languages": [
+        "English",
+        "Chinese"
+      ],
+      "neighbors": [
+        "CHN"
+      ],
       "enabled": false,
       "region": "asia"
     },
@@ -657,6 +1472,19 @@
       "iso3": "HUN",
       "name": "Hungary",
       "capital": "Budapest",
+      "population": 9539502,
+      "languages": [
+        "Hungarian"
+      ],
+      "neighbors": [
+        "AUT",
+        "HRV",
+        "ROU",
+        "SRB",
+        "SVK",
+        "SVN",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -664,6 +1492,11 @@
       "iso3": "ISL",
       "name": "Iceland",
       "capital": "Reykjavik",
+      "population": 391810,
+      "languages": [
+        "Icelandic"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "europe"
     },
@@ -671,6 +1504,19 @@
       "iso3": "IND",
       "name": "India",
       "capital": "New Delhi",
+      "population": 1417492000,
+      "languages": [
+        "English",
+        "Hindi"
+      ],
+      "neighbors": [
+        "BGD",
+        "BTN",
+        "MMR",
+        "CHN",
+        "NPL",
+        "PAK"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -678,6 +1524,15 @@
       "iso3": "IDN",
       "name": "Indonesia",
       "capital": "Jakarta",
+      "population": 284438782,
+      "languages": [
+        "Indonesian"
+      ],
+      "neighbors": [
+        "TLS",
+        "MYS",
+        "PNG"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -685,6 +1540,19 @@
       "iso3": "IRN",
       "name": "Iran",
       "capital": "Tehran",
+      "population": 85961000,
+      "languages": [
+        "Persian (Farsi)"
+      ],
+      "neighbors": [
+        "AFG",
+        "ARM",
+        "AZE",
+        "IRQ",
+        "PAK",
+        "TUR",
+        "TKM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -692,6 +1560,19 @@
       "iso3": "IRQ",
       "name": "Iraq",
       "capital": "Baghdad",
+      "population": 46118793,
+      "languages": [
+        "Arabic",
+        "Aramaic"
+      ],
+      "neighbors": [
+        "IRN",
+        "JOR",
+        "KWT",
+        "SAU",
+        "SYR",
+        "TUR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -699,6 +1580,14 @@
       "iso3": "IRL",
       "name": "Ireland",
       "capital": "Dublin",
+      "population": 5458600,
+      "languages": [
+        "English",
+        "Irish"
+      ],
+      "neighbors": [
+        "GBR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -706,6 +1595,12 @@
       "iso3": "IMN",
       "name": "Isle of Man",
       "capital": "Douglas, Isle of Man",
+      "population": 84530,
+      "languages": [
+        "English",
+        "Manx"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "europe"
     },
@@ -713,6 +1608,18 @@
       "iso3": "ISR",
       "name": "Israel",
       "capital": "Jerusalem",
+      "population": 10119400,
+      "languages": [
+        "Arabic",
+        "Hebrew"
+      ],
+      "neighbors": [
+        "EGY",
+        "JOR",
+        "LBN",
+        "PSE",
+        "SYR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -720,6 +1627,18 @@
       "iso3": "ITA",
       "name": "Italy",
       "capital": "Rome",
+      "population": 58919230,
+      "languages": [
+        "Italian"
+      ],
+      "neighbors": [
+        "AUT",
+        "FRA",
+        "SMR",
+        "SVN",
+        "CHE",
+        "VAT"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -727,6 +1646,17 @@
       "iso3": "CIV",
       "name": "Ivory Coast",
       "capital": "Yamoussoukro",
+      "population": 29389150,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "BFA",
+        "GHA",
+        "GIN",
+        "LBR",
+        "MLI"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -734,6 +1664,12 @@
       "iso3": "JAM",
       "name": "Jamaica",
       "capital": "Kingston",
+      "population": 2825544,
+      "languages": [
+        "English",
+        "Jamaican Patois"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -741,6 +1677,11 @@
       "iso3": "JPN",
       "name": "Japan",
       "capital": "Tokyo",
+      "population": 123300000,
+      "languages": [
+        "Japanese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -748,6 +1689,12 @@
       "iso3": "JEY",
       "name": "Jersey",
       "capital": "Saint Helier",
+      "population": 103267,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "europe"
     },
@@ -755,6 +1702,17 @@
       "iso3": "JOR",
       "name": "Jordan",
       "capital": "Amman",
+      "population": 11734000,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "IRQ",
+        "ISR",
+        "PSE",
+        "SAU",
+        "SYR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -762,6 +1720,18 @@
       "iso3": "KAZ",
       "name": "Kazakhstan",
       "capital": "Astana",
+      "population": 20407844,
+      "languages": [
+        "Kazakh",
+        "Russian"
+      ],
+      "neighbors": [
+        "CHN",
+        "KGZ",
+        "RUS",
+        "TKM",
+        "UZB"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -769,6 +1739,18 @@
       "iso3": "KEN",
       "name": "Kenya",
       "capital": "Nairobi",
+      "population": 53330978,
+      "languages": [
+        "English",
+        "Swahili"
+      ],
+      "neighbors": [
+        "ETH",
+        "SOM",
+        "SSD",
+        "TZA",
+        "UGA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -776,6 +1758,12 @@
       "iso3": "KIR",
       "name": "Kiribati",
       "capital": "Tarawa",
+      "population": 120740,
+      "languages": [
+        "English",
+        "Gilbertese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -783,6 +1771,9 @@
       "iso3": "XKX",
       "name": "Kosovo",
       "capital": "Pristina",
+      "population": 1585566,
+      "languages": [],
+      "neighbors": [],
       "enabled": true,
       "region": "europe"
     },
@@ -790,6 +1781,14 @@
       "iso3": "KWT",
       "name": "Kuwait",
       "capital": "Kuwait City",
+      "population": 4881254,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "IRQ",
+        "SAU"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -797,6 +1796,17 @@
       "iso3": "KGZ",
       "name": "Kyrgyzstan",
       "capital": "Bishkek",
+      "population": 7281800,
+      "languages": [
+        "Kyrgyz",
+        "Russian"
+      ],
+      "neighbors": [
+        "CHN",
+        "KAZ",
+        "TJK",
+        "UZB"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -804,6 +1814,17 @@
       "iso3": "LAO",
       "name": "Laos",
       "capital": "Vientiane",
+      "population": 7647000,
+      "languages": [
+        "Lao"
+      ],
+      "neighbors": [
+        "MMR",
+        "KHM",
+        "CHN",
+        "THA",
+        "VNM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -811,6 +1832,16 @@
       "iso3": "LVA",
       "name": "Latvia",
       "capital": "Riga",
+      "population": 1830400,
+      "languages": [
+        "Latvian"
+      ],
+      "neighbors": [
+        "BLR",
+        "EST",
+        "LTU",
+        "RUS"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -818,6 +1849,15 @@
       "iso3": "LBN",
       "name": "Lebanon",
       "capital": "Beirut",
+      "population": 5490000,
+      "languages": [
+        "Arabic",
+        "French"
+      ],
+      "neighbors": [
+        "ISR",
+        "SYR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -825,6 +1865,14 @@
       "iso3": "LSO",
       "name": "Lesotho",
       "capital": "Maseru",
+      "population": 2116427,
+      "languages": [
+        "English",
+        "Sotho"
+      ],
+      "neighbors": [
+        "ZAF"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -832,6 +1880,15 @@
       "iso3": "LBR",
       "name": "Liberia",
       "capital": "Monrovia",
+      "population": 5248621,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "GIN",
+        "CIV",
+        "SLE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -839,6 +1896,18 @@
       "iso3": "LBY",
       "name": "Libya",
       "capital": "Tripolis",
+      "population": 7459000,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "DZA",
+        "TCD",
+        "EGY",
+        "NER",
+        "SDN",
+        "TUN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -846,6 +1915,14 @@
       "iso3": "LIE",
       "name": "Liechtenstein",
       "capital": "Vaduz",
+      "population": 40900,
+      "languages": [
+        "German"
+      ],
+      "neighbors": [
+        "AUT",
+        "CHE"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -853,6 +1930,16 @@
       "iso3": "LTU",
       "name": "Lithuania",
       "capital": "Vilnius",
+      "population": 2894548,
+      "languages": [
+        "Lithuanian"
+      ],
+      "neighbors": [
+        "BLR",
+        "LVA",
+        "POL",
+        "RUS"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -860,6 +1947,16 @@
       "iso3": "LUX",
       "name": "Luxembourg",
       "capital": "Luxembourg",
+      "population": 681973,
+      "languages": [
+        "German",
+        "French"
+      ],
+      "neighbors": [
+        "BEL",
+        "FRA",
+        "DEU"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -867,6 +1964,14 @@
       "iso3": "MAC",
       "name": "Macao S.A.R",
       "capital": "Macao",
+      "population": 685900,
+      "languages": [
+        "Portuguese",
+        "Chinese"
+      ],
+      "neighbors": [
+        "CHN"
+      ],
       "enabled": false,
       "region": "asia"
     },
@@ -874,6 +1979,12 @@
       "iso3": "MDG",
       "name": "Madagascar",
       "capital": "Antananarivo",
+      "population": 31727042,
+      "languages": [
+        "French",
+        "Malagasy"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -881,6 +1992,16 @@
       "iso3": "MWI",
       "name": "Malawi",
       "capital": "Lilongwe",
+      "population": 20734262,
+      "languages": [
+        "English",
+        "Chewa"
+      ],
+      "neighbors": [
+        "MOZ",
+        "TZA",
+        "ZMB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -888,6 +2009,16 @@
       "iso3": "MYS",
       "name": "Malaysia",
       "capital": "Kuala Lumpur",
+      "population": 34231700,
+      "languages": [
+        "English",
+        "Malay"
+      ],
+      "neighbors": [
+        "BRN",
+        "IDN",
+        "THA"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -895,6 +2026,11 @@
       "iso3": "MDV",
       "name": "Maldives",
       "capital": "Male",
+      "population": 515132,
+      "languages": [
+        "Maldivian"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -902,6 +2038,19 @@
       "iso3": "MLI",
       "name": "Mali",
       "capital": "Bamako",
+      "population": 22395489,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "DZA",
+        "BFA",
+        "GIN",
+        "CIV",
+        "MRT",
+        "NER",
+        "SEN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -909,6 +2058,12 @@
       "iso3": "MLT",
       "name": "Malta",
       "capital": "Valletta",
+      "population": 574250,
+      "languages": [
+        "English",
+        "Maltese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "europe"
     },
@@ -916,6 +2071,12 @@
       "iso3": "MHL",
       "name": "Marshall Islands",
       "capital": "Majuro",
+      "population": 42418,
+      "languages": [
+        "English",
+        "Marshallese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -923,6 +2084,16 @@
       "iso3": "MRT",
       "name": "Mauritania",
       "capital": "Nouakchott",
+      "population": 4927532,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "DZA",
+        "MLI",
+        "SEN",
+        "ESH"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -930,6 +2101,12 @@
       "iso3": "MUS",
       "name": "Mauritius",
       "capital": "Port Louis",
+      "population": 1243741,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -937,6 +2114,15 @@
       "iso3": "MEX",
       "name": "Mexico",
       "capital": "Ciudad de México",
+      "population": 130575786,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "BLZ",
+        "GTM",
+        "USA"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -944,6 +2130,14 @@
       "iso3": "MDA",
       "name": "Moldova",
       "capital": "Chisinau",
+      "population": 2381300,
+      "languages": [
+        "Moldavian"
+      ],
+      "neighbors": [
+        "ROU",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -951,6 +2145,13 @@
       "iso3": "MCO",
       "name": "Monaco",
       "capital": "Monaco",
+      "population": 38423,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "FRA"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -958,6 +2159,14 @@
       "iso3": "MNG",
       "name": "Mongolia",
       "capital": "Ulan Bator",
+      "population": 3544835,
+      "languages": [
+        "Mongolian"
+      ],
+      "neighbors": [
+        "CHN",
+        "RUS"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -965,6 +2174,17 @@
       "iso3": "MNE",
       "name": "Montenegro",
       "capital": "Podgorica",
+      "population": 623327,
+      "languages": [
+        "Montenegrin"
+      ],
+      "neighbors": [
+        "ALB",
+        "BIH",
+        "HRV",
+        "UNK",
+        "SRB"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -972,6 +2192,11 @@
       "iso3": "MSR",
       "name": "Montserrat",
       "capital": "Plymouth",
+      "population": 4386,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -979,6 +2204,16 @@
       "iso3": "MAR",
       "name": "Morocco",
       "capital": "Rabat",
+      "population": 36828330,
+      "languages": [
+        "Arabic",
+        "Berber"
+      ],
+      "neighbors": [
+        "DZA",
+        "ESH",
+        "ESP"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -986,6 +2221,18 @@
       "iso3": "MOZ",
       "name": "Mozambique",
       "capital": "Maputo",
+      "population": 34090466,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [
+        "MWI",
+        "ZAF",
+        "SWZ",
+        "TZA",
+        "ZMB",
+        "ZWE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -993,6 +2240,17 @@
       "iso3": "MMR",
       "name": "Myanmar",
       "capital": "Nay Pyi Taw",
+      "population": 51316756,
+      "languages": [
+        "Burmese"
+      ],
+      "neighbors": [
+        "BGD",
+        "CHN",
+        "IND",
+        "LAO",
+        "THA"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1000,6 +2258,17 @@
       "iso3": "NAM",
       "name": "Namibia",
       "capital": "Windhoek",
+      "population": 3022401,
+      "languages": [
+        "Afrikaans",
+        "German"
+      ],
+      "neighbors": [
+        "AGO",
+        "BWA",
+        "ZAF",
+        "ZMB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1007,6 +2276,12 @@
       "iso3": "NRU",
       "name": "Nauru",
       "capital": "Yaren",
+      "population": 11680,
+      "languages": [
+        "English",
+        "Nauru"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1014,6 +2289,14 @@
       "iso3": "NPL",
       "name": "Nepal",
       "capital": "Kathmandu",
+      "population": 29911840,
+      "languages": [
+        "Nepali"
+      ],
+      "neighbors": [
+        "CHN",
+        "IND"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1021,6 +2304,14 @@
       "iso3": "NLD",
       "name": "Netherlands",
       "capital": "Amsterdam",
+      "population": 18080943,
+      "languages": [
+        "Dutch"
+      ],
+      "neighbors": [
+        "BEL",
+        "DEU"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1028,6 +2319,11 @@
       "iso3": "NCL",
       "name": "New Caledonia",
       "capital": "Noumea",
+      "population": 264596,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -1035,6 +2331,12 @@
       "iso3": "NZL",
       "name": "New Zealand",
       "capital": "Wellington",
+      "population": 5324700,
+      "languages": [
+        "English",
+        "Māori"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1042,6 +2344,14 @@
       "iso3": "NIC",
       "name": "Nicaragua",
       "capital": "Managua",
+      "population": 6803886,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "CRI",
+        "HND"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1049,6 +2359,19 @@
       "iso3": "NER",
       "name": "Niger",
       "capital": "Niamey",
+      "population": 26312034,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "DZA",
+        "BEN",
+        "BFA",
+        "TCD",
+        "LBY",
+        "MLI",
+        "NGA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1056,6 +2379,16 @@
       "iso3": "NGA",
       "name": "Nigeria",
       "capital": "Abuja",
+      "population": 223800000,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "BEN",
+        "CMR",
+        "TCD",
+        "NER"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1063,6 +2396,12 @@
       "iso3": "NIU",
       "name": "Niue",
       "capital": "Alofi",
+      "population": 1681,
+      "languages": [
+        "English",
+        "Niuean"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1070,6 +2409,12 @@
       "iso3": "NFK",
       "name": "Norfolk Island",
       "capital": "Kingston",
+      "population": 2188,
+      "languages": [
+        "English",
+        "Norfuk"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -1077,6 +2422,15 @@
       "iso3": "PRK",
       "name": "North Korea",
       "capital": "Pyongyang",
+      "population": 25950000,
+      "languages": [
+        "Korean"
+      ],
+      "neighbors": [
+        "CHN",
+        "KOR",
+        "RUS"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1084,6 +2438,17 @@
       "iso3": "MKD",
       "name": "North Macedonia",
       "capital": "Skopje",
+      "population": 1826247,
+      "languages": [
+        "Macedonian"
+      ],
+      "neighbors": [
+        "ALB",
+        "BGR",
+        "GRC",
+        "UNK",
+        "SRB"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1091,6 +2456,12 @@
       "iso3": "MNP",
       "name": "Northern Mariana Islands",
       "capital": "Saipan",
+      "population": 47329,
+      "languages": [
+        "Carolinian",
+        "Chamorro"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -1098,6 +2469,16 @@
       "iso3": "NOR",
       "name": "Norway",
       "capital": "Oslo",
+      "population": 5606944,
+      "languages": [
+        "Norwegian Nynorsk",
+        "Norwegian Bokmål"
+      ],
+      "neighbors": [
+        "FIN",
+        "SWE",
+        "RUS"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1105,6 +2486,15 @@
       "iso3": "OMN",
       "name": "Oman",
       "capital": "Muscat",
+      "population": 5306976,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "SAU",
+        "ARE",
+        "YEM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1112,6 +2502,17 @@
       "iso3": "PAK",
       "name": "Pakistan",
       "capital": "Islamabad",
+      "population": 241499431,
+      "languages": [
+        "English",
+        "Urdu"
+      ],
+      "neighbors": [
+        "AFG",
+        "CHN",
+        "IND",
+        "IRN"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1119,6 +2520,12 @@
       "iso3": "PLW",
       "name": "Palau",
       "capital": "Melekeok",
+      "population": 16733,
+      "languages": [
+        "English",
+        "Palauan"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1126,6 +2533,15 @@
       "iso3": "PSE",
       "name": "Palestine",
       "capital": "East Jerusalem",
+      "population": 5483450,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "ISR",
+        "EGY",
+        "JOR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1133,6 +2549,14 @@
       "iso3": "PAN",
       "name": "Panama",
       "capital": "Panama City",
+      "population": 4064780,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "COL",
+        "CRI"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1140,6 +2564,14 @@
       "iso3": "PNG",
       "name": "Papua New Guinea",
       "capital": "Port Moresby",
+      "population": 11781559,
+      "languages": [
+        "English",
+        "Hiri Motu"
+      ],
+      "neighbors": [
+        "IDN"
+      ],
       "enabled": true,
       "region": "oceania"
     },
@@ -1147,6 +2579,16 @@
       "iso3": "PRY",
       "name": "Paraguay",
       "capital": "Asunción",
+      "population": 6109644,
+      "languages": [
+        "Guaraní",
+        "Spanish"
+      ],
+      "neighbors": [
+        "ARG",
+        "BOL",
+        "BRA"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -1154,6 +2596,18 @@
       "iso3": "PER",
       "name": "Peru",
       "capital": "Lima",
+      "population": 34350244,
+      "languages": [
+        "Aymara",
+        "Quechua"
+      ],
+      "neighbors": [
+        "BOL",
+        "BRA",
+        "CHL",
+        "COL",
+        "ECU"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -1161,6 +2615,12 @@
       "iso3": "PHL",
       "name": "Philippines",
       "capital": "Manila",
+      "population": 114123600,
+      "languages": [
+        "English",
+        "Filipino"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -1168,6 +2628,11 @@
       "iso3": "PCN",
       "name": "Pitcairn Islands",
       "capital": "Adamstown",
+      "population": 35,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -1175,6 +2640,19 @@
       "iso3": "POL",
       "name": "Poland",
       "capital": "Warsaw",
+      "population": 37401000,
+      "languages": [
+        "Polish"
+      ],
+      "neighbors": [
+        "BLR",
+        "CZE",
+        "DEU",
+        "LTU",
+        "RUS",
+        "SVK",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1182,6 +2660,13 @@
       "iso3": "PRT",
       "name": "Portugal",
       "capital": "Lisbon",
+      "population": 10749635,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [
+        "ESP"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1189,6 +2674,12 @@
       "iso3": "PRI",
       "name": "Puerto Rico",
       "capital": "San Juan",
+      "population": 3203295,
+      "languages": [
+        "English",
+        "Spanish"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1196,6 +2687,13 @@
       "iso3": "QAT",
       "name": "Qatar",
       "capital": "Doha",
+      "population": 3173024,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "SAU"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1203,6 +2701,20 @@
       "iso3": "SRB",
       "name": "Republic of Serbia",
       "capital": "Belgrade",
+      "population": 6567783,
+      "languages": [
+        "Serbian"
+      ],
+      "neighbors": [
+        "BIH",
+        "BGR",
+        "HRV",
+        "HUN",
+        "UNK",
+        "MKD",
+        "MNE",
+        "ROU"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1210,6 +2722,18 @@
       "iso3": "COG",
       "name": "Republic of the Congo",
       "capital": "Brazzaville",
+      "population": 6142180,
+      "languages": [
+        "French",
+        "Kikongo"
+      ],
+      "neighbors": [
+        "AGO",
+        "CMR",
+        "CAF",
+        "COD",
+        "GAB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1217,6 +2741,17 @@
       "iso3": "ROU",
       "name": "Romania",
       "capital": "Bucharest",
+      "population": 19036031,
+      "languages": [
+        "Romanian"
+      ],
+      "neighbors": [
+        "BGR",
+        "HUN",
+        "MDA",
+        "SRB",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1224,6 +2759,26 @@
       "iso3": "RUS",
       "name": "Russia",
       "capital": "Moscow",
+      "population": 146028325,
+      "languages": [
+        "Russian"
+      ],
+      "neighbors": [
+        "AZE",
+        "BLR",
+        "CHN",
+        "EST",
+        "FIN",
+        "GEO",
+        "KAZ",
+        "PRK",
+        "LVA",
+        "LTU",
+        "MNG",
+        "NOR",
+        "POL",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1231,6 +2786,17 @@
       "iso3": "RWA",
       "name": "Rwanda",
       "capital": "Kigali",
+      "population": 14104969,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [
+        "BDI",
+        "COD",
+        "TZA",
+        "UGA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1238,6 +2804,11 @@
       "iso3": "BLM",
       "name": "Saint Barthelemy",
       "capital": "Gustavia",
+      "population": 10562,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1245,6 +2816,11 @@
       "iso3": "SHN",
       "name": "Saint Helena",
       "capital": "Jamestown",
+      "population": 5651,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "africa"
     },
@@ -1252,6 +2828,13 @@
       "iso3": "MAF",
       "name": "Saint Martin",
       "capital": "Marigot",
+      "population": 31496,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "SXM"
+      ],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1259,6 +2842,11 @@
       "iso3": "SPM",
       "name": "Saint Pierre and Miquelon",
       "capital": "Saint-Pierre",
+      "population": 5819,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1266,6 +2854,12 @@
       "iso3": "WSM",
       "name": "Samoa",
       "capital": "Apia",
+      "population": 205557,
+      "languages": [
+        "English",
+        "Samoan"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1273,6 +2867,13 @@
       "iso3": "SMR",
       "name": "San Marino",
       "capital": "San Marino",
+      "population": 34132,
+      "languages": [
+        "Italian"
+      ],
+      "neighbors": [
+        "ITA"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1280,6 +2881,11 @@
       "iso3": "STP",
       "name": "São Tomé and Principe",
       "capital": "Sao Tome",
+      "population": 209607,
+      "languages": [
+        "Portuguese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -1287,6 +2893,19 @@
       "iso3": "SAU",
       "name": "Saudi Arabia",
       "capital": "Riyadh",
+      "population": 35300280,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "IRQ",
+        "JOR",
+        "KWT",
+        "OMN",
+        "QAT",
+        "ARE",
+        "YEM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1294,6 +2913,17 @@
       "iso3": "SEN",
       "name": "Senegal",
       "capital": "Dakar",
+      "population": 18593258,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "GMB",
+        "GIN",
+        "GNB",
+        "MLI",
+        "MRT"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1301,6 +2931,12 @@
       "iso3": "SYC",
       "name": "Seychelles",
       "capital": "Victoria",
+      "population": 122729,
+      "languages": [
+        "Seychellois Creole",
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "africa"
     },
@@ -1308,6 +2944,14 @@
       "iso3": "SLE",
       "name": "Sierra Leone",
       "capital": "Freetown",
+      "population": 9077691,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "GIN",
+        "LBR"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1315,6 +2959,12 @@
       "iso3": "SGP",
       "name": "Singapore",
       "capital": "Singapur",
+      "population": 6036900,
+      "languages": [
+        "English",
+        "Malay"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -1322,6 +2972,14 @@
       "iso3": "SXM",
       "name": "Sint Maarten",
       "capital": "Philipsburg",
+      "population": 41349,
+      "languages": [
+        "English",
+        "French"
+      ],
+      "neighbors": [
+        "MAF"
+      ],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1329,6 +2987,17 @@
       "iso3": "SVK",
       "name": "Slovakia",
       "capital": "Bratislava",
+      "population": 5413813,
+      "languages": [
+        "Slovak"
+      ],
+      "neighbors": [
+        "AUT",
+        "CZE",
+        "HUN",
+        "POL",
+        "UKR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1336,6 +3005,16 @@
       "iso3": "SVN",
       "name": "Slovenia",
       "capital": "Ljubljana",
+      "population": 2130638,
+      "languages": [
+        "Slovene"
+      ],
+      "neighbors": [
+        "AUT",
+        "HRV",
+        "ITA",
+        "HUN"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1343,6 +3022,11 @@
       "iso3": "SLB",
       "name": "Solomon Islands",
       "capital": "Honiara",
+      "population": 750325,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1350,6 +3034,16 @@
       "iso3": "SOM",
       "name": "Somalia",
       "capital": "Mogadishu",
+      "population": 19655000,
+      "languages": [
+        "Arabic",
+        "Somali"
+      ],
+      "neighbors": [
+        "DJI",
+        "ETH",
+        "KEN"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1357,6 +3051,19 @@
       "iso3": "ZAF",
       "name": "South Africa",
       "capital": "Pretoria",
+      "population": 63100945,
+      "languages": [
+        "Afrikaans",
+        "English"
+      ],
+      "neighbors": [
+        "BWA",
+        "LSO",
+        "MOZ",
+        "NAM",
+        "SWZ",
+        "ZWE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1364,6 +3071,11 @@
       "iso3": "SGS",
       "name": "South Georgia and the Islands",
       "capital": "Grytviken",
+      "population": null,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "southAmerica"
     },
@@ -1371,6 +3083,13 @@
       "iso3": "KOR",
       "name": "South Korea",
       "capital": "Seoul",
+      "population": 51159889,
+      "languages": [
+        "Korean"
+      ],
+      "neighbors": [
+        "PRK"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1378,6 +3097,18 @@
       "iso3": "SSD",
       "name": "South Sudan",
       "capital": "Juba",
+      "population": 15786898,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "CAF",
+        "COD",
+        "ETH",
+        "KEN",
+        "SDN",
+        "UGA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1385,6 +3116,17 @@
       "iso3": "ESP",
       "name": "Spain",
       "capital": "Madrid",
+      "population": 49315949,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "AND",
+        "FRA",
+        "GIB",
+        "PRT",
+        "MAR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1392,6 +3134,14 @@
       "iso3": "LKA",
       "name": "Sri Lanka",
       "capital": "Colombo",
+      "population": 21763170,
+      "languages": [
+        "Sinhala",
+        "Tamil"
+      ],
+      "neighbors": [
+        "IND"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1399,6 +3149,11 @@
       "iso3": "KNA",
       "name": "St. Kitts and Nevis",
       "capital": "Basseterre",
+      "population": 51320,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1406,6 +3161,11 @@
       "iso3": "LCA",
       "name": "St. Lucia",
       "capital": "Castries",
+      "population": 184100,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1413,6 +3173,11 @@
       "iso3": "VCT",
       "name": "St. Vincent and the Grenadines",
       "capital": "Kingstown",
+      "population": 110872,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1420,6 +3185,20 @@
       "iso3": "SDN",
       "name": "Sudan",
       "capital": "Khartoum",
+      "population": 51662000,
+      "languages": [
+        "Arabic",
+        "English"
+      ],
+      "neighbors": [
+        "CAF",
+        "TCD",
+        "EGY",
+        "ERI",
+        "ETH",
+        "LBY",
+        "SSD"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1427,6 +3206,15 @@
       "iso3": "SUR",
       "name": "Suriname",
       "capital": "Paramaribo",
+      "population": 616500,
+      "languages": [
+        "Dutch"
+      ],
+      "neighbors": [
+        "BRA",
+        "GUF",
+        "GUY"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -1434,6 +3222,14 @@
       "iso3": "SWE",
       "name": "Sweden",
       "capital": "Stockholm",
+      "population": 10596652,
+      "languages": [
+        "Swedish"
+      ],
+      "neighbors": [
+        "FIN",
+        "NOR"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1441,6 +3237,18 @@
       "iso3": "CHE",
       "name": "Switzerland",
       "capital": "Bern",
+      "population": 9082848,
+      "languages": [
+        "French",
+        "Swiss German"
+      ],
+      "neighbors": [
+        "AUT",
+        "FRA",
+        "ITA",
+        "LIE",
+        "DEU"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1448,6 +3256,17 @@
       "iso3": "SYR",
       "name": "Syria",
       "capital": "Damascus",
+      "population": 25620000,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "IRQ",
+        "ISR",
+        "JOR",
+        "LBN",
+        "TUR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1455,6 +3274,11 @@
       "iso3": "TWN",
       "name": "Taiwan",
       "capital": "Taipei",
+      "population": 23337936,
+      "languages": [
+        "Chinese"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "asia"
     },
@@ -1462,6 +3286,17 @@
       "iso3": "TJK",
       "name": "Tajikistan",
       "capital": "Dushanbe",
+      "population": 10499000,
+      "languages": [
+        "Russian",
+        "Tajik"
+      ],
+      "neighbors": [
+        "AFG",
+        "CHN",
+        "KGZ",
+        "UZB"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1469,6 +3304,16 @@
       "iso3": "THA",
       "name": "Thailand",
       "capital": "Bangkok",
+      "population": 65859640,
+      "languages": [
+        "Thai"
+      ],
+      "neighbors": [
+        "MMR",
+        "KHM",
+        "LAO",
+        "MYS"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1476,6 +3321,11 @@
       "iso3": "BHS",
       "name": "The Bahamas",
       "capital": "Nassau",
+      "population": 398165,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1483,6 +3333,15 @@
       "iso3": "TGO",
       "name": "Togo",
       "capital": "Lome",
+      "population": 8095498,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [
+        "BEN",
+        "BFA",
+        "GHA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1490,6 +3349,12 @@
       "iso3": "TON",
       "name": "Tonga",
       "capital": "Nuku'alofa",
+      "population": 100179,
+      "languages": [
+        "English",
+        "Tongan"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1497,6 +3362,11 @@
       "iso3": "TTO",
       "name": "Trinidad and Tobago",
       "capital": "Port of Spain",
+      "population": 1368333,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1504,6 +3374,14 @@
       "iso3": "TUN",
       "name": "Tunisia",
       "capital": "Tunis",
+      "population": 11972169,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "DZA",
+        "LBY"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1511,6 +3389,20 @@
       "iso3": "TUR",
       "name": "Turkey",
       "capital": "Ankara",
+      "population": 85664944,
+      "languages": [
+        "Turkish"
+      ],
+      "neighbors": [
+        "ARM",
+        "AZE",
+        "BGR",
+        "GEO",
+        "GRC",
+        "IRN",
+        "IRQ",
+        "SYR"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1518,6 +3410,17 @@
       "iso3": "TKM",
       "name": "Turkmenistan",
       "capital": "Ashgabat",
+      "population": 7057841,
+      "languages": [
+        "Russian",
+        "Turkmen"
+      ],
+      "neighbors": [
+        "AFG",
+        "IRN",
+        "KAZ",
+        "UZB"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1525,6 +3428,11 @@
       "iso3": "TCA",
       "name": "Turks and Caicos Islands",
       "capital": "Cockburn Town",
+      "population": 50894,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1532,6 +3440,12 @@
       "iso3": "TUV",
       "name": "Tuvalu",
       "capital": "Funafuti",
+      "population": 10643,
+      "languages": [
+        "English",
+        "Tuvaluan"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1539,6 +3453,18 @@
       "iso3": "UGA",
       "name": "Uganda",
       "capital": "Kampala",
+      "population": 45905417,
+      "languages": [
+        "English",
+        "Swahili"
+      ],
+      "neighbors": [
+        "COD",
+        "KEN",
+        "RWA",
+        "SSD",
+        "TZA"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1546,6 +3472,19 @@
       "iso3": "UKR",
       "name": "Ukraine",
       "capital": "Kyiv",
+      "population": 32862000,
+      "languages": [
+        "Ukrainian"
+      ],
+      "neighbors": [
+        "BLR",
+        "HUN",
+        "MDA",
+        "POL",
+        "ROU",
+        "RUS",
+        "SVK"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1553,6 +3492,14 @@
       "iso3": "ARE",
       "name": "United Arab Emirates",
       "capital": "Abu Dhabi",
+      "population": 10678556,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "OMN",
+        "SAU"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1560,6 +3507,13 @@
       "iso3": "GBR",
       "name": "United Kingdom",
       "capital": "London",
+      "population": 68265209,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "IRL"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1567,6 +3521,21 @@
       "iso3": "TZA",
       "name": "United Republic of Tanzania",
       "capital": "Dodoma",
+      "population": 68153004,
+      "languages": [
+        "English",
+        "Swahili"
+      ],
+      "neighbors": [
+        "BDI",
+        "COD",
+        "KEN",
+        "MWI",
+        "MOZ",
+        "RWA",
+        "UGA",
+        "ZMB"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1574,6 +3543,14 @@
       "iso3": "USA",
       "name": "United States",
       "capital": "Washington",
+      "population": 340110988,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "CAN",
+        "MEX"
+      ],
       "enabled": true,
       "region": "northAmerica"
     },
@@ -1581,6 +3558,11 @@
       "iso3": "UMI",
       "name": "United States Minor Outlying Islands",
       "capital": "",
+      "population": null,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1588,6 +3570,11 @@
       "iso3": "VIR",
       "name": "United States Virgin Islands",
       "capital": "Charlotte Amalie",
+      "population": 87146,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
     },
@@ -1595,6 +3582,14 @@
       "iso3": "URY",
       "name": "Uruguay",
       "capital": "Montevideo",
+      "population": 3499451,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "ARG",
+        "BRA"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -1602,6 +3597,18 @@
       "iso3": "UZB",
       "name": "Uzbekistan",
       "capital": "Tashkent",
+      "population": 37859698,
+      "languages": [
+        "Russian",
+        "Uzbek"
+      ],
+      "neighbors": [
+        "AFG",
+        "KAZ",
+        "KGZ",
+        "TJK",
+        "TKM"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1609,6 +3616,12 @@
       "iso3": "VUT",
       "name": "Vanuatu",
       "capital": "Port Vila",
+      "population": 321409,
+      "languages": [
+        "Bislama",
+        "English"
+      ],
+      "neighbors": [],
       "enabled": true,
       "region": "oceania"
     },
@@ -1616,6 +3629,14 @@
       "iso3": "VAT",
       "name": "Vatican",
       "capital": "Vatican City",
+      "population": 882,
+      "languages": [
+        "Italian",
+        "Latin"
+      ],
+      "neighbors": [
+        "ITA"
+      ],
       "enabled": true,
       "region": "europe"
     },
@@ -1623,6 +3644,15 @@
       "iso3": "VEN",
       "name": "Venezuela",
       "capital": "Caracas",
+      "population": 28517000,
+      "languages": [
+        "Spanish"
+      ],
+      "neighbors": [
+        "BRA",
+        "COL",
+        "GUY"
+      ],
       "enabled": true,
       "region": "southAmerica"
     },
@@ -1630,6 +3660,15 @@
       "iso3": "VNM",
       "name": "Vietnam",
       "capital": "Hanoi",
+      "population": 101343800,
+      "languages": [
+        "Vietnamese"
+      ],
+      "neighbors": [
+        "KHM",
+        "CHN",
+        "LAO"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1637,6 +3676,11 @@
       "iso3": "WLF",
       "name": "Wallis and Futuna",
       "capital": "Mata Utu",
+      "population": 11620,
+      "languages": [
+        "French"
+      ],
+      "neighbors": [],
       "enabled": false,
       "region": "oceania"
     },
@@ -1644,6 +3688,16 @@
       "iso3": "ESH",
       "name": "Western Sahara",
       "capital": "El-Aaiun",
+      "population": 600904,
+      "languages": [
+        "Berber",
+        "Hassaniya"
+      ],
+      "neighbors": [
+        "DZA",
+        "MRT",
+        "MAR"
+      ],
       "enabled": false,
       "region": "africa"
     },
@@ -1651,6 +3705,14 @@
       "iso3": "YEM",
       "name": "Yemen",
       "capital": "Sanaa",
+      "population": 32684503,
+      "languages": [
+        "Arabic"
+      ],
+      "neighbors": [
+        "OMN",
+        "SAU"
+      ],
       "enabled": true,
       "region": "asia"
     },
@@ -1658,6 +3720,20 @@
       "iso3": "ZMB",
       "name": "Zambia",
       "capital": "Lusaka",
+      "population": 19693423,
+      "languages": [
+        "English"
+      ],
+      "neighbors": [
+        "AGO",
+        "BWA",
+        "COD",
+        "MWI",
+        "MOZ",
+        "NAM",
+        "TZA",
+        "ZWE"
+      ],
       "enabled": true,
       "region": "africa"
     },
@@ -1665,6 +3741,17 @@
       "iso3": "ZWE",
       "name": "Zimbabwe",
       "capital": "Harare",
+      "population": 17073087,
+      "languages": [
+        "Chibarwe",
+        "English"
+      ],
+      "neighbors": [
+        "BWA",
+        "MOZ",
+        "ZAF",
+        "ZMB"
+      ],
       "enabled": true,
       "region": "africa"
     }

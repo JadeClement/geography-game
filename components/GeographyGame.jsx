@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import CountryReferencePanel from "@/components/CountryReferencePanel";
+import CountryHintsPanel from "@/components/CountryHintsPanel";
+import FlagPrompt from "@/components/FlagPrompt";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
@@ -26,6 +29,7 @@ import { getBoundsFromCountries, buildSmallCountriesGeoJSON } from "@/lib/geomet
 import { GAME_TYPES } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS } from "@/lib/mastery";
 import { buildLearningQueue } from "@/lib/learning";
+import { getReferencePanelDefaultOpen } from "@/lib/referencePanelPrefs";
 import {
   COUNTRY_FLASH_MS,
   GAME_LEVELS,
@@ -39,6 +43,7 @@ import {
 } from "@/lib/levels";
 import {
   GAME_MODES,
+  getModeLabel,
   REGIONS,
   buildGameGeojson,
   buildInactiveGeojson,
@@ -85,6 +90,9 @@ export default function GeographyGame() {
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [finalElapsedMs, setFinalElapsedMs] = useState(0);
+  const [flagsClickHeader, setFlagsClickHeader] = useState(null);
+  const [referencePanelOpen, setReferencePanelOpen] = useState(false);
+  const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
 
   const countryQueueRef = useRef([]);
   const queueIndexRef = useRef(0);
@@ -185,20 +193,64 @@ export default function GeographyGame() {
 
   const regionLabel =
     REGIONS.find((region) => region.id === session?.region)?.label ?? "";
-  const modeLabel = session?.mode === GAME_MODES.CAPITALS ? "Capitals" : "Countries";
+  const modeLabel = getModeLabel(session?.mode);
+  const isFlagsMode = session?.mode === GAME_MODES.FLAGS;
   const levelLabel = session?.level ? getLevelLabel(session.level) : "";
   const isTestGame = session?.gameType !== GAME_TYPES.LEARNING;
   const isLearningGame = session?.gameType === GAME_TYPES.LEARNING;
+
+  useEffect(() => {
+    if (!gameActive || gameComplete || !targetCountry) return;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (hintsPanelOpen) {
+          setHintsPanelOpen(false);
+          return;
+        }
+        if (referencePanelOpen) {
+          setReferencePanelOpen(false);
+        }
+        return;
+      }
+
+      const isReferenceShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        (event.key === "i" || event.key === "I");
+
+      if (isReferenceShortcut) {
+        event.preventDefault();
+        setReferencePanelOpen((open) => !open);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    gameActive,
+    gameComplete,
+    hintsPanelOpen,
+    referencePanelOpen,
+    targetCountry,
+  ]);
 
   const preCreditedCount = session?.preCreditedCount ?? 0;
   const displayedCorrect = rightCount + preCreditedCount;
   const totalRounds = session?.totalRounds ?? activeCountries.length;
 
+  const isFindFlagsGame =
+    isFlagsMode && session?.level != null && isFindLevel(session.level);
   const isNameGame = session?.level ? isNameLevel(session.level) : false;
   const isFlashLevel = session?.level ? usesColorFlash(session.level) : false;
 
   const highlightTargetCountryId =
-    session?.level === GAME_LEVELS.NAME_FILL && targetCountry && !revealMode && !gameComplete
+    session?.level === GAME_LEVELS.NAME_FILL &&
+    !isFlagsMode &&
+    targetCountry &&
+    !revealMode &&
+    !gameComplete
       ? targetCountry.id
       : null;
 
@@ -325,16 +377,13 @@ export default function GeographyGame() {
     [clearColorFlash]
   );
 
-  const updateShowColorForRound = useCallback(
-    (target, level) => {
-      if (level === GAME_LEVELS.NAME_FLASH && target) {
-        setShowColorCountryIds([target.id]);
-        return;
-      }
-      setShowColorCountryIds([]);
-    },
-    []
-  );
+  const updateShowColorForRound = useCallback((target, level, mode) => {
+    if (level === GAME_LEVELS.NAME_FLASH && target && mode !== GAME_MODES.FLAGS) {
+      setShowColorCountryIds([target.id]);
+      return;
+    }
+    setShowColorCountryIds([]);
+  }, []);
 
   const startRound = useCallback(() => {
     clearColorFlash();
@@ -354,6 +403,7 @@ export default function GeographyGame() {
     setFlashWrongCountryIds([]);
     setAnswerInput("");
     setSpellingSuggestion(null);
+    setFlagsClickHeader(null);
 
     const next = countryQueueRef.current[queueIndexRef.current] ?? null;
     queueIndexRef.current += 1;
@@ -362,7 +412,7 @@ export default function GeographyGame() {
     setFeedback({ text: "", type: "" });
 
     if (session?.level) {
-      updateShowColorForRound(next, session.level);
+      updateShowColorForRound(next, session.level, session.mode);
     } else {
       setShowColorCountryIds([]);
     }
@@ -370,7 +420,7 @@ export default function GeographyGame() {
     if (isNameLevel(session?.level ?? 0)) {
       requestAnimationFrame(() => answerInputRef.current?.focus());
     }
-  }, [clearColorFlash, clearWrongFlash, session?.level, updateShowColorForRound]);
+  }, [clearColorFlash, clearWrongFlash, session?.level, session?.mode, updateShowColorForRound]);
 
   const scheduleNextRound = useCallback(
     (delay = CORRECT_ROUND_DELAY_MS) => {
@@ -479,7 +529,8 @@ export default function GeographyGame() {
       roundStartTimeRef.current = Date.now();
       setAnswerInput("");
       setSpellingSuggestion(null);
-      updateShowColorForRound(first, level);
+      setReferencePanelOpen(getReferencePanelDefaultOpen());
+      updateShowColorForRound(first, level, mode);
 
       if (isNameLevel(level)) {
         requestAnimationFrame(() => answerInputRef.current?.focus());
@@ -714,7 +765,7 @@ export default function GeographyGame() {
 
       if (finishRound()) return;
 
-      if (isFlashLevel) {
+      if (isFlashLevel && !(isFlagsMode && isNameGame)) {
         clearColorFlash();
         clearWrongFlash();
         setShowColorCountryIds([target.id]);
@@ -729,6 +780,8 @@ export default function GeographyGame() {
       clearWrongFlash,
       finishRound,
       isFlashLevel,
+      isFlagsMode,
+      isNameGame,
       markRoundCorrect,
       scheduleNextRound,
       session?.level,
@@ -755,7 +808,9 @@ export default function GeographyGame() {
           setHighlightCountryId(target.id);
           setShowColorCountryIds([]);
         } else if (session?.level === GAME_LEVELS.NAME_FLASH) {
-          setShowColorCountryIds([target.id]);
+          if (session?.mode !== GAME_MODES.FLAGS) {
+            setShowColorCountryIds([target.id]);
+          }
           setHighlightCountryId(null);
         } else if (session?.level === GAME_LEVELS.NAME_FILL) {
           setWrongCountryIds((current) =>
@@ -778,7 +833,7 @@ export default function GeographyGame() {
         });
       };
 
-      if (session?.level === GAME_LEVELS.NAME_FLASH) {
+      if (session?.level === GAME_LEVELS.NAME_FLASH && session?.mode !== GAME_MODES.FLAGS) {
         triggerColorFlash(target.id, showReveal);
         return;
       }
@@ -795,6 +850,13 @@ export default function GeographyGame() {
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
+
+      if (isFindFlagsGame) {
+        setFlagsClickHeader({
+          name: clicked.name,
+          tone: isCorrectCountry(clicked, target) ? "correct" : "wrong",
+        });
+      }
 
       if (isCorrectCountry(clicked, target)) {
         if (revealModeRef.current) {
@@ -851,6 +913,7 @@ export default function GeographyGame() {
       markRoundIncorrect,
       scheduleNextRound,
       session?.level,
+      isFindFlagsGame,
       triggerWrongFlash,
     ]
   );
@@ -880,6 +943,7 @@ export default function GeographyGame() {
     }
 
     const suggestion = getSpellingSuggestion(answerInput, target, session.mode);
+    setAnswerInput("");
     setSpellingSuggestion(suggestion);
 
     wrongAttemptsRef.current += 1;
@@ -932,7 +996,12 @@ export default function GeographyGame() {
       ? loadError
       : session?.mode === GAME_MODES.CAPITALS
         ? targetCountry?.capital
-        : targetCountry?.name;
+        : session?.mode === GAME_MODES.FLAGS
+          ? null
+          : targetCountry?.name;
+
+  const showFlagPrompt =
+    isFlagsMode && targetCountry?.iso2 && !gameComplete && (isNameGame || isFindLevel(session?.level ?? 0));
 
   return (
     <div className="game">
@@ -1013,7 +1082,19 @@ export default function GeographyGame() {
                       </p>
                     )}
                   </div>
-                ) : (
+                ) : isFindFlagsGame ? (
+                  flagsClickHeader ? (
+                    <span
+                      className={
+                        flagsClickHeader.tone === "correct"
+                          ? "prompt-correct"
+                          : "prompt-wrong"
+                      }
+                    >
+                      {flagsClickHeader.name}
+                    </span>
+                  ) : null
+                ) : isFlagsMode ? null : (
                   promptText
                 )}
               </div>
@@ -1051,6 +1132,29 @@ export default function GeographyGame() {
                 fitBounds={mapBounds}
                 onCountryClick={handleCountryClick}
               />
+              {showFlagPrompt && (
+                <div className="flag-card" aria-hidden="true">
+                  <FlagPrompt iso2={targetCountry.iso2} size="card" />
+                </div>
+              )}
+              {targetCountry && (
+                <div className="map-side-panels">
+                  <CountryReferencePanel
+                    country={targetCountry}
+                    mode={session.mode}
+                    level={session.level}
+                    revealMode={revealMode}
+                    open={referencePanelOpen}
+                    onToggle={() => setReferencePanelOpen((isOpen) => !isOpen)}
+                  />
+                  <CountryHintsPanel
+                    country={targetCountry}
+                    allCountries={allCountries}
+                    open={hintsPanelOpen}
+                    onToggle={() => setHintsPanelOpen((isOpen) => !isOpen)}
+                  />
+                </div>
+              )}
               <MapFeedback text={feedback.text} type={feedback.type} />
             </div>
           )}

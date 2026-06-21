@@ -8,7 +8,7 @@ import AuthModal from "@/components/AuthModal";
 import { fetchMasteryStats } from "@/lib/countryStats";
 import { getLevelShortLabel } from "@/lib/levels";
 import { getMasteryProvingLevels } from "@/lib/levels";
-import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion } from "@/lib/regions";
+import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion, getModeLabel } from "@/lib/regions";
 import { fetchScores, LEVELS } from "@/lib/scores";
 
 function ScoreTable({ title, mode, scoreMap }) {
@@ -110,7 +110,7 @@ export default function ResultsPage() {
   const { status } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [scores, setScores] = useState([]);
-  const [mastery, setMastery] = useState({ countries: [], capitals: [] });
+  const [mastery, setMastery] = useState({ countries: [], capitals: [], flags: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -119,7 +119,7 @@ export default function ResultsPage() {
   useEffect(() => {
     if (!signedIn) {
       setScores([]);
-      setMastery({ countries: [], capitals: [] });
+      setMastery({ countries: [], capitals: [], flags: [] });
       setLoading(false);
       setError(null);
       return;
@@ -133,13 +133,15 @@ export default function ResultsPage() {
       fetchScores(),
       fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }),
       fetchMasteryStats({ mode: GAME_MODES.CAPITALS }),
+      fetchMasteryStats({ mode: GAME_MODES.FLAGS }),
     ])
-      .then(([scoreData, countriesMastery, capitalsMastery]) => {
+      .then(([scoreData, countriesMastery, capitalsMastery, flagsMastery]) => {
         if (cancelled) return;
         setScores(scoreData);
         setMastery({
           countries: countriesMastery.mastery ?? [],
           capitals: capitalsMastery.mastery ?? [],
+          flags: flagsMastery.mastery ?? [],
         });
         setLoading(false);
       })
@@ -174,6 +176,7 @@ export default function ResultsPage() {
     return {
       countries: build(mastery.countries),
       capitals: build(mastery.capitals),
+      flags: build(mastery.flags),
     };
   }, [mastery]);
 
@@ -222,13 +225,18 @@ export default function ResultsPage() {
           <div className="results-tables">
             <h2 className="results-group-title">Best scores</h2>
             <ScoreTable
-              title="Countries"
+              title={getModeLabel(GAME_MODES.COUNTRIES)}
               mode={GAME_MODES.COUNTRIES}
               scoreMap={scoreMap}
             />
             <ScoreTable
-              title="Capitals"
+              title={getModeLabel(GAME_MODES.CAPITALS)}
               mode={GAME_MODES.CAPITALS}
+              scoreMap={scoreMap}
+            />
+            <ScoreTable
+              title={getModeLabel(GAME_MODES.FLAGS)}
+              mode={GAME_MODES.FLAGS}
               scoreMap={scoreMap}
             />
 
@@ -237,8 +245,9 @@ export default function ResultsPage() {
               Average mastery across each region. World combines every region, and
               mastering a harder level counts toward its easier counterpart.
             </p>
-            <MasteryTable title="Countries" lookup={masteryLookups.countries} />
-            <MasteryTable title="Capitals" lookup={masteryLookups.capitals} />
+            <MasteryTable title={getModeLabel(GAME_MODES.COUNTRIES)} lookup={masteryLookups.countries} />
+            <MasteryTable title={getModeLabel(GAME_MODES.CAPITALS)} lookup={masteryLookups.capitals} />
+            <MasteryTable title={getModeLabel(GAME_MODES.FLAGS)} lookup={masteryLookups.flags} />
           </div>
         )}
       </main>

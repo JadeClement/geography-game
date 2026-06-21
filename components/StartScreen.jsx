@@ -1,13 +1,13 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
 import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
-import { GAME_MODES, REGIONS } from "@/lib/regions";
+import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
 
 export default function StartScreen({ onStart, disabled }) {
   const { data: session, status } = useSession();
@@ -23,9 +23,23 @@ export default function StartScreen({ onStart, disabled }) {
   const [weakError, setWeakError] = useState(null);
   const [starting, setStarting] = useState(false);
   const [weakReloadKey, setWeakReloadKey] = useState(0);
+  const pendingSetupAdvanceRef = useRef(false);
 
   const signedIn = status === "authenticated" && session?.user;
   const isLearning = selectedGameType === GAME_TYPES.LEARNING;
+
+  useEffect(() => {
+    if (step !== "setup" || !pendingSetupAdvanceRef.current) return;
+    if (!selectedMode || !selectedRegion || disabled) return;
+    if (isLearning && !signedIn) return;
+
+    pendingSetupAdvanceRef.current = false;
+    setStep("level");
+  }, [step, selectedMode, selectedRegion, disabled, isLearning, signedIn]);
+
+  const markSetupSelection = () => {
+    pendingSetupAdvanceRef.current = true;
+  };
 
   useEffect(() => {
     if (
@@ -67,6 +81,7 @@ export default function StartScreen({ onStart, disabled }) {
   }, [step, isLearning, signedIn, selectedMode, selectedRegion, selectedLevel, weakReloadKey]);
 
   const resetToGameType = () => {
+    pendingSetupAdvanceRef.current = false;
     setStep("gameType");
     setSelectedGameType(null);
     setSelectedMode(null);
@@ -114,10 +129,26 @@ export default function StartScreen({ onStart, disabled }) {
     }
   };
 
-  const tryAdvanceToLevel = (mode, region) => {
-    if (!mode || !region || disabled) return;
-    if (isLearning && !signedIn) return;
-    setStep("level");
+  const handleModeSelect = (mode) => {
+    setSelectedMode(mode);
+    markSetupSelection();
+  };
+
+  const handleRegionSelect = (regionId) => {
+    setSelectedRegion(regionId);
+    markSetupSelection();
+  };
+
+  const getSectionSubtitle = (section) => {
+    if (selectedMode === GAME_MODES.FLAGS) {
+      if (section.id === "find") {
+        return "Given a flag, click the country on the map.";
+      }
+      if (section.id === "name") {
+        return "Given a flag, type the country's name into the box.";
+      }
+    }
+    return section.subtitle;
   };
 
   if (step === "learningSize") {
@@ -128,7 +159,7 @@ export default function StartScreen({ onStart, disabled }) {
       <div className="start-screen">
         <h1 className="start-title">Learning session</h1>
         <p className="start-subtitle">
-          {selectedMode === GAME_MODES.CAPITALS ? "Capitals" : "Countries"} · {regionLabel} ·{" "}
+          {getModeLabel(selectedMode)} · {regionLabel} ·{" "}
           {getLevelLabel(selectedLevel)}
         </p>
 
@@ -199,7 +230,7 @@ export default function StartScreen({ onStart, disabled }) {
         <h1 className="start-title">Choose a level</h1>
         <p className="start-subtitle">
           {isLearning ? "Learning · " : "Test · "}
-          {selectedMode === GAME_MODES.CAPITALS ? "Capitals" : "Countries"} ·{" "}
+          {getModeLabel(selectedMode)} ·{" "}
           {REGIONS.find((region) => region.id === selectedRegion)?.label}
         </p>
 
@@ -208,8 +239,8 @@ export default function StartScreen({ onStart, disabled }) {
             <div key={section.id} className="start-level-section">
               <div className="start-level-section-header">
                 <h2 className="start-level-section-title">{section.title}</h2>
-                {section.subtitle && (
-                  <p className="start-level-section-desc">{section.subtitle}</p>
+                {getSectionSubtitle(section) && (
+                  <p className="start-level-section-desc">{getSectionSubtitle(section)}</p>
                 )}
               </div>
               <div className="start-section start-level-list">
@@ -243,7 +274,10 @@ export default function StartScreen({ onStart, disabled }) {
         <button
           type="button"
           className="secondary-btn start-back-btn"
-          onClick={() => setStep("setup")}
+          onClick={() => {
+            pendingSetupAdvanceRef.current = false;
+            setStep("setup");
+          }}
         >
           Back
         </button>
@@ -272,16 +306,13 @@ export default function StartScreen({ onStart, disabled }) {
           </div>
         )}
 
-        <div className="start-section">
-          <div className="start-row">
+        <div className="start-section start-section--wide">
+          <div className="start-row start-mode-row">
             <button
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
               disabled={disabled || (isLearning && !signedIn)}
-              onClick={() => {
-                setSelectedMode(GAME_MODES.COUNTRIES);
-                tryAdvanceToLevel(GAME_MODES.COUNTRIES, selectedRegion);
-              }}
+              onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
             >
               Countries
             </button>
@@ -289,12 +320,17 @@ export default function StartScreen({ onStart, disabled }) {
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
               disabled={disabled || (isLearning && !signedIn)}
-              onClick={() => {
-                setSelectedMode(GAME_MODES.CAPITALS);
-                tryAdvanceToLevel(GAME_MODES.CAPITALS, selectedRegion);
-              }}
+              onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
             >
               Capitals
+            </button>
+            <button
+              type="button"
+              className={`choice-btn ${selectedMode === GAME_MODES.FLAGS ? "selected" : ""}`}
+              disabled={disabled || (isLearning && !signedIn)}
+              onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
+            >
+              Flags
             </button>
           </div>
 
@@ -307,10 +343,7 @@ export default function StartScreen({ onStart, disabled }) {
                   selectedRegion === region.id ? "selected" : ""
                 }`}
                 disabled={disabled || (isLearning && !signedIn)}
-                onClick={() => {
-                  setSelectedRegion(region.id);
-                  tryAdvanceToLevel(selectedMode, region.id);
-                }}
+                onClick={() => handleRegionSelect(region.id)}
               >
                 {region.label}
               </button>
@@ -368,7 +401,7 @@ export default function StartScreen({ onStart, disabled }) {
         >
           <span className="choice-btn-level-title">Learning Mode</span>
           <span className="choice-btn-level-desc">
-            Focus on countries and capitals you miss to improve faster!
+            Focus on countries, capitals, and flags you miss to improve faster!
           </span>
         </button>
         </div>
