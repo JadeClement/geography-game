@@ -22,6 +22,25 @@ CREATE TABLE IF NOT EXISTS game_scores (
 );
 
 CREATE INDEX IF NOT EXISTS game_scores_user_id_idx ON game_scores (user_id);
+
+CREATE TABLE IF NOT EXISTS country_stats (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  country_id TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  level INT NOT NULL,
+  first_try_correct INT NOT NULL DEFAULT 0,
+  second_try_correct INT NOT NULL DEFAULT 0,
+  needed_reveal INT NOT NULL DEFAULT 0,
+  response_time_ms_sum BIGINT NOT NULL DEFAULT 0,
+  response_time_count INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, country_id, mode, level)
+);
+
+CREATE INDEX IF NOT EXISTS country_stats_user_lookup_idx
+  ON country_stats (user_id, mode, level);
 `;
 
 async function main() {

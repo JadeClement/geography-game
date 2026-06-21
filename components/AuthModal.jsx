@@ -8,6 +8,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +19,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
     setName("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
   };
 
   const switchMode = (nextMode) => {
@@ -32,6 +34,10 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
 
     try {
       if (mode === "signup") {
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -119,12 +125,32 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
             <input
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (error) setError("");
+              }}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               minLength={mode === "signup" ? 8 : undefined}
               required
             />
           </label>
+
+          {mode === "signup" && (
+            <label className="auth-field">
+              <span>Confirm password</span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value);
+                  if (error) setError("");
+                }}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </label>
+          )}
 
           {error && <p className="auth-error">{error}</p>}
 

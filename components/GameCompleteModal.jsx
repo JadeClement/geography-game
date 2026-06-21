@@ -1,19 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/AuthModal";
-import { DEFAULT_LEVEL, saveScore } from "@/lib/scores";
+import { formatGameScore } from "@/lib/regions";
+import { saveScore } from "@/lib/scores";
+import { formatElapsedTime } from "@/lib/time";
 
 export default function GameCompleteModal({
   open,
   score,
   rightCount,
   wrongCount,
+  total,
   mode,
   region,
+  level,
   modeLabel,
   regionLabel,
+  levelLabel,
+  totalElapsedMs = 0,
+  isReview = false,
+  isLearning = false,
+  canReviewIncorrect = false,
+  onReviewIncorrect,
   onPlayAgain,
   onBackToMenu,
 }) {
@@ -32,7 +43,7 @@ export default function GameCompleteModal({
   }, [open]);
 
   useEffect(() => {
-    if (!open || !signedIn) return;
+    if (!open || !signedIn || isReview || isLearning) return;
 
     let cancelled = false;
 
@@ -43,7 +54,7 @@ export default function GameCompleteModal({
           mode,
           region,
           score,
-          level: DEFAULT_LEVEL,
+          level,
         });
         if (!cancelled) {
           setSaveState({ loading: false, result, error: null });
@@ -63,7 +74,7 @@ export default function GameCompleteModal({
     return () => {
       cancelled = true;
     };
-  }, [open, signedIn, mode, region, score]);
+  }, [open, signedIn, isReview, isLearning, mode, region, score, level]);
 
   useEffect(() => {
     if (!open || !signedIn || !pendingSave) return;
@@ -103,7 +114,7 @@ export default function GameCompleteModal({
       mode,
       region,
       score,
-      level: DEFAULT_LEVEL,
+      level,
     });
     setAuthOpen(false);
   };
@@ -121,10 +132,10 @@ export default function GameCompleteModal({
     if (saveState.result?.isPersonalBest) {
       return saveState.result.previousBest == null
         ? "Score saved — your first result for this game!"
-        : `New personal best! Previous best: ${saveState.result.previousBest}`;
+        : `New personal best! Previous best: ${formatGameScore(saveState.result.previousBest, region)}`;
     }
     if (saveState.result && !saveState.result.isPersonalBest) {
-      return `Your best for this game is still ${saveState.result.previousBest}.`;
+      return `Your best for this game is still ${formatGameScore(saveState.result.previousBest, region)}.`;
     }
     return null;
   };
@@ -141,14 +152,28 @@ export default function GameCompleteModal({
           aria-labelledby="game-complete-title"
         >
           <h2 id="game-complete-title" className="modal-title">
-            Congrats!
+            {isLearning ? "Learning complete!" : isReview ? "Review complete!" : "Congrats!"}
           </h2>
-          <p className="modal-score">You scored {score}</p>
-          <p className="modal-subtitle">
-            {rightCount} correct · {wrongCount} needed help · {modeLabel} · {regionLabel}
+          <p className="modal-score">
+            You scored {rightCount}/{total}
           </p>
+          <p className="modal-game-context">
+            {isLearning ? "Learning · " : isReview ? "Review · " : ""}
+            {modeLabel} of {regionLabel} · {levelLabel}
+          </p>
+          <div className="game-complete-stats">
+            <span className="score-correct">
+              correct: {rightCount}/{total}
+            </span>
+            <span className="score-incorrect">
+              incorrect: {wrongCount}/{total}
+            </span>
+            <span className="game-timer game-timer--modal">
+              time: {formatElapsedTime(totalElapsedMs)}
+            </span>
+          </div>
 
-          {message && (
+          {message && !isReview && !isLearning && (
             <p
               className={`modal-message ${
                 saveState.result?.isPersonalBest
@@ -172,8 +197,22 @@ export default function GameCompleteModal({
                 Sign in / Create account
               </button>
             )}
+            {signedIn && (
+              <Link href="/results" className="secondary-btn">
+                View results
+              </Link>
+            )}
+            {canReviewIncorrect && (
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={onReviewIncorrect}
+              >
+                Review incorrect answers ({wrongCount})
+              </button>
+            )}
             <button type="button" className="secondary-btn" onClick={onPlayAgain}>
-              Play again
+              {isLearning ? "Practice again" : "Play again"}
             </button>
             <button type="button" className="secondary-btn" onClick={onBackToMenu}>
               Back to menu

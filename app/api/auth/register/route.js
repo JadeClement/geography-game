@@ -45,6 +45,15 @@ export async function POST(request) {
     if (error.message?.includes("DATABASE_URL")) {
       return Response.json({ error: "Database is not configured." }, { status: 503 });
     }
+    if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+      return Response.json(
+        {
+          error:
+            "Cannot reach the database. For local development, use your Postgres public URL in .env (not postgres.railway.internal).",
+        },
+        { status: 503 }
+      );
+    }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }
 }

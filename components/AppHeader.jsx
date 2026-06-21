@@ -1,8 +1,36 @@
 "use client";
 
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import AuthModal from "@/components/AuthModal";
+
+function ProfileDropdown({ signedIn, userName, onClose, onSignIn, onSignOut }) {
+  return (
+    <div className="profile-dropdown">
+      {signedIn && userName && <p className="profile-name">{userName}</p>}
+
+      <Link href="/settings" className="dropdown-item" onClick={onClose}>
+        Settings
+      </Link>
+
+      {signedIn ? (
+        <>
+          <Link href="/results" className="dropdown-item" onClick={onClose}>
+            Results
+          </Link>
+          <button type="button" className="dropdown-item" onClick={onSignOut}>
+            Sign out
+          </button>
+        </>
+      ) : (
+        <button type="button" className="dropdown-item" onClick={onSignIn}>
+          Sign in
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function AppHeader({ title = "Geography Game" }) {
   const { data: session, status } = useSession();
@@ -10,67 +38,61 @@ export default function AppHeader({ title = "Geography Game" }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const signedIn = status === "authenticated" && session?.user;
+  const userName = session?.user?.name || session?.user?.email;
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <>
       <header className="app-header">
         <span className="app-header-title">{title}</span>
         <div className="app-header-actions">
-          {signedIn ? (
-            <div className="profile-menu">
-              <button
-                type="button"
-                className="profile-btn"
-                onClick={() => setMenuOpen((open) => !open)}
-                aria-label="Account menu"
-                aria-expanded={menuOpen}
-              >
-                <span className="profile-avatar" aria-hidden="true">
-                  {(session.user.name || session.user.email || "?")
-                    .charAt(0)
-                    .toUpperCase()}
-                </span>
-              </button>
-              {menuOpen && (
-                <div className="profile-dropdown">
-                  <p className="profile-name">{session.user.name || session.user.email}</p>
-                  <button
-                    type="button"
-                    className="dropdown-item"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      signOut();
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
+          <div className="profile-menu">
             <button
               type="button"
               className="profile-btn"
-              onClick={() => setAuthOpen(true)}
-              aria-label="Sign in or create account"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label="Account menu"
+              aria-expanded={menuOpen}
             >
-              <span className="profile-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
+              {signedIn ? (
+                <span className="profile-avatar" aria-hidden="true">
+                  {(userName || "?").charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <span className="profile-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              )}
             </button>
-          )}
+            {menuOpen && (
+              <ProfileDropdown
+                signedIn={signedIn}
+                userName={userName}
+                onClose={closeMenu}
+                onSignIn={() => {
+                  closeMenu();
+                  setAuthOpen(true);
+                }}
+                onSignOut={() => {
+                  closeMenu();
+                  signOut();
+                }}
+              />
+            )}
+          </div>
         </div>
       </header>
 
