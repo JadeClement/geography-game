@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
+import SpinningGlobe from "@/components/SpinningGlobe";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
 import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
@@ -113,7 +114,11 @@ export default function StartScreen({ onStart, disabled }) {
     }
   };
 
-  const canContinueSetup = selectedMode && selectedRegion && !disabled;
+  const tryAdvanceToLevel = (mode, region) => {
+    if (!mode || !region || disabled) return;
+    if (isLearning && !signedIn) return;
+    setStep("level");
+  };
 
   if (step === "learningSize") {
     const learningLocked = weakCount === 0;
@@ -201,7 +206,12 @@ export default function StartScreen({ onStart, disabled }) {
         <div className="start-level-sections">
           {LEVEL_SECTIONS.map((section) => (
             <div key={section.id} className="start-level-section">
-              <h2 className="start-level-section-title">{section.title}</h2>
+              <div className="start-level-section-header">
+                <h2 className="start-level-section-title">{section.title}</h2>
+                {section.subtitle && (
+                  <p className="start-level-section-desc">{section.subtitle}</p>
+                )}
+              </div>
               <div className="start-section start-level-list">
                 {section.levels.map((option) => (
                   <button
@@ -268,7 +278,10 @@ export default function StartScreen({ onStart, disabled }) {
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
               disabled={disabled || (isLearning && !signedIn)}
-              onClick={() => setSelectedMode(GAME_MODES.COUNTRIES)}
+              onClick={() => {
+                setSelectedMode(GAME_MODES.COUNTRIES);
+                tryAdvanceToLevel(GAME_MODES.COUNTRIES, selectedRegion);
+              }}
             >
               Countries
             </button>
@@ -276,7 +289,10 @@ export default function StartScreen({ onStart, disabled }) {
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
               disabled={disabled || (isLearning && !signedIn)}
-              onClick={() => setSelectedMode(GAME_MODES.CAPITALS)}
+              onClick={() => {
+                setSelectedMode(GAME_MODES.CAPITALS);
+                tryAdvanceToLevel(GAME_MODES.CAPITALS, selectedRegion);
+              }}
             >
               Capitals
             </button>
@@ -291,21 +307,15 @@ export default function StartScreen({ onStart, disabled }) {
                   selectedRegion === region.id ? "selected" : ""
                 }`}
                 disabled={disabled || (isLearning && !signedIn)}
-                onClick={() => setSelectedRegion(region.id)}
+                onClick={() => {
+                  setSelectedRegion(region.id);
+                  tryAdvanceToLevel(selectedMode, region.id);
+                }}
               >
                 {region.label}
               </button>
             ))}
           </div>
-
-          <button
-            type="button"
-            className="primary-btn start-continue-btn"
-            disabled={!canContinueSetup || (isLearning && !signedIn)}
-            onClick={() => setStep("level")}
-          >
-            Continue
-          </button>
         </div>
 
         <button
@@ -322,11 +332,13 @@ export default function StartScreen({ onStart, disabled }) {
   }
 
   return (
-    <div className="start-screen">
-      <h1 className="start-title">Geography Game</h1>
-      <p className="start-subtitle">Choose how you want to play</p>
+    <div className="start-screen start-screen--with-globe">
+      <SpinningGlobe />
+      <div className="start-screen-content">
+        <h1 className="start-title">Geography Game</h1>
+        <p className="start-subtitle">Choose how you want to play</p>
 
-      <div className="start-section start-game-type-list">
+        <div className="start-section start-game-type-list">
         <button
           type="button"
           className={`choice-btn choice-btn-level ${
@@ -338,9 +350,9 @@ export default function StartScreen({ onStart, disabled }) {
             setStep("setup");
           }}
         >
-          <span className="choice-btn-level-title">Test mode</span>
+          <span className="choice-btn-level-title">Test Mode</span>
           <span className="choice-btn-level-desc">
-            Full region quiz. Scores saved when signed in.
+            Full region quiz, save your scores!
           </span>
         </button>
         <button
@@ -354,11 +366,12 @@ export default function StartScreen({ onStart, disabled }) {
             setStep("setup");
           }}
         >
-          <span className="choice-btn-level-title">Learning mode</span>
+          <span className="choice-btn-level-title">Learning Mode</span>
           <span className="choice-btn-level-desc">
-            Focus on countries you miss. Requires sign-in and Test history.
+            Focus on countries and capitals you miss to improve faster!
           </span>
         </button>
+        </div>
       </div>
     </div>
   );

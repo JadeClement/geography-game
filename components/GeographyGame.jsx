@@ -7,7 +7,12 @@ import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
-import { fetchWeakCountryStats, recordCountryStat, ROUND_OUTCOMES } from "@/lib/countryStats";
+import {
+  fetchMasteryStats,
+  fetchWeakCountryStats,
+  recordCountryStat,
+  ROUND_OUTCOMES,
+} from "@/lib/countryStats";
 import {
   countryFromFeature,
   isCorrectCountry,
@@ -25,6 +30,7 @@ import {
   COUNTRY_FLASH_MS,
   GAME_LEVELS,
   getLevelLabel,
+  getMasteryProvingLevels,
   isFindLevel,
   isNameLevel,
   isProgressiveFillLevel,
@@ -40,6 +46,20 @@ import {
 } from "@/lib/regions";
 import { formatElapsedTime } from "@/lib/time";
 import { useSession } from "next-auth/react";
+
+// A country counts as already mastered for a level if it has graduated at that
+// level or at a level that proves it (the harder no-fill tier proves the fill
+// tier within the same section).
+function getMasteredCountryIds(masteryRows, level) {
+  const relevantLevels = new Set([level, ...getMasteryProvingLevels(level)]);
+  const mastered = new Set();
+  for (const row of masteryRows) {
+    if (row.graduated && relevantLevels.has(row.level)) {
+      mastered.add(row.countryId);
+    }
+  }
+  return mastered;
+}
 
 export default function GeographyGame() {
   const { data: authSession, status: authStatus } = useSession();
@@ -169,6 +189,10 @@ export default function GeographyGame() {
   const levelLabel = session?.level ? getLevelLabel(session.level) : "";
   const isTestGame = session?.gameType !== GAME_TYPES.LEARNING;
   const isLearningGame = session?.gameType === GAME_TYPES.LEARNING;
+
+  const preCreditedCount = session?.preCreditedCount ?? 0;
+  const displayedCorrect = rightCount + preCreditedCount;
+  const totalRounds = session?.totalRounds ?? activeCountries.length;
 
   const isNameGame = session?.level ? isNameLevel(session.level) : false;
   const isFlashLevel = session?.level ? usesColorFlash(session.level) : false;
@@ -375,9 +399,12 @@ export default function GeographyGame() {
       reviewCountryIds = null,
       learningCountryIds = null,
       learningSessionSize = null,
+      preCreditedCountryIds = null,
     }) => {
       const pool = countries ?? filterCountriesByRegion(allCountries, region);
-      if (pool.length === 0) return;
+      const preCredited = preCreditedCountryIds ?? [];
+      const totalRounds = pool.length + preCredited.length;
+      if (totalRounds === 0) return;
 
       if (nextRoundTimeoutRef.current) {
         clearTimeout(nextRoundTimeoutRef.current);
@@ -403,12 +430,11 @@ export default function GeographyGame() {
         level,
         review,
         learningSessionSize,
-        totalRounds: pool.length,
+        totalRounds,
+        preCreditedCount: preCredited.length,
         reviewCountryIds: review ? countryIds : null,
         learningCountryIds: gameType === GAME_TYPES.LEARNING ? countryIds : null,
       });
-      setGameActive(true);
-      gameActiveRef.current = true;
       setGameComplete(false);
       setRightCount(0);
       setWrongCount(0);
@@ -418,7 +444,26 @@ export default function GeographyGame() {
       setWrongCountryIds([]);
       setRoundWrongCountryIds([]);
       setFlashWrongCountryIds([]);
-      setFilledCountryIds([]);
+      // Pre-credited (already mastered) countries show as filled from the start.
+      setFilledCountryIds(preCredited);
+
+      // Everything was already mastered — nothing left to quiz.
+      if (pool.length === 0) {
+        setGameActive(false);
+        gameActiveRef.current = false;
+        setGameComplete(true);
+        setFinalElapsedMs(0);
+        setTargetCountry(null);
+        targetCountryRef.current = null;
+        setRevealMode(false);
+        revealModeRef.current = false;
+        setHighlightCountryId(null);
+        setFlashSmallCountryId(null);
+        return;
+      }
+
+      setGameActive(true);
+      gameActiveRef.current = true;
 
       const first = countryQueueRef.current[0] ?? null;
       queueIndexRef.current = 1;
@@ -470,6 +515,28 @@ export default function GeographyGame() {
     [allCountries]
   );
 
+  // World Test: pre-credit countries already mastered (graduated, with the level
+  // cascade) in any region so they aren't re-quizzed.
+  const buildWorldTestCountries = useCallback(
+    async ({ mode, level }) => {
+      const worldPool = filterCountriesByRegion(allCountries, "world");
+      try {
+        const data = await fetchMasteryStats({ mode });
+        const masteredIds = getMasteredCountryIds(data.mastery ?? [], level);
+        return {
+          countries: worldPool.filter((country) => !masteredIds.has(country.id)),
+          preCreditedCountryIds: worldPool
+            .filter((country) => masteredIds.has(country.id))
+            .map((country) => country.id),
+        };
+      } catch (error) {
+        console.error("Failed to load mastery for World Test:", error);
+        return { countries: worldPool, preCreditedCountryIds: [] };
+      }
+    },
+    [allCountries]
+  );
+
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.gameType === GAME_TYPES.LEARNING) {
@@ -488,9 +555,25 @@ export default function GeographyGame() {
         return;
       }
 
+      if (config.region === "world" && signedIn) {
+        const world = await buildWorldTestCountries({
+          mode: config.mode,
+          level: config.level,
+        });
+        startGame({
+          gameType: GAME_TYPES.TEST,
+          mode: config.mode,
+          region: config.region,
+          level: config.level,
+          countries: world.countries,
+          preCreditedCountryIds: world.preCreditedCountryIds,
+        });
+        return;
+      }
+
       beginSession(config);
     },
-    [beginSession, buildLearningCountries, startGame]
+    [beginSession, buildLearningCountries, buildWorldTestCountries, signedIn, startGame]
   );
 
   const handleBackToMenu = () => {
@@ -584,7 +667,7 @@ export default function GeographyGame() {
       });
       return;
     }
-    beginSession(session);
+    handleSessionStart(session);
   };
 
   const handleReviewIncorrect = () => {
@@ -942,10 +1025,10 @@ export default function GeographyGame() {
                   <span className="game-timer">{formatElapsedTime(elapsedMs)}</span>
                 )}
                 <span className="score-correct">
-                  correct: {rightCount}/{session.totalRounds ?? activeCountries.length}
+                  correct: {displayedCorrect}/{totalRounds}
                 </span>
                 <span className="score-incorrect">
-                  incorrect: {wrongCount}/{session.totalRounds ?? activeCountries.length}
+                  incorrect: {wrongCount}/{totalRounds}
                 </span>
               </div>
             </div>
@@ -973,10 +1056,10 @@ export default function GeographyGame() {
           )}
           <GameCompleteModal
             open={gameComplete}
-            score={rightCount}
-            rightCount={rightCount}
+            score={displayedCorrect}
+            rightCount={displayedCorrect}
             wrongCount={wrongCount}
-            total={session.totalRounds ?? activeCountries.length}
+            total={totalRounds}
             mode={session.mode}
             region={session.region}
             level={session.level}
