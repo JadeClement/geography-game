@@ -182,7 +182,7 @@ export default function MasteryPage() {
 
   return (
     <div className="mastery-page">
-      <AppHeader title="Mastery Map" />
+      <AppHeader />
 
       <main className="mastery-content">
         <Link href="/" className="mastery-back">

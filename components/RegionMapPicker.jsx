@@ -2,15 +2,17 @@
 
 import { useMemo } from "react";
 import {
-  GLOBE_MAP_HEIGHT,
-  GLOBE_MAP_WIDTH,
   geometryToPathData,
+  getRegionMapView,
+  OCEANIA_MAP_HEIGHT,
+  OCEANIA_MAP_WIDTH,
 } from "@/lib/globeProjection";
 import {
   getRegionMapColor,
   REGION_MAP_BORDER,
   REGION_MAP_LABELS,
   REGION_MAP_OCEAN,
+  getRegionMapLabelPosition,
 } from "@/lib/regionMapColors";
 
 const PATH_SIMPLIFY_TOLERANCE = 0.25;
@@ -21,14 +23,20 @@ export default function RegionMapPicker({
   onSelect,
   disabled = false,
 }) {
+  const isOceaniaFocus = selectedRegion === "oceania";
+  const mapView = getRegionMapView(isOceaniaFocus ? "oceania" : "world");
+
   const countryPaths = useMemo(() => {
-    return countries
+    const visibleCountries = isOceaniaFocus
+      ? countries.filter((country) => country.region === "oceania")
+      : countries;
+
+    return visibleCountries
       .map((country) => {
         const path = geometryToPathData(
           country.feature.geometry,
           PATH_SIMPLIFY_TOLERANCE,
-          GLOBE_MAP_WIDTH,
-          GLOBE_MAP_HEIGHT
+          mapView
         );
         if (!path) return null;
         return {
@@ -39,20 +47,24 @@ export default function RegionMapPicker({
         };
       })
       .filter(Boolean);
-  }, [countries]);
+  }, [countries, isOceaniaFocus, mapView]);
+
+  const visibleLabels = isOceaniaFocus
+    ? REGION_MAP_LABELS.filter((zone) => zone.id === "oceania")
+    : REGION_MAP_LABELS;
 
   return (
     <div className={`region-map-picker ${disabled ? "region-map-picker--disabled" : ""}`}>
       <div className="region-map-wrap">
         <svg
-          viewBox={`0 0 ${GLOBE_MAP_WIDTH} ${GLOBE_MAP_HEIGHT}`}
-          className="region-map"
+          viewBox={`0 0 ${mapView.width} ${mapView.height}`}
+          className={`region-map ${isOceaniaFocus ? "region-map--oceania-focus" : ""}`}
           role="group"
           aria-label="Choose a region on the map"
         >
           <rect
-            width={GLOBE_MAP_WIDTH}
-            height={GLOBE_MAP_HEIGHT}
+            width={mapView.width}
+            height={mapView.height}
             className="region-map-ocean"
             fill={REGION_MAP_OCEAN}
             aria-hidden="true"
@@ -84,28 +96,34 @@ export default function RegionMapPicker({
           </g>
         </svg>
 
-        {REGION_MAP_LABELS.map((zone) => (
-          <button
-            key={zone.id}
-            type="button"
-            className={`choice-btn region-map-region-btn ${
-              selectedRegion === zone.id ? "selected" : ""
-            }`}
-            style={{
-              left: `${(zone.x / GLOBE_MAP_WIDTH) * 100}%`,
-              top: `${(zone.y / GLOBE_MAP_HEIGHT) * 100}%`,
-            }}
-            disabled={disabled}
-            onClick={() => onSelect(zone.id)}
-          >
-            <span className="region-map-region-btn-label region-map-region-btn-label--full">
-              {zone.label}
-            </span>
-            <span className="region-map-region-btn-label region-map-region-btn-label--short">
-              {zone.shortLabel}
-            </span>
-          </button>
-        ))}
+        {visibleLabels.map((zone) => {
+          const { x, y } = getRegionMapLabelPosition(zone.id, isOceaniaFocus);
+          const mapWidth = isOceaniaFocus ? OCEANIA_MAP_WIDTH : mapView.width;
+          const mapHeight = isOceaniaFocus ? OCEANIA_MAP_HEIGHT : mapView.height;
+
+          return (
+            <button
+              key={zone.id}
+              type="button"
+              className={`choice-btn region-map-region-btn ${
+                selectedRegion === zone.id ? "selected" : ""
+              }`}
+              style={{
+                left: `${(x / mapWidth) * 100}%`,
+                top: `${(y / mapHeight) * 100}%`,
+              }}
+              disabled={disabled}
+              onClick={() => onSelect(zone.id)}
+            >
+              <span className="region-map-region-btn-label region-map-region-btn-label--full">
+                {zone.label}
+              </span>
+              <span className="region-map-region-btn-label region-map-region-btn-label--short">
+                {zone.shortLabel}
+              </span>
+            </button>
+          );
+        })}
 
         <button
           type="button"

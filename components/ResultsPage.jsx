@@ -182,7 +182,7 @@ export default function ResultsPage() {
 
   return (
     <div className="results-page">
-      <AppHeader title="Results" />
+      <AppHeader />
 
       <main className="results-content">
         <Link href="/" className="results-back">

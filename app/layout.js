@@ -11,8 +11,8 @@ const brandFont = Pacifico({
 });
 
 export const metadata = {
-  title: "Geography Game",
-  description: "Click countries on the map",
+  title: "Worldly",
+  description: "Learning geography",
 };
 
 const themeScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark")}catch(e){document.documentElement.setAttribute("data-theme","dark")}})();`;

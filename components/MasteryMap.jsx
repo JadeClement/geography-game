@@ -206,7 +206,7 @@ export default forwardRef(function MasteryMap(
       ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
       ctx.font = `600 ${Math.round(h * 0.03)}px system-ui, sans-serif`;
       ctx.textAlign = "right";
-      ctx.fillText("Geography Game", w - pad, h - pad - Math.round(h * 0.034));
+      ctx.fillText("Worldly", w - pad, h - pad - Math.round(h * 0.034));
       ctx.textAlign = "left";
 
       out.toBlob((blob) => {

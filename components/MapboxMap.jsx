@@ -197,15 +197,26 @@ function pickClickedFeature(map, features) {
   return circleFeature ?? fillFeature ?? features[0];
 }
 
-function fitMapToRegion(map, bounds) {
-  if (!bounds) return;
+function applyMapView(map, mapView) {
+  if (!mapView) return;
 
   const runFit = () => {
     map.resize();
-    map.fitBounds(bounds, {
-      padding: 48,
+
+    if (mapView.type === "camera") {
+      map.jumpTo({
+        center: mapView.center,
+        zoom: mapView.zoom,
+        padding: mapView.padding ?? 48,
+        duration: 0,
+      });
+      return;
+    }
+
+    map.fitBounds(mapView.bounds, {
+      padding: mapView.padding ?? 48,
       duration: 0,
-      maxZoom: 5,
+      maxZoom: mapView.maxZoom ?? 5,
     });
   };
 
@@ -395,7 +406,7 @@ export default function MapboxMap({
   highlightTargetCountryId,
   highlightCountryId,
   flashSmallCountryId,
-  fitBounds,
+  mapView,
   onCountryClick,
 }) {
   const { theme } = useTheme();
@@ -424,12 +435,15 @@ export default function MapboxMap({
         ? "mapbox://styles/mapbox/light-v11"
         : "mapbox://styles/mapbox/dark-v11";
     const mapColors = getMapThemeColors(theme);
+    const initialCenter =
+      mapView?.type === "camera" ? mapView.center : [10, 20];
+    const initialZoom = mapView?.type === "camera" ? mapView.zoom : 1.2;
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
-      center: [10, 20],
-      zoom: 1.2,
+      center: initialCenter,
+      zoom: initialZoom,
       projection: "naturalEarth",
     });
 
@@ -489,8 +503,8 @@ export default function MapboxMap({
       map.on("mouseenter", "small-country-circles", setCirclePointerCursor);
       map.on("mouseleave", "small-country-circles", clearPointerCursor);
 
-      if (fitBounds) {
-        fitMapToRegion(map, fitBounds);
+      if (mapView) {
+        applyMapView(map, mapView);
         map.once("idle", handleViewChangeForCircles);
       } else {
         handleViewChangeForCircles();
@@ -514,7 +528,7 @@ export default function MapboxMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [geojson, inactiveGeojson, smallCountriesGeojson, fitBounds, theme, level]);
+  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -556,15 +570,15 @@ export default function MapboxMap({
       });
     }
 
-    if (fitBounds) {
-      fitMapToRegion(map, fitBounds);
+    if (mapView) {
+      applyMapView(map, mapView);
       map.once("idle", () => {
         updateSmallCountryCircles(map, smallCountriesGeojson);
       });
     } else {
       updateSmallCountryCircles(map, smallCountriesGeojson);
     }
-  }, [geojson, inactiveGeojson, smallCountriesGeojson, fitBounds, theme, level]);
+  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level]);
 
   useEffect(() => {
     const map = mapRef.current;

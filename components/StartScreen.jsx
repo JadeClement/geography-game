@@ -1,51 +1,109 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 import RegionMapPicker from "@/components/RegionMapPicker";
+import StartBackButton from "@/components/StartBackButton";
+import SpaceBackground from "@/components/SpaceBackground";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
 import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
+import {
+  START_STEPS,
+  buildStartScreenUrl,
+  normalizeStartScreenRoute,
+  parseStartScreenSearchParams,
+} from "@/lib/startNavigation";
+
+function StartStepHeader({ title, subtitle }) {
+  return (
+    <div className="start-step-header">
+      <h1 className="start-title">{title}</h1>
+      {subtitle && <p className="start-subtitle">{subtitle}</p>}
+    </div>
+  );
+}
 
 export default function StartScreen({ onStart, disabled, countries = [] }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const [selectedGameType, setSelectedGameType] = useState(null);
-  const [selectedMode, setSelectedMode] = useState(null);
-  const [selectedRegion, setSelectedRegion] = useState(null);
-  const [selectedLevel, setSelectedLevel] = useState(null);
   const [selectedSessionSize, setSelectedSessionSize] = useState(null);
-  const [step, setStep] = useState("home");
   const [authOpen, setAuthOpen] = useState(false);
   const [weakCount, setWeakCount] = useState(null);
   const [weakLoading, setWeakLoading] = useState(false);
   const [weakError, setWeakError] = useState(null);
   const [starting, setStarting] = useState(false);
   const [weakReloadKey, setWeakReloadKey] = useState(0);
+  const [exploreMode, setExploreMode] = useState(null);
+  const [exploreRegion, setExploreRegion] = useState(null);
   const pendingExploreAdvanceRef = useRef(false);
+
+  const route = normalizeStartScreenRoute(parseStartScreenSearchParams(searchParams));
+  const { step, mode: selectedMode, region: selectedRegion, gameType: selectedGameType, level: selectedLevel } =
+    route;
 
   const signedIn = status === "authenticated" && session?.user;
   const isLearning = selectedGameType === GAME_TYPES.LEARNING;
 
-  // Advance from the Explore (mode + region) step once both are chosen.
+  const navigate = useCallback(
+    (next, { replace = false } = {}) => {
+      const url = buildStartScreenUrl(next);
+      if (replace) router.replace(url);
+      else router.push(url);
+    },
+    [router]
+  );
+
+  const goBack = () => router.back();
+
+  const goBackToExplore = () => {
+    pendingExploreAdvanceRef.current = false;
+    navigate({ step: START_STEPS.EXPLORE }, { replace: true });
+  };
+
   useEffect(() => {
-    if (step !== "explore" || !pendingExploreAdvanceRef.current) return;
-    if (!selectedMode || !selectedRegion || disabled) return;
+    const parsed = parseStartScreenSearchParams(searchParams);
+    const normalized = normalizeStartScreenRoute(parsed);
+    const parsedUrl = buildStartScreenUrl(parsed);
+    const normalizedUrl = buildStartScreenUrl(normalized);
+    if (parsedUrl !== normalizedUrl) {
+      router.replace(normalizedUrl);
+    }
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (step !== START_STEPS.EXPLORE) return;
+    setExploreMode(null);
+    setExploreRegion(null);
+    pendingExploreAdvanceRef.current = false;
+  }, [step]);
+
+  // Advance from Explore once both mode and region are chosen.
+  useEffect(() => {
+    if (step !== START_STEPS.EXPLORE || !pendingExploreAdvanceRef.current) return;
+    if (!exploreMode || !exploreRegion || disabled) return;
 
     pendingExploreAdvanceRef.current = false;
-    setStep("chooseType");
-  }, [step, selectedMode, selectedRegion, disabled]);
+    navigate({
+      step: START_STEPS.CHOOSE_TYPE,
+      mode: exploreMode,
+      region: exploreRegion,
+    });
+  }, [step, exploreMode, exploreRegion, disabled, navigate]);
 
   useEffect(() => {
     if (
-      step !== "learningSize" ||
+      step !== START_STEPS.LEARNING_SIZE ||
       !isLearning ||
       !signedIn ||
       !selectedMode ||
       !selectedRegion ||
-      !selectedLevel
+      selectedLevel == null
     ) {
       return;
     }
@@ -77,18 +135,6 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
     };
   }, [step, isLearning, signedIn, selectedMode, selectedRegion, selectedLevel, weakReloadKey]);
 
-  const resetToHome = () => {
-    pendingExploreAdvanceRef.current = false;
-    setStep("home");
-    setSelectedGameType(null);
-    setSelectedMode(null);
-    setSelectedRegion(null);
-    setSelectedLevel(null);
-    setSelectedSessionSize(null);
-    setWeakCount(null);
-    setWeakError(null);
-  };
-
   const handleGo = async () => {
     if (disabled || starting) return;
     setStarting(true);
@@ -114,7 +160,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
     if (
       !selectedMode ||
       !selectedRegion ||
-      !selectedLevel ||
+      selectedLevel == null ||
       !selectedSessionSize ||
       disabled ||
       starting
@@ -137,12 +183,12 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
   };
 
   const handleModeSelect = (mode) => {
-    setSelectedMode(mode);
+    setExploreMode(mode);
     pendingExploreAdvanceRef.current = true;
   };
 
   const handleRegionSelect = (regionId) => {
-    setSelectedRegion(regionId);
+    setExploreRegion(regionId);
     pendingExploreAdvanceRef.current = true;
   };
 
@@ -152,23 +198,23 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
         return "Given a flag, click the country on the map.";
       }
       if (section.id === "name") {
-        return "Given a flag, type the country's name into the box.";
+        return "Given a flag, type the country's name.";
       }
     }
     return section.subtitle;
   };
 
-  if (step === "learningSize") {
+  if (step === START_STEPS.LEARNING_SIZE) {
     const learningLocked = weakCount === 0;
     const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
 
     return (
-      <div className="start-screen">
-        <h1 className="start-title">Learning session</h1>
-        <p className="start-subtitle">
-          {getModeLabel(selectedMode)} · {regionLabel} ·{" "}
-          {getLevelLabel(selectedLevel)}
-        </p>
+      <div className="start-screen start-screen--sub">
+        <StartBackButton onClick={goBack} />
+        <StartStepHeader
+          title="Learning session"
+          subtitle={`${getModeLabel(selectedMode)} · ${regionLabel} · ${getLevelLabel(selectedLevel)}`}
+        />
 
         {weakLoading && <p className="start-subtitle">Checking your learning list…</p>}
         {weakError && (
@@ -219,27 +265,20 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </button>
           </div>
         )}
-
-        <button
-          type="button"
-          className="secondary-btn start-back-btn"
-          onClick={() => setStep("level")}
-        >
-          Back
-        </button>
       </div>
     );
   }
 
-  if (step === "level") {
+  if (step === START_STEPS.LEVEL) {
     return (
-      <div className="start-screen">
-        <h1 className="start-title">Choose a level</h1>
-        <p className="start-subtitle">
-          {isLearning ? "Learn · " : "Test · "}
-          {getModeLabel(selectedMode)} ·{" "}
-          {REGIONS.find((region) => region.id === selectedRegion)?.label}
-        </p>
+      <div className="start-screen start-screen--sub start-screen--level">
+        <StartBackButton onClick={goBack} />
+        <StartStepHeader
+          title="Choose a level"
+          subtitle={`${isLearning ? "Learn · " : "Test · "}${getModeLabel(selectedMode)} · ${
+            REGIONS.find((region) => region.id === selectedRegion)?.label
+          }`}
+        />
 
         <div className="start-level-sections">
           {LEVEL_SECTIONS.map((section) => (
@@ -261,9 +300,14 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
                     disabled={disabled}
                     onClick={() => {
                       if (isLearning) {
-                        setSelectedLevel(option.level);
                         setSelectedSessionSize(null);
-                        setStep("learningSize");
+                        navigate({
+                          step: START_STEPS.LEARNING_SIZE,
+                          mode: selectedMode,
+                          region: selectedRegion,
+                          gameType: GAME_TYPES.LEARNING,
+                          level: option.level,
+                        });
                         return;
                       }
                       handleTestStart(option.level);
@@ -277,28 +321,21 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </div>
           ))}
         </div>
-
-        <button
-          type="button"
-          className="secondary-btn start-back-btn"
-          onClick={() => setStep("chooseType")}
-        >
-          Back
-        </button>
       </div>
     );
   }
 
-  if (step === "chooseType") {
+  if (step === START_STEPS.CHOOSE_TYPE) {
     const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
     const learnDisabled = disabled || !signedIn;
 
     return (
-      <div className="start-screen">
-        <h1 className="start-title">Test or Learn?</h1>
-        <p className="start-subtitle">
-          {getModeLabel(selectedMode)} · {regionLabel}
-        </p>
+      <div className="start-screen start-screen--sub">
+        <StartBackButton onClick={goBackToExplore} />
+        <StartStepHeader
+          title="Test or Learn?"
+          subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
+        />
 
         <div className="start-section start-game-type-list">
           <button
@@ -306,9 +343,12 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             className="choice-btn choice-btn-level"
             disabled={disabled}
             onClick={() => {
-              setSelectedGameType(GAME_TYPES.TEST);
-              setSelectedLevel(null);
-              setStep("level");
+              navigate({
+                step: START_STEPS.LEVEL,
+                mode: selectedMode,
+                region: selectedRegion,
+                gameType: GAME_TYPES.TEST,
+              });
             }}
           >
             <span className="choice-btn-level-title">Test</span>
@@ -319,9 +359,12 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             className="choice-btn choice-btn-level"
             disabled={learnDisabled}
             onClick={() => {
-              setSelectedGameType(GAME_TYPES.LEARNING);
-              setSelectedLevel(null);
-              setStep("level");
+              navigate({
+                step: START_STEPS.LEVEL,
+                mode: selectedMode,
+                region: selectedRegion,
+                gameType: GAME_TYPES.LEARNING,
+              });
             }}
           >
             <span className="choice-btn-level-title">Learn</span>
@@ -338,30 +381,25 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
           </div>
         )}
 
-        <button
-          type="button"
-          className="secondary-btn start-back-btn"
-          onClick={() => setStep("explore")}
-        >
-          Back
-        </button>
-
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       </div>
     );
   }
 
-  if (step === "explore") {
+  if (step === START_STEPS.EXPLORE) {
     return (
-      <div className="start-screen start-screen--explore">
-        <h1 className="start-title">Explore</h1>
-        <p className="start-subtitle">Pick what to practice and where.</p>
+      <div className="start-screen start-screen--sub start-screen--explore">
+        <StartBackButton onClick={goBack} />
+        <StartStepHeader
+          title="Explore"
+          subtitle="Pick what to practice and where."
+        />
 
         <div className="start-section start-section--wide">
           <div className="start-row start-mode-row">
             <button
               type="button"
-              className={`choice-btn ${selectedMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
+              className={`choice-btn ${exploreMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
             >
@@ -369,7 +407,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </button>
             <button
               type="button"
-              className={`choice-btn ${selectedMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
+              className={`choice-btn ${exploreMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
             >
@@ -377,7 +415,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </button>
             <button
               type="button"
-              className={`choice-btn ${selectedMode === GAME_MODES.FLAGS ? "selected" : ""}`}
+              className={`choice-btn ${exploreMode === GAME_MODES.FLAGS ? "selected" : ""}`}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
             >
@@ -387,28 +425,22 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
 
           <RegionMapPicker
             countries={countries}
-            selectedRegion={selectedRegion}
+            selectedRegion={exploreRegion}
             onSelect={handleRegionSelect}
             disabled={disabled}
           />
         </div>
-
-        <button
-          type="button"
-          className="secondary-btn start-back-btn"
-          onClick={resetToHome}
-        >
-          Back
-        </button>
       </div>
     );
   }
 
   return (
     <div className="start-screen start-screen--with-globe">
+      <SpaceBackground />
       <SpinningGlobe />
       <div className="start-screen-content">
-        <h1 className="start-title">Geography Game</h1>
+        <h1 className="start-title">Worldly</h1>
+        <p className="start-subtitle start-brand-subtitle">learning geography</p>
 
         <div className="start-home-actions">
           <button
@@ -430,7 +462,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             type="button"
             className="choice-btn choice-btn-level explore-btn"
             disabled={disabled}
-            onClick={() => setStep("explore")}
+            onClick={() => navigate({ step: START_STEPS.EXPLORE })}
           >
             <span className="choice-btn-level-title">Explore</span>
             <span className="choice-btn-level-desc">

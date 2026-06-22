@@ -35,7 +35,7 @@ function ProfileDropdown({ signedIn, userName, onClose, onSignIn, onSignOut }) {
   );
 }
 
-export default function AppHeader({ title = "Geography Game" }) {
+export default function AppHeader({ onHomeClick }) {
   const { data: session, status } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,10 +45,29 @@ export default function AppHeader({ title = "Geography Game" }) {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const brandContent = (
+    <>
+      <span className="app-header-title">Worldly</span>
+      <span className="app-header-subtitle">learning geography</span>
+    </>
+  );
+
   return (
     <>
       <header className="app-header">
-        <span className="app-header-title">{title}</span>
+        {onHomeClick ? (
+          <button
+            type="button"
+            className="app-header-brand app-header-brand-link"
+            onClick={onHomeClick}
+          >
+            {brandContent}
+          </button>
+        ) : (
+          <Link href="/" className="app-header-brand app-header-brand-link">
+            {brandContent}
+          </Link>
+        )}
         <div className="app-header-actions">
           <div className="profile-menu">
             <button

@@ -1,15 +1,18 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import CountryReferencePanel from "@/components/CountryReferencePanel";
 import CountryHintsPanel from "@/components/CountryHintsPanel";
 import FlagPrompt from "@/components/FlagPrompt";
 import GameCompleteModal from "@/components/GameCompleteModal";
+import IdlePromptModal from "@/components/IdlePromptModal";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
+import PacificMap from "@/components/PacificMap";
 import StartScreen from "@/components/StartScreen";
-import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
+import { CORRECT_ROUND_DELAY_MS, IDLE_PROMPT_MS, IDLE_RETURN_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
 import {
   fetchMasteryStats,
   fetchWeakCountryStats,
@@ -25,7 +28,7 @@ import {
 } from "@/lib/countries";
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
-import { getBoundsFromCountries, buildSmallCountriesGeoJSON } from "@/lib/geometry";
+import { getMapViewForRegion, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS } from "@/lib/mastery";
 import { buildLearningQueue } from "@/lib/learning";
@@ -49,6 +52,7 @@ import {
   buildInactiveGeojson,
   filterCountriesByRegion,
 } from "@/lib/regions";
+import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
 import { formatElapsedTime } from "@/lib/time";
 import { useSession } from "next-auth/react";
 
@@ -69,6 +73,8 @@ function getMasteredCountryIds(masteryRows, level) {
 }
 
 export default function GeographyGame() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: authSession, status: authStatus } = useSession();
   const [allCountries, setAllCountries] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -95,6 +101,10 @@ export default function GeographyGame() {
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [referencePanelOpen, setReferencePanelOpen] = useState(false);
   const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
+  const [idlePromptOpen, setIdlePromptOpen] = useState(false);
+  const [gamePaused, setGamePaused] = useState(false);
+  const [showResumeConfirm, setShowResumeConfirm] = useState(false);
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
 
   const countryQueueRef = useRef([]);
   const queueIndexRef = useRef(0);
@@ -111,16 +121,70 @@ export default function GeographyGame() {
   const answerInputRef = useRef(null);
   const incorrectTargetsRef = useRef([]);
   const gameStartTimeRef = useRef(null);
+  const timerPausedMsRef = useRef(0);
+  const timerPauseStartedAtRef = useRef(null);
+  const idlePromptTimeoutRef = useRef(null);
+  const idleReturnTimeoutRef = useRef(null);
+  const idlePromptOpenRef = useRef(false);
+  const handleBackToMenuRef = useRef(() => {});
+  const gameInHistoryRef = useRef(false);
+  const suppressPlayCheckRef = useRef(false);
   const roundStartTimeRef = useRef(null);
   const revealStatRecordedRef = useRef(false);
+  const gamePausedRef = useRef(false);
 
   const signedIn = authStatus === "authenticated" && authSession?.user;
 
   gameActiveRef.current = gameActive;
+  gamePausedRef.current = gamePaused;
   targetCountryRef.current = targetCountry;
   revealModeRef.current = revealMode;
   rightCountRef.current = rightCount;
   wrongCountRef.current = wrongCount;
+  idlePromptOpenRef.current = idlePromptOpen;
+
+  const getElapsedMs = useCallback(() => {
+    if (gameStartTimeRef.current == null) return 0;
+    let pausedMs = timerPausedMsRef.current;
+    if (timerPauseStartedAtRef.current != null) {
+      pausedMs += Date.now() - timerPauseStartedAtRef.current;
+    }
+    return Math.max(0, Date.now() - gameStartTimeRef.current - pausedMs);
+  }, []);
+
+  const clearIdleTimers = useCallback(() => {
+    if (idlePromptTimeoutRef.current) {
+      clearTimeout(idlePromptTimeoutRef.current);
+      idlePromptTimeoutRef.current = null;
+    }
+    if (idleReturnTimeoutRef.current) {
+      clearTimeout(idleReturnTimeoutRef.current);
+      idleReturnTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetTimerPause = useCallback(() => {
+    timerPausedMsRef.current = 0;
+    timerPauseStartedAtRef.current = null;
+  }, []);
+
+  const pauseGameTimer = useCallback(() => {
+    if (timerPauseStartedAtRef.current != null) return;
+    timerPauseStartedAtRef.current = Date.now();
+  }, []);
+
+  const resumeGameTimer = useCallback(() => {
+    if (timerPauseStartedAtRef.current == null) return;
+    timerPausedMsRef.current += Date.now() - timerPauseStartedAtRef.current;
+    timerPauseStartedAtRef.current = null;
+  }, []);
+
+  const resetIdleState = useCallback(() => {
+    clearIdleTimers();
+    setIdlePromptOpen(false);
+    idlePromptOpenRef.current = false;
+    resetTimerPause();
+  }, [clearIdleTimers, resetTimerPause]);
 
   const hasToken = Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN);
 
@@ -148,20 +212,25 @@ export default function GeographyGame() {
     if (!session || !gameActive || gameComplete) return;
 
     const tick = () => {
-      if (gameStartTimeRef.current != null) {
-        setElapsedMs(Date.now() - gameStartTimeRef.current);
-      }
+      setElapsedMs(getElapsedMs());
     };
 
     tick();
     const intervalId = setInterval(tick, 1000);
     return () => clearInterval(intervalId);
-  }, [session, gameActive, gameComplete]);
+  }, [session, gameActive, gameComplete, getElapsedMs]);
 
   const activeCountries = useMemo(() => {
     if (!session) return [];
     return filterCountriesByRegion(allCountries, session.region);
   }, [allCountries, session]);
+
+  const isOceaniaRegion = session?.region === "oceania";
+
+  const inactiveCountries = useMemo(() => {
+    if (!isOceaniaRegion) return [];
+    return allCountries.filter((country) => country.region !== "oceania");
+  }, [allCountries, isOceaniaRegion]);
 
   const countryColorMap = useMemo(
     () => getCountryColorMap(activeCountries),
@@ -188,9 +257,9 @@ export default function GeographyGame() {
     return [...new Set([...wrongCountryIds, ...roundWrongCountryIds])];
   }, [wrongCountryIds, roundWrongCountryIds]);
 
-  const mapBounds = useMemo(() => {
+  const mapView = useMemo(() => {
     if (!session) return null;
-    return getBoundsFromCountries(activeCountries, session.region);
+    return getMapViewForRegion(activeCountries, session.region);
   }, [activeCountries, session]);
 
   const regionLabel =
@@ -257,8 +326,7 @@ export default function GeographyGame() {
       : null;
 
   const finishGame = useCallback(() => {
-    const elapsed =
-      gameStartTimeRef.current != null ? Date.now() - gameStartTimeRef.current : 0;
+    const elapsed = getElapsedMs();
     setFinalElapsedMs(elapsed);
     setElapsedMs(elapsed);
     setGameActive(false);
@@ -274,7 +342,7 @@ export default function GeographyGame() {
     setShowColorCountryIds([]);
     setRevealMode(false);
     revealModeRef.current = false;
-  }, []);
+  }, [getElapsedMs]);
 
   const finishRound = useCallback(() => {
     const total = countryQueueRef.current.length;
@@ -464,6 +532,7 @@ export default function GeographyGame() {
       }
       clearColorFlash();
       clearWrongFlash();
+      resetIdleState();
 
       gameStartTimeRef.current = Date.now();
       setElapsedMs(0);
@@ -490,6 +559,9 @@ export default function GeographyGame() {
         learningCountryIds: gameType === GAME_TYPES.LEARNING ? countryIds : null,
       });
       setGameComplete(false);
+      setGamePaused(false);
+      setShowResumeConfirm(false);
+      setShowStopConfirm(false);
       setRightCount(0);
       setWrongCount(0);
       rightCountRef.current = 0;
@@ -539,8 +611,11 @@ export default function GeographyGame() {
       if (isNameLevel(level)) {
         requestAnimationFrame(() => answerInputRef.current?.focus());
       }
+
+      router.push(buildPlayingUrl());
+      gameInHistoryRef.current = true;
     },
-    [allCountries, clearColorFlash, clearWrongFlash, updateShowColorForRound]
+    [allCountries, clearColorFlash, clearWrongFlash, resetIdleState, router, updateShowColorForRound]
   );
 
   const beginSession = useCallback(
@@ -686,7 +761,11 @@ export default function GeographyGame() {
   );
 
   const handleBackToMenu = () => {
+    resetIdleState();
     setShowMenuConfirm(false);
+    setShowResumeConfirm(false);
+    setShowStopConfirm(false);
+    setGamePaused(false);
     if (nextRoundTimeoutRef.current) {
       clearTimeout(nextRoundTimeoutRef.current);
     }
@@ -722,6 +801,9 @@ export default function GeographyGame() {
     incorrectTargetsRef.current = [];
     setAnswerInput("");
     setSpellingSuggestion(null);
+    suppressPlayCheckRef.current = true;
+    gameInHistoryRef.current = false;
+    router.replace("/");
   };
 
   const handleMenuClick = () => {
@@ -731,6 +813,132 @@ export default function GeographyGame() {
     }
     handleBackToMenu();
   };
+
+  const handleHeaderHome = () => {
+    if (session) {
+      handleMenuClick();
+      return;
+    }
+    router.replace("/");
+  };
+
+  handleBackToMenuRef.current = handleBackToMenu;
+
+  useEffect(() => {
+    if (!session || !gameInHistoryRef.current) return;
+    if (isPlayingSearchParams(searchParams)) return;
+
+    if (suppressPlayCheckRef.current) {
+      suppressPlayCheckRef.current = false;
+      return;
+    }
+
+    if (!gameComplete) {
+      setShowMenuConfirm(true);
+      router.replace(buildPlayingUrl());
+      return;
+    }
+
+    handleBackToMenuRef.current();
+  }, [searchParams, session, gameComplete, router]);
+
+  const dismissIdlePrompt = useCallback(() => {
+    if (idleReturnTimeoutRef.current) {
+      clearTimeout(idleReturnTimeoutRef.current);
+      idleReturnTimeoutRef.current = null;
+    }
+    setIdlePromptOpen(false);
+    idlePromptOpenRef.current = false;
+    resumeGameTimer();
+  }, [resumeGameTimer]);
+
+  const scheduleIdlePrompt = useCallback(() => {
+    clearIdleTimers();
+    idlePromptTimeoutRef.current = setTimeout(() => {
+      pauseGameTimer();
+      setIdlePromptOpen(true);
+      idlePromptOpenRef.current = true;
+      idleReturnTimeoutRef.current = setTimeout(() => {
+        setIdlePromptOpen(false);
+        idlePromptOpenRef.current = false;
+        handleBackToMenuRef.current();
+      }, IDLE_RETURN_MS);
+    }, IDLE_PROMPT_MS);
+  }, [clearIdleTimers, pauseGameTimer]);
+
+  const handleIdleContinue = useCallback(() => {
+    dismissIdlePrompt();
+    scheduleIdlePrompt();
+  }, [dismissIdlePrompt, scheduleIdlePrompt]);
+
+  useEffect(() => {
+    if (!session || !gameActive || gameComplete || gamePaused) {
+      clearIdleTimers();
+      if (gamePaused) {
+        setIdlePromptOpen(false);
+        idlePromptOpenRef.current = false;
+      }
+      if (!session || !gameActive || gameComplete) {
+        setIdlePromptOpen(false);
+        idlePromptOpenRef.current = false;
+      }
+      return;
+    }
+
+    const onActivity = () => {
+      if (idlePromptOpenRef.current) {
+        dismissIdlePrompt();
+      }
+      scheduleIdlePrompt();
+    };
+
+    const events = ["pointerdown", "keydown", "touchstart"];
+    for (const eventName of events) {
+      window.addEventListener(eventName, onActivity, { passive: true });
+    }
+    scheduleIdlePrompt();
+
+    return () => {
+      for (const eventName of events) {
+        window.removeEventListener(eventName, onActivity);
+      }
+      clearIdleTimers();
+    };
+  }, [
+    session,
+    gameActive,
+    gameComplete,
+    scheduleIdlePrompt,
+    dismissIdlePrompt,
+    clearIdleTimers,
+    gamePaused,
+  ]);
+
+  const handleResumeGame = useCallback(() => {
+    setShowResumeConfirm(false);
+    setGamePaused(false);
+    resumeGameTimer();
+    scheduleIdlePrompt();
+  }, [resumeGameTimer, scheduleIdlePrompt]);
+
+  const handleTogglePause = useCallback(() => {
+    if (gamePaused) {
+      handleResumeGame();
+      return;
+    }
+
+    clearIdleTimers();
+    setIdlePromptOpen(false);
+    idlePromptOpenRef.current = false;
+    setShowResumeConfirm(false);
+    setGamePaused(true);
+    pauseGameTimer();
+  }, [clearIdleTimers, gamePaused, handleResumeGame, pauseGameTimer]);
+
+  const handlePausedMapInteraction = useCallback(() => {
+    if (!gamePausedRef.current) return;
+    setShowResumeConfirm(true);
+  }, []);
 
   const startLearningAgain = useCallback(async () => {
     if (!session || !isLearningGame) return;
@@ -907,6 +1115,11 @@ export default function GeographyGame() {
 
   const handleCountryClick = useCallback(
     (feature) => {
+      if (gamePausedRef.current) {
+        setShowResumeConfirm(true);
+        return;
+      }
+
       const target = targetCountryRef.current;
       if (!gameActiveRef.current || !target || !isFindLevel(session?.level ?? 0)) return;
 
@@ -981,6 +1194,11 @@ export default function GeographyGame() {
   );
 
   const handleAnswerSubmit = useCallback(() => {
+    if (gamePausedRef.current) {
+      setShowResumeConfirm(true);
+      return;
+    }
+
     const target = targetCountryRef.current;
     if (!gameActiveRef.current || !target || !session || !isNameLevel(session.level)) {
       return;
@@ -1065,9 +1283,12 @@ export default function GeographyGame() {
   const showFlagPrompt =
     isFlagsMode && targetCountry?.iso2 && !gameComplete && (isNameGame || isFindLevel(session?.level ?? 0));
 
+  const mapInteractionEnabled =
+    gameActive && !gamePaused && session?.level != null && isFindLevel(session.level);
+
   return (
     <div className="game">
-      <AppHeader />
+      <AppHeader onHomeClick={handleHeaderHome} />
 
       {!session ? (
         !hasToken || loadError ? (
@@ -1075,15 +1296,16 @@ export default function GeographyGame() {
             <p className="start-subtitle">{promptText}</p>
           </div>
         ) : (
-          <StartScreen onStart={handleSessionStart} disabled={!ready} countries={allCountries} />
+          <StartScreen
+            onStart={handleSessionStart}
+            disabled={!ready}
+            countries={allCountries}
+          />
         )
       ) : (
         <>
           <header className="game-header">
             <div className="game-header-left">
-              <button type="button" className="menu-btn" onClick={handleMenuClick}>
-                Menu
-              </button>
               <div className="game-meta">
                 <span className="game-meta-tag">{modeLabel}</span>
                 <span className="game-meta-tag">{regionLabel}</span>
@@ -1126,7 +1348,7 @@ export default function GeographyGame() {
                       }
                       autoComplete="off"
                       spellCheck={false}
-                      disabled={!gameActive}
+                      disabled={!gameActive || gamePaused}
                       onChange={handleAnswerInputChange}
                       onKeyDown={handleAnswerKeyDown}
                     />
@@ -1163,6 +1385,38 @@ export default function GeographyGame() {
             )}
 
             <div className="game-header-right">
+              {!gameComplete && (
+                <div className="game-controls">
+                  <button
+                    type="button"
+                    className="game-control-btn"
+                    onClick={handleTogglePause}
+                    aria-label={gamePaused ? "Resume game" : "Pause game"}
+                    title={gamePaused ? "Resume" : "Pause"}
+                  >
+                    {gamePaused ? (
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="game-control-btn game-control-btn--stop"
+                    onClick={() => setShowStopConfirm(true)}
+                    aria-label="Stop game"
+                    title="Stop"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                      <rect x="6" y="6" width="12" height="12" rx="1" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               <div className="scoreboard">
                 {!gameComplete && (
                   <span className="game-timer">{formatElapsedTime(elapsedMs)}</span>
@@ -1176,24 +1430,50 @@ export default function GeographyGame() {
               </div>
             </div>
           </header>
-          {hasToken && !gameComplete && (
+          {(isOceaniaRegion || hasToken) && !gameComplete && (
             <div className="map-stage">
-              <MapboxMap
-                geojson={activeGeojson}
-                inactiveGeojson={inactiveGeojson}
-                smallCountriesGeojson={activeSmallCountriesGeojson}
-                gameActive={gameActive && isFindLevel(session.level)}
-                level={session.level}
-                wrongCountryIds={mapWrongCountryIds}
-                flashWrongCountryIds={flashWrongCountryIds}
-                showColorCountryIds={showColorCountryIds}
-                filledCountryIds={filledCountryIds}
-                highlightTargetCountryId={highlightTargetCountryId}
-                highlightCountryId={highlightCountryId}
-                flashSmallCountryId={flashSmallCountryId}
-                fitBounds={mapBounds}
-                onCountryClick={handleCountryClick}
-              />
+              {isOceaniaRegion ? (
+                <PacificMap
+                  activeCountries={activeCountries}
+                  inactiveCountries={inactiveCountries}
+                  countryColorMap={countryColorMap}
+                  gameActive={mapInteractionEnabled}
+                  level={session.level}
+                  wrongCountryIds={mapWrongCountryIds}
+                  flashWrongCountryIds={flashWrongCountryIds}
+                  showColorCountryIds={showColorCountryIds}
+                  filledCountryIds={filledCountryIds}
+                  highlightTargetCountryId={highlightTargetCountryId}
+                  highlightCountryId={highlightCountryId}
+                  flashSmallCountryId={flashSmallCountryId}
+                  onCountryClick={handleCountryClick}
+                />
+              ) : (
+                <MapboxMap
+                  geojson={activeGeojson}
+                  inactiveGeojson={inactiveGeojson}
+                  smallCountriesGeojson={activeSmallCountriesGeojson}
+                  gameActive={mapInteractionEnabled}
+                  level={session.level}
+                  wrongCountryIds={mapWrongCountryIds}
+                  flashWrongCountryIds={flashWrongCountryIds}
+                  showColorCountryIds={showColorCountryIds}
+                  filledCountryIds={filledCountryIds}
+                  highlightTargetCountryId={highlightTargetCountryId}
+                  highlightCountryId={highlightCountryId}
+                  flashSmallCountryId={flashSmallCountryId}
+                  mapView={mapView}
+                  onCountryClick={handleCountryClick}
+                />
+              )}
+              {gamePaused && !gameComplete && (
+                <button
+                  type="button"
+                  className="map-pause-overlay"
+                  onClick={handlePausedMapInteraction}
+                  aria-label="Game paused. Click to resume."
+                />
+              )}
               {showFlagPrompt && (
                 <div className="flag-card" aria-hidden="true">
                   <FlagPrompt iso2={targetCountry.iso2} size="card" />
@@ -1240,6 +1520,69 @@ export default function GeographyGame() {
             onPlayAgain={handlePlayAgain}
             onBackToMenu={handleBackToMenu}
           />
+          <IdlePromptModal open={idlePromptOpen} onContinue={handleIdleContinue} />
+          {showResumeConfirm && (
+            <div className="modal-overlay">
+              <div
+                className="modal-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="resume-confirm-title"
+              >
+                <h2 id="resume-confirm-title" className="modal-title">
+                  Resume game?
+                </h2>
+                <p className="modal-subtitle">
+                  The game is paused. Do you want to resume?
+                </p>
+                <div className="modal-actions">
+                  <button type="button" className="primary-btn" onClick={handleResumeGame}>
+                    Resume
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => setShowResumeConfirm(false)}
+                  >
+                    Stay paused
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {showStopConfirm && (
+            <div className="modal-overlay">
+              <div
+                className="modal-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="stop-confirm-title"
+              >
+                <h2 id="stop-confirm-title" className="modal-title">
+                  Exit game?
+                </h2>
+                <p className="modal-subtitle">
+                  Do you want to exit game? Your progress won&apos;t be saved.
+                </p>
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={handleBackToMenu}
+                  >
+                    Exit game
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => setShowStopConfirm(false)}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {showMenuConfirm && (
             <div className="modal-overlay">
               <div

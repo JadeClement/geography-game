@@ -18,7 +18,7 @@ export default function SettingsPage() {
 
   return (
     <div className="settings">
-      <AppHeader title="Settings" />
+      <AppHeader />
       <main className="settings-content">
         <Link href="/" className="settings-back">
           ← Back to game
