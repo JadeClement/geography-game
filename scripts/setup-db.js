@@ -61,6 +61,17 @@ CREATE TABLE IF NOT EXISTS country_attempts (
 
 CREATE INDEX IF NOT EXISTS country_attempts_user_lookup_idx
   ON country_attempts (user_id, country_id, mode, level, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS practice_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  practiced_at DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, practiced_at)
+);
+
+CREATE INDEX IF NOT EXISTS practice_sessions_user_lookup_idx
+  ON practice_sessions (user_id, practiced_at DESC);
 `;
 
 const MIGRATIONS = `
