@@ -1,6 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
+import {
+  mapContainer,
+  pacificMap,
+  pacificMapControlBtn,
+  pacificMapControlBtnWide,
+  pacificMapControls,
+  pacificMapCountryClickable,
+  pacificMapSvg,
+} from "@/lib/ui";
 import { useTheme } from "@/components/ThemeProvider";
 import {
   ACTIVE_LAND_COLOR,
@@ -259,11 +269,11 @@ export default function PacificMap({
   const oceanExtent = PACIFIC_OCEAN_PADDING;
 
   return (
-    <div className="map-container pacific-map">
+    <div className={cn(mapContainer, pacificMap)}>
       <svg
         ref={svgRef}
         viewBox={viewBoxToString(viewBox)}
-        className="pacific-map-svg"
+        className={pacificMapSvg}
         role="img"
         aria-label="Pacific region map"
         onPointerDown={handlePointerDown}
@@ -321,7 +331,7 @@ export default function PacificMap({
                 d={country.path}
                 fill={fill ?? ACTIVE_LAND_COLOR}
                 fillRule="evenodd"
-                className={`pacific-map-country ${gameActive ? "pacific-map-country--clickable" : ""}`}
+                className={cn("pacific-map-country", gameActive && pacificMapCountryClickable)}
                 onClick={() => handleCountryPointer(country.id)}
               />
             );
@@ -356,7 +366,7 @@ export default function PacificMap({
                   fill="transparent"
                   stroke={stroke}
                   strokeWidth={2}
-                  className={gameActive ? "pacific-map-country--clickable" : ""}
+                  className={gameActive ? pacificMapCountryClickable : undefined}
                   onClick={() => handleCountryPointer(country.id)}
                 />
                 {isFlashing && (
@@ -395,17 +405,22 @@ export default function PacificMap({
         )}
       </svg>
 
-      <div className="pacific-map-controls" aria-label="Map zoom controls">
-        <button type="button" className="pacific-map-control-btn" onClick={zoomIn} aria-label="Zoom in">
+      <div className={pacificMapControls} aria-label="Map zoom controls">
+        <button type="button" className={pacificMapControlBtn} onClick={zoomIn} aria-label="Zoom in">
           +
         </button>
-        <button type="button" className="pacific-map-control-btn" onClick={zoomOut} aria-label="Zoom out">
+        <button type="button" className={pacificMapControlBtn} onClick={zoomOut} aria-label="Zoom out">
           −
         </button>
-        <button type="button" className="pacific-map-control-btn" onClick={resetView} aria-label="Reset to Oceania view">
+        <button type="button" className={pacificMapControlBtn} onClick={resetView} aria-label="Reset to Oceania view">
           ⌂
         </button>
-        <button type="button" className="pacific-map-control-btn pacific-map-control-btn--wide" onClick={showWorldView} aria-label="Show entire world map">
+        <button
+          type="button"
+          className={cn(pacificMapControlBtn, pacificMapControlBtnWide)}
+          onClick={showWorldView}
+          aria-label="Show entire world map"
+        >
           ⊕
         </button>
       </div>

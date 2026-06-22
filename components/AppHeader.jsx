@@ -4,30 +4,46 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
+import {
+  appHeader,
+  appHeaderActions,
+  appHeaderBrand,
+  appHeaderBrandLink,
+  appHeaderSubtitle,
+  appHeaderTitle,
+  dropdownItem,
+  profileAvatar,
+  profileBtn,
+  profileDropdown,
+  profileIcon,
+  profileMenu,
+  profileName,
+  streakBadge,
+} from "@/lib/ui";
 
 function ProfileDropdown({ signedIn, userName, onClose, onSignIn, onSignOut }) {
   return (
-    <div className="profile-dropdown">
-      {signedIn && userName && <p className="profile-name">{userName}</p>}
+    <div className={profileDropdown}>
+      {signedIn && userName && <p className={profileName}>{userName}</p>}
 
-      <Link href="/settings" className="dropdown-item" onClick={onClose}>
+      <Link href="/settings" className={dropdownItem} onClick={onClose}>
         Settings
       </Link>
 
       {signedIn ? (
         <>
-          <Link href="/mastery" className="dropdown-item" onClick={onClose}>
+          <Link href="/mastery" className={dropdownItem} onClick={onClose}>
             Mastery Map
           </Link>
-          <Link href="/results" className="dropdown-item" onClick={onClose}>
+          <Link href="/results" className={dropdownItem} onClick={onClose}>
             Results
           </Link>
-          <button type="button" className="dropdown-item" onClick={onSignOut}>
+          <button type="button" className={dropdownItem} onClick={onSignOut}>
             Sign out
           </button>
         </>
       ) : (
-        <button type="button" className="dropdown-item" onClick={onSignIn}>
+        <button type="button" className={dropdownItem} onClick={onSignIn}>
           Sign in
         </button>
       )}
@@ -72,51 +88,51 @@ export default function AppHeader({ onHomeClick }) {
 
   const brandContent = (
     <>
-      <span className="app-header-title">Worldly</span>
-      <span className="app-header-subtitle">learning geography</span>
+      <span className={appHeaderTitle}>Worldly</span>
+      <span className={appHeaderSubtitle}>learning geography</span>
     </>
   );
 
   return (
     <>
-      <header className="app-header">
+      <header className={appHeader}>
         {onHomeClick ? (
           <button
             type="button"
-            className="app-header-brand app-header-brand-link"
+            className={`${appHeaderBrand} ${appHeaderBrandLink}`}
             onClick={onHomeClick}
           >
             {brandContent}
           </button>
         ) : (
-          <Link href="/" className="app-header-brand app-header-brand-link">
+          <Link href="/" className={`${appHeaderBrand} ${appHeaderBrandLink}`}>
             {brandContent}
           </Link>
         )}
-        <div className="app-header-actions">
+        <div className={appHeaderActions}>
           {signedIn && currentStreak > 0 && (
             <span
-              className="streak-badge"
+              className={streakBadge}
               title={`${currentStreak} day practice streak`}
               aria-label={`${currentStreak} day practice streak`}
             >
               <span aria-hidden="true">🔥</span> {currentStreak}
             </span>
           )}
-          <div className="profile-menu">
+          <div className={profileMenu}>
             <button
               type="button"
-              className="profile-btn"
+              className={profileBtn}
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="Account menu"
               aria-expanded={menuOpen}
             >
               {signedIn ? (
-                <span className="profile-avatar" aria-hidden="true">
+                <span className={profileAvatar} aria-hidden="true">
                   {(userName || "?").charAt(0).toUpperCase()}
                 </span>
               ) : (
-                <span className="profile-icon" aria-hidden="true">
+                <span className={profileIcon} aria-hidden="true">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"

@@ -1,19 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  geometryToPathData,
-  getRegionMapView,
-  OCEANIA_MAP_HEIGHT,
-  OCEANIA_MAP_WIDTH,
-} from "@/lib/globeProjection";
+import { geometryToPathData, getRegionMapView } from "@/lib/globeProjection";
 import {
   getRegionMapColor,
   REGION_MAP_BORDER,
   REGION_MAP_LABELS,
   REGION_MAP_OCEAN,
-  getRegionMapLabelPosition,
 } from "@/lib/regionMapColors";
+import { cn } from "@/lib/cn";
+import { choiceBtn } from "@/lib/ui";
 
 const PATH_SIMPLIFY_TOLERANCE = 0.25;
 
@@ -23,18 +19,13 @@ export default function RegionMapPicker({
   onSelect,
   disabled = false,
 }) {
-  const isOceaniaFocus = selectedRegion === "oceania";
-  const mapView = getRegionMapView(isOceaniaFocus ? "oceania" : "world");
+  const mapView = getRegionMapView("world");
 
   const countryPaths = useMemo(() => {
-    const visibleCountries = isOceaniaFocus
-      ? countries.filter((country) => country.region === "oceania")
-      : countries;
-
-    return visibleCountries
+    return countries
       .map((country) => {
         const path = geometryToPathData(
-          country.feature.geometry,
+          country.feature?.geometry,
           PATH_SIMPLIFY_TOLERANCE,
           mapView
         );
@@ -47,20 +38,17 @@ export default function RegionMapPicker({
         };
       })
       .filter(Boolean);
-  }, [countries, isOceaniaFocus, mapView]);
-
-  const visibleLabels = isOceaniaFocus
-    ? REGION_MAP_LABELS.filter((zone) => zone.id === "oceania")
-    : REGION_MAP_LABELS;
+  }, [countries, mapView]);
 
   return (
-    <div className={`region-map-picker ${disabled ? "region-map-picker--disabled" : ""}`}>
+    <div className={cn("region-map-picker w-full", disabled && "region-map-picker--disabled")}>
       <div className="region-map-wrap">
         <svg
           viewBox={`0 0 ${mapView.width} ${mapView.height}`}
-          className={`region-map ${isOceaniaFocus ? "region-map--oceania-focus" : ""}`}
+          className="region-map"
           role="group"
           aria-label="Choose a region on the map"
+          preserveAspectRatio="xMidYMid meet"
         >
           <rect
             width={mapView.width}
@@ -83,10 +71,10 @@ export default function RegionMapPicker({
                   key={country.id}
                   d={country.path}
                   fill={country.fill}
+                  style={{ fill: country.fill }}
                   fillRule="evenodd"
-                  className={`region-map-country ${selected ? "selected" : ""}`}
+                  className={cn("region-map-country", selected && "selected")}
                   data-region={country.region}
-                  aria-hidden="true"
                   onClick={() => {
                     if (!disabled) onSelect(country.region);
                   }}
@@ -96,38 +84,47 @@ export default function RegionMapPicker({
           </g>
         </svg>
 
-        {visibleLabels.map((zone) => {
-          const { x, y } = getRegionMapLabelPosition(zone.id, isOceaniaFocus);
-          const mapWidth = isOceaniaFocus ? OCEANIA_MAP_WIDTH : mapView.width;
-          const mapHeight = isOceaniaFocus ? OCEANIA_MAP_HEIGHT : mapView.height;
-
-          return (
-            <button
-              key={zone.id}
-              type="button"
-              className={`choice-btn region-map-region-btn ${
-                selectedRegion === zone.id ? "selected" : ""
-              }`}
-              style={{
-                left: `${(x / mapWidth) * 100}%`,
-                top: `${(y / mapHeight) * 100}%`,
-              }}
-              disabled={disabled}
-              onClick={() => onSelect(zone.id)}
-            >
-              <span className="region-map-region-btn-label region-map-region-btn-label--full">
-                {zone.label}
-              </span>
-              <span className="region-map-region-btn-label region-map-region-btn-label--short">
-                {zone.shortLabel}
-              </span>
-            </button>
-          );
-        })}
+        {REGION_MAP_LABELS.map((zone) => (
+          <button
+            key={zone.id}
+            type="button"
+            className={choiceBtn({
+              selected: selectedRegion === zone.id,
+              disabled,
+              className: cn(
+                "region-map-region-btn",
+                "bg-surface/10 backdrop-blur-sm",
+                "enabled:hover:translate-x-[-50%] enabled:hover:translate-y-[-50%]",
+                "enabled:active:translate-x-[-50%] enabled:active:translate-y-[-50%]",
+              ),
+            })}
+            style={{
+              left: `${(zone.x / mapView.width) * 100}%`,
+              top: `${(zone.y / mapView.height) * 100}%`,
+            }}
+            disabled={disabled}
+            onClick={() => onSelect(zone.id)}
+          >
+            <span className="region-map-region-btn-label region-map-region-btn-label--full">
+              {zone.label}
+            </span>
+            <span className="region-map-region-btn-label region-map-region-btn-label--short">
+              {zone.shortLabel}
+            </span>
+          </button>
+        ))}
 
         <button
           type="button"
-          className={`choice-btn region-map-world-btn ${selectedRegion === "world" ? "selected" : ""}`}
+          className={choiceBtn({
+            selected: selectedRegion === "world",
+            disabled,
+            className: cn(
+              "region-map-world-btn absolute bottom-[5%] left-1/2 min-w-32 -translate-x-1/2",
+              "bg-surface/10 backdrop-blur-sm",
+              "enabled:hover:-translate-x-1/2 enabled:active:-translate-x-1/2",
+            ),
+          })}
           disabled={disabled}
           onClick={() => onSelect("world")}
         >

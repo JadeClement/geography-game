@@ -1,13 +1,10 @@
 "use client";
 
+import { startBackArrow } from "@/lib/ui";
+
 export default function StartBackButton({ onClick, label = "Back" }) {
   return (
-    <button
-      type="button"
-      className="start-back-arrow"
-      onClick={onClick}
-      aria-label={label}
-    >
+    <button type="button" className={startBackArrow} onClick={onClick} aria-label={label}>
       <svg
         viewBox="0 0 24 24"
         width="18"

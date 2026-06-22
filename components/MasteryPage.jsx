@@ -21,6 +21,44 @@ import {
   MASTERY_MODES,
   TIER_COLORS,
 } from "@/lib/masteryMap";
+import {
+  masteryBack,
+  masteryContent,
+  masteryGradientBar,
+  masteryHead,
+  masteryLegend,
+  masteryLegendRow,
+  masteryLegendScale,
+  masteryLegendTitle,
+  masteryMapCanvas,
+  masteryMapWrap,
+  masteryMessage,
+  masteryMessageError,
+  masteryPage,
+  masteryPanel,
+  masteryRing,
+  masteryRingFill,
+  masteryRingLabel,
+  masteryRingTrack,
+  masteryRingValue,
+  masteryShare,
+  masterySignIn,
+  masteryStage,
+  masteryStatLine,
+  masterySubtitle,
+  masterySwatch,
+  masteryTab,
+  masteryTabDot,
+  masteryTabs,
+  masteryTitle,
+  masteryToolbar,
+  masteryTooltip,
+  masteryTooltipDot,
+  masteryTooltipRow,
+  primaryBtn,
+  secondaryBtn,
+} from "@/lib/ui";
+import { cn } from "@/lib/cn";
 
 const MODE_TABS = [...MASTERY_MODES, ALL_MODE];
 const BASE_DIM = "#1a2740";
@@ -30,10 +68,10 @@ function ProgressRing({ pct, accent }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct / 100);
   return (
-    <svg className="mastery-ring" viewBox="0 0 120 120" role="img" aria-label={`${pct}% mastered`}>
-      <circle className="mastery-ring-track" cx="60" cy="60" r={radius} />
+    <svg className={masteryRing} viewBox="0 0 120 120" role="img" aria-label={`${pct}% mastered`}>
+      <circle className={masteryRingTrack} cx="60" cy="60" r={radius} />
       <circle
-        className="mastery-ring-fill"
+        className={masteryRingFill}
         cx="60"
         cy="60"
         r={radius}
@@ -41,10 +79,10 @@ function ProgressRing({ pct, accent }) {
         strokeDasharray={circumference}
         strokeDashoffset={offset}
       />
-      <text x="60" y="58" className="mastery-ring-value">
+      <text x="60" y="58" className={masteryRingValue}>
         {pct}%
       </text>
-      <text x="60" y="78" className="mastery-ring-label">
+      <text x="60" y="78" className={masteryRingLabel}>
         mastered
       </text>
     </svg>
@@ -181,41 +219,43 @@ export default function MasteryPage() {
   }, [hover, data, nameById]);
 
   return (
-    <div className="mastery-page">
+    <div className={masteryPage}>
       <AppHeader />
 
-      <main className="mastery-content">
-        <Link href="/" className="mastery-back">
+      <main className={masteryContent}>
+        <Link href="/" className={masteryBack}>
           ← Back to game
         </Link>
 
-        <div className="mastery-head">
+        <div className={masteryHead}>
           <div>
-            <h1 className="mastery-title">Mastery Map</h1>
-            <p className="mastery-subtitle">
+            <h1 className={masteryTitle}>Mastery Map</h1>
+            <p className={masterySubtitle}>
               Every country you&apos;ve conquered, lit up across the globe.
             </p>
           </div>
         </div>
 
-        {status === "loading" && <p className="mastery-message">Loading…</p>}
+        {status === "loading" && <p className={masteryMessage}>Loading…</p>}
 
         {!signedIn && status !== "loading" && (
-          <div className="mastery-sign-in">
-            <p className="mastery-message">Sign in to see which countries you&apos;ve mastered.</p>
-            <button type="button" className="primary-btn" onClick={() => setAuthOpen(true)}>
+          <div className={masterySignIn}>
+            <p className={masteryMessage}>Sign in to see which countries you&apos;ve mastered.</p>
+            <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
               Sign in / Create account
             </button>
           </div>
         )}
 
-        {signedIn && loading && <p className="mastery-message">Lighting up your world…</p>}
-        {signedIn && error && <p className="mastery-message error">{error}</p>}
+        {signedIn && loading && <p className={masteryMessage}>Lighting up your world…</p>}
+        {signedIn && error && (
+          <p className={cn(masteryMessage, masteryMessageError)}>{error}</p>
+        )}
 
         {signedIn && !loading && !error && data && (
           <>
-            <div className="mastery-toolbar">
-              <div className="mastery-tabs" role="tablist" aria-label="Mastery mode">
+            <div className={masteryToolbar}>
+              <div className={masteryTabs} role="tablist" aria-label="Mastery mode">
                 {MODE_TABS.map((tab) => {
                   const tabVisual = getModeVisual(tab);
                   const active = tab === mode;
@@ -226,12 +266,12 @@ export default function MasteryPage() {
                       type="button"
                       role="tab"
                       aria-selected={active}
-                      className={`mastery-tab ${active ? "active" : ""}`}
+                      className={masteryTab({ active })}
                       style={active ? { borderColor: tabVisual.accent, color: tabVisual.accent } : undefined}
                       onClick={() => setMode(tab)}
                     >
                       <span
-                        className="mastery-tab-dot"
+                        className={masteryTabDot}
                         style={{ background: tabVisual.accent }}
                         aria-hidden="true"
                       />
@@ -241,13 +281,13 @@ export default function MasteryPage() {
                 })}
               </div>
 
-              <button type="button" className="secondary-btn mastery-share" onClick={handleShare}>
+              <button type="button" className={cn(secondaryBtn, masteryShare)} onClick={handleShare}>
                 Share image
               </button>
             </div>
 
-            <div className="mastery-stage">
-              <div className="mastery-map-wrap">
+            <div className={masteryStage}>
+              <div className={masteryMapWrap}>
                 <MasteryMap
                   ref={mapRef}
                   countries={data.countries}
@@ -261,13 +301,13 @@ export default function MasteryPage() {
 
                 {hoverInfo && (
                   <div
-                    className="mastery-tooltip"
+                    className={masteryTooltip}
                     style={{ left: hoverInfo.point.x + 14, top: hoverInfo.point.y + 14 }}
                   >
                     <strong>{hoverInfo.name}</strong>
                     {hoverInfo.rows.map((row) => (
-                      <span key={row.label} className="mastery-tooltip-row">
-                        <span className="mastery-tooltip-dot" style={{ background: row.accent }} />
+                      <span key={row.label} className={masteryTooltipRow}>
+                        <span className={masteryTooltipDot} style={{ background: row.accent }} />
                         {row.label}
                         <em>{row.mastered ? "★" : `${row.pct}%`}</em>
                       </span>
@@ -276,10 +316,10 @@ export default function MasteryPage() {
                 )}
               </div>
 
-              <aside className="mastery-panel">
+              <aside className={masteryPanel}>
                 {stats && <ProgressRing pct={stats.pct} accent={visual.accent} />}
                 {stats && (
-                  <p className="mastery-stat-line">
+                  <p className={masteryStatLine}>
                     <strong style={{ color: visual.accent }}>{stats.mastered}</strong>
                     <span> / {stats.total}</span>
                     <br />
@@ -288,31 +328,31 @@ export default function MasteryPage() {
                 )}
 
                 {mode === ALL_MODE ? (
-                  <div className="mastery-legend">
-                    <span className="mastery-legend-title">Modes mastered</span>
-                    <span className="mastery-legend-row">
-                      <span className="mastery-swatch" style={{ background: TIER_COLORS[1] }} />
+                  <div className={masteryLegend}>
+                    <span className={masteryLegendTitle}>Modes mastered</span>
+                    <span className={masteryLegendRow}>
+                      <span className={masterySwatch} style={{ background: TIER_COLORS[1] }} />
                       Bronze · 1 mode <em>{stats?.tiers?.[1] ?? 0}</em>
                     </span>
-                    <span className="mastery-legend-row">
-                      <span className="mastery-swatch" style={{ background: TIER_COLORS[2] }} />
+                    <span className={masteryLegendRow}>
+                      <span className={masterySwatch} style={{ background: TIER_COLORS[2] }} />
                       Silver · 2 modes <em>{stats?.tiers?.[2] ?? 0}</em>
                     </span>
-                    <span className="mastery-legend-row">
-                      <span className="mastery-swatch" style={{ background: TIER_COLORS[3] }} />
+                    <span className={masteryLegendRow}>
+                      <span className={masterySwatch} style={{ background: TIER_COLORS[3] }} />
                       Gold · all 3 <em>{stats?.tiers?.[3] ?? 0}</em>
                     </span>
                   </div>
                 ) : (
-                  <div className="mastery-legend">
-                    <span className="mastery-legend-title">{getModeLabel(mode)} glow</span>
+                  <div className={masteryLegend}>
+                    <span className={masteryLegendTitle}>{getModeLabel(mode)} glow</span>
                     <span
-                      className="mastery-gradient-bar"
+                      className={masteryGradientBar}
                       style={{
                         background: `linear-gradient(90deg, ${BASE_DIM}, ${visual.accent})`,
                       }}
                     />
-                    <span className="mastery-legend-scale">
+                    <span className={masteryLegendScale}>
                       <span>Learning</span>
                       <span>Mastered</span>
                     </span>

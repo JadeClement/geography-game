@@ -18,12 +18,53 @@ import {
   normalizeStartScreenRoute,
   parseStartScreenSearchParams,
 } from "@/lib/startNavigation";
+import { cn } from "@/lib/cn";
+import {
+  choiceBtnLevel,
+  choiceBtnLevelDesc,
+  choiceBtnLevelTitle,
+  exploreBtn,
+  goBtn,
+  goBtnIcon,
+  goBtnLabel,
+  goBtnSub,
+  primaryBtn,
+  secondaryBtn,
+  startBrandSubtitle,
+  startGameTypeList,
+  startHeroTitleGroup,
+  startHomeActions,
+  startLevelList,
+  startLevelSection,
+  startLevelSectionDesc,
+  startLevelSectionHeader,
+  startLevelSectionList,
+  startLevelSections,
+  startLevelSectionTitle,
+  startMessage,
+  startMessageError,
+  startModeBtn,
+  startModeRow,
+  startRow,
+  startScreen,
+  startScreenContent,
+  startScreenExplore,
+  startScreenSub,
+  startScreenWithGlobe,
+  startSection,
+  startExploreSection,
+  startSectionWide,
+  startStepHeader,
+  startSubtitle,
+  startTitle,
+  startTitleGlobe,
+} from "@/lib/ui";
 
 function StartStepHeader({ title, subtitle }) {
   return (
-    <div className="start-step-header">
-      <h1 className="start-title">{title}</h1>
-      {subtitle && <p className="start-subtitle">{subtitle}</p>}
+    <div className={startStepHeader}>
+      <h1 className={startTitle}>{title}</h1>
+      {subtitle && <p className={startSubtitle}>{subtitle}</p>}
     </div>
   );
 }
@@ -209,20 +250,20 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
     const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
 
     return (
-      <div className="start-screen start-screen--sub">
+      <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Learning session"
           subtitle={`${getModeLabel(selectedMode)} · ${regionLabel} · ${getLevelLabel(selectedLevel)}`}
         />
 
-        {weakLoading && <p className="start-subtitle">Checking your learning list…</p>}
+        {weakLoading && <p className={startSubtitle}>Checking your learning list…</p>}
         {weakError && (
-          <div className="start-message error">
+          <div className={startMessageError()}>
             <p>{weakError}</p>
             <button
               type="button"
-              className="secondary-btn"
+              className={secondaryBtn}
               onClick={() => setWeakReloadKey((key) => key + 1)}
             >
               Try again
@@ -231,33 +272,34 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
         )}
 
         {!weakLoading && !weakError && learningLocked && (
-          <p className="start-message">
+          <p className={startMessage}>
             Play Test mode first to build your learning list. Learning focuses on countries you
             have missed at least once.
           </p>
         )}
 
         {!weakLoading && !weakError && !learningLocked && (
-          <div className="start-section start-level-list">
-            <p className="start-subtitle">
+          <div className={cn(startSection, startLevelList)}>
+            <p className={startSubtitle}>
               {weakCount} {weakCount === 1 ? "country" : "countries"} in your learning list
             </p>
             {LEARNING_SESSION_SIZES.map((option) => (
               <button
                 key={option.id}
                 type="button"
-                className={`choice-btn choice-btn-level ${
-                  selectedSessionSize === option.id ? "selected" : ""
-                }`}
+                className={choiceBtnLevel({
+                  selected: selectedSessionSize === option.id,
+                  disabled: disabled || starting,
+                })}
                 disabled={disabled || starting}
                 onClick={() => setSelectedSessionSize(option.id)}
               >
-                <span className="choice-btn-level-title">{option.label}</span>
+                <span className={choiceBtnLevelTitle}>{option.label}</span>
               </button>
             ))}
             <button
               type="button"
-              className="primary-btn start-continue-btn"
+              className={cn(primaryBtn, "mt-1 w-full")}
               disabled={!selectedSessionSize || disabled || starting}
               onClick={handleLearningStart}
             >
@@ -271,7 +313,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
 
   if (step === START_STEPS.LEVEL) {
     return (
-      <div className="start-screen start-screen--sub start-screen--level">
+      <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Choose a level"
@@ -280,23 +322,27 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
           }`}
         />
 
-        <div className="start-level-sections">
+        <div className={startLevelSections}>
           {LEVEL_SECTIONS.map((section) => (
-            <div key={section.id} className="start-level-section">
-              <div className="start-level-section-header">
-                <h2 className="start-level-section-title">{section.title}</h2>
+            <div key={section.id} className={startLevelSection}>
+              <div className={startLevelSectionHeader}>
+                <h2 className={startLevelSectionTitle}>{section.title}</h2>
                 {getSectionSubtitle(section) && (
-                  <p className="start-level-section-desc">{getSectionSubtitle(section)}</p>
+                  <p className={startLevelSectionDesc}>{getSectionSubtitle(section)}</p>
                 )}
               </div>
-              <div className="start-section start-level-list">
+              <div className={cn(startSection, startLevelSectionList, startLevelList)}>
                 {section.levels.map((option) => (
                   <button
                     key={option.level}
                     type="button"
-                    className={`choice-btn choice-btn-level ${
-                      isLearning && selectedLevel === option.level ? "selected" : ""
-                    }`}
+                    className={cn(
+                      choiceBtnLevel({
+                        selected: isLearning && selectedLevel === option.level,
+                        disabled,
+                      }),
+                      startLevelBtn,
+                    )}
                     disabled={disabled}
                     onClick={() => {
                       if (isLearning) {
@@ -313,8 +359,8 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
                       handleTestStart(option.level);
                     }}
                   >
-                    <span className="choice-btn-level-title">{option.title}</span>
-                    <span className="choice-btn-level-desc">{option.description}</span>
+                    <span className={choiceBtnLevelTitle}>{option.title}</span>
+                    <span className={choiceBtnLevelDesc}>{option.description}</span>
                   </button>
                 ))}
               </div>
@@ -330,17 +376,17 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
     const learnDisabled = disabled || !signedIn;
 
     return (
-      <div className="start-screen start-screen--sub">
+      <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBackToExplore} />
         <StartStepHeader
           title="Test or Learn?"
           subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
         />
 
-        <div className="start-section start-game-type-list">
+        <div className={cn(startSection, startGameTypeList)}>
           <button
             type="button"
-            className="choice-btn choice-btn-level"
+            className={choiceBtnLevel({ disabled })}
             disabled={disabled}
             onClick={() => {
               navigate({
@@ -351,12 +397,12 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
               });
             }}
           >
-            <span className="choice-btn-level-title">Test</span>
-            <span className="choice-btn-level-desc">Full quiz — builds your learning list.</span>
+            <span className={choiceBtnLevelTitle}>Test</span>
+            <span className={choiceBtnLevelDesc}>Full quiz — builds your learning list.</span>
           </button>
           <button
             type="button"
-            className="choice-btn choice-btn-level"
+            className={choiceBtnLevel({ disabled: learnDisabled })}
             disabled={learnDisabled}
             onClick={() => {
               navigate({
@@ -367,15 +413,15 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
               });
             }}
           >
-            <span className="choice-btn-level-title">Learn</span>
-            <span className="choice-btn-level-desc">Drill the ones you miss most.</span>
+            <span className={choiceBtnLevelTitle}>Learn</span>
+            <span className={choiceBtnLevelDesc}>Drill the ones you miss most.</span>
           </button>
         </div>
 
         {!signedIn && status !== "loading" && (
-          <div className="start-message">
+          <div className={startMessage}>
             <p>Sign in to use Learn — your progress is tracked per country.</p>
-            <button type="button" className="primary-btn" onClick={() => setAuthOpen(true)}>
+            <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
               Sign in
             </button>
           </div>
@@ -388,18 +434,18 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
 
   if (step === START_STEPS.EXPLORE) {
     return (
-      <div className="start-screen start-screen--sub start-screen--explore">
+      <div className={cn(startScreen, startScreenSub, startScreenExplore)}>
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Explore"
           subtitle="Pick what to practice and where."
         />
 
-        <div className="start-section start-section--wide">
-          <div className="start-row start-mode-row">
+        <div className={startExploreSection}>
+          <div className={cn(startRow, startModeRow, "mx-auto w-full max-w-xl")}>
             <button
               type="button"
-              className={`choice-btn ${exploreMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.COUNTRIES, disabled })}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
             >
@@ -407,7 +453,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </button>
             <button
               type="button"
-              className={`choice-btn ${exploreMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.CAPITALS, disabled })}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
             >
@@ -415,7 +461,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             </button>
             <button
               type="button"
-              className={`choice-btn ${exploreMode === GAME_MODES.FLAGS ? "selected" : ""}`}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.FLAGS, disabled })}
               disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
             >
@@ -435,37 +481,39 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
   }
 
   return (
-    <div className="start-screen start-screen--with-globe">
+    <div className={cn(startScreen, startScreenWithGlobe)}>
       <SpaceBackground />
       <SpinningGlobe />
-      <div className="start-screen-content">
-        <h1 className="start-title">Worldly</h1>
-        <p className="start-subtitle start-brand-subtitle">learning geography</p>
+      <div className={startScreenContent}>
+        <div className={startHeroTitleGroup}>
+          <h1 className={startTitleGlobe}>Worldly</h1>
+          <p className={cn(startSubtitle, startBrandSubtitle)}>learning geography</p>
+        </div>
 
-        <div className="start-home-actions">
+        <div className={startHomeActions}>
           <button
             type="button"
-            className="go-btn"
+            className={goBtn}
             disabled={disabled || starting}
             onClick={handleGo}
           >
-            <span className="go-btn-icon" aria-hidden="true">
+            <span className={goBtnIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </span>
-            <span className="go-btn-label">{starting ? "Starting…" : "Go!"}</span>
-            <span className="go-btn-sub">Do 10 today.</span>
+            <span className={goBtnLabel}>{starting ? "Starting…" : "Go!"}</span>
+            <span className={goBtnSub}>Do 10 today.</span>
           </button>
 
           <button
             type="button"
-            className="choice-btn choice-btn-level explore-btn"
+            className={choiceBtnLevel({ disabled, className: exploreBtn })}
             disabled={disabled}
             onClick={() => navigate({ step: START_STEPS.EXPLORE })}
           >
-            <span className="choice-btn-level-title">Explore</span>
-            <span className="choice-btn-level-desc">
+            <span className={choiceBtnLevelTitle}>Explore</span>
+            <span className={choiceBtnLevelDesc}>
               Choose countries, capitals, or flags by region.
             </span>
           </button>

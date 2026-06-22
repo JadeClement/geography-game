@@ -1,7 +1,9 @@
+import { mapFeedback, mapFeedbackIcon, mapFeedbackText } from "@/lib/ui";
+
 function FeedbackIcon({ type }) {
   if (type === "correct" || type === "got-it") {
     return (
-      <svg className="map-feedback__icon" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
         <path
           d="M8 12.5l2.5 2.5 5.5-6"
@@ -17,7 +19,7 @@ function FeedbackIcon({ type }) {
 
   if (type === "wrong") {
     return (
-      <svg className="map-feedback__icon" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
         <path
           d="M12 8v5M12 16h.01"
@@ -31,7 +33,7 @@ function FeedbackIcon({ type }) {
   }
 
   return (
-    <svg className="map-feedback__icon" viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
       <circle cx="12" cy="12" r="3.5" fill="currentColor" />
       <path
@@ -50,13 +52,13 @@ export default function MapFeedback({ text, type }) {
 
   return (
     <div
-      className={`map-feedback map-feedback--${type}`}
+      className={mapFeedback({ type })}
       role="status"
       aria-live="polite"
       key={`${type}-${text}`}
     >
       <FeedbackIcon type={type} />
-      <span className="map-feedback__text">{text}</span>
+      <span className={mapFeedbackText}>{text}</span>
     </div>
   );
 }

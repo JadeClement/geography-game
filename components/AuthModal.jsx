@@ -4,6 +4,18 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Input from "@/components/ui/Input";
 import ValidationMessage from "@/components/ui/ValidationMessage";
+import {
+  authForm,
+  authSwitch,
+  linkBtn,
+  modalCard,
+  modalClose,
+  modalOverlay,
+  modalSubtitle,
+  modalTitle,
+  primaryBtn,
+} from "@/lib/ui";
+import { cn } from "@/lib/cn";
 
 export default function AuthModal({ open, onClose, initialMode = "signin", onSuccess }) {
   const [mode, setMode] = useState(initialMode);
@@ -76,28 +88,28 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={modalOverlay} onClick={onClose}>
       <div
-        className="modal-card auth-modal"
+        className={cn(modalCard, "max-w-md")}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
       >
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+        <button type="button" className={modalClose} onClick={onClose} aria-label="Close">
           ×
         </button>
 
-        <h2 id="auth-modal-title" className="modal-title">
+        <h2 id="auth-modal-title" className={modalTitle}>
           {mode === "signup" ? "Create an account" : "Sign in"}
         </h2>
-        <p className="modal-subtitle">
+        <p className={modalSubtitle}>
           {mode === "signup"
             ? "Save your scores and track progress across games."
             : "Sign in to save scores and track your progress."}
         </p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className={authForm} onSubmit={handleSubmit}>
           {mode === "signup" && (
             <Input
               label="Name"
@@ -152,7 +164,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
 
           {error && <ValidationMessage type="error" message={error} />}
 
-          <button type="submit" className="primary-btn" disabled={loading}>
+          <button type="submit" className={primaryBtn} disabled={loading}>
             {loading
               ? "Please wait…"
               : mode === "signup"
@@ -161,18 +173,18 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
           </button>
         </form>
 
-        <p className="auth-switch">
+        <p className={authSwitch}>
           {mode === "signup" ? (
             <>
               Already have an account?{" "}
-              <button type="button" className="link-btn" onClick={() => switchMode("signin")}>
+              <button type="button" className={linkBtn} onClick={() => switchMode("signin")}>
                 Sign in
               </button>
             </>
           ) : (
             <>
               New here?{" "}
-              <button type="button" className="link-btn" onClick={() => switchMode("signup")}>
+              <button type="button" className={linkBtn} onClick={() => switchMode("signup")}>
                 Create an account
               </button>
             </>

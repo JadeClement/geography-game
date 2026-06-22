@@ -8,6 +8,16 @@ import {
   getReferencePanelDefaultOpen,
   setReferencePanelDefaultOpen,
 } from "@/lib/referencePanelPrefs";
+import {
+  referenceDefaultSetting,
+  settingsBack,
+  settingsContent,
+  settingsPage,
+  settingsSection,
+  settingsSectionDescription,
+  settingsSectionTitle,
+  settingsTitle,
+} from "@/lib/ui";
 
 export default function SettingsPage() {
   const [referenceDefaultOpen, setReferenceDefaultOpen] = useState(false);
@@ -17,27 +27,27 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="settings">
+    <div className={settingsPage}>
       <AppHeader />
-      <main className="settings-content">
-        <Link href="/" className="settings-back">
+      <main className={settingsContent}>
+        <Link href="/" className={settingsBack}>
           ← Back to game
         </Link>
 
-        <h1 className="settings-title">Settings</h1>
+        <h1 className={settingsTitle}>Settings</h1>
 
-        <section className="settings-section">
-          <h2 className="settings-section-title">Appearance</h2>
-          <p className="settings-section-description">Choose light or dark mode.</p>
+        <section className={settingsSection}>
+          <h2 className={settingsSectionTitle}>Appearance</h2>
+          <p className={settingsSectionDescription}>Choose light or dark mode.</p>
           <ThemeToggle />
         </section>
 
-        <section className="settings-section">
-          <h2 className="settings-section-title">Learning</h2>
-          <p className="settings-section-description">
+        <section className={settingsSection}>
+          <h2 className={settingsSectionTitle}>Learning</h2>
+          <p className={settingsSectionDescription}>
             Show the country reference panel automatically at the start of each learning round.
           </p>
-          <label className="reference-default-setting">
+          <label className={referenceDefaultSetting}>
             <input
               type="checkbox"
               checked={referenceDefaultOpen}

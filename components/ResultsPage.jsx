@@ -10,18 +10,44 @@ import { getLevelShortLabel } from "@/lib/levels";
 import { getMasteryProvingLevels } from "@/lib/levels";
 import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion, getModeLabel } from "@/lib/regions";
 import { fetchScores, LEVELS } from "@/lib/scores";
+import { cn } from "@/lib/cn";
+import {
+  masteryCell,
+  masteryCellBar,
+  masteryCellValue,
+  primaryBtn,
+  resultsBack,
+  resultsContent,
+  resultsGroupNote,
+  resultsGroupTitle,
+  resultsMessage,
+  resultsMessageError,
+  resultsPage,
+  resultsSection,
+  resultsSignIn,
+  resultsSubtitle,
+  resultsTable,
+  resultsTableColHeader,
+  resultsTableRowHeader,
+  resultsTables,
+  resultsTableTitle,
+  resultsTableWrap,
+  resultsTitle,
+} from "@/lib/ui";
 
 function ScoreTable({ title, mode, scoreMap }) {
   return (
-    <section className="results-section">
-      <h2 className="results-table-title">{title}</h2>
-      <div className="results-table-wrap">
-        <table className="results-table">
+    <section className={resultsSection}>
+      <h2 className={resultsTableTitle}>{title}</h2>
+      <div className={resultsTableWrap}>
+        <table className={resultsTable}>
           <thead>
             <tr>
-              <th scope="col">Region</th>
+              <th scope="col" className={resultsTableColHeader}>
+                Region
+              </th>
               {LEVELS.map((level) => (
-                <th key={level} scope="col">
+                <th key={level} scope="col" className={resultsTableColHeader}>
                   {getLevelShortLabel(level)}
                 </th>
               ))}
@@ -30,7 +56,9 @@ function ScoreTable({ title, mode, scoreMap }) {
           <tbody>
             {REGIONS.map((region) => (
               <tr key={region.id}>
-                <th scope="row">{region.label}</th>
+                <th scope="row" className={resultsTableRowHeader}>
+                  {region.label}
+                </th>
                 {LEVELS.map((level) => {
                   const score = scoreMap.get(`${mode}:${region.id}:${level}`);
                   return (
@@ -67,24 +95,26 @@ function regionMasteryPct(lookup, regionId, level) {
 function MasteryCell({ pct }) {
   if (pct == null) return <td>—</td>;
   return (
-    <td className="mastery-cell">
-      <span className="mastery-cell-bar" style={{ width: `${pct}%` }} aria-hidden="true" />
-      <span className="mastery-cell-value">{pct}%</span>
+    <td className={masteryCell}>
+      <span className={masteryCellBar} style={{ width: `${pct}%` }} aria-hidden="true" />
+      <span className={masteryCellValue}>{pct}%</span>
     </td>
   );
 }
 
 function MasteryTable({ title, lookup }) {
   return (
-    <section className="results-section">
-      <h2 className="results-table-title">{title}</h2>
-      <div className="results-table-wrap">
-        <table className="results-table">
+    <section className={resultsSection}>
+      <h2 className={resultsTableTitle}>{title}</h2>
+      <div className={resultsTableWrap}>
+        <table className={resultsTable}>
           <thead>
             <tr>
-              <th scope="col">Region</th>
+              <th scope="col" className={resultsTableColHeader}>
+                Region
+              </th>
               {LEVELS.map((level) => (
-                <th key={level} scope="col">
+                <th key={level} scope="col" className={resultsTableColHeader}>
                   {getLevelShortLabel(level)}
                 </th>
               ))}
@@ -93,7 +123,9 @@ function MasteryTable({ title, lookup }) {
           <tbody>
             {REGIONS.map((region) => (
               <tr key={region.id}>
-                <th scope="row">{region.label}</th>
+                <th scope="row" className={resultsTableRowHeader}>
+                  {region.label}
+                </th>
                 {LEVELS.map((level) => (
                   <MasteryCell key={level} pct={regionMasteryPct(lookup, region.id, level)} />
                 ))}
@@ -181,49 +213,39 @@ export default function ResultsPage() {
   }, [mastery]);
 
   return (
-    <div className="results-page">
+    <div className={resultsPage}>
       <AppHeader />
 
-      <main className="results-content">
-        <Link href="/" className="results-back">
+      <main className={resultsContent}>
+        <Link href="/" className={resultsBack}>
           ← Back to game
         </Link>
 
-        <h1 className="results-title">Results</h1>
-        <p className="results-subtitle">
+        <h1 className={resultsTitle}>Results</h1>
+        <p className={resultsSubtitle}>
           Your best scores and mastery for each mode, region, and level.
         </p>
 
-        {status === "loading" && (
-          <p className="results-message">Loading…</p>
-        )}
+        {status === "loading" && <p className={resultsMessage}>Loading…</p>}
 
         {!signedIn && status !== "loading" && (
-          <div className="results-sign-in">
-            <p className="results-message">
-              Sign in to view and save your scores.
-            </p>
-            <button
-              type="button"
-              className="primary-btn"
-              onClick={() => setAuthOpen(true)}
-            >
+          <div className={resultsSignIn}>
+            <p className={resultsMessage}>Sign in to view and save your scores.</p>
+            <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
               Sign in / Create account
             </button>
           </div>
         )}
 
-        {signedIn && loading && (
-          <p className="results-message">Loading your results…</p>
-        )}
+        {signedIn && loading && <p className={resultsMessage}>Loading your results…</p>}
 
         {signedIn && error && (
-          <p className="results-message error">{error}</p>
+          <p className={cn(resultsMessage, resultsMessageError)}>{error}</p>
         )}
 
         {signedIn && !loading && !error && (
-          <div className="results-tables">
-            <h2 className="results-group-title">Best scores</h2>
+          <div className={resultsTables}>
+            <h2 className={resultsGroupTitle}>Best scores</h2>
             <ScoreTable
               title={getModeLabel(GAME_MODES.COUNTRIES)}
               mode={GAME_MODES.COUNTRIES}
@@ -240,8 +262,8 @@ export default function ResultsPage() {
               scoreMap={scoreMap}
             />
 
-            <h2 className="results-group-title">Mastery</h2>
-            <p className="results-group-note">
+            <h2 className={resultsGroupTitle}>Mastery</h2>
+            <p className={resultsGroupNote}>
               Average mastery across each region. World combines every region, and
               mastering a harder level counts toward its easier counterpart.
             </p>

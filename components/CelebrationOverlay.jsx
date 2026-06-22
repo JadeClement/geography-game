@@ -1,6 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/cn";
+import {
+  celebrationCard,
+  celebrationConfetti,
+  celebrationConfettiPiece,
+  celebrationConfettiPieceRound,
+  celebrationEmoji,
+  celebrationHeadline,
+  celebrationHint,
+  celebrationOverlay,
+  celebrationSubtitle,
+} from "@/lib/ui";
 
 const VISIBLE_MS = 3000;
 const FADE_MS = 500;
@@ -59,17 +71,20 @@ export default function CelebrationOverlay({ milestone, onDismiss }) {
 
   return (
     <div
-      className={`celebration-overlay ${leaving ? "celebration-overlay--leaving" : ""}`}
+      className={celebrationOverlay({ leaving })}
       role="alertdialog"
       aria-live="assertive"
       aria-label={`${milestone.headline}. ${milestone.subtitle}`}
       onClick={handleDismiss}
     >
-      <div className="celebration-confetti" aria-hidden="true">
+      <div className={celebrationConfetti} aria-hidden="true">
         {confetti.map((piece) => (
           <span
             key={piece.id}
-            className={`celebration-confetti-piece ${piece.round ? "celebration-confetti-piece--round" : ""}`}
+            className={cn(
+              celebrationConfettiPiece,
+              piece.round && celebrationConfettiPieceRound,
+            )}
             style={{
               left: `${piece.left}%`,
               backgroundColor: piece.color,
@@ -82,13 +97,13 @@ export default function CelebrationOverlay({ milestone, onDismiss }) {
         ))}
       </div>
 
-      <div className="celebration-card" role="presentation">
-        <span className="celebration-emoji" aria-hidden="true">
+      <div className={celebrationCard} role="presentation">
+        <span className={celebrationEmoji} aria-hidden="true">
           {milestone.emoji}
         </span>
-        <p className="celebration-headline">{milestone.headline}</p>
-        <p className="celebration-subtitle">{milestone.subtitle}</p>
-        <p className="celebration-hint">Tap to dismiss</p>
+        <p className={celebrationHeadline}>{milestone.headline}</p>
+        <p className={celebrationSubtitle}>{milestone.subtitle}</p>
+        <p className={celebrationHint}>Tap to dismiss</p>
       </div>
     </div>
   );

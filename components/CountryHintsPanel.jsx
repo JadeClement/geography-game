@@ -2,6 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getAdjacentCountryNames } from "@/lib/adjacentCountries";
+import { cn } from "@/lib/cn";
+import {
+  countryFact,
+  countryFactBadge,
+  countryFactNext,
+  countryFactText,
+  countryHintCount,
+  countryHintEmpty,
+  countryHintFacts,
+  countryHintHeader,
+  countryHintItem,
+  countryHintList,
+  countryHintNote,
+  countryHintTitle,
+  mapSidePanel,
+  mapSidePanelBody,
+  mapSidePanelChevron,
+  mapSidePanelHeader,
+  mapSidePanelHeading,
+  mapSidePanelShortcut,
+  mapSidePanelTitle,
+  mapSidePanelToggle,
+} from "@/lib/ui";
 
 const FACT_CATEGORY_LABELS = {
   history: "History",
@@ -65,55 +88,52 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
   return (
     <aside
       id="country-hints-panel"
-      className={`map-side-panel country-hints-panel ${open ? "map-side-panel--open" : ""}`}
+      className={cn(mapSidePanel({ open }), "country-hints-panel")}
       role="complementary"
       aria-label="Country hints"
     >
-      <div className="map-side-panel-header">
-        <div className="map-side-panel-heading">
-          <h2 className="map-side-panel-title">Hints</h2>
+      <div className={mapSidePanelHeader({ open })}>
+        <div className={mapSidePanelHeading}>
+          <h2 className={mapSidePanelTitle}>Hints</h2>
         </div>
         <button
           type="button"
-          className="map-side-panel-toggle"
+          className={mapSidePanelToggle}
           onClick={onToggle}
           aria-expanded={open}
           aria-controls="country-hints-panel-body"
           aria-label={open ? "Collapse hints panel" : "Expand hints panel"}
         >
-          <span className="map-side-panel-chevron" aria-hidden="true" />
+          <span className={mapSidePanelChevron({ open })} aria-hidden="true" />
         </button>
       </div>
 
-      <div id="country-hints-panel-body" className="map-side-panel-body">
-        <section className="country-hint">
-          <div className="country-hint-header">
-            <h3 className="country-hint-title">Adjacent countries</h3>
+      <div id="country-hints-panel-body" className={mapSidePanelBody({ open })}>
+        <section>
+          <div className={countryHintHeader}>
+            <h3 className={countryHintTitle}>Adjacent countries</h3>
             {hasNeighbors && !allRevealed && (
-              <kbd className="map-side-panel-shortcut" aria-hidden="true">
+              <kbd className={mapSidePanelShortcut} aria-hidden="true">
                 Space
               </kbd>
             )}
           </div>
 
           {!hasNeighbors ? (
-            <p className="country-hint-empty">No land neighbors for this country.</p>
+            <p className={countryHintEmpty}>No land neighbors for this country.</p>
           ) : (
             <>
-              <ul className="country-hint-list">
+              <ul className={countryHintList}>
                 {adjacentNames.map((name, index) => {
                   const revealed = index < revealedCount;
                   return (
-                    <li
-                      key={name}
-                      className={`country-hint-item ${revealed ? "country-hint-item--revealed" : ""}`}
-                    >
+                    <li key={name} className={countryHintItem({ revealed })}>
                       {revealed ? name : "???"}
                     </li>
                   );
                 })}
               </ul>
-              <p className="country-hint-note">
+              <p className={countryHintNote}>
                 {allRevealed
                   ? `${adjacentNames.length} ${adjacentNames.length === 1 ? "neighbor" : "neighbors"} revealed.`
                   : "Press Space to reveal the next neighbor."}
@@ -123,29 +143,27 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
         </section>
 
         {hasFacts && (
-          <section className="country-hint country-hint--facts">
-            <div className="country-hint-header">
-              <h3 className="country-hint-title">Facts</h3>
+          <section className={countryHintFacts}>
+            <div className={countryHintHeader}>
+              <h3 className={countryHintTitle}>Facts</h3>
               {facts.length > 1 && (
-                <span className="country-hint-count">
+                <span className={countryHintCount}>
                   {(factIndex % facts.length) + 1} / {facts.length}
                 </span>
               )}
             </div>
 
-            <div className="country-fact">
-              <span
-                className={`country-fact-badge country-fact-badge--${activeFact.category}`}
-              >
+            <div className={countryFact}>
+              <span className={countryFactBadge(activeFact.category)}>
                 {FACT_CATEGORY_LABELS[activeFact.category] ?? activeFact.category}
               </span>
-              <p className="country-fact-text">{activeFact.text}</p>
+              <p className={countryFactText}>{activeFact.text}</p>
             </div>
 
             {facts.length > 1 && (
               <button
                 type="button"
-                className="country-fact-next"
+                className={countryFactNext}
                 onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
               >
                 Next fact →

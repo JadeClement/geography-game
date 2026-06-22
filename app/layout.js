@@ -1,10 +1,10 @@
-import { Pacifico } from "next/font/google";
+import { Sail } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
-const brandFont = Pacifico({
+const brandFont = Sail({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-brand",

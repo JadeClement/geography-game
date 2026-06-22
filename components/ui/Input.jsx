@@ -1,7 +1,11 @@
 "use client";
 
 import { useId } from "react";
+import { cn } from "@/lib/cn";
 import ValidationMessage from "./ValidationMessage";
+
+const inputBase =
+  "w-full rounded-sm border bg-input px-3 py-2.5 text-base text-text shadow-sm outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function Input({
   label,
@@ -19,10 +23,7 @@ export default function Input({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label
-          htmlFor={inputId}
-          className="text-sm font-medium text-[var(--color-text-secondary)]"
-        >
+        <label htmlFor={inputId} className="text-sm font-medium text-text-secondary">
           {label}
         </label>
       )}
@@ -31,11 +32,13 @@ export default function Input({
         id={inputId}
         aria-invalid={hasError || undefined}
         aria-describedby={!hasError ? helpId : undefined}
-        className={`w-full rounded-[var(--radius-sm)] border bg-[var(--color-bg-input)] px-3 py-2.5 text-base text-[var(--color-text)] shadow-sm outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[var(--color-text-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={cn(
+          inputBase,
           hasError
-            ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-error)_22%,transparent)]"
-            : "border-[var(--color-border-subtle)] focus:border-[var(--color-accent)] focus:shadow-[0_0_0_4px_var(--color-accent-soft)]"
-        } ${className}`}
+            ? "border-error focus:border-error focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-error)_22%,transparent)]"
+            : "border-border-subtle focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)]",
+          className
+        )}
         {...rest}
       />
 
@@ -43,7 +46,7 @@ export default function Input({
         <ValidationMessage type="error" message={error} />
       ) : (
         helpText && (
-          <p id={helpId} className="text-xs text-[var(--color-text-muted)]">
+          <p id={helpId} className="text-xs text-text-muted">
             {helpText}
           </p>
         )

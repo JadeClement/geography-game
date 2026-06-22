@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { mapContainer } from "@/lib/ui";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useTheme } from "@/components/ThemeProvider";
@@ -708,5 +709,5 @@ export default function MapboxMap({
     };
   }, [flashSmallCountryId, smallCountriesGeojson]);
 
-  return <div ref={containerRef} className="map-container" />;
+  return <div ref={containerRef} className={mapContainer} />;
 }

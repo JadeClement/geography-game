@@ -54,6 +54,43 @@ import {
 } from "@/lib/regions";
 import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
 import { formatElapsedTime } from "@/lib/time";
+import {
+  answerInput,
+  answerPrompt,
+  flagCard,
+  gameControlBtn,
+  gameControlBtnStop,
+  gameControls,
+  gameHeader,
+  gameHeaderActions,
+  gameHeaderCenter,
+  gameHeaderLeft,
+  gameHeaderRight,
+  gameMeta,
+  gameMetaTag,
+  gameProgress,
+  gameProgressFill,
+  gameShell,
+  gameTimer,
+  mapPauseOverlay,
+  mapSidePanels,
+  mapStage,
+  modalActions,
+  modalCard,
+  modalOverlay,
+  modalSubtitle,
+  modalTitle,
+  primaryBtn,
+  promptFeedback,
+  scoreboard,
+  scoreCorrect,
+  scoreIncorrect,
+  secondaryBtn,
+  spellingSuggestion,
+  spellingSuggestionLink,
+  startScreen,
+  startSubtitle,
+} from "@/lib/ui";
 import { useSyncRef } from "@/lib/hooks/useSyncRef";
 import { useGameTimer } from "@/lib/hooks/useGameTimer";
 import { useRoundScoring } from "@/lib/hooks/useRoundScoring";
@@ -332,6 +369,14 @@ export default function GeographyGame() {
   const preCreditedCount = session?.preCreditedCount ?? 0;
   const displayedCorrect = rightCount + preCreditedCount;
   const totalRounds = session?.totalRounds ?? activeCountries.length;
+  const roundsCompleted = rightCount + wrongCount;
+  const queuePosition = gameComplete
+    ? totalRounds
+    : Math.min(
+        roundsCompleted + (gameActive && targetCountry ? 1 : 0),
+        totalRounds
+      );
+  const queueProgress = totalRounds > 0 ? queuePosition / totalRounds : 0;
 
   const isFindFlagsGame =
     isFlagsMode && session?.level != null && isFindLevel(session.level);
@@ -1236,13 +1281,13 @@ export default function GeographyGame() {
     gameActive && !gamePaused && session?.level != null && isFindLevel(session.level);
 
   return (
-    <div className="game">
+    <div className={gameShell}>
       <AppHeader onHomeClick={handleHeaderHome} />
 
       {!session ? (
         !hasToken || loadError ? (
-          <div className="start-screen">
-            <p className="start-subtitle">{promptText}</p>
+          <div className={startScreen}>
+            <p className={startSubtitle}>{promptText}</p>
           </div>
         ) : (
           <StartScreen
@@ -1253,37 +1298,37 @@ export default function GeographyGame() {
         )
       ) : (
         <>
-          <header className="game-header">
-            <div className="game-header-left">
-              <div className="game-meta">
-                <span className="game-meta-tag">{modeLabel}</span>
-                <span className="game-meta-tag">{regionLabel}</span>
-                <span className="game-meta-tag">{levelLabel}</span>
+          <header className={gameHeader}>
+            <div className={gameHeaderLeft}>
+              <div className={gameMeta}>
+                <span className={gameMetaTag}>{modeLabel}</span>
+                <span className={gameMetaTag}>{regionLabel}</span>
+                <span className={gameMetaTag}>{levelLabel}</span>
                 {session.review && (
-                  <span className="game-meta-tag">Review</span>
+                  <span className={gameMetaTag}>Review</span>
                 )}
                 {isLearningGame && (
-                  <span className="game-meta-tag">Learning</span>
+                  <span className={gameMetaTag}>Learning</span>
                 )}
               </div>
             </div>
 
             {!gameComplete && (
               <div
-                className={`prompt game-header-center ${
-                  feedback.type === "wrong" ||
-                  feedback.type === "reveal" ||
-                  feedback.type === "got-it"
-                    ? "prompt-wrong"
-                    : ""
-                }`}
+                className={promptFeedback({
+                  wrong:
+                    feedback.type === "wrong" ||
+                    feedback.type === "reveal" ||
+                    feedback.type === "got-it",
+                  className: gameHeaderCenter,
+                })}
               >
                 {isNameGame ? (
-                  <div className="answer-prompt">
+                  <div className={answerPrompt}>
                     <input
                       ref={answerInputRef}
                       type="text"
-                      className="answer-input"
+                      className={answerInput}
                       value={answerInput}
                       placeholder={
                         session.mode === GAME_MODES.CAPITALS
@@ -1302,11 +1347,11 @@ export default function GeographyGame() {
                       onKeyDown={handleAnswerKeyDown}
                     />
                     {spellingSuggestion && (
-                      <p className="spelling-suggestion">
+                      <p className={spellingSuggestion}>
                         Did you mean{" "}
                         <button
                           type="button"
-                          className="spelling-suggestion-link"
+                          className={spellingSuggestionLink}
                           onClick={handleSpellingSuggestionClick}
                         >
                           {spellingSuggestion}
@@ -1333,54 +1378,67 @@ export default function GeographyGame() {
               </div>
             )}
 
-            <div className="game-header-right">
+            <div className={gameHeaderRight}>
               {!gameComplete && (
-                <div className="game-controls">
-                  <button
-                    type="button"
-                    className="game-control-btn"
-                    onClick={handleTogglePause}
-                    aria-label={gamePaused ? "Resume game" : "Pause game"}
-                    title={gamePaused ? "Resume" : "Pause"}
+                <div className={gameHeaderActions}>
+                  <span className={gameTimer}>{formatElapsedTime(elapsedMs)}</span>
+                  <div
+                    className={gameProgress}
+                    role="progressbar"
+                    aria-valuenow={queuePosition}
+                    aria-valuemin={0}
+                    aria-valuemax={totalRounds}
+                    aria-label={`Game progress: ${queuePosition} of ${totalRounds}`}
                   >
-                    {gamePaused ? (
+                    <div
+                      className={gameProgressFill}
+                      style={{ width: `${queueProgress * 100}%` }}
+                    />
+                  </div>
+                  <div className={gameControls}>
+                    <button
+                      type="button"
+                      className={gameControlBtn}
+                      onClick={handleTogglePause}
+                      aria-label={gamePaused ? "Resume game" : "Pause game"}
+                      title={gamePaused ? "Resume" : "Pause"}
+                    >
+                      {gamePaused ? (
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                          <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${gameControlBtn} ${gameControlBtnStop}`}
+                      onClick={handleMenuClick}
+                      aria-label="Stop game"
+                      title="Stop"
+                    >
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                        <path d="M8 5v14l11-7z" />
+                        <rect x="6" y="6" width="12" height="12" rx="1" />
                       </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                        <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="game-control-btn game-control-btn--stop"
-                    onClick={handleMenuClick}
-                    aria-label="Stop game"
-                    title="Stop"
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                      <rect x="6" y="6" width="12" height="12" rx="1" />
-                    </svg>
-                  </button>
+                    </button>
+                  </div>
                 </div>
               )}
-              <div className="scoreboard">
-                {!gameComplete && (
-                  <span className="game-timer">{formatElapsedTime(elapsedMs)}</span>
-                )}
-                <span className="score-correct">
+              <div className={scoreboard}>
+                <span className={scoreCorrect}>
                   correct: {displayedCorrect}/{totalRounds}
                 </span>
-                <span className="score-incorrect">
+                <span className={scoreIncorrect}>
                   incorrect: {wrongCount}/{totalRounds}
                 </span>
               </div>
             </div>
           </header>
           {(isOceaniaRegion || hasToken) && !gameComplete && (
-            <div className="map-stage">
+            <div className={mapStage}>
               {isOceaniaRegion ? (
                 <PacificMap
                   activeCountries={activeCountries}
@@ -1418,18 +1476,18 @@ export default function GeographyGame() {
               {gamePaused && !gameComplete && (
                 <button
                   type="button"
-                  className="map-pause-overlay"
+                  className={mapPauseOverlay}
                   onClick={handlePausedMapInteraction}
                   aria-label="Game paused. Click to resume."
                 />
               )}
               {showFlagPrompt && (
-                <div className="flag-card" aria-hidden="true">
+                <div className={flagCard} aria-hidden="true">
                   <FlagPrompt iso2={targetCountry.iso2} size="card" />
                 </div>
               )}
               {targetCountry && (
-                <div className="map-side-panels">
+                <div className={mapSidePanels}>
                   <CountryReferencePanel
                     country={targetCountry}
                     mode={session.mode}
@@ -1472,26 +1530,26 @@ export default function GeographyGame() {
           />
           <IdlePromptModal open={idlePromptOpen} onContinue={handleIdleContinue} />
           {showResumeConfirm && (
-            <div className="modal-overlay">
+            <div className={modalOverlay}>
               <div
-                className="modal-card"
+                className={modalCard}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="resume-confirm-title"
               >
-                <h2 id="resume-confirm-title" className="modal-title">
+                <h2 id="resume-confirm-title" className={modalTitle}>
                   Resume game?
                 </h2>
-                <p className="modal-subtitle">
+                <p className={modalSubtitle}>
                   The game is paused. Do you want to resume?
                 </p>
-                <div className="modal-actions">
-                  <button type="button" className="primary-btn" onClick={handleResumeGame}>
+                <div className={modalActions}>
+                  <button type="button" className={primaryBtn} onClick={handleResumeGame}>
                     Resume
                   </button>
                   <button
                     type="button"
-                    className="secondary-btn"
+                    className={secondaryBtn}
                     onClick={() => setShowResumeConfirm(false)}
                   >
                     Stay paused
@@ -1501,31 +1559,31 @@ export default function GeographyGame() {
             </div>
           )}
           {showMenuConfirm && (
-            <div className="modal-overlay">
+            <div className={modalOverlay}>
               <div
-                className="modal-card"
+                className={modalCard}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="menu-confirm-title"
               >
-                <h2 id="menu-confirm-title" className="modal-title">
+                <h2 id="menu-confirm-title" className={modalTitle}>
                   Leave this game?
                 </h2>
-                <p className="modal-subtitle">
+                <p className={modalSubtitle}>
                   Are you sure you want to go back to menu? Your progress in this
                   game will be lost.
                 </p>
-                <div className="modal-actions">
+                <div className={modalActions}>
                   <button
                     type="button"
-                    className="primary-btn"
+                    className={primaryBtn}
                     onClick={handleBackToMenu}
                   >
                     Yes, go to menu
                   </button>
                   <button
                     type="button"
-                    className="secondary-btn"
+                    className={secondaryBtn}
                     onClick={() => setShowMenuConfirm(false)}
                   >
                     Keep playing

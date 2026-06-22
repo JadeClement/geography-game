@@ -4,6 +4,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { ALL_MODE, TIER_COLORS } from "@/lib/masteryMap";
+import { masteryMapCanvas } from "@/lib/ui";
 
 const OCEAN = "#070d1c";
 const BASE_LAND = "#1a2740";
@@ -333,5 +334,5 @@ export default forwardRef(function MasteryMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, accent, scoreByCountry, tierByCountry]);
 
-  return <div ref={containerRef} className="mastery-map-canvas" />;
+  return <div ref={containerRef} className={masteryMapCanvas} />;
 });

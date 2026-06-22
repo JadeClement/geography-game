@@ -9,6 +9,21 @@ import { detectMilestone } from "@/lib/milestones";
 import { formatGameScore } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
 import { formatElapsedTime } from "@/lib/time";
+import { cn } from "@/lib/cn";
+import {
+  gameCompleteStats,
+  gameTimer,
+  gameTimerModal,
+  modalActions,
+  modalCard,
+  modalGameContext,
+  modalMessage,
+  modalOverlay,
+  modalScore,
+  modalTitle,
+  primaryBtn,
+  secondaryBtn,
+} from "@/lib/ui";
 
 export default function GameCompleteModal({
   open,
@@ -247,75 +262,74 @@ export default function GameCompleteModal({
 
   return (
     <>
-      <div className="modal-overlay">
+      <div className={modalOverlay}>
         <div
-          className="modal-card game-complete-modal"
+          className={modalCard}
           role="dialog"
           aria-modal="true"
           aria-labelledby="game-complete-title"
         >
-          <h2 id="game-complete-title" className="modal-title">
+          <h2 id="game-complete-title" className={modalTitle}>
             {getCompletionHeading()}
           </h2>
-          <p className="modal-score">
+          <p className={modalScore}>
             You scored {rightCount}/{total}
           </p>
-          <p className="modal-game-context">
+          <p className={modalGameContext}>
             {isLearning ? "Learning · " : isReview ? "Review · " : ""}
             {modeLabel} of {regionLabel} · {levelLabel}
           </p>
-          <div className="game-complete-stats">
-            <span className="game-timer game-timer--modal">
+          <div className={gameCompleteStats}>
+            <span className={cn(gameTimer, gameTimerModal)}>
               🕐 {formatElapsedTime(totalElapsedMs)}
             </span>
           </div>
 
           {message && !isReview && !isLearning && (
             <p
-              className={`modal-message ${
-                saveState.result?.isPersonalBest
-                  ? "success"
-                  : saveState.error
-                    ? "error"
-                    : ""
-              }`}
+              className={modalMessage({
+                success: saveState.result?.isPersonalBest,
+                error: Boolean(saveState.error),
+              })}
             >
               {message}
             </p>
           )}
 
           {streakMessage && (
-            <p className="modal-message streak-message">{streakMessage}</p>
+            <p className={modalMessage({ className: "text-center font-semibold" })}>
+              {streakMessage}
+            </p>
           )}
 
-          <div className="modal-actions">
+          <div className={modalActions}>
             {!signedIn && (
               <button
                 type="button"
-                className="primary-btn"
+                className={primaryBtn}
                 onClick={() => setAuthOpen(true)}
               >
                 Sign in / Create account
               </button>
             )}
             {signedIn && (
-              <Link href="/results" className="secondary-btn">
+              <Link href="/results" className={secondaryBtn}>
                 View results
               </Link>
             )}
             {canReviewIncorrect && (
               <button
                 type="button"
-                className="primary-btn"
+                className={primaryBtn}
                 onClick={onReviewIncorrect}
               >
                 Review incorrect answers ({wrongCount})
               </button>
             )}
-            <button type="button" className="secondary-btn" onClick={onPlayAgain}>
+            <button type="button" className={secondaryBtn} onClick={onPlayAgain}>
               {isLearning ? "Practice again" : "Play again"}
             </button>
-            <button type="button" className="secondary-btn" onClick={onBackToMenu}>
+            <button type="button" className={secondaryBtn} onClick={onBackToMenu}>
               Back to menu
             </button>
           </div>

@@ -1,3 +1,5 @@
+import { cn } from "@/lib/cn";
+
 const VARIANTS = {
   error: {
     icon: "\u2715",

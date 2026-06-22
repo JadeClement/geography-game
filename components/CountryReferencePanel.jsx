@@ -2,11 +2,35 @@
 
 import { useState } from "react";
 import FlagPrompt from "@/components/FlagPrompt";
+import { cn } from "@/lib/cn";
 import {
   buildReferenceRows,
   getReferenceVisibility,
   hasHiddenReferenceFields,
 } from "@/lib/referencePanel";
+import {
+  countryFactBadge,
+  countryReferenceEmpty,
+  countryReferenceFact,
+  countryReferenceFacts,
+  countryReferenceFactsList,
+  countryReferenceFactsTitle,
+  countryReferenceFactText,
+  countryReferenceFlag,
+  countryReferenceLabel,
+  countryReferenceList,
+  countryReferenceNote,
+  countryReferenceRow,
+  countryReferenceValue,
+  mapSidePanel,
+  mapSidePanelBody,
+  mapSidePanelChevron,
+  mapSidePanelHeader,
+  mapSidePanelHeading,
+  mapSidePanelShortcut,
+  mapSidePanelTitle,
+  mapSidePanelToggle,
+} from "@/lib/ui";
 
 const FACT_CATEGORY_LABELS = {
   history: "History",
@@ -36,20 +60,20 @@ export default function CountryReferencePanel({
   return (
     <aside
       id="country-reference-panel"
-      className={`map-side-panel country-reference-panel ${open ? "map-side-panel--open" : ""}`}
+      className={cn(mapSidePanel({ open }), "country-reference-panel")}
       role="complementary"
       aria-label="Country reference"
     >
-      <div className="map-side-panel-header">
-        <div className="map-side-panel-heading">
-          <h2 className="map-side-panel-title">Reference</h2>
-          <kbd className="map-side-panel-shortcut" aria-hidden="true">
+      <div className={mapSidePanelHeader({ open })}>
+        <div className={mapSidePanelHeading}>
+          <h2 className={mapSidePanelTitle}>Reference</h2>
+          <kbd className={mapSidePanelShortcut} aria-hidden="true">
             {isMac ? "⌘I" : "Ctrl+I"}
           </kbd>
         </div>
         <button
           type="button"
-          className="map-side-panel-toggle"
+          className={mapSidePanelToggle}
           onClick={onToggle}
           aria-expanded={open}
           aria-controls="country-reference-panel-body"
@@ -59,21 +83,21 @@ export default function CountryReferencePanel({
               : `Expand reference panel (${shortcutLabel})`
           }
         >
-          <span className="map-side-panel-chevron" aria-hidden="true" />
+          <span className={mapSidePanelChevron({ open })} aria-hidden="true" />
         </button>
       </div>
 
-      <div id="country-reference-panel-body" className="map-side-panel-body">
+      <div id="country-reference-panel-body" className={mapSidePanelBody({ open })}>
         {rows.length === 0 ? (
-          <p className="country-reference-panel-empty">No reference details available.</p>
+          <p className={countryReferenceEmpty}>No reference details available.</p>
         ) : (
-          <dl className="country-reference-list">
+          <dl className={countryReferenceList}>
             {rows.map((row) => (
-              <div key={row.id} className="country-reference-row">
-                <dt>{row.label}</dt>
-                <dd>
+              <div key={row.id} className={countryReferenceRow}>
+                <dt className={countryReferenceLabel}>{row.label}</dt>
+                <dd className={countryReferenceValue}>
                   {row.type === "flag" ? (
-                    <FlagPrompt iso2={row.value} size="card" className="country-reference-flag" />
+                    <FlagPrompt iso2={row.value} size="card" className={countryReferenceFlag} />
                   ) : (
                     row.value
                   )}
@@ -84,21 +108,19 @@ export default function CountryReferencePanel({
         )}
 
         {showHiddenNote && (
-          <p className="country-reference-note">Some details hidden while you&apos;re guessing.</p>
+          <p className={countryReferenceNote}>Some details hidden while you&apos;re guessing.</p>
         )}
 
         {facts.length > 0 && (
-          <section className="country-reference-facts">
-            <h3 className="country-reference-facts-title">Did you know?</h3>
-            <ul className="country-reference-facts-list">
+          <section className={countryReferenceFacts}>
+            <h3 className={countryReferenceFactsTitle}>Did you know?</h3>
+            <ul className={countryReferenceFactsList}>
               {facts.map((fact, index) => (
-                <li key={`${fact.category}-${index}`} className="country-reference-fact">
-                  <span
-                    className={`country-fact-badge country-fact-badge--${fact.category}`}
-                  >
+                <li key={`${fact.category}-${index}`} className={countryReferenceFact}>
+                  <span className={countryFactBadge(fact.category)}>
                     {FACT_CATEGORY_LABELS[fact.category] ?? fact.category}
                   </span>
-                  <span className="country-reference-fact-text">{fact.text}</span>
+                  <span className={countryReferenceFactText}>{fact.text}</span>
                 </li>
               ))}
             </ul>
