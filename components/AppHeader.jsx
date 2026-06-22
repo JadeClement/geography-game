@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 
 function ProfileDropdown({ signedIn, userName, onClose, onSignIn, onSignOut }) {
@@ -39,9 +39,34 @@ export default function AppHeader({ onHomeClick }) {
   const { data: session, status } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const signedIn = status === "authenticated" && session?.user;
   const userName = session?.user?.name || session?.user?.email;
+
+  useEffect(() => {
+    if (!signedIn) {
+      setCurrentStreak(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    fetch("/api/streak")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setCurrentStreak(data.currentStreak || 0);
+        }
+      })
+      .catch(() => {
+        // Network error — just don't show the badge.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -69,6 +94,15 @@ export default function AppHeader({ onHomeClick }) {
           </Link>
         )}
         <div className="app-header-actions">
+          {signedIn && currentStreak > 0 && (
+            <span
+              className="streak-badge"
+              title={`${currentStreak} day practice streak`}
+              aria-label={`${currentStreak} day practice streak`}
+            >
+              <span aria-hidden="true">🔥</span> {currentStreak}
+            </span>
+          )}
           <div className="profile-menu">
             <button
               type="button"

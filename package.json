@@ -8,7 +8,7 @@
     "start": "next start",
     "generate-countries": "node scripts/generate-countries.js",
     "generate-globe-map": "node scripts/generate-globe-map.js",
-    "db:setup": "node scripts/setup-db.js"
+    "db:setup": "node --env-file=.env scripts/setup-db.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
