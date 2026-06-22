@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
-import { getCountryStatsForUser, recordCountryPerformance } from "@/lib/db";
+import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession } from "@/lib/db";
 import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
 import countriesManifest from "@/data/countries.json";
@@ -121,6 +121,10 @@ export async function POST(request) {
       outcome,
       responseTimeMs: outcome === "needed_reveal" ? null : responseTimeMs,
     });
+
+    // Idempotent per day (upsert), so recording on every round is safe and
+    // keeps the user's daily practice streak up to date.
+    await recordPracticeSession(session.user.id);
 
     return Response.json({ stat });
   } catch (error) {
