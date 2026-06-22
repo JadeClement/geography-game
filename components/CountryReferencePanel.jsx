@@ -8,6 +8,13 @@ import {
   hasHiddenReferenceFields,
 } from "@/lib/referencePanel";
 
+const FACT_CATEGORY_LABELS = {
+  history: "History",
+  politics: "Politics",
+  society: "Society",
+  geography: "Geography",
+};
+
 export default function CountryReferencePanel({
   country,
   mode,
@@ -19,6 +26,7 @@ export default function CountryReferencePanel({
   const visibility = getReferenceVisibility({ mode, level, revealMode });
   const rows = buildReferenceRows(country, visibility);
   const showHiddenNote = hasHiddenReferenceFields(visibility);
+  const facts = Array.isArray(country?.facts) ? country.facts : [];
   const [isMac] = useState(
     () => typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent),
   );
@@ -77,6 +85,24 @@ export default function CountryReferencePanel({
 
         {showHiddenNote && (
           <p className="country-reference-note">Some details hidden while you&apos;re guessing.</p>
+        )}
+
+        {facts.length > 0 && (
+          <section className="country-reference-facts">
+            <h3 className="country-reference-facts-title">Did you know?</h3>
+            <ul className="country-reference-facts-list">
+              {facts.map((fact, index) => (
+                <li key={`${fact.category}-${index}`} className="country-reference-fact">
+                  <span
+                    className={`country-fact-badge country-fact-badge--${fact.category}`}
+                  >
+                    {FACT_CATEGORY_LABELS[fact.category] ?? fact.category}
+                  </span>
+                  <span className="country-reference-fact-text">{fact.text}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     </aside>
