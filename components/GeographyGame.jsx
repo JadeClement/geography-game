@@ -52,6 +52,9 @@ import {
 import { formatElapsedTime } from "@/lib/time";
 import { useSession } from "next-auth/react";
 
+// Number of countries in a "Go" quick-review session.
+const GO_SESSION_SIZE = 10;
+
 // A country counts as already mastered for a level if it is effectively
 // graduated at that level or at a proving level (the mastery API applies decay).
 function getMasteredCountryIds(masteryRows, level) {
@@ -449,6 +452,7 @@ export default function GeographyGame() {
       learningCountryIds = null,
       learningSessionSize = null,
       preCreditedCountryIds = null,
+      go = false,
     }) => {
       const pool = countries ?? filterCountriesByRegion(allCountries, region);
       const preCredited = preCreditedCountryIds ?? [];
@@ -478,6 +482,7 @@ export default function GeographyGame() {
         region,
         level,
         review,
+        go,
         learningSessionSize,
         totalRounds,
         preCreditedCount: preCredited.length,
@@ -545,6 +550,55 @@ export default function GeographyGame() {
     [startGame]
   );
 
+  // "Go": a quick 10-country review of your weakest countries worldwide
+  // (Countries · Find it · Level 1). Falls back to random countries when there
+  // is no weak data or the player is signed out.
+  const startGoSession = useCallback(async () => {
+    const worldPool = filterCountriesByRegion(allCountries, "world");
+    if (worldPool.length === 0) return;
+
+    let chosen = [];
+    if (signedIn) {
+      try {
+        const data = await fetchWeakCountryStats({
+          mode: GAME_MODES.COUNTRIES,
+          level: GAME_LEVELS.FIND_FILL,
+          region: "world",
+        });
+        if ((data.weakCount ?? 0) > 0) {
+          const ids = buildLearningQueue(data.stats, Math.min(GO_SESSION_SIZE, data.weakCount));
+          chosen = ids
+            .map((id) => worldPool.find((country) => country.id === id))
+            .filter(Boolean);
+        }
+      } catch (error) {
+        console.error("Go: failed to load weak countries", error);
+      }
+    }
+
+    if (chosen.length < GO_SESSION_SIZE) {
+      const have = new Set(chosen.map((country) => country.id));
+      const fillers = shuffleCountries(
+        worldPool.filter((country) => !have.has(country.id))
+      ).slice(0, GO_SESSION_SIZE - chosen.length);
+      chosen = [...chosen, ...fillers];
+    }
+
+    chosen = chosen.slice(0, GO_SESSION_SIZE);
+    if (chosen.length === 0) return;
+
+    startGame({
+      gameType: GAME_TYPES.LEARNING,
+      mode: GAME_MODES.COUNTRIES,
+      region: "world",
+      level: GAME_LEVELS.FIND_FILL,
+      countries: chosen,
+      learningCountryIds: chosen.map((country) => country.id),
+      learningSessionSize: GO_SESSION_SIZE,
+      go: true,
+    });
+  }, [allCountries, signedIn, startGame]);
+
   const buildLearningCountries = useCallback(
     async ({ mode, level, region, learningSessionSize }) => {
       const data = await fetchWeakCountryStats({ mode, level, region });
@@ -589,6 +643,11 @@ export default function GeographyGame() {
 
   const handleSessionStart = useCallback(
     async (config) => {
+      if (config.go) {
+        await startGoSession();
+        return;
+      }
+
       if (config.gameType === GAME_TYPES.LEARNING) {
         const learning = await buildLearningCountries(config);
         if (!learning) return;
@@ -623,7 +682,7 @@ export default function GeographyGame() {
 
       beginSession(config);
     },
-    [beginSession, buildLearningCountries, buildWorldTestCountries, signedIn, startGame]
+    [beginSession, buildLearningCountries, buildWorldTestCountries, signedIn, startGame, startGoSession]
   );
 
   const handleBackToMenu = () => {
@@ -697,6 +756,10 @@ export default function GeographyGame() {
 
   const handlePlayAgain = () => {
     if (!session) return;
+    if (session.go) {
+      startGoSession();
+      return;
+    }
     if (isLearningGame) {
       startLearningAgain();
       return;
@@ -1012,7 +1075,7 @@ export default function GeographyGame() {
             <p className="start-subtitle">{promptText}</p>
           </div>
         ) : (
-          <StartScreen onStart={handleSessionStart} disabled={!ready} />
+          <StartScreen onStart={handleSessionStart} disabled={!ready} countries={allCountries} />
         )
       ) : (
         <>

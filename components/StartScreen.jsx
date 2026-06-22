@@ -3,43 +3,40 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/AuthModal";
+import RegionMapPicker from "@/components/RegionMapPicker";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
 import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
 
-export default function StartScreen({ onStart, disabled }) {
+export default function StartScreen({ onStart, disabled, countries = [] }) {
   const { data: session, status } = useSession();
   const [selectedGameType, setSelectedGameType] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [selectedSessionSize, setSelectedSessionSize] = useState(null);
-  const [step, setStep] = useState("gameType");
+  const [step, setStep] = useState("home");
   const [authOpen, setAuthOpen] = useState(false);
   const [weakCount, setWeakCount] = useState(null);
   const [weakLoading, setWeakLoading] = useState(false);
   const [weakError, setWeakError] = useState(null);
   const [starting, setStarting] = useState(false);
   const [weakReloadKey, setWeakReloadKey] = useState(0);
-  const pendingSetupAdvanceRef = useRef(false);
+  const pendingExploreAdvanceRef = useRef(false);
 
   const signedIn = status === "authenticated" && session?.user;
   const isLearning = selectedGameType === GAME_TYPES.LEARNING;
 
+  // Advance from the Explore (mode + region) step once both are chosen.
   useEffect(() => {
-    if (step !== "setup" || !pendingSetupAdvanceRef.current) return;
+    if (step !== "explore" || !pendingExploreAdvanceRef.current) return;
     if (!selectedMode || !selectedRegion || disabled) return;
-    if (isLearning && !signedIn) return;
 
-    pendingSetupAdvanceRef.current = false;
-    setStep("level");
-  }, [step, selectedMode, selectedRegion, disabled, isLearning, signedIn]);
-
-  const markSetupSelection = () => {
-    pendingSetupAdvanceRef.current = true;
-  };
+    pendingExploreAdvanceRef.current = false;
+    setStep("chooseType");
+  }, [step, selectedMode, selectedRegion, disabled]);
 
   useEffect(() => {
     if (
@@ -80,9 +77,9 @@ export default function StartScreen({ onStart, disabled }) {
     };
   }, [step, isLearning, signedIn, selectedMode, selectedRegion, selectedLevel, weakReloadKey]);
 
-  const resetToGameType = () => {
-    pendingSetupAdvanceRef.current = false;
-    setStep("gameType");
+  const resetToHome = () => {
+    pendingExploreAdvanceRef.current = false;
+    setStep("home");
     setSelectedGameType(null);
     setSelectedMode(null);
     setSelectedRegion(null);
@@ -90,6 +87,16 @@ export default function StartScreen({ onStart, disabled }) {
     setSelectedSessionSize(null);
     setWeakCount(null);
     setWeakError(null);
+  };
+
+  const handleGo = async () => {
+    if (disabled || starting) return;
+    setStarting(true);
+    try {
+      await onStart({ go: true });
+    } finally {
+      setStarting(false);
+    }
   };
 
   const handleTestStart = (level) => {
@@ -131,12 +138,12 @@ export default function StartScreen({ onStart, disabled }) {
 
   const handleModeSelect = (mode) => {
     setSelectedMode(mode);
-    markSetupSelection();
+    pendingExploreAdvanceRef.current = true;
   };
 
   const handleRegionSelect = (regionId) => {
     setSelectedRegion(regionId);
-    markSetupSelection();
+    pendingExploreAdvanceRef.current = true;
   };
 
   const getSectionSubtitle = (section) => {
@@ -229,7 +236,7 @@ export default function StartScreen({ onStart, disabled }) {
       <div className="start-screen">
         <h1 className="start-title">Choose a level</h1>
         <p className="start-subtitle">
-          {isLearning ? "Learning · " : "Test · "}
+          {isLearning ? "Learn · " : "Test · "}
           {getModeLabel(selectedMode)} ·{" "}
           {REGIONS.find((region) => region.id === selectedRegion)?.label}
         </p>
@@ -274,10 +281,7 @@ export default function StartScreen({ onStart, disabled }) {
         <button
           type="button"
           className="secondary-btn start-back-btn"
-          onClick={() => {
-            pendingSetupAdvanceRef.current = false;
-            setStep("setup");
-          }}
+          onClick={() => setStep("chooseType")}
         >
           Back
         </button>
@@ -285,33 +289,80 @@ export default function StartScreen({ onStart, disabled }) {
     );
   }
 
-  if (step === "setup") {
+  if (step === "chooseType") {
+    const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
+    const learnDisabled = disabled || !signedIn;
+
     return (
       <div className="start-screen">
-        <h1 className="start-title">
-          {isLearning ? "Learning mode" : "Test mode"}
-        </h1>
+        <h1 className="start-title">Test or Learn?</h1>
         <p className="start-subtitle">
-          {isLearning
-            ? "Practice countries you struggle with"
-            : "Full region quiz — builds your learning list"}
+          {getModeLabel(selectedMode)} · {regionLabel}
         </p>
 
-        {isLearning && !signedIn && status !== "loading" && (
+        <div className="start-section start-game-type-list">
+          <button
+            type="button"
+            className="choice-btn choice-btn-level"
+            disabled={disabled}
+            onClick={() => {
+              setSelectedGameType(GAME_TYPES.TEST);
+              setSelectedLevel(null);
+              setStep("level");
+            }}
+          >
+            <span className="choice-btn-level-title">Test</span>
+            <span className="choice-btn-level-desc">Full quiz — builds your learning list.</span>
+          </button>
+          <button
+            type="button"
+            className="choice-btn choice-btn-level"
+            disabled={learnDisabled}
+            onClick={() => {
+              setSelectedGameType(GAME_TYPES.LEARNING);
+              setSelectedLevel(null);
+              setStep("level");
+            }}
+          >
+            <span className="choice-btn-level-title">Learn</span>
+            <span className="choice-btn-level-desc">Drill the ones you miss most.</span>
+          </button>
+        </div>
+
+        {!signedIn && status !== "loading" && (
           <div className="start-message">
-            <p>Sign in to use Learning mode — your progress is tracked per country.</p>
+            <p>Sign in to use Learn — your progress is tracked per country.</p>
             <button type="button" className="primary-btn" onClick={() => setAuthOpen(true)}>
               Sign in
             </button>
           </div>
         )}
 
+        <button
+          type="button"
+          className="secondary-btn start-back-btn"
+          onClick={() => setStep("explore")}
+        >
+          Back
+        </button>
+
+        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      </div>
+    );
+  }
+
+  if (step === "explore") {
+    return (
+      <div className="start-screen start-screen--explore">
+        <h1 className="start-title">Explore</h1>
+        <p className="start-subtitle">Pick what to practice and where.</p>
+
         <div className="start-section start-section--wide">
           <div className="start-row start-mode-row">
             <button
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.COUNTRIES ? "selected" : ""}`}
-              disabled={disabled || (isLearning && !signedIn)}
+              disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
             >
               Countries
@@ -319,7 +370,7 @@ export default function StartScreen({ onStart, disabled }) {
             <button
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.CAPITALS ? "selected" : ""}`}
-              disabled={disabled || (isLearning && !signedIn)}
+              disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
             >
               Capitals
@@ -327,39 +378,28 @@ export default function StartScreen({ onStart, disabled }) {
             <button
               type="button"
               className={`choice-btn ${selectedMode === GAME_MODES.FLAGS ? "selected" : ""}`}
-              disabled={disabled || (isLearning && !signedIn)}
+              disabled={disabled}
               onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
             >
               Flags
             </button>
           </div>
 
-          <div className="start-region-list">
-            {REGIONS.map((region) => (
-              <button
-                key={region.id}
-                type="button"
-                className={`choice-btn choice-btn-region ${
-                  selectedRegion === region.id ? "selected" : ""
-                }`}
-                disabled={disabled || (isLearning && !signedIn)}
-                onClick={() => handleRegionSelect(region.id)}
-              >
-                {region.label}
-              </button>
-            ))}
-          </div>
+          <RegionMapPicker
+            countries={countries}
+            selectedRegion={selectedRegion}
+            onSelect={handleRegionSelect}
+            disabled={disabled}
+          />
         </div>
 
         <button
           type="button"
           className="secondary-btn start-back-btn"
-          onClick={resetToGameType}
+          onClick={resetToHome}
         >
           Back
         </button>
-
-        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       </div>
     );
   }
@@ -370,39 +410,33 @@ export default function StartScreen({ onStart, disabled }) {
       <div className="start-screen-content">
         <h1 className="start-title">Geography Game</h1>
 
-        <div className="start-section start-game-type-list">
-        <button
-          type="button"
-          className={`choice-btn choice-btn-level ${
-            selectedGameType === GAME_TYPES.TEST ? "selected" : ""
-          }`}
-          disabled={disabled}
-          onClick={() => {
-            setSelectedGameType(GAME_TYPES.TEST);
-            setStep("setup");
-          }}
-        >
-          <span className="choice-btn-level-title">Test Mode</span>
-          <span className="choice-btn-level-desc">
-            Full region quiz, save your scores!
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`choice-btn choice-btn-level ${
-            selectedGameType === GAME_TYPES.LEARNING ? "selected" : ""
-          }`}
-          disabled={disabled}
-          onClick={() => {
-            setSelectedGameType(GAME_TYPES.LEARNING);
-            setStep("setup");
-          }}
-        >
-          <span className="choice-btn-level-title">Learning Mode</span>
-          <span className="choice-btn-level-desc">
-            Focus on countries, capitals, and flags you miss to improve faster!
-          </span>
-        </button>
+        <div className="start-home-actions">
+          <button
+            type="button"
+            className="go-btn"
+            disabled={disabled || starting}
+            onClick={handleGo}
+          >
+            <span className="go-btn-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+            <span className="go-btn-label">{starting ? "Starting…" : "Go!"}</span>
+            <span className="go-btn-sub">Do 10 today.</span>
+          </button>
+
+          <button
+            type="button"
+            className="choice-btn choice-btn-level explore-btn"
+            disabled={disabled}
+            onClick={() => setStep("explore")}
+          >
+            <span className="choice-btn-level-title">Explore</span>
+            <span className="choice-btn-level-desc">
+              Choose countries, capitals, or flags by region.
+            </span>
+          </button>
         </div>
       </div>
     </div>

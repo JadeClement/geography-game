@@ -1,7 +1,14 @@
+import { Pacifico } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
+
+const brandFont = Pacifico({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-brand",
+});
 
 export const metadata = {
   title: "Geography Game",
@@ -12,7 +19,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={brandFont.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

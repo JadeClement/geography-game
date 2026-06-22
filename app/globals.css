@@ -397,6 +397,15 @@ body {
   isolation: isolate;
 }
 
+.start-screen--explore {
+  justify-content: flex-start;
+  padding-top: 1rem;
+}
+
+.start-screen--explore .start-section--wide {
+  width: min(100%, 48rem);
+}
+
 .start-screen-content {
   position: relative;
   z-index: 1;
@@ -408,10 +417,18 @@ body {
 }
 
 .start-screen--with-globe .start-title {
-  font-size: clamp(6rem, 15vw, 7.5rem);
+  font-family: var(--font-brand), "Brush Script MT", cursive;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  font-size: clamp(4.5rem, 14vw, 7rem);
   text-shadow:
     0 2px 16px var(--color-bg),
     0 0 40px var(--color-bg);
+}
+
+.start-screen--with-globe .start-home-actions {
+  margin-top: clamp(2.5rem, 12vh, 5.5rem);
 }
 
 .start-hero {
@@ -557,6 +574,118 @@ body {
   width: 100%;
 }
 
+.region-map-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.region-map-wrap {
+  position: relative;
+  width: min(100%, 48rem);
+}
+
+.region-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+.region-map-ocean {
+  fill: #0284c7;
+}
+
+.region-map-countries {
+  pointer-events: all;
+}
+
+.region-map-country {
+  cursor: pointer;
+  outline: none;
+  transition: filter var(--transition-fast);
+}
+
+.region-map-picker:not(.region-map-picker--disabled)
+  .region-map-countries:has(.region-map-country[data-region="northAmerica"]:hover)
+  .region-map-country[data-region="northAmerica"],
+.region-map-picker:not(.region-map-picker--disabled)
+  .region-map-countries:has(.region-map-country[data-region="southAmerica"]:hover)
+  .region-map-country[data-region="southAmerica"],
+.region-map-picker:not(.region-map-picker--disabled)
+  .region-map-countries:has(.region-map-country[data-region="europe"]:hover)
+  .region-map-country[data-region="europe"],
+.region-map-picker:not(.region-map-picker--disabled)
+  .region-map-countries:has(.region-map-country[data-region="africa"]:hover)
+  .region-map-country[data-region="africa"],
+.region-map-picker:not(.region-map-picker--disabled)
+  .region-map-countries:has(.region-map-country[data-region="asia"]:hover)
+  .region-map-country[data-region="asia"] {
+  filter: brightness(1.12) saturate(1.08);
+}
+
+.region-map-country:focus-visible {
+  filter: brightness(1.15) saturate(1.1);
+}
+
+.region-map-country.selected {
+  filter: brightness(1.18) saturate(1.12);
+}
+
+.region-map-picker--disabled .region-map-country {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.region-map-region-btn {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+
+.region-map-region-btn-label--short {
+  display: none;
+}
+
+.region-map-world-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 5%;
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 8rem;
+  padding: 0.65rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 30rem) {
+  .region-map-region-btn-label--full {
+    display: none;
+  }
+
+  .region-map-region-btn-label--short {
+    display: inline;
+  }
+
+  .region-map-region-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
 .choice-btn {
   padding: 0.8rem 1.25rem;
   font-size: 1rem;
@@ -593,6 +722,42 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.choice-btn.region-map-region-btn,
+.choice-btn.region-map-world-btn {
+  background: color-mix(in srgb, var(--color-bg-surface) 10%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--transition-fast), background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.choice-btn.region-map-region-btn:hover:not(:disabled) {
+  background: var(--color-bg-surface-hover);
+  transform: translate(-50%, -50%);
+  box-shadow: var(--shadow-md);
+}
+
+.choice-btn.region-map-world-btn:hover:not(:disabled) {
+  background: var(--color-bg-surface-hover);
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-md);
+}
+
+.choice-btn.region-map-region-btn.selected,
+.choice-btn.region-map-world-btn.selected {
+  background: var(--color-bg-surface-selected);
+}
+
+.choice-btn.region-map-region-btn:active:not(:disabled) {
+  transform: translate(-50%, -50%);
+  box-shadow: var(--shadow-sm);
+}
+
+.choice-btn.region-map-world-btn:active:not(:disabled) {
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
 }
 
 .start-continue-btn,
@@ -666,6 +831,85 @@ body {
 
 .start-game-type-list .choice-btn-level {
   width: 100%;
+}
+
+.start-home-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: min(100%, 28rem);
+}
+
+.go-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  width: 75%;
+  padding: clamp(0.7rem, 2vw, 0.95rem) 1.125rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(150deg, #4ade80, #22c55e);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 28px -10px rgba(34, 197, 94, 0.55);
+  transition:
+    transform var(--transition-base, 0.15s ease),
+    box-shadow var(--transition-base, 0.15s ease),
+    filter var(--transition-base, 0.15s ease);
+}
+
+.go-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 32px -10px rgba(34, 197, 94, 0.7);
+}
+
+.go-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.go-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.go-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  margin-bottom: 0;
+}
+
+.go-btn-icon svg {
+  margin-left: 0.12rem;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.go-btn-label {
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.go-btn-sub {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.explore-btn {
+  width: 100%;
+  align-items: center;
+  text-align: center;
 }
 
 .start-message {
@@ -1716,6 +1960,10 @@ a.secondary-btn {
     padding: 2rem 1.25rem;
     justify-content: flex-start;
     padding-top: clamp(1.5rem, 8vh, 4rem);
+  }
+
+  .start-screen--explore {
+    padding-top: 0.75rem;
   }
 
   .spinning-globe {
