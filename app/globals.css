@@ -1717,6 +1717,21 @@ body {
 .app-header-actions {
   display: flex;
   align-items: center;
+  gap: 0.6rem;
+}
+
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-bg-inset);
+  color: var(--color-text-menu);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .profile-btn {
@@ -1933,6 +1948,11 @@ body {
 
 .modal-message.error {
   color: var(--color-error);
+}
+
+.modal-message.streak-message {
+  text-align: center;
+  font-weight: 600;
 }
 
 .modal-actions {

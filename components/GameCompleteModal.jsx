@@ -32,6 +32,7 @@ export default function GameCompleteModal({
   const [authOpen, setAuthOpen] = useState(false);
   const [saveState, setSaveState] = useState({ loading: false, result: null, error: null });
   const [pendingSave, setPendingSave] = useState(null);
+  const [streakMessage, setStreakMessage] = useState(null);
 
   const signedIn = status === "authenticated" && session?.user;
 
@@ -39,8 +40,51 @@ export default function GameCompleteModal({
     if (!open) {
       setSaveState({ loading: false, result: null, error: null });
       setPendingSave(null);
+      setStreakMessage(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !signedIn) return;
+
+    let cancelled = false;
+
+    // The practice session for today was already recorded server-side while
+    // playing, so this reflects the post-game ("after") streak. Compare it with
+    // the last value we showed to detect when the streak just incremented.
+    fetch("/api/streak")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const current = data.currentStreak || 0;
+        if (current <= 0) return;
+
+        let previous = null;
+        try {
+          const stored = window.localStorage.getItem("worldly:lastStreakSeen");
+          previous = stored == null ? null : Number(stored);
+        } catch {
+          previous = null;
+        }
+
+        if (previous == null || current > previous) {
+          setStreakMessage(`🔥 ${current} day streak!`);
+        }
+
+        try {
+          window.localStorage.setItem("worldly:lastStreakSeen", String(current));
+        } catch {
+          // Ignore storage errors — the message is a non-critical nicety.
+        }
+      })
+      .catch(() => {
+        // Network error — just don't show the streak message.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, signedIn]);
 
   useEffect(() => {
     if (!open || !signedIn || isReview || isLearning) return;
@@ -185,6 +229,10 @@ export default function GameCompleteModal({
             >
               {message}
             </p>
+          )}
+
+          {streakMessage && (
+            <p className="modal-message streak-message">{streakMessage}</p>
           )}
 
           <div className="modal-actions">
