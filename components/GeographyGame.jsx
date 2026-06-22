@@ -12,7 +12,7 @@ import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
 import StartScreen from "@/components/StartScreen";
-import { CORRECT_ROUND_DELAY_MS, IDLE_PROMPT_MS, IDLE_RETURN_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
+import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
 import {
   fetchMasteryStats,
   fetchWeakCountryStats,
@@ -54,6 +54,12 @@ import {
 } from "@/lib/regions";
 import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
 import { formatElapsedTime } from "@/lib/time";
+import { useSyncRef } from "@/lib/hooks/useSyncRef";
+import { useGameTimer } from "@/lib/hooks/useGameTimer";
+import { useRoundScoring } from "@/lib/hooks/useRoundScoring";
+import { useCountryQueue } from "@/lib/hooks/useCountryQueue";
+import { useIdleDetection } from "@/lib/hooks/useIdleDetection";
+import { useGameBoard } from "@/lib/hooks/useGameBoard";
 import { useSession } from "next-auth/react";
 
 // Number of countries in a "Go" quick-review session.
@@ -81,110 +87,125 @@ export default function GeographyGame() {
   const [session, setSession] = useState(null);
   const [gameActive, setGameActive] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
-  const [targetCountry, setTargetCountry] = useState(null);
-  const [rightCount, setRightCount] = useState(0);
-  const [wrongCount, setWrongCount] = useState(0);
-  const [revealMode, setRevealMode] = useState(false);
-  const [feedback, setFeedback] = useState({ text: "", type: "" });
-  const [highlightCountryId, setHighlightCountryId] = useState(null);
-  const [flashSmallCountryId, setFlashSmallCountryId] = useState(null);
-  const [wrongCountryIds, setWrongCountryIds] = useState([]);
-  const [roundWrongCountryIds, setRoundWrongCountryIds] = useState([]);
-  const [flashWrongCountryIds, setFlashWrongCountryIds] = useState([]);
-  const [filledCountryIds, setFilledCountryIds] = useState([]);
-  const [showColorCountryIds, setShowColorCountryIds] = useState([]);
   const [answerInput, setAnswerInput] = useState("");
   const [spellingSuggestion, setSpellingSuggestion] = useState(null);
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [finalElapsedMs, setFinalElapsedMs] = useState(0);
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [referencePanelOpen, setReferencePanelOpen] = useState(false);
   const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
-  const [idlePromptOpen, setIdlePromptOpen] = useState(false);
   const [gamePaused, setGamePaused] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
 
-  const countryQueueRef = useRef([]);
-  const queueIndexRef = useRef(0);
-  const rightCountRef = useRef(0);
-  const wrongCountRef = useRef(0);
-  const gameActiveRef = useRef(false);
-  const targetCountryRef = useRef(null);
-  const revealModeRef = useRef(false);
+  // Game stopwatch (runs only while a game is active and not finished).
+  const timer = useGameTimer(Boolean(session) && gameActive && !gameComplete);
+  const {
+    elapsedMs,
+    finalElapsedMs,
+    resetPause: resetTimerPause,
+    pause: pauseGameTimer,
+    resume: resumeGameTimer,
+    start: startGameTimer,
+    stop: stopGameTimer,
+    reset: resetGameTimer,
+  } = timer;
+
+  // Right/wrong counts and the list of missed countries.
+  const scoring = useRoundScoring();
+  const {
+    rightCount,
+    wrongCount,
+    rightCountRef,
+    wrongCountRef,
+    roundMarkedIncorrectRef,
+    incorrectTargetsRef,
+    reset: resetScoring,
+    beginRound: beginRoundScoring,
+    markRoundCorrect,
+    markRoundIncorrect,
+  } = scoring;
+
+  // The shuffled country queue and the current target.
+  const queue = useCountryQueue();
+  const {
+    targetCountry,
+    targetCountryRef,
+    queueRef: countryQueueRef,
+    setTarget,
+    loadQueue,
+    advance: advanceQueue,
+    reset: resetQueue,
+  } = queue;
+
+  // Everything the map currently displays (highlights, fills, flashes, feedback).
+  const gameBoard = useGameBoard();
+  const {
+    board,
+    revealModeRef,
+    setFeedback,
+    setRevealMode,
+    setHighlightCountryId,
+    setFlashSmallCountryId,
+    addWrongCountry,
+    addRoundWrongCountry,
+    setFlashWrongCountryIds,
+    clearFlashWrongIfOnly,
+    addFilledCountry,
+    setShowColorCountryIds,
+    clearShowColorIfOnly,
+    startGameBoard,
+    startRoundBoard,
+    finishGameBoard,
+    resetBoard,
+  } = gameBoard;
+  const {
+    revealMode,
+    feedback,
+    highlightCountryId,
+    flashSmallCountryId,
+    wrongCountryIds,
+    roundWrongCountryIds,
+    flashWrongCountryIds,
+    filledCountryIds,
+    showColorCountryIds,
+  } = board;
+
   const wrongAttemptsRef = useRef(0);
-  const roundMarkedIncorrectRef = useRef(false);
   const nextRoundTimeoutRef = useRef(null);
   const colorFlashTimeoutRef = useRef(null);
   const wrongFlashTimeoutRef = useRef(null);
   const answerInputRef = useRef(null);
-  const incorrectTargetsRef = useRef([]);
-  const gameStartTimeRef = useRef(null);
-  const timerPausedMsRef = useRef(0);
-  const timerPauseStartedAtRef = useRef(null);
-  const idlePromptTimeoutRef = useRef(null);
-  const idleReturnTimeoutRef = useRef(null);
-  const idlePromptOpenRef = useRef(false);
   const handleBackToMenuRef = useRef(() => {});
   const gameInHistoryRef = useRef(false);
   const suppressPlayCheckRef = useRef(false);
   const roundStartTimeRef = useRef(null);
   const revealStatRecordedRef = useRef(false);
-  const gamePausedRef = useRef(false);
+
+  // Refs that always mirror the latest state for synchronous reads in handlers.
+  const gameActiveRef = useSyncRef(gameActive);
+  const gamePausedRef = useSyncRef(gamePaused);
 
   const signedIn = authStatus === "authenticated" && authSession?.user;
 
-  gameActiveRef.current = gameActive;
-  gamePausedRef.current = gamePaused;
-  targetCountryRef.current = targetCountry;
-  revealModeRef.current = revealMode;
-  rightCountRef.current = rightCount;
-  wrongCountRef.current = wrongCount;
-  idlePromptOpenRef.current = idlePromptOpen;
-
-  const getElapsedMs = useCallback(() => {
-    if (gameStartTimeRef.current == null) return 0;
-    let pausedMs = timerPausedMsRef.current;
-    if (timerPauseStartedAtRef.current != null) {
-      pausedMs += Date.now() - timerPauseStartedAtRef.current;
-    }
-    return Math.max(0, Date.now() - gameStartTimeRef.current - pausedMs);
-  }, []);
-
-  const clearIdleTimers = useCallback(() => {
-    if (idlePromptTimeoutRef.current) {
-      clearTimeout(idlePromptTimeoutRef.current);
-      idlePromptTimeoutRef.current = null;
-    }
-    if (idleReturnTimeoutRef.current) {
-      clearTimeout(idleReturnTimeoutRef.current);
-      idleReturnTimeoutRef.current = null;
-    }
-  }, []);
-
-  const resetTimerPause = useCallback(() => {
-    timerPausedMsRef.current = 0;
-    timerPauseStartedAtRef.current = null;
-  }, []);
-
-  const pauseGameTimer = useCallback(() => {
-    if (timerPauseStartedAtRef.current != null) return;
-    timerPauseStartedAtRef.current = Date.now();
-  }, []);
-
-  const resumeGameTimer = useCallback(() => {
-    if (timerPauseStartedAtRef.current == null) return;
-    timerPausedMsRef.current += Date.now() - timerPauseStartedAtRef.current;
-    timerPauseStartedAtRef.current = null;
-  }, []);
-
-  const resetIdleState = useCallback(() => {
-    clearIdleTimers();
-    setIdlePromptOpen(false);
-    idlePromptOpenRef.current = false;
-    resetTimerPause();
-  }, [clearIdleTimers, resetTimerPause]);
+  // "Are you still there?" idle handling. onIdleReturn runs handleBackToMenu,
+  // which is defined later, so we route it through a ref to break the cycle.
+  const handleIdleReturn = useCallback(() => handleBackToMenuRef.current(), []);
+  const idle = useIdleDetection({
+    active: Boolean(session) && gameActive && !gameComplete,
+    paused: gamePaused,
+    pauseTimer: pauseGameTimer,
+    resumeTimer: resumeGameTimer,
+    resetTimerPause,
+    onIdleReturn: handleIdleReturn,
+  });
+  const {
+    promptOpen: idlePromptOpen,
+    resetIdleState,
+    scheduleIdlePrompt,
+    handleIdleContinue,
+    clearIdleTimers,
+    closePrompt: closeIdlePrompt,
+  } = idle;
 
   const hasToken = Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN);
 
@@ -207,18 +228,6 @@ export default function GeographyGame() {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (!session || !gameActive || gameComplete) return;
-
-    const tick = () => {
-      setElapsedMs(getElapsedMs());
-    };
-
-    tick();
-    const intervalId = setInterval(tick, 1000);
-    return () => clearInterval(intervalId);
-  }, [session, gameActive, gameComplete, getElapsedMs]);
 
   const activeCountries = useMemo(() => {
     if (!session) return [];
@@ -326,23 +335,11 @@ export default function GeographyGame() {
       : null;
 
   const finishGame = useCallback(() => {
-    const elapsed = getElapsedMs();
-    setFinalElapsedMs(elapsed);
-    setElapsedMs(elapsed);
+    stopGameTimer();
     setGameActive(false);
-    gameActiveRef.current = false;
     setGameComplete(true);
-    setFeedback({ text: "", type: "" });
-    setHighlightCountryId(null);
-    setFlashSmallCountryId(null);
-    setWrongCountryIds([]);
-    setRoundWrongCountryIds([]);
-    setFlashWrongCountryIds([]);
-    setFilledCountryIds([]);
-    setShowColorCountryIds([]);
-    setRevealMode(false);
-    revealModeRef.current = false;
-  }, [getElapsedMs]);
+    finishGameBoard();
+  }, [finishGameBoard, stopGameTimer]);
 
   const finishRound = useCallback(() => {
     const total = countryQueueRef.current.length;
@@ -352,28 +349,7 @@ export default function GeographyGame() {
       return true;
     }
     return false;
-  }, [finishGame]);
-
-  const markRoundIncorrect = useCallback(() => {
-    if (roundMarkedIncorrectRef.current) return;
-    roundMarkedIncorrectRef.current = true;
-    wrongCountRef.current += 1;
-    setWrongCount(wrongCountRef.current);
-
-    const target = targetCountryRef.current;
-    if (
-      target &&
-      !incorrectTargetsRef.current.some((country) => country.id === target.id)
-    ) {
-      incorrectTargetsRef.current = [...incorrectTargetsRef.current, target];
-    }
-  }, []);
-
-  const markRoundCorrect = useCallback(() => {
-    if (roundMarkedIncorrectRef.current) return;
-    rightCountRef.current += 1;
-    setRightCount(rightCountRef.current);
-  }, []);
+  }, [countryQueueRef, finishGame, rightCountRef, wrongCountRef]);
 
   const recordRoundOutcome = useCallback(
     (outcome) => {
@@ -398,7 +374,7 @@ export default function GeographyGame() {
         console.error("Failed to record country stat:", error);
       });
     },
-    [session, signedIn]
+    [session, signedIn, targetCountryRef]
   );
 
   const clearColorFlash = useCallback(() => {
@@ -421,13 +397,11 @@ export default function GeographyGame() {
       setFlashWrongCountryIds([countryId]);
 
       wrongFlashTimeoutRef.current = setTimeout(() => {
-        setFlashWrongCountryIds((current) =>
-          current.length === 1 && current[0] === countryId ? [] : current
-        );
+        clearFlashWrongIfOnly(countryId);
         wrongFlashTimeoutRef.current = null;
       }, WRONG_CLICK_FLASH_MS);
     },
-    [clearWrongFlash]
+    [clearFlashWrongIfOnly, clearWrongFlash, setFlashWrongCountryIds]
   );
 
   const triggerColorFlash = useCallback(
@@ -437,49 +411,38 @@ export default function GeographyGame() {
       setShowColorCountryIds([countryId]);
 
       colorFlashTimeoutRef.current = setTimeout(() => {
-        setShowColorCountryIds((current) =>
-          current.length === 1 && current[0] === countryId ? [] : current
-        );
+        clearShowColorIfOnly(countryId);
         colorFlashTimeoutRef.current = null;
         onComplete?.();
       }, COUNTRY_FLASH_MS);
     },
-    [clearColorFlash]
+    [clearColorFlash, clearShowColorIfOnly, clearWrongFlash, setShowColorCountryIds]
   );
 
-  const updateShowColorForRound = useCallback((target, level, mode) => {
-    if (level === GAME_LEVELS.NAME_FLASH && target && mode !== GAME_MODES.FLAGS) {
-      setShowColorCountryIds([target.id]);
-      return;
-    }
-    setShowColorCountryIds([]);
-  }, []);
+  const updateShowColorForRound = useCallback(
+    (target, level, mode) => {
+      if (level === GAME_LEVELS.NAME_FLASH && target && mode !== GAME_MODES.FLAGS) {
+        setShowColorCountryIds([target.id]);
+        return;
+      }
+      setShowColorCountryIds([]);
+    },
+    [setShowColorCountryIds]
+  );
 
   const startRound = useCallback(() => {
     clearColorFlash();
     clearWrongFlash();
-    setHighlightCountryId(null);
-    setFlashSmallCountryId(null);
-    setRevealMode(false);
-    revealModeRef.current = false;
     wrongAttemptsRef.current = 0;
-    roundMarkedIncorrectRef.current = false;
+    beginRoundScoring();
     revealStatRecordedRef.current = false;
     roundStartTimeRef.current = Date.now();
-    setRoundWrongCountryIds([]);
-    if (!isProgressiveFillLevel(session?.level ?? 0)) {
-      setWrongCountryIds([]);
-    }
-    setFlashWrongCountryIds([]);
+    startRoundBoard(!isProgressiveFillLevel(session?.level ?? 0));
     setAnswerInput("");
     setSpellingSuggestion(null);
     setFlagsClickHeader(null);
 
-    const next = countryQueueRef.current[queueIndexRef.current] ?? null;
-    queueIndexRef.current += 1;
-    targetCountryRef.current = next;
-    setTargetCountry(next);
-    setFeedback({ text: "", type: "" });
+    const next = advanceQueue();
 
     if (session?.level) {
       updateShowColorForRound(next, session.level, session.mode);
@@ -490,7 +453,17 @@ export default function GeographyGame() {
     if (isNameLevel(session?.level ?? 0)) {
       requestAnimationFrame(() => answerInputRef.current?.focus());
     }
-  }, [clearColorFlash, clearWrongFlash, session?.level, session?.mode, updateShowColorForRound]);
+  }, [
+    advanceQueue,
+    beginRoundScoring,
+    clearColorFlash,
+    clearWrongFlash,
+    session?.level,
+    session?.mode,
+    setShowColorCountryIds,
+    startRoundBoard,
+    updateShowColorForRound,
+  ]);
 
   const scheduleNextRound = useCallback(
     (delay = CORRECT_ROUND_DELAY_MS) => {
@@ -534,13 +507,11 @@ export default function GeographyGame() {
       clearWrongFlash();
       resetIdleState();
 
-      gameStartTimeRef.current = Date.now();
-      setElapsedMs(0);
-      setFinalElapsedMs(0);
+      startGameTimer();
 
-      countryQueueRef.current = shuffleCountries(pool);
-      queueIndexRef.current = 0;
-      incorrectTargetsRef.current = [];
+      loadQueue(shuffleCountries(pool));
+      resetScoring();
+      beginRoundScoring();
 
       const countryIds =
         reviewCountryIds ?? learningCountryIds ?? pool.map((country) => country.id);
@@ -562,45 +533,21 @@ export default function GeographyGame() {
       setGamePaused(false);
       setShowResumeConfirm(false);
       setShowStopConfirm(false);
-      setRightCount(0);
-      setWrongCount(0);
-      rightCountRef.current = 0;
-      wrongCountRef.current = 0;
-      setFeedback({ text: "", type: "" });
-      setWrongCountryIds([]);
-      setRoundWrongCountryIds([]);
-      setFlashWrongCountryIds([]);
       // Pre-credited (already mastered) countries show as filled from the start.
-      setFilledCountryIds(preCredited);
+      startGameBoard(preCredited);
 
       // Everything was already mastered — nothing left to quiz.
       if (pool.length === 0) {
         setGameActive(false);
-        gameActiveRef.current = false;
         setGameComplete(true);
-        setFinalElapsedMs(0);
-        setTargetCountry(null);
-        targetCountryRef.current = null;
-        setRevealMode(false);
-        revealModeRef.current = false;
-        setHighlightCountryId(null);
-        setFlashSmallCountryId(null);
+        setTarget(null);
         return;
       }
 
       setGameActive(true);
-      gameActiveRef.current = true;
 
-      const first = countryQueueRef.current[0] ?? null;
-      queueIndexRef.current = 1;
-      targetCountryRef.current = first;
-      setTargetCountry(first);
-      setRevealMode(false);
-      revealModeRef.current = false;
-      setHighlightCountryId(null);
-      setFlashSmallCountryId(null);
+      const first = advanceQueue();
       wrongAttemptsRef.current = 0;
-      roundMarkedIncorrectRef.current = false;
       revealStatRecordedRef.current = false;
       roundStartTimeRef.current = Date.now();
       setAnswerInput("");
@@ -615,7 +562,21 @@ export default function GeographyGame() {
       router.push(buildPlayingUrl());
       gameInHistoryRef.current = true;
     },
-    [allCountries, clearColorFlash, clearWrongFlash, resetIdleState, router, updateShowColorForRound]
+    [
+      advanceQueue,
+      allCountries,
+      beginRoundScoring,
+      clearColorFlash,
+      clearWrongFlash,
+      loadQueue,
+      resetIdleState,
+      resetScoring,
+      router,
+      setTarget,
+      startGameBoard,
+      startGameTimer,
+      updateShowColorForRound,
+    ]
   );
 
   const beginSession = useCallback(
@@ -771,34 +732,15 @@ export default function GeographyGame() {
     }
     clearColorFlash();
     clearWrongFlash();
-    gameStartTimeRef.current = null;
-    setElapsedMs(0);
-    setFinalElapsedMs(0);
+    resetGameTimer();
     setSession(null);
     setGameActive(false);
-    gameActiveRef.current = false;
     setGameComplete(false);
-    setTargetCountry(null);
-    targetCountryRef.current = null;
-    setRightCount(0);
-    setWrongCount(0);
-    rightCountRef.current = 0;
-    wrongCountRef.current = 0;
-    setFeedback({ text: "", type: "" });
-    setHighlightCountryId(null);
-    setFlashSmallCountryId(null);
-    setWrongCountryIds([]);
-    setRoundWrongCountryIds([]);
-    setFlashWrongCountryIds([]);
-    setFilledCountryIds([]);
-    setShowColorCountryIds([]);
-    setRevealMode(false);
-    revealModeRef.current = false;
+    resetQueue();
+    resetScoring();
+    beginRoundScoring();
+    resetBoard();
     wrongAttemptsRef.current = 0;
-    roundMarkedIncorrectRef.current = false;
-    countryQueueRef.current = [];
-    queueIndexRef.current = 0;
-    incorrectTargetsRef.current = [];
     setAnswerInput("");
     setSpellingSuggestion(null);
     suppressPlayCheckRef.current = true;
@@ -842,78 +784,6 @@ export default function GeographyGame() {
     handleBackToMenuRef.current();
   }, [searchParams, session, gameComplete, router]);
 
-  const dismissIdlePrompt = useCallback(() => {
-    if (idleReturnTimeoutRef.current) {
-      clearTimeout(idleReturnTimeoutRef.current);
-      idleReturnTimeoutRef.current = null;
-    }
-    setIdlePromptOpen(false);
-    idlePromptOpenRef.current = false;
-    resumeGameTimer();
-  }, [resumeGameTimer]);
-
-  const scheduleIdlePrompt = useCallback(() => {
-    clearIdleTimers();
-    idlePromptTimeoutRef.current = setTimeout(() => {
-      pauseGameTimer();
-      setIdlePromptOpen(true);
-      idlePromptOpenRef.current = true;
-      idleReturnTimeoutRef.current = setTimeout(() => {
-        setIdlePromptOpen(false);
-        idlePromptOpenRef.current = false;
-        handleBackToMenuRef.current();
-      }, IDLE_RETURN_MS);
-    }, IDLE_PROMPT_MS);
-  }, [clearIdleTimers, pauseGameTimer]);
-
-  const handleIdleContinue = useCallback(() => {
-    dismissIdlePrompt();
-    scheduleIdlePrompt();
-  }, [dismissIdlePrompt, scheduleIdlePrompt]);
-
-  useEffect(() => {
-    if (!session || !gameActive || gameComplete || gamePaused) {
-      clearIdleTimers();
-      if (gamePaused) {
-        setIdlePromptOpen(false);
-        idlePromptOpenRef.current = false;
-      }
-      if (!session || !gameActive || gameComplete) {
-        setIdlePromptOpen(false);
-        idlePromptOpenRef.current = false;
-      }
-      return;
-    }
-
-    const onActivity = () => {
-      if (idlePromptOpenRef.current) {
-        dismissIdlePrompt();
-      }
-      scheduleIdlePrompt();
-    };
-
-    const events = ["pointerdown", "keydown", "touchstart"];
-    for (const eventName of events) {
-      window.addEventListener(eventName, onActivity, { passive: true });
-    }
-    scheduleIdlePrompt();
-
-    return () => {
-      for (const eventName of events) {
-        window.removeEventListener(eventName, onActivity);
-      }
-      clearIdleTimers();
-    };
-  }, [
-    session,
-    gameActive,
-    gameComplete,
-    scheduleIdlePrompt,
-    dismissIdlePrompt,
-    clearIdleTimers,
-    gamePaused,
-  ]);
-
   const handleResumeGame = useCallback(() => {
     setShowResumeConfirm(false);
     setGamePaused(false);
@@ -928,12 +798,11 @@ export default function GeographyGame() {
     }
 
     clearIdleTimers();
-    setIdlePromptOpen(false);
-    idlePromptOpenRef.current = false;
+    closeIdlePrompt();
     setShowResumeConfirm(false);
     setGamePaused(true);
     pauseGameTimer();
-  }, [clearIdleTimers, gamePaused, handleResumeGame, pauseGameTimer]);
+  }, [clearIdleTimers, closeIdlePrompt, gamePaused, handleResumeGame, pauseGameTimer]);
 
   const handlePausedMapInteraction = useCallback(() => {
     if (!gamePausedRef.current) return;
@@ -1023,13 +892,9 @@ export default function GeographyGame() {
         session?.level === GAME_LEVELS.NAME_FILL
       ) {
         if (roundMarkedIncorrectRef.current) {
-          setWrongCountryIds((current) =>
-            current.includes(target.id) ? current : [...current, target.id]
-          );
+          addWrongCountry(target.id);
         } else {
-          setFilledCountryIds((current) =>
-            current.includes(target.id) ? current : [...current, target.id]
-          );
+          addFilledCountry(target.id);
         }
       }
 
@@ -1046,6 +911,8 @@ export default function GeographyGame() {
       scheduleNextRound(CORRECT_ROUND_DELAY_MS);
     },
     [
+      addFilledCountry,
+      addWrongCountry,
       clearColorFlash,
       clearWrongFlash,
       finishRound,
@@ -1053,8 +920,11 @@ export default function GeographyGame() {
       isFlagsMode,
       isNameGame,
       markRoundCorrect,
+      roundMarkedIncorrectRef,
       scheduleNextRound,
       session?.level,
+      setFeedback,
+      setShowColorCountryIds,
       recordRoundOutcome,
     ]
   );
@@ -1072,7 +942,6 @@ export default function GeographyGame() {
 
       const showReveal = () => {
         setRevealMode(true);
-        revealModeRef.current = true;
 
         if (isFindLevel(session?.level ?? 0)) {
           setHighlightCountryId(target.id);
@@ -1083,9 +952,7 @@ export default function GeographyGame() {
           }
           setHighlightCountryId(null);
         } else if (session?.level === GAME_LEVELS.NAME_FILL) {
-          setWrongCountryIds((current) =>
-            current.includes(target.id) ? current : [...current, target.id]
-          );
+          addWrongCountry(target.id);
           setHighlightCountryId(null);
         } else {
           setHighlightCountryId(target.id);
@@ -1110,7 +977,19 @@ export default function GeographyGame() {
 
       showReveal();
     },
-    [isFlashLevel, isNameGame, recordRoundOutcome, session?.level, session?.mode, triggerColorFlash]
+    [
+      addWrongCountry,
+      isNameGame,
+      recordRoundOutcome,
+      session?.level,
+      session?.mode,
+      setFeedback,
+      setFlashSmallCountryId,
+      setHighlightCountryId,
+      setRevealMode,
+      setShowColorCountryIds,
+      triggerColorFlash,
+    ]
   );
 
   const handleCountryClick = useCallback(
@@ -1138,12 +1017,9 @@ export default function GeographyGame() {
           setHighlightCountryId(null);
           setFlashSmallCountryId(null);
           setRevealMode(false);
-          revealModeRef.current = false;
 
           if (session?.level === GAME_LEVELS.FIND_FILL) {
-            setWrongCountryIds((current) =>
-              current.includes(target.id) ? current : [...current, target.id]
-            );
+            addWrongCountry(target.id);
           }
 
           setFeedback({ text: "Got it!", type: "got-it" });
@@ -1166,12 +1042,10 @@ export default function GeographyGame() {
         triggerWrongFlash(clicked.id);
       }
 
-      setRoundWrongCountryIds((current) =>
-        current.includes(clicked.id) ? current : [...current, clicked.id]
-      );
+      addRoundWrongCountry(clicked.id);
 
       if (attempts === 1) {
-        markRoundIncorrect();
+        markRoundIncorrect(target);
       }
 
       if (attempts >= MAX_ATTEMPTS) {
@@ -1182,12 +1056,21 @@ export default function GeographyGame() {
     },
     [
       activeCountries,
+      addRoundWrongCountry,
+      addWrongCountry,
       finishRound,
+      gamePausedRef,
       handleCorrectRound,
       handleRevealRound,
       markRoundIncorrect,
+      revealModeRef,
       scheduleNextRound,
       session?.level,
+      setFeedback,
+      setFlashSmallCountryId,
+      setHighlightCountryId,
+      setRevealMode,
+      targetCountryRef,
       isFindFlagsGame,
       triggerWrongFlash,
     ]
@@ -1208,7 +1091,6 @@ export default function GeographyGame() {
       setHighlightCountryId(null);
       setFlashSmallCountryId(null);
       setRevealMode(false);
-      revealModeRef.current = false;
       setFeedback({ text: "", type: "" });
 
       if (finishRound()) return;
@@ -1230,7 +1112,7 @@ export default function GeographyGame() {
     const attempts = wrongAttemptsRef.current;
 
     if (attempts === 1) {
-      markRoundIncorrect();
+      markRoundIncorrect(target);
     }
 
     if (attempts >= MAX_ATTEMPTS) {
@@ -1242,11 +1124,19 @@ export default function GeographyGame() {
   }, [
     answerInput,
     finishRound,
+    gameActiveRef,
+    gamePausedRef,
     handleCorrectRound,
     handleRevealRound,
     markRoundIncorrect,
+    revealModeRef,
     scheduleNextRound,
     session,
+    setFeedback,
+    setFlashSmallCountryId,
+    setHighlightCountryId,
+    setRevealMode,
+    targetCountryRef,
   ]);
 
   const handleAnswerKeyDown = (event) => {
