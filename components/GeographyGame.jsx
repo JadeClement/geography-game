@@ -95,7 +95,6 @@ export default function GeographyGame() {
   const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
   const [gamePaused, setGamePaused] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
-  const [showStopConfirm, setShowStopConfirm] = useState(false);
 
   // Game stopwatch (runs only while a game is active and not finished).
   const timer = useGameTimer(Boolean(session) && gameActive && !gameComplete);
@@ -178,6 +177,7 @@ export default function GeographyGame() {
   const handleBackToMenuRef = useRef(() => {});
   const gameInHistoryRef = useRef(false);
   const suppressPlayCheckRef = useRef(false);
+  const wasPlayingRef = useRef(false);
   const roundStartTimeRef = useRef(null);
   const revealStatRecordedRef = useRef(false);
 
@@ -532,7 +532,6 @@ export default function GeographyGame() {
       setGameComplete(false);
       setGamePaused(false);
       setShowResumeConfirm(false);
-      setShowStopConfirm(false);
       // Pre-credited (already mastered) countries show as filled from the start.
       startGameBoard(preCredited);
 
@@ -725,7 +724,6 @@ export default function GeographyGame() {
     resetIdleState();
     setShowMenuConfirm(false);
     setShowResumeConfirm(false);
-    setShowStopConfirm(false);
     setGamePaused(false);
     if (nextRoundTimeoutRef.current) {
       clearTimeout(nextRoundTimeoutRef.current);
@@ -767,8 +765,16 @@ export default function GeographyGame() {
   handleBackToMenuRef.current = handleBackToMenu;
 
   useEffect(() => {
+    const playing = isPlayingSearchParams(searchParams);
+    // Only react when the URL actually transitions out of the playing state
+    // (i.e. a back navigation). This ignores the initial start transition and
+    // any render where `useSearchParams()` hasn't yet caught up to the freshly
+    // pushed playing URL, which would otherwise pop the leave prompt on start.
+    const leftPlaying = wasPlayingRef.current && !playing;
+    wasPlayingRef.current = playing;
+
     if (!session || !gameInHistoryRef.current) return;
-    if (isPlayingSearchParams(searchParams)) return;
+    if (playing || !leftPlaying) return;
 
     if (suppressPlayCheckRef.current) {
       suppressPlayCheckRef.current = false;
@@ -1297,7 +1303,7 @@ export default function GeographyGame() {
                   <button
                     type="button"
                     className="game-control-btn game-control-btn--stop"
-                    onClick={() => setShowStopConfirm(true)}
+                    onClick={handleMenuClick}
                     aria-label="Stop game"
                     title="Stop"
                   >
@@ -1435,39 +1441,6 @@ export default function GeographyGame() {
                     onClick={() => setShowResumeConfirm(false)}
                   >
                     Stay paused
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {showStopConfirm && (
-            <div className="modal-overlay">
-              <div
-                className="modal-card"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="stop-confirm-title"
-              >
-                <h2 id="stop-confirm-title" className="modal-title">
-                  Exit game?
-                </h2>
-                <p className="modal-subtitle">
-                  Do you want to exit game? Your progress won&apos;t be saved.
-                </p>
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="primary-btn"
-                    onClick={handleBackToMenu}
-                  >
-                    Exit game
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() => setShowStopConfirm(false)}
-                  >
-                    Continue
                   </button>
                 </div>
               </div>
