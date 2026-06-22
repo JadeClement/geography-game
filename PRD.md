@@ -18,7 +18,7 @@ Users learning geography often need contextual clues without being handed the an
 - Never show the field the user is currently being tested on (unless the round is in **reveal** state).
 - Keep the map and main prompt usable while the panel is open (especially for Find-it modes).
 - Let users control the panel **per round** and set a **default on/off** preference.
-- Ship v1 in **Learning mode only**; expand to Test mode later if it works well.
+- Ship v1 in **Learning mode only**;
 
 ## Non-goals (v1)
 
@@ -26,7 +26,6 @@ Users learning geography often need contextual clues without being handed the an
 - Browsing all countries in the region independent of the current round.
 - User-configurable “which fields to hide.”
 - Spaced-repetition or flashcard mode inside the panel.
-- Offline Wikipedia integration.
 - Showing reference info on the start screen or results page.
 - Separate “continent” field (same as region — see Data model).
 

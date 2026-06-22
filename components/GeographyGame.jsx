@@ -95,7 +95,9 @@ export default function GeographyGame() {
   const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
   const [gamePaused, setGamePaused] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
-  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  // Snapshot of mastery before/after the just-finished game, used to detect
+  // milestones in the complete modal. `undefined` until the game finishes.
+  const [milestoneStats, setMilestoneStats] = useState(undefined);
 
   // Game stopwatch (runs only while a game is active and not finished).
   const timer = useGameTimer(Boolean(session) && gameActive && !gameComplete);
@@ -178,8 +180,15 @@ export default function GeographyGame() {
   const handleBackToMenuRef = useRef(() => {});
   const gameInHistoryRef = useRef(false);
   const suppressPlayCheckRef = useRef(false);
+  const wasPlayingRef = useRef(false);
   const roundStartTimeRef = useRef(null);
   const revealStatRecordedRef = useRef(false);
+  // Per-country mastery records captured from the round-stat responses the game
+  // already makes, so milestones need no extra API calls.
+  const sessionStatRecordsRef = useRef(new Map());
+  const pendingStatPromisesRef = useRef([]);
+  const preCreditedIdsRef = useRef([]);
+  const regionCountryIdsRef = useRef([]);
 
   // Refs that always mirror the latest state for synchronous reads in handlers.
   const gameActiveRef = useSyncRef(gameActive);
@@ -233,6 +242,10 @@ export default function GeographyGame() {
     if (!session) return [];
     return filterCountriesByRegion(allCountries, session.region);
   }, [allCountries, session]);
+
+  useEffect(() => {
+    regionCountryIdsRef.current = activeCountries.map((country) => country.id);
+  }, [activeCountries]);
 
   const isOceaniaRegion = session?.region === "oceania";
 
@@ -334,12 +347,29 @@ export default function GeographyGame() {
       ? targetCountry.id
       : null;
 
+  const buildMilestoneStats = useCallback(() => {
+    setMilestoneStats({
+      statRecords: Object.fromEntries(sessionStatRecordsRef.current),
+      preCreditedIds: [...preCreditedIdsRef.current],
+      regionCountryIds: [...regionCountryIdsRef.current],
+    });
+  }, []);
+
   const finishGame = useCallback(() => {
     stopGameTimer();
     setGameActive(false);
     setGameComplete(true);
     finishGameBoard();
-  }, [finishGameBoard, stopGameTimer]);
+
+    // Wait for the in-flight round-stat saves to resolve so the snapshot
+    // reflects the final round's mastery/graduation before we detect milestones.
+    const pending = [...pendingStatPromisesRef.current];
+    if (pending.length === 0) {
+      buildMilestoneStats();
+      return;
+    }
+    Promise.allSettled(pending).then(buildMilestoneStats);
+  }, [buildMilestoneStats, finishGameBoard, stopGameTimer]);
 
   const finishRound = useCallback(() => {
     const total = countryQueueRef.current.length;
@@ -361,7 +391,7 @@ export default function GeographyGame() {
           ? undefined
           : Date.now() - roundStartTimeRef.current;
 
-      recordCountryStat({
+      const promise = recordCountryStat({
         countryId: target.id,
         mode: session.mode,
         level: session.level,
@@ -370,9 +400,23 @@ export default function GeographyGame() {
         gameType: session.review
           ? GAME_TYPE_FOR_STATS.REVIEW
           : (session.gameType ?? GAME_TYPES.TEST),
-      }).catch((error) => {
-        console.error("Failed to record country stat:", error);
-      });
+      })
+        .then((res) => {
+          const stat = res?.stat;
+          if (!stat?.countryId) return;
+          const prior = sessionStatRecordsRef.current.get(stat.countryId);
+          sessionStatRecordsRef.current.set(stat.countryId, {
+            beforeMastery: prior?.beforeMastery ?? stat.previousMasteryScore ?? 0,
+            beforeGraduated: prior?.beforeGraduated ?? stat.previousGraduated ?? false,
+            afterMastery: stat.masteryScore ?? 0,
+            afterGraduated: stat.graduated ?? false,
+          });
+        })
+        .catch((error) => {
+          console.error("Failed to record country stat:", error);
+        });
+
+      pendingStatPromisesRef.current.push(promise);
     },
     [session, signedIn, targetCountryRef]
   );
@@ -507,6 +551,11 @@ export default function GeographyGame() {
       clearWrongFlash();
       resetIdleState();
 
+      sessionStatRecordsRef.current = new Map();
+      pendingStatPromisesRef.current = [];
+      preCreditedIdsRef.current = preCredited;
+      setMilestoneStats(undefined);
+
       startGameTimer();
 
       loadQueue(shuffleCountries(pool));
@@ -532,7 +581,6 @@ export default function GeographyGame() {
       setGameComplete(false);
       setGamePaused(false);
       setShowResumeConfirm(false);
-      setShowStopConfirm(false);
       // Pre-credited (already mastered) countries show as filled from the start.
       startGameBoard(preCredited);
 
@@ -541,6 +589,8 @@ export default function GeographyGame() {
         setGameActive(false);
         setGameComplete(true);
         setTarget(null);
+        regionCountryIdsRef.current = preCredited;
+        buildMilestoneStats();
         return;
       }
 
@@ -566,6 +616,7 @@ export default function GeographyGame() {
       advanceQueue,
       allCountries,
       beginRoundScoring,
+      buildMilestoneStats,
       clearColorFlash,
       clearWrongFlash,
       loadQueue,
@@ -725,7 +776,6 @@ export default function GeographyGame() {
     resetIdleState();
     setShowMenuConfirm(false);
     setShowResumeConfirm(false);
-    setShowStopConfirm(false);
     setGamePaused(false);
     if (nextRoundTimeoutRef.current) {
       clearTimeout(nextRoundTimeoutRef.current);
@@ -736,6 +786,7 @@ export default function GeographyGame() {
     setSession(null);
     setGameActive(false);
     setGameComplete(false);
+    setMilestoneStats(undefined);
     resetQueue();
     resetScoring();
     beginRoundScoring();
@@ -767,8 +818,16 @@ export default function GeographyGame() {
   handleBackToMenuRef.current = handleBackToMenu;
 
   useEffect(() => {
+    const playing = isPlayingSearchParams(searchParams);
+    // Only react when the URL actually transitions out of the playing state
+    // (i.e. a back navigation). This ignores the initial start transition and
+    // any render where `useSearchParams()` hasn't yet caught up to the freshly
+    // pushed playing URL, which would otherwise pop the leave prompt on start.
+    const leftPlaying = wasPlayingRef.current && !playing;
+    wasPlayingRef.current = playing;
+
     if (!session || !gameInHistoryRef.current) return;
-    if (isPlayingSearchParams(searchParams)) return;
+    if (playing || !leftPlaying) return;
 
     if (suppressPlayCheckRef.current) {
       suppressPlayCheckRef.current = false;
@@ -1297,7 +1356,7 @@ export default function GeographyGame() {
                   <button
                     type="button"
                     className="game-control-btn game-control-btn--stop"
-                    onClick={() => setShowStopConfirm(true)}
+                    onClick={handleMenuClick}
                     aria-label="Stop game"
                     title="Stop"
                   >
@@ -1405,6 +1464,7 @@ export default function GeographyGame() {
             totalElapsedMs={finalElapsedMs}
             isReview={session.review}
             isLearning={isLearningGame}
+            milestoneStats={milestoneStats}
             canReviewIncorrect={isTestGame && !session.review && wrongCount > 0}
             onReviewIncorrect={handleReviewIncorrect}
             onPlayAgain={handlePlayAgain}
@@ -1435,39 +1495,6 @@ export default function GeographyGame() {
                     onClick={() => setShowResumeConfirm(false)}
                   >
                     Stay paused
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {showStopConfirm && (
-            <div className="modal-overlay">
-              <div
-                className="modal-card"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="stop-confirm-title"
-              >
-                <h2 id="stop-confirm-title" className="modal-title">
-                  Exit game?
-                </h2>
-                <p className="modal-subtitle">
-                  Do you want to exit game? Your progress won&apos;t be saved.
-                </p>
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="primary-btn"
-                    onClick={handleBackToMenu}
-                  >
-                    Exit game
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() => setShowStopConfirm(false)}
-                  >
-                    Continue
                   </button>
                 </div>
               </div>

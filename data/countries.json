@@ -20,7 +20,25 @@
         "CHN"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became fully independent from British influence in 1919 after the Third Anglo-Afghan War."
+        },
+        {
+          "category": "politics",
+          "text": "Governed by the Taliban-led Islamic Emirate since 2021."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Muslim, with Pashtuns and Tajiks among its largest ethnic groups."
+        },
+        {
+          "category": "geography",
+          "text": "Landlocked nation at the crossroads of Central and South Asia, dominated by the Hindu Kush mountains."
+        }
+      ]
     },
     {
       "iso3": "ALA",
@@ -49,7 +67,25 @@
         "UNK"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from the Ottoman Empire in 1912."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic that emerged from communist rule in the early 1990s."
+        },
+        {
+          "category": "society",
+          "text": "Has a Muslim majority alongside Orthodox and Catholic Christian minorities."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Balkan Peninsula along the Adriatic and Ionian seas."
+        }
+      ]
     },
     {
       "iso3": "DZA",
@@ -69,7 +105,25 @@
         "MAR"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1962 after a prolonged war."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with a bicameral parliament."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely Arab-Berber and predominantly Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "Largest country in Africa, with most of its territory covered by the Sahara Desert."
+        }
+      ]
     },
     {
       "iso3": "ASM",
@@ -97,7 +151,25 @@
         "ESP"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Established as a co-principality in 1278 through a treaty between French and Spanish rulers."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary co-principality headed jointly by the President of France and the Bishop of Urgell."
+        },
+        {
+          "category": "society",
+          "text": "Catalan is the official language of this small Pyrenean state."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked microstate located in the Pyrenees mountains between France and Spain."
+        }
+      ]
     },
     {
       "iso3": "AGO",
@@ -114,7 +186,25 @@
         "NAM"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Portugal in 1975, followed by a long civil war."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic governed for decades by the MPLA party."
+        },
+        {
+          "category": "society",
+          "text": "Portuguese is the official language, a legacy of colonial rule."
+        },
+        {
+          "category": "geography",
+          "text": "Located in southern Africa along the Atlantic coast, rich in oil and diamonds."
+        }
+      ]
     },
     {
       "iso3": "AIA",
@@ -138,7 +228,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1981."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and a Commonwealth realm with the British monarch as head of state."
+        },
+        {
+          "category": "society",
+          "text": "Population is predominantly of African descent with English as the official language."
+        },
+        {
+          "category": "geography",
+          "text": "A twin-island nation in the eastern Caribbean Sea."
+        }
+      ]
     },
     {
       "iso3": "ARG",
@@ -157,7 +265,25 @@
         "URY"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Spain in 1816."
+        },
+        {
+          "category": "politics",
+          "text": "Federal presidential republic with a bicameral legislature."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely of European descent, especially Spanish and Italian."
+        },
+        {
+          "category": "geography",
+          "text": "Second-largest country in South America, spanning the Andes to the Atlantic."
+        }
+      ]
     },
     {
       "iso3": "ARM",
@@ -174,7 +300,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became one of the first states to adopt Christianity as its religion in the early 4th century."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic that gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "society",
+          "text": "Ethnically homogeneous, with the Armenian Apostolic Church central to national identity."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the South Caucasus region."
+        }
+      ]
     },
     {
       "iso3": "ABW",
@@ -199,7 +343,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Federated into a single nation from six British colonies in 1901."
+        },
+        {
+          "category": "politics",
+          "text": "Federal parliamentary constitutional monarchy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Highly multicultural, with a large share of residents born overseas."
+        },
+        {
+          "category": "geography",
+          "text": "The world's smallest continent and sixth-largest country, largely arid in its interior."
+        }
+      ]
     },
     {
       "iso3": "AUT",
@@ -220,7 +382,25 @@
         "CHE"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became a republic after the collapse of the Austro-Hungarian Empire in 1918."
+        },
+        {
+          "category": "politics",
+          "text": "Federal parliamentary republic that maintains a policy of neutrality."
+        },
+        {
+          "category": "society",
+          "text": "German-speaking and predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked Alpine country in Central Europe."
+        }
+      ]
     },
     {
       "iso3": "AZE",
@@ -239,7 +419,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Regained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with strong executive power."
+        },
+        {
+          "category": "society",
+          "text": "Has a Shia Muslim majority within a secular state tradition."
+        },
+        {
+          "category": "geography",
+          "text": "Located in the South Caucasus on the western shore of the Caspian Sea."
+        }
+      ]
     },
     {
       "iso3": "BHR",
@@ -251,7 +449,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1971."
+        },
+        {
+          "category": "politics",
+          "text": "Constitutional monarchy ruled by the Al Khalifa family."
+        },
+        {
+          "category": "society",
+          "text": "Has a Muslim majority with both Shia and Sunni communities."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago in the Persian Gulf connected to Saudi Arabia by a causeway."
+        }
+      ]
     },
     {
       "iso3": "BGD",
@@ -266,7 +482,25 @@
         "IND"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Won independence from Pakistan in 1971 after a liberation war."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic with a unicameral legislature."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's most densely populated countries, predominantly Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "Dominated by the fertile Ganges-Brahmaputra delta and prone to flooding."
+        }
+      ]
     },
     {
       "iso3": "BRB",
@@ -278,7 +512,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1966 and became a republic in 2021."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic with a president as head of state."
+        },
+        {
+          "category": "society",
+          "text": "Population is predominantly of African descent."
+        },
+        {
+          "category": "geography",
+          "text": "The easternmost island of the Caribbean, lying in the Atlantic Ocean."
+        }
+      ]
     },
     {
       "iso3": "BLR",
@@ -297,7 +549,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic led by Alexander Lukashenko since 1994."
+        },
+        {
+          "category": "society",
+          "text": "Closely tied culturally and linguistically to Russia."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in Eastern Europe with extensive forests and marshes."
+        }
+      ]
     },
     {
       "iso3": "BEL",
@@ -315,7 +585,25 @@
         "NLD"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Netherlands in 1830."
+        },
+        {
+          "category": "politics",
+          "text": "Federal constitutional monarchy with a parliamentary system."
+        },
+        {
+          "category": "society",
+          "text": "Divided between Dutch-speaking Flanders and French-speaking Wallonia."
+        },
+        {
+          "category": "geography",
+          "text": "A low-lying country in Western Europe and seat of major EU institutions."
+        }
+      ]
     },
     {
       "iso3": "BLZ",
@@ -331,7 +619,25 @@
         "MEX"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1981."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "The only Central American country with English as its official language."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Caribbean coast and home to the second-largest barrier reef in the world."
+        }
+      ]
     },
     {
       "iso3": "BEN",
@@ -348,7 +654,25 @@
         "TGO"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic that transitioned to multiparty democracy in 1990."
+        },
+        {
+          "category": "society",
+          "text": "Widely regarded as a birthplace of the Vodun religion."
+        },
+        {
+          "category": "geography",
+          "text": "A narrow West African country stretching from the Atlantic coast inland."
+        }
+      ]
     },
     {
       "iso3": "BMU",
@@ -360,7 +684,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Settled by the English in the early 17th century and remains a British territory."
+        },
+        {
+          "category": "politics",
+          "text": "A self-governing British Overseas Territory."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely of African and British descent."
+        },
+        {
+          "category": "geography",
+          "text": "An isolated group of islands in the North Atlantic Ocean."
+        }
+      ]
     },
     {
       "iso3": "BTN",
@@ -375,7 +717,25 @@
         "IND"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Unified as a state in the 17th century and was never colonized."
+        },
+        {
+          "category": "politics",
+          "text": "Constitutional monarchy that held its first democratic elections in 2008."
+        },
+        {
+          "category": "society",
+          "text": "Known for measuring progress through Gross National Happiness."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked Himalayan kingdom between India and China."
+        }
+      ]
     },
     {
       "iso3": "BOL",
@@ -394,7 +754,25 @@
         "PER"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Spain in 1825, named after Simón Bolívar."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with two constitutional capitals."
+        },
+        {
+          "category": "society",
+          "text": "Has one of the largest Indigenous populations in the Americas."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country home to the high Andean Altiplano and Lake Titicaca."
+        }
+      ]
     },
     {
       "iso3": "BIH",
@@ -411,7 +789,25 @@
         "SRB"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became independent during the breakup of Yugoslavia in 1992, followed by a devastating war."
+        },
+        {
+          "category": "politics",
+          "text": "Operates under a tripartite presidency representing its main ethnic groups."
+        },
+        {
+          "category": "society",
+          "text": "Home to Bosniak, Serb, and Croat communities."
+        },
+        {
+          "category": "geography",
+          "text": "A largely mountainous country in the western Balkans."
+        }
+      ]
     },
     {
       "iso3": "BWA",
@@ -429,7 +825,25 @@
         "ZWE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1966."
+        },
+        {
+          "category": "politics",
+          "text": "A stable parliamentary republic since independence."
+        },
+        {
+          "category": "society",
+          "text": "Its economy was transformed by diamond mining after independence."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country dominated by the Kalahari Desert."
+        }
+      ]
     },
     {
       "iso3": "BRA",
@@ -452,7 +866,25 @@
         "VEN"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Portugal in 1822."
+        },
+        {
+          "category": "politics",
+          "text": "Federal presidential republic with a bicameral congress."
+        },
+        {
+          "category": "society",
+          "text": "The largest Portuguese-speaking nation in the world."
+        },
+        {
+          "category": "geography",
+          "text": "Largest country in South America, containing most of the Amazon rainforest."
+        }
+      ]
     },
     {
       "iso3": "IOT",
@@ -490,7 +922,25 @@
         "MYS"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained full independence from the United Kingdom in 1984."
+        },
+        {
+          "category": "politics",
+          "text": "An absolute monarchy ruled by a sultan."
+        },
+        {
+          "category": "society",
+          "text": "Islam is the state religion and oil wealth funds extensive welfare."
+        },
+        {
+          "category": "geography",
+          "text": "A small nation on the island of Borneo surrounded by Malaysia."
+        }
+      ]
     },
     {
       "iso3": "BGR",
@@ -508,7 +958,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded as a state in 681 AD, making it one of Europe's oldest."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Eastern Orthodox Christian and Slavic."
+        },
+        {
+          "category": "geography",
+          "text": "Located in southeastern Europe on the Black Sea coast."
+        }
+      ]
     },
     {
       "iso3": "BFA",
@@ -527,7 +995,25 @@
         "TGO"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960, renamed from Upper Volta in 1984."
+        },
+        {
+          "category": "politics",
+          "text": "Has experienced multiple military coups in recent years."
+        },
+        {
+          "category": "society",
+          "text": "Home to over 60 ethnic groups, the Mossi being the largest."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in West Africa within the Sahel region."
+        }
+      ]
     },
     {
       "iso3": "BDI",
@@ -544,7 +1030,25 @@
         "TZA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Belgium in 1962."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic marked by periods of ethnic conflict."
+        },
+        {
+          "category": "society",
+          "text": "Population is mainly composed of Hutu and Tutsi peoples."
+        },
+        {
+          "category": "geography",
+          "text": "A small landlocked country in the African Great Lakes region."
+        }
+      ]
     },
     {
       "iso3": "KHM",
@@ -560,7 +1064,25 @@
         "VNM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1953 and later endured the Khmer Rouge regime."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with an elected government."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Theravada Buddhist and ethnically Khmer."
+        },
+        {
+          "category": "geography",
+          "text": "Located in Southeast Asia and home to the Angkor temple complex."
+        }
+      ]
     },
     {
       "iso3": "CMR",
@@ -580,7 +1102,25 @@
         "NGA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed from former British and French territories around independence in 1960-61."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic led by Paul Biya since 1982."
+        },
+        {
+          "category": "society",
+          "text": "Officially bilingual in French and English."
+        },
+        {
+          "category": "geography",
+          "text": "Often called 'Africa in miniature' for its geographic and cultural diversity."
+        }
+      ]
     },
     {
       "iso3": "CAN",
@@ -595,7 +1135,25 @@
         "USA"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became a self-governing dominion through Confederation in 1867."
+        },
+        {
+          "category": "politics",
+          "text": "Federal parliamentary constitutional monarchy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Officially bilingual in English and French."
+        },
+        {
+          "category": "geography",
+          "text": "The second-largest country in the world by total area."
+        }
+      ]
     },
     {
       "iso3": "CPV",
@@ -607,7 +1165,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Portugal in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "A stable parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely of mixed African and European descent."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago of volcanic islands in the Atlantic off West Africa."
+        }
+      ]
     },
     {
       "iso3": "CYM",
@@ -639,7 +1215,25 @@
         "SDN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic affected by recurring instability and conflict."
+        },
+        {
+          "category": "society",
+          "text": "Rich in natural resources yet among the world's least developed nations."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the center of the African continent."
+        }
+      ]
     },
     {
       "iso3": "TCD",
@@ -659,7 +1253,25 @@
         "SDN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic that has experienced frequent instability."
+        },
+        {
+          "category": "society",
+          "text": "Religiously divided between a Muslim north and a Christian south."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country home to the shrinking Lake Chad."
+        }
+      ]
     },
     {
       "iso3": "CHL",
@@ -675,7 +1287,25 @@
         "PER"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Spain in 1818."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with a bicameral congress."
+        },
+        {
+          "category": "society",
+          "text": "Highly urbanized, with most people living in the central valley."
+        },
+        {
+          "category": "geography",
+          "text": "A long, narrow country stretching along South America's Pacific coast."
+        }
+      ]
     },
     {
       "iso3": "CHN",
@@ -704,7 +1334,25 @@
         "VNM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded the People's Republic in 1949 under the Communist Party."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party socialist state led by the Communist Party."
+        },
+        {
+          "category": "society",
+          "text": "Among the most populous nations in human history."
+        },
+        {
+          "category": "geography",
+          "text": "Spans diverse terrain from the Himalayas to extensive eastern plains."
+        }
+      ]
     },
     {
       "iso3": "COL",
@@ -722,7 +1370,25 @@
         "VEN"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1810."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with a bicameral congress."
+        },
+        {
+          "category": "society",
+          "text": "One of the most biodiverse countries in the world."
+        },
+        {
+          "category": "geography",
+          "text": "The only South American country with coastlines on both the Pacific and Caribbean."
+        }
+      ]
     },
     {
       "iso3": "COM",
@@ -735,7 +1401,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "Federal presidential republic with a rotating presidency among its islands."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Muslim with Comorian, Arab, and African heritage."
+        },
+        {
+          "category": "geography",
+          "text": "A volcanic archipelago in the Indian Ocean between Mozambique and Madagascar."
+        }
+      ]
     },
     {
       "iso3": "COK",
@@ -748,7 +1432,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became self-governing in free association with New Zealand in 1965."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy in free association with New Zealand."
+        },
+        {
+          "category": "society",
+          "text": "Population is predominantly Cook Islands Māori."
+        },
+        {
+          "category": "geography",
+          "text": "A group of islands scattered across the South Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "CRI",
@@ -763,7 +1465,25 @@
         "PAN"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic that abolished its military in 1949."
+        },
+        {
+          "category": "society",
+          "text": "Known for high levels of education and environmental protection."
+        },
+        {
+          "category": "geography",
+          "text": "A Central American country between the Caribbean Sea and the Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "HRV",
@@ -781,7 +1501,25 @@
         "SVN"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Yugoslavia in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic and Slavic."
+        },
+        {
+          "category": "geography",
+          "text": "Known for its long, indented Adriatic coastline."
+        }
+      ]
     },
     {
       "iso3": "CUB",
@@ -793,7 +1531,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained formal independence in 1902 and underwent a socialist revolution in 1959."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party socialist republic."
+        },
+        {
+          "category": "society",
+          "text": "Known for universal healthcare and high literacy rates."
+        },
+        {
+          "category": "geography",
+          "text": "The largest island in the Caribbean."
+        }
+      ]
     },
     {
       "iso3": "CUW",
@@ -819,7 +1575,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic divided since a 1974 conflict."
+        },
+        {
+          "category": "society",
+          "text": "Home to Greek and Turkish Cypriot communities."
+        },
+        {
+          "category": "geography",
+          "text": "An island in the eastern Mediterranean Sea."
+        }
+      ]
     },
     {
       "iso3": "CZE",
@@ -837,7 +1611,25 @@
         "SVK"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed in 1993 after the peaceful split of Czechoslovakia."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "One of the most secular societies in Europe."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in Central Europe."
+        }
+      ]
     },
     {
       "iso3": "COD",
@@ -860,7 +1652,25 @@
         "ZMB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Belgium in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic affected by long-running conflict in its east."
+        },
+        {
+          "category": "society",
+          "text": "French-speaking and one of Africa's most populous nations."
+        },
+        {
+          "category": "geography",
+          "text": "Africa's second-largest country, covered largely by the Congo rainforest."
+        }
+      ]
     },
     {
       "iso3": "DNK",
@@ -874,7 +1684,25 @@
         "DEU"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Home to one of the oldest continuous monarchies in Europe."
+        },
+        {
+          "category": "politics",
+          "text": "Constitutional monarchy with a parliamentary system."
+        },
+        {
+          "category": "society",
+          "text": "Consistently ranked among the world's happiest nations."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises the Jutland peninsula and hundreds of islands in northern Europe."
+        }
+      ]
     },
     {
       "iso3": "DJI",
@@ -891,7 +1719,25 @@
         "SOM"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1977."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Strategically hosts several foreign military bases."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Horn of Africa near the mouth of the Red Sea."
+        }
+      ]
     },
     {
       "iso3": "DMA",
@@ -903,7 +1749,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1978."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to a surviving Indigenous Kalinago community."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous Caribbean island known as the 'Nature Isle'."
+        }
+      ]
     },
     {
       "iso3": "DOM",
@@ -917,7 +1781,25 @@
         "HTI"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Haiti in 1844."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with a bicameral congress."
+        },
+        {
+          "category": "society",
+          "text": "Spanish-speaking, with a culture blending European, African, and Taíno roots."
+        },
+        {
+          "category": "geography",
+          "text": "Shares the island of Hispaniola with Haiti."
+        }
+      ]
     },
     {
       "iso3": "TLS",
@@ -932,7 +1814,25 @@
         "IDN"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained full independence in 2002 after Indonesian occupation."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic and one of Asia's youngest democracies."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the eastern half of the island of Timor in Southeast Asia."
+        }
+      ]
     },
     {
       "iso3": "ECU",
@@ -947,7 +1847,25 @@
         "PER"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1822 as part of Gran Colombia."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Named after the equator, which crosses the country."
+        },
+        {
+          "category": "geography",
+          "text": "Includes the Galápagos Islands in the Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "EGY",
@@ -964,7 +1882,25 @@
         "SDN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Home to one of the world's oldest civilizations along the Nile."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The most populous country in the Arab world."
+        },
+        {
+          "category": "geography",
+          "text": "Bridges northeast Africa and the Sinai Peninsula in Asia."
+        }
+      ]
     },
     {
       "iso3": "SLV",
@@ -979,7 +1915,25 @@
         "HND"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The most densely populated country in Central America."
+        },
+        {
+          "category": "geography",
+          "text": "The smallest Central American country and the only one without a Caribbean coast."
+        }
+      ]
     },
     {
       "iso3": "GNQ",
@@ -995,7 +1949,25 @@
         "GAB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1968."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic with one of the world's longest-serving leaders."
+        },
+        {
+          "category": "society",
+          "text": "The only sovereign African state with Spanish as an official language."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises a mainland region and several islands in the Gulf of Guinea."
+        }
+      ]
     },
     {
       "iso3": "ERI",
@@ -1012,7 +1984,25 @@
         "SDN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Ethiopia in 1993 after a long war."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party state with no implemented constitution."
+        },
+        {
+          "category": "society",
+          "text": "Population is split between Christian and Muslim communities."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Horn of Africa along the Red Sea coast."
+        }
+      ]
     },
     {
       "iso3": "EST",
@@ -1027,7 +2017,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Regained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "A pioneer of digital government and e-services."
+        },
+        {
+          "category": "geography",
+          "text": "The northernmost of the three Baltic states."
+        }
+      ]
     },
     {
       "iso3": "SWZ",
@@ -1043,7 +2051,25 @@
         "ZAF"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1968."
+        },
+        {
+          "category": "politics",
+          "text": "One of the world's last absolute monarchies."
+        },
+        {
+          "category": "society",
+          "text": "Renamed from Swaziland to eSwatini in 2018."
+        },
+        {
+          "category": "geography",
+          "text": "A small landlocked country in southern Africa."
+        }
+      ]
     },
     {
       "iso3": "ETH",
@@ -1062,7 +2088,25 @@
         "SDN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "One of the few African nations never colonized by a European power."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Uses its own ancient calendar and script."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the Horn of Africa with high central highlands."
+        }
+      ]
     },
     {
       "iso3": "FLK",
@@ -1099,7 +2143,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence in free association with the United States in 1986."
+        },
+        {
+          "category": "politics",
+          "text": "A federal republic in free association with the United States."
+        },
+        {
+          "category": "society",
+          "text": "Highly culturally diverse across its four states."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises hundreds of islands across the western Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "FJI",
@@ -1112,7 +2174,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1970."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to Indigenous Fijian and Indo-Fijian communities."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago of more than 300 islands in the South Pacific."
+        }
+      ]
     },
     {
       "iso3": "FIN",
@@ -1129,7 +2209,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Russia in 1917."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic that joined NATO in 2023."
+        },
+        {
+          "category": "society",
+          "text": "Frequently ranked the world's happiest country."
+        },
+        {
+          "category": "geography",
+          "text": "Known as the 'land of a thousand lakes' in northern Europe."
+        }
+      ]
     },
     {
       "iso3": "FRA",
@@ -1150,7 +2248,25 @@
         "CHE"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Established its current Fifth Republic in 1958."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Maintains a strong tradition of secularism known as laïcité."
+        },
+        {
+          "category": "geography",
+          "text": "The largest country in the European Union by area."
+        }
+      ]
     },
     {
       "iso3": "PYF",
@@ -1190,7 +2306,25 @@
         "GNQ"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic that saw a military takeover in 2023."
+        },
+        {
+          "category": "society",
+          "text": "Oil wealth gives it a relatively high income for the region."
+        },
+        {
+          "category": "geography",
+          "text": "Straddles the equator on Africa's Atlantic coast and is heavily forested."
+        }
+      ]
     },
     {
       "iso3": "GMB",
@@ -1204,7 +2338,25 @@
         "SEN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1965."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The smallest country on mainland Africa."
+        },
+        {
+          "category": "geography",
+          "text": "A narrow country following the Gambia River, almost entirely enclosed by Senegal."
+        }
+      ]
     },
     {
       "iso3": "GEO",
@@ -1221,7 +2373,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Regained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "One of the earliest nations to adopt Christianity."
+        },
+        {
+          "category": "geography",
+          "text": "Located in the Caucasus between the Black Sea and the mountains."
+        }
+      ]
     },
     {
       "iso3": "DEU",
@@ -1243,7 +2413,25 @@
         "CHE"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Reunified in 1990 after the fall of the Berlin Wall."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "The most populous member state of the European Union."
+        },
+        {
+          "category": "geography",
+          "text": "A Central European country bordering nine nations."
+        }
+      ]
     },
     {
       "iso3": "GHA",
@@ -1259,7 +2447,25 @@
         "TGO"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "First sub-Saharan African nation to gain independence from colonial rule, in 1957."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic with a stable democracy."
+        },
+        {
+          "category": "society",
+          "text": "Home to many ethnic groups, including the Akan."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Gulf of Guinea in West Africa."
+        }
+      ]
     },
     {
       "iso3": "GIB",
@@ -1290,7 +2496,25 @@
         "MKD"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Widely considered the birthplace of democracy and Western philosophy."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Greek Orthodox Christian."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises a mainland and thousands of islands in the Mediterranean."
+        }
+      ]
     },
     {
       "iso3": "GRL",
@@ -1314,7 +2538,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1974."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Known as the 'Island of Spice' for its nutmeg production."
+        },
+        {
+          "category": "geography",
+          "text": "An island nation in the southeastern Caribbean Sea."
+        }
+      ]
     },
     {
       "iso3": "GUM",
@@ -1344,7 +2586,25 @@
         "MEX"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Has the largest Indigenous Maya population in Central America."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous country with numerous volcanoes in Central America."
+        }
+      ]
     },
     {
       "iso3": "GGY",
@@ -1376,7 +2636,25 @@
         "SLE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1958."
+        },
+        {
+          "category": "politics",
+          "text": "Presidential republic that experienced a coup in 2021."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Muslim with many ethnic groups."
+        },
+        {
+          "category": "geography",
+          "text": "Holds major bauxite reserves on the West African coast."
+        }
+      ]
     },
     {
       "iso3": "GNB",
@@ -1392,7 +2670,25 @@
         "SEN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Portugal in 1974."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic with a history of instability."
+        },
+        {
+          "category": "society",
+          "text": "Portuguese is the official language."
+        },
+        {
+          "category": "geography",
+          "text": "A small West African country that includes the Bijagós Archipelago."
+        }
+      ]
     },
     {
       "iso3": "GUY",
@@ -1408,7 +2704,25 @@
         "VEN"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1966."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The only South American country with English as the official language."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the northern coast of South America with dense rainforest."
+        }
+      ]
     },
     {
       "iso3": "HTI",
@@ -1423,7 +2737,25 @@
         "DOM"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became the first independent Black republic in 1804 after a slave revolt."
+        },
+        {
+          "category": "politics",
+          "text": "A republic affected by chronic political instability."
+        },
+        {
+          "category": "society",
+          "text": "French and Haitian Creole are the official languages."
+        },
+        {
+          "category": "geography",
+          "text": "Shares the island of Hispaniola with the Dominican Republic."
+        }
+      ]
     },
     {
       "iso3": "HMD",
@@ -1451,7 +2783,25 @@
         "NIC"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Spanish-speaking with a mestizo majority."
+        },
+        {
+          "category": "geography",
+          "text": "A Central American country with coastlines on the Caribbean and Pacific."
+        }
+      ]
     },
     {
       "iso3": "HKG",
@@ -1486,7 +2836,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded as a kingdom around the year 1000."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Speaks Hungarian, a language unrelated to those of its neighbors."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in Central Europe crossed by the Danube."
+        }
+      ]
     },
     {
       "iso3": "ISL",
@@ -1498,7 +2866,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained full independence from Denmark in 1944."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic with one of the world's oldest parliaments."
+        },
+        {
+          "category": "society",
+          "text": "Powered largely by renewable geothermal and hydro energy."
+        },
+        {
+          "category": "geography",
+          "text": "A volcanic island in the North Atlantic near the Arctic Circle."
+        }
+      ]
     },
     {
       "iso3": "IND",
@@ -1518,7 +2904,25 @@
         "PAK"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from British rule in 1947."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic and the world's largest democracy."
+        },
+        {
+          "category": "society",
+          "text": "Among the most populous nations on Earth, with immense linguistic diversity."
+        },
+        {
+          "category": "geography",
+          "text": "Spans from the Himalayas to tropical coasts in South Asia."
+        }
+      ]
     },
     {
       "iso3": "IDN",
@@ -1534,7 +2938,25 @@
         "PNG"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from the Netherlands in 1945."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The world's most populous Muslim-majority country."
+        },
+        {
+          "category": "geography",
+          "text": "The largest archipelago in the world, with thousands of islands."
+        }
+      ]
     },
     {
       "iso3": "IRN",
@@ -1554,7 +2976,25 @@
         "TKM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became an Islamic republic after the 1979 revolution."
+        },
+        {
+          "category": "politics",
+          "text": "A theocratic republic led by a supreme leader."
+        },
+        {
+          "category": "society",
+          "text": "Heir to the ancient Persian civilization."
+        },
+        {
+          "category": "geography",
+          "text": "Located in Western Asia between the Caspian Sea and the Persian Gulf."
+        }
+      ]
     },
     {
       "iso3": "IRQ",
@@ -1574,7 +3014,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from British administration in 1932."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to ancient Mesopotamia, the 'cradle of civilization'."
+        },
+        {
+          "category": "geography",
+          "text": "Defined by the Tigris and Euphrates river valleys."
+        }
+      ]
     },
     {
       "iso3": "IRL",
@@ -1589,7 +3047,25 @@
         "GBR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1922."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic with a strong literary tradition."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies most of an island in the North Atlantic west of Britain."
+        }
+      ]
     },
     {
       "iso3": "IMN",
@@ -1621,7 +3097,25 @@
         "SYR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence in 1948."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary democracy with a unicameral Knesset."
+        },
+        {
+          "category": "society",
+          "text": "Established as a Jewish state with a significant Arab minority."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the eastern Mediterranean coast in the Middle East."
+        }
+      ]
     },
     {
       "iso3": "ITA",
@@ -1640,7 +3134,25 @@
         "VAT"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Unified as a single kingdom in 1861."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to more UNESCO World Heritage Sites than any other country."
+        },
+        {
+          "category": "geography",
+          "text": "A boot-shaped peninsula extending into the Mediterranean Sea."
+        }
+      ]
     },
     {
       "iso3": "CIV",
@@ -1658,7 +3170,25 @@
         "MLI"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The world's largest producer of cocoa."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Gulf of Guinea in West Africa."
+        }
+      ]
     },
     {
       "iso3": "JAM",
@@ -1671,7 +3201,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1962."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Birthplace of reggae music and the Rastafari movement."
+        },
+        {
+          "category": "geography",
+          "text": "An island in the Caribbean Sea south of Cuba."
+        }
+      ]
     },
     {
       "iso3": "JPN",
@@ -1683,7 +3231,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Adopted a pacifist constitution after World War II in 1947."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with a parliamentary government."
+        },
+        {
+          "category": "society",
+          "text": "Has one of the world's longest life expectancies."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago of islands along the Pacific Ring of Fire."
+        }
+      ]
     },
     {
       "iso3": "JEY",
@@ -1714,7 +3280,25 @@
         "SYR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from British administration in 1946."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy ruled by the Hashemite dynasty."
+        },
+        {
+          "category": "society",
+          "text": "Hosts large populations of refugees from neighboring conflicts."
+        },
+        {
+          "category": "geography",
+          "text": "A largely arid country home to the ancient city of Petra."
+        }
+      ]
     },
     {
       "iso3": "KAZ",
@@ -1733,7 +3317,25 @@
         "UZB"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Ethnically diverse, with Kazakh and Russian widely spoken."
+        },
+        {
+          "category": "geography",
+          "text": "The world's largest landlocked country, spanning Central Asia."
+        }
+      ]
     },
     {
       "iso3": "KEN",
@@ -1752,7 +3354,25 @@
         "UGA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1963."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Renowned for its long-distance runners and Maasai culture."
+        },
+        {
+          "category": "geography",
+          "text": "Crossed by the equator and home to part of the Great Rift Valley."
+        }
+      ]
     },
     {
       "iso3": "KIR",
@@ -1765,7 +3385,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1979."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "One of the nations most threatened by rising sea levels."
+        },
+        {
+          "category": "geography",
+          "text": "Spans the equator across a vast area of the central Pacific."
+        }
+      ]
     },
     {
       "iso3": "XKX",
@@ -1775,7 +3413,25 @@
       "languages": [],
       "neighbors": [],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Serbia in 2008."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic with partial international recognition."
+        },
+        {
+          "category": "society",
+          "text": "Has an ethnic Albanian majority."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked territory in the Balkans."
+        }
+      ]
     },
     {
       "iso3": "KWT",
@@ -1790,7 +3446,25 @@
         "SAU"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1961."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional emirate with an elected parliament."
+        },
+        {
+          "category": "society",
+          "text": "Oil wealth supports a generous welfare system."
+        },
+        {
+          "category": "geography",
+          "text": "A small country at the head of the Persian Gulf."
+        }
+      ]
     },
     {
       "iso3": "KGZ",
@@ -1808,7 +3482,25 @@
         "UZB"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A republic with a history of popular uprisings."
+        },
+        {
+          "category": "society",
+          "text": "Known for nomadic traditions and yurt culture."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous, landlocked country in Central Asia."
+        }
+      ]
     },
     {
       "iso3": "LAO",
@@ -1826,7 +3518,25 @@
         "VNM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained full independence from France in 1953."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party socialist republic."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Theravada Buddhist."
+        },
+        {
+          "category": "geography",
+          "text": "The only landlocked country in Southeast Asia."
+        }
+      ]
     },
     {
       "iso3": "LVA",
@@ -1843,7 +3553,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Regained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Known for its choral singing traditions."
+        },
+        {
+          "category": "geography",
+          "text": "A Baltic state on the eastern shore of the Baltic Sea."
+        }
+      ]
     },
     {
       "iso3": "LBN",
@@ -1859,7 +3587,25 @@
         "SYR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1943."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic with power shared among religious groups."
+        },
+        {
+          "category": "society",
+          "text": "Religiously diverse, with Christian and Muslim communities."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous country on the eastern Mediterranean coast."
+        }
+      ]
     },
     {
       "iso3": "LSO",
@@ -1874,7 +3620,25 @@
         "ZAF"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1966."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy."
+        },
+        {
+          "category": "society",
+          "text": "Known as the 'Kingdom in the Sky' for its high elevation."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country entirely surrounded by South Africa."
+        }
+      ]
     },
     {
       "iso3": "LBR",
@@ -1890,7 +3654,25 @@
         "SLE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded by freed American slaves and declared independence in 1847."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic and Africa's oldest republic."
+        },
+        {
+          "category": "society",
+          "text": "English is the official language."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the West African Atlantic coast."
+        }
+      ]
     },
     {
       "iso3": "LBY",
@@ -1909,7 +3691,25 @@
         "TUN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence in 1951 and saw the fall of Gaddafi in 2011."
+        },
+        {
+          "category": "politics",
+          "text": "Has faced division and conflict among rival governments."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely Arab-Berber and Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "A largely desert country on the North African Mediterranean coast."
+        }
+      ]
     },
     {
       "iso3": "LIE",
@@ -1924,7 +3724,25 @@
         "CHE"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became a sovereign principality within the Holy Roman Empire in 1719."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with a strong princely role."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's wealthiest countries per capita."
+        },
+        {
+          "category": "geography",
+          "text": "A tiny landlocked microstate between Switzerland and Austria."
+        }
+      ]
     },
     {
       "iso3": "LTU",
@@ -1941,7 +3759,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "First Soviet republic to declare independence, in 1990."
+        },
+        {
+          "category": "politics",
+          "text": "Semi-presidential republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "The largest and southernmost of the Baltic states."
+        }
+      ]
     },
     {
       "iso3": "LUX",
@@ -1958,7 +3794,25 @@
         "DEU"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became a fully independent grand duchy in the 19th century."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy and the world's only sovereign grand duchy."
+        },
+        {
+          "category": "society",
+          "text": "Multilingual, using Luxembourgish, French, and German."
+        },
+        {
+          "category": "geography",
+          "text": "A small landlocked country in Western Europe."
+        }
+      ]
     },
     {
       "iso3": "MAC",
@@ -1986,7 +3840,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Population has mixed Southeast Asian and African origins."
+        },
+        {
+          "category": "geography",
+          "text": "The world's fourth-largest island, with unique wildlife."
+        }
+      ]
     },
     {
       "iso3": "MWI",
@@ -2003,7 +3875,25 @@
         "ZMB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1964."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Known as the 'Warm Heart of Africa'."
+        },
+        {
+          "category": "geography",
+          "text": "Dominated by Lake Malawi, one of Africa's largest lakes."
+        }
+      ]
     },
     {
       "iso3": "MYS",
@@ -2020,7 +3910,25 @@
         "THA"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1957."
+        },
+        {
+          "category": "politics",
+          "text": "A federal constitutional monarchy with a rotating kingship."
+        },
+        {
+          "category": "society",
+          "text": "Multiethnic, with Malay, Chinese, and Indian communities."
+        },
+        {
+          "category": "geography",
+          "text": "Divided between the Malay Peninsula and the island of Borneo."
+        }
+      ]
     },
     {
       "iso3": "MDV",
@@ -2032,7 +3940,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1965."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "The world's lowest-lying country, made of coral atolls."
+        }
+      ]
     },
     {
       "iso3": "MLI",
@@ -2052,7 +3978,25 @@
         "SEN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Has experienced recent military coups."
+        },
+        {
+          "category": "society",
+          "text": "Home to the historic city of Timbuktu."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked Sahel country, largely covered by the Sahara."
+        }
+      ]
     },
     {
       "iso3": "MLT",
@@ -2065,7 +4009,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1964."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "A small archipelago in the central Mediterranean Sea."
+        }
+      ]
     },
     {
       "iso3": "MHL",
@@ -2078,7 +4040,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence in free association with the United States in 1986."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic in free association with the United States."
+        },
+        {
+          "category": "society",
+          "text": "Site of former U.S. nuclear weapons testing."
+        },
+        {
+          "category": "geography",
+          "text": "A group of atolls and islands in the central Pacific."
+        }
+      ]
     },
     {
       "iso3": "MRT",
@@ -2095,7 +4075,25 @@
         "ESH"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Bridges Arab North Africa and sub-Saharan Africa."
+        },
+        {
+          "category": "geography",
+          "text": "A largely desert country on the West African Atlantic coast."
+        }
+      ]
     },
     {
       "iso3": "MUS",
@@ -2108,7 +4106,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1968."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "A multicultural society of Indian, African, and European descent."
+        },
+        {
+          "category": "geography",
+          "text": "An island nation in the Indian Ocean east of Madagascar."
+        }
+      ]
     },
     {
       "iso3": "MEX",
@@ -2124,7 +4140,25 @@
         "USA"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A federal presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The most populous Spanish-speaking country in the world."
+        },
+        {
+          "category": "geography",
+          "text": "Links North and Central America between two oceans."
+        }
+      ]
     },
     {
       "iso3": "MDA",
@@ -2139,7 +4173,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Closely related linguistically and culturally to Romania."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in Eastern Europe known for its vineyards."
+        }
+      ]
     },
     {
       "iso3": "MCO",
@@ -2153,7 +4205,25 @@
         "FRA"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Ruled by the House of Grimaldi since the late 13th century."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy and principality."
+        },
+        {
+          "category": "society",
+          "text": "The most densely populated sovereign state in the world."
+        },
+        {
+          "category": "geography",
+          "text": "A tiny city-state on the French Mediterranean coast."
+        }
+      ]
     },
     {
       "iso3": "MNG",
@@ -2168,7 +4238,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded the vast Mongol Empire in the 13th century under Genghis Khan."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Retains strong nomadic herding traditions."
+        },
+        {
+          "category": "geography",
+          "text": "The world's most sparsely populated sovereign nation."
+        }
+      ]
     },
     {
       "iso3": "MNE",
@@ -2186,7 +4274,25 @@
         "SRB"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became independent from Serbia in 2006."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic that joined NATO in 2017."
+        },
+        {
+          "category": "society",
+          "text": "A religiously and ethnically diverse Balkan society."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous country on the Adriatic coast."
+        }
+      ]
     },
     {
       "iso3": "MSR",
@@ -2215,7 +4321,25 @@
         "ESP"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1956."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy."
+        },
+        {
+          "category": "society",
+          "text": "Population is of Arab and Berber heritage."
+        },
+        {
+          "category": "geography",
+          "text": "Located in North Africa with Atlantic and Mediterranean coasts."
+        }
+      ]
     },
     {
       "iso3": "MOZ",
@@ -2234,7 +4358,25 @@
         "ZWE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Portugal in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Portuguese is the official language."
+        },
+        {
+          "category": "geography",
+          "text": "Has a long Indian Ocean coastline in southeastern Africa."
+        }
+      ]
     },
     {
       "iso3": "MMR",
@@ -2252,7 +4394,25 @@
         "THA"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1948."
+        },
+        {
+          "category": "politics",
+          "text": "Ruled by a military junta following a 2021 coup."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Theravada Buddhist."
+        },
+        {
+          "category": "geography",
+          "text": "Located in Southeast Asia along the Bay of Bengal."
+        }
+      ]
     },
     {
       "iso3": "NAM",
@@ -2270,7 +4430,25 @@
         "ZMB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from South Africa in 1990."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's least densely populated countries."
+        },
+        {
+          "category": "geography",
+          "text": "Home to the ancient Namib Desert along the Atlantic coast."
+        }
+      ]
     },
     {
       "iso3": "NRU",
@@ -2283,7 +4461,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence in 1968."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Its economy was historically based on phosphate mining."
+        },
+        {
+          "category": "geography",
+          "text": "The world's smallest island nation."
+        }
+      ]
     },
     {
       "iso3": "NPL",
@@ -2298,7 +4494,25 @@
         "IND"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Abolished its monarchy and became a republic in 2008."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "The birthplace of the Buddha at Lumbini."
+        },
+        {
+          "category": "geography",
+          "text": "Home to Mount Everest, the world's highest peak."
+        }
+      ]
     },
     {
       "iso3": "NLD",
@@ -2313,7 +4527,25 @@
         "DEU"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in the late 16th century."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with a parliamentary system."
+        },
+        {
+          "category": "society",
+          "text": "Known for liberal social policies."
+        },
+        {
+          "category": "geography",
+          "text": "Much of its land lies below sea level, protected by dikes."
+        }
+      ]
     },
     {
       "iso3": "NCL",
@@ -2338,7 +4570,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Signed its founding Treaty of Waitangi in 1840."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary constitutional monarchy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Recognizes Māori as an official language."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises two main islands in the southwestern Pacific."
+        }
+      ]
     },
     {
       "iso3": "NIC",
@@ -2353,7 +4603,25 @@
         "HND"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The largest country in Central America by area."
+        },
+        {
+          "category": "geography",
+          "text": "Contains Lake Nicaragua, the largest lake in Central America."
+        }
+      ]
     },
     {
       "iso3": "NER",
@@ -2373,7 +4641,25 @@
         "NGA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "Experienced a military coup in 2023."
+        },
+        {
+          "category": "society",
+          "text": "Has one of the world's highest birth rates."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked Sahel nation largely covered by the Sahara."
+        }
+      ]
     },
     {
       "iso3": "NGA",
@@ -2390,7 +4676,25 @@
         "NER"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A federal presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The most populous country in Africa, with over 250 ethnic groups."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Gulf of Guinea in West Africa."
+        }
+      ]
     },
     {
       "iso3": "NIU",
@@ -2403,7 +4707,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became self-governing in free association with New Zealand in 1974."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy in free association with New Zealand."
+        },
+        {
+          "category": "society",
+          "text": "Population is predominantly Niuean Polynesian."
+        },
+        {
+          "category": "geography",
+          "text": "One of the world's largest raised coral atolls in the South Pacific."
+        }
+      ]
     },
     {
       "iso3": "NFK",
@@ -2432,7 +4754,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded in 1948 following the division of Korea."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party state ruled by the Kim dynasty."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's most isolated societies."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the northern half of the Korean Peninsula."
+        }
+      ]
     },
     {
       "iso3": "MKD",
@@ -2450,7 +4790,25 @@
         "SRB"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became independent from Yugoslavia in 1991 and was renamed in 2019."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic that joined NATO in 2020."
+        },
+        {
+          "category": "society",
+          "text": "Home to Macedonian and Albanian communities."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the southern Balkans."
+        }
+      ]
     },
     {
       "iso3": "MNP",
@@ -2480,7 +4838,25 @@
         "RUS"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Dissolved its union with Sweden to become fully independent in 1905."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with a parliamentary system."
+        },
+        {
+          "category": "society",
+          "text": "Funds extensive welfare through a large sovereign wealth fund."
+        },
+        {
+          "category": "geography",
+          "text": "Known for deep fjords along its long Atlantic coastline."
+        }
+      ]
     },
     {
       "iso3": "OMN",
@@ -2496,7 +4872,25 @@
         "YEM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Ruled by the Al Said dynasty since the mid-18th century."
+        },
+        {
+          "category": "politics",
+          "text": "An absolute monarchy and sultanate."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly follows the Ibadi school of Islam."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the southeastern coast of the Arabian Peninsula."
+        }
+      ]
     },
     {
       "iso3": "PAK",
@@ -2514,7 +4908,25 @@
         "IRN"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Created in 1947 from the partition of British India."
+        },
+        {
+          "category": "politics",
+          "text": "A federal parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Among the most populous Muslim-majority countries in the world."
+        },
+        {
+          "category": "geography",
+          "text": "Spans from the Arabian Sea to the Himalayas in South Asia."
+        }
+      ]
     },
     {
       "iso3": "PLW",
@@ -2527,7 +4939,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence in free association with the United States in 1994."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic in free association with the United States."
+        },
+        {
+          "category": "society",
+          "text": "Known for its marine conservation efforts."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago in the western Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "PSE",
@@ -2543,7 +4973,25 @@
         "JOR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared statehood in 1988 with partial international recognition."
+        },
+        {
+          "category": "politics",
+          "text": "Comprises the West Bank and Gaza Strip under contested governance."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Arab and Muslim with a Christian minority."
+        },
+        {
+          "category": "geography",
+          "text": "Located in the eastern Mediterranean region."
+        }
+      ]
     },
     {
       "iso3": "PAN",
@@ -2558,7 +5006,25 @@
         "CRI"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Separated from Colombia in 1903."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Its economy centers on the Panama Canal and services."
+        },
+        {
+          "category": "geography",
+          "text": "Links North and South America, with a canal joining two oceans."
+        }
+      ]
     },
     {
       "iso3": "PNG",
@@ -2573,7 +5039,25 @@
         "IDN"
       ],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Australia in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "One of the most linguistically diverse countries, with over 800 languages."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the eastern half of the island of New Guinea."
+        }
+      ]
     },
     {
       "iso3": "PRY",
@@ -2590,7 +5074,25 @@
         "BRA"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1811."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Guaraní is an official language alongside Spanish."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the heart of South America."
+        }
+      ]
     },
     {
       "iso3": "PER",
@@ -2609,7 +5111,25 @@
         "ECU"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1821."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The heart of the former Inca Empire."
+        },
+        {
+          "category": "geography",
+          "text": "Home to Machu Picchu and a long Pacific coastline."
+        }
+      ]
     },
     {
       "iso3": "PHL",
@@ -2622,7 +5142,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United States in 1946."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Has one of the largest Roman Catholic populations in the world."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago of over 7,000 islands in Southeast Asia."
+        }
+      ]
     },
     {
       "iso3": "PCN",
@@ -2654,7 +5192,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Regained independence in 1918 after over a century of partition."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "A Central European country on the Baltic Sea."
+        }
+      ]
     },
     {
       "iso3": "PRT",
@@ -2668,7 +5224,25 @@
         "ESP"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "One of Europe's oldest nation-states and a former maritime empire."
+        },
+        {
+          "category": "politics",
+          "text": "Semi-presidential republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "The Portuguese language spread worldwide through its empire."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the western edge of the Iberian Peninsula."
+        }
+      ]
     },
     {
       "iso3": "PRI",
@@ -2695,7 +5269,25 @@
         "SAU"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1971."
+        },
+        {
+          "category": "politics",
+          "text": "An absolute monarchy and emirate."
+        },
+        {
+          "category": "society",
+          "text": "Among the world's highest GDP per capita due to natural gas."
+        },
+        {
+          "category": "geography",
+          "text": "A peninsula extending into the Persian Gulf."
+        }
+      ]
     },
     {
       "iso3": "SRB",
@@ -2716,7 +5308,25 @@
         "ROU"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became independent after the breakup of Yugoslavia and the 2006 split with Montenegro."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Eastern Orthodox Christian."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in the central Balkans."
+        }
+      ]
     },
     {
       "iso3": "COG",
@@ -2735,7 +5345,25 @@
         "GAB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "French-speaking, with most people living near the coast and capital."
+        },
+        {
+          "category": "geography",
+          "text": "Straddles the equator on the Congo River in Central Africa."
+        }
+      ]
     },
     {
       "iso3": "ROU",
@@ -2753,7 +5381,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Overthrew its communist regime in 1989."
+        },
+        {
+          "category": "politics",
+          "text": "Semi-presidential republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Speaks a Romance language descended from Latin."
+        },
+        {
+          "category": "geography",
+          "text": "Crossed by the Carpathian Mountains and the Danube."
+        }
+      ]
     },
     {
       "iso3": "RUS",
@@ -2780,7 +5426,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Emerged as an independent federation after the Soviet Union dissolved in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A federal semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to over 190 ethnic groups."
+        },
+        {
+          "category": "geography",
+          "text": "The world's largest country, spanning Europe and Asia."
+        }
+      ]
     },
     {
       "iso3": "RWA",
@@ -2798,7 +5462,25 @@
         "UGA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Endured a genocide in 1994 and rebuilt rapidly afterward."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Known as the 'Land of a Thousand Hills'."
+        },
+        {
+          "category": "geography",
+          "text": "A small, mountainous, landlocked country in East Africa."
+        }
+      ]
     },
     {
       "iso3": "BLM",
@@ -2861,7 +5543,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "First Pacific island nation to gain independence, in 1962."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Retains strong fa'a Samoa traditional customs."
+        },
+        {
+          "category": "geography",
+          "text": "An island nation in the central South Pacific."
+        }
+      ]
     },
     {
       "iso3": "SMR",
@@ -2875,7 +5575,25 @@
         "ITA"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Claims to be the world's oldest surviving republic, founded in 301 AD."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic with two co-heads of state."
+        },
+        {
+          "category": "society",
+          "text": "One of the wealthiest microstates per capita."
+        },
+        {
+          "category": "geography",
+          "text": "A tiny landlocked enclave within Italy."
+        }
+      ]
     },
     {
       "iso3": "STP",
@@ -2887,7 +5605,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Portugal in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Portuguese-speaking with a cocoa-based agricultural heritage."
+        },
+        {
+          "category": "geography",
+          "text": "A two-island nation in the Gulf of Guinea."
+        }
+      ]
     },
     {
       "iso3": "SAU",
@@ -2907,7 +5643,25 @@
         "YEM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded as a unified kingdom in 1932."
+        },
+        {
+          "category": "politics",
+          "text": "An absolute monarchy ruled by the House of Saud."
+        },
+        {
+          "category": "society",
+          "text": "Home to Islam's two holiest cities, Mecca and Medina."
+        },
+        {
+          "category": "geography",
+          "text": "Dominates the Arabian Peninsula and is largely desert."
+        }
+      ]
     },
     {
       "iso3": "SEN",
@@ -2925,7 +5679,25 @@
         "MRT"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic with a strong democratic tradition."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Muslim with a vibrant music culture."
+        },
+        {
+          "category": "geography",
+          "text": "The westernmost country on the African mainland."
+        }
+      ]
     },
     {
       "iso3": "SYC",
@@ -2938,7 +5710,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1976."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Has the smallest population of any African country."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago in the Indian Ocean northeast of Madagascar."
+        }
+      ]
     },
     {
       "iso3": "SLE",
@@ -2953,7 +5743,25 @@
         "LBR"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1961."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Its capital Freetown was founded as a home for freed slaves."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the West African Atlantic coast."
+        }
+      ]
     },
     {
       "iso3": "SGP",
@@ -2966,7 +5774,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became fully independent in 1965 after separating from Malaysia."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "A multicultural city-state with four official languages."
+        },
+        {
+          "category": "geography",
+          "text": "An island city-state at the tip of the Malay Peninsula."
+        }
+      ]
     },
     {
       "iso3": "SXM",
@@ -2999,7 +5825,25 @@
         "UKR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became independent in 1993 after the split of Czechoslovakia."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Roman Catholic."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country crossed by the Carpathian Mountains."
+        }
+      ]
     },
     {
       "iso3": "SVN",
@@ -3016,7 +5860,25 @@
         "HUN"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Yugoslavia in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary republic and member of the European Union."
+        },
+        {
+          "category": "society",
+          "text": "Highly forested with a strong environmental ethos."
+        },
+        {
+          "category": "geography",
+          "text": "Connects the Alps, the Mediterranean, and the Balkans."
+        }
+      ]
     },
     {
       "iso3": "SLB",
@@ -3028,7 +5890,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1978."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Highly diverse, with dozens of local languages."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago in the southwestern Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "SOM",
@@ -3045,7 +5925,25 @@
         "KEN"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed in 1960 from British and Italian territories."
+        },
+        {
+          "category": "politics",
+          "text": "A federal republic rebuilding after prolonged conflict."
+        },
+        {
+          "category": "society",
+          "text": "One of Africa's most ethnically homogeneous nations."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the Horn of Africa with the continent's longest coastline."
+        }
+      ]
     },
     {
       "iso3": "ZAF",
@@ -3065,7 +5963,25 @@
         "ZWE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Ended apartheid and held its first fully democratic elections in 1994."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic with three capital cities."
+        },
+        {
+          "category": "society",
+          "text": "Has eleven official languages."
+        },
+        {
+          "category": "geography",
+          "text": "Located at the southern tip of Africa between two oceans."
+        }
+      ]
     },
     {
       "iso3": "SGS",
@@ -3091,7 +6007,25 @@
         "PRK"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Established in 1948 and rapidly industrialized after the Korean War."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "A global center of technology and popular culture."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies the southern half of the Korean Peninsula."
+        }
+      ]
     },
     {
       "iso3": "SSD",
@@ -3110,7 +6044,25 @@
         "UGA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became the world's newest nation, independent from Sudan in 2011."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to many ethnic groups, including the Dinka and Nuer."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country in East-Central Africa."
+        }
+      ]
     },
     {
       "iso3": "ESP",
@@ -3128,7 +6080,25 @@
         "MAR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Transitioned to democracy after the death of Franco in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary constitutional monarchy."
+        },
+        {
+          "category": "society",
+          "text": "Comprises diverse regions such as Catalonia and the Basque Country."
+        },
+        {
+          "category": "geography",
+          "text": "Occupies most of the Iberian Peninsula in southwestern Europe."
+        }
+      ]
     },
     {
       "iso3": "LKA",
@@ -3143,7 +6113,25 @@
         "IND"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1948."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Buddhist with Tamil and Muslim minorities."
+        },
+        {
+          "category": "geography",
+          "text": "An island nation in the Indian Ocean south of India."
+        }
+      ]
     },
     {
       "iso3": "KNA",
@@ -3155,7 +6143,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1983."
+        },
+        {
+          "category": "politics",
+          "text": "Federal parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "The smallest sovereign state in the Americas by area and population."
+        },
+        {
+          "category": "geography",
+          "text": "A two-island nation in the eastern Caribbean."
+        }
+      ]
     },
     {
       "iso3": "LCA",
@@ -3167,7 +6173,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1979."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Has produced two Nobel laureates despite its small size."
+        },
+        {
+          "category": "geography",
+          "text": "A volcanic Caribbean island known for the Pitons."
+        }
+      ]
     },
     {
       "iso3": "VCT",
@@ -3179,7 +6203,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1979."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Population is predominantly of African descent."
+        },
+        {
+          "category": "geography",
+          "text": "Comprises a main island and a chain of smaller Grenadine islands."
+        }
+      ]
     },
     {
       "iso3": "SDN",
@@ -3200,7 +6242,25 @@
         "SSD"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from joint British-Egyptian rule in 1956."
+        },
+        {
+          "category": "politics",
+          "text": "Engulfed in conflict between rival military factions."
+        },
+        {
+          "category": "society",
+          "text": "Bridges the Arab and African worlds."
+        },
+        {
+          "category": "geography",
+          "text": "Crossed by the Nile River in northeastern Africa."
+        }
+      ]
     },
     {
       "iso3": "SUR",
@@ -3216,7 +6276,25 @@
         "GUY"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Netherlands in 1975."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "The only Dutch-speaking country in South America."
+        },
+        {
+          "category": "geography",
+          "text": "The smallest sovereign state in South America, largely rainforest."
+        }
+      ]
     },
     {
       "iso3": "SWE",
@@ -3231,7 +6309,25 @@
         "NOR"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Has avoided war for over two centuries through a policy of neutrality."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy that joined NATO in 2024."
+        },
+        {
+          "category": "society",
+          "text": "Known for its comprehensive welfare state."
+        },
+        {
+          "category": "geography",
+          "text": "The largest Nordic country, with extensive forests and lakes."
+        }
+      ]
     },
     {
       "iso3": "CHE",
@@ -3250,7 +6346,25 @@
         "DEU"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Traces its confederation back to 1291."
+        },
+        {
+          "category": "politics",
+          "text": "A federal republic known for direct democracy and neutrality."
+        },
+        {
+          "category": "society",
+          "text": "Has four national languages."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked Alpine country in Central Europe."
+        }
+      ]
     },
     {
       "iso3": "SYR",
@@ -3268,7 +6382,25 @@
         "TUR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1946 and endured civil war from 2011."
+        },
+        {
+          "category": "politics",
+          "text": "Underwent a major political transition after 2024."
+        },
+        {
+          "category": "society",
+          "text": "Religiously and ethnically diverse."
+        },
+        {
+          "category": "geography",
+          "text": "Located in the Levant on the eastern Mediterranean."
+        }
+      ]
     },
     {
       "iso3": "TWN",
@@ -3280,7 +6412,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Became the seat of the Republic of China government in 1949."
+        },
+        {
+          "category": "politics",
+          "text": "A democratic republic with a contested international status."
+        },
+        {
+          "category": "society",
+          "text": "A leading producer of advanced semiconductors."
+        },
+        {
+          "category": "geography",
+          "text": "An island off the southeastern coast of mainland China."
+        }
+      ]
     },
     {
       "iso3": "TJK",
@@ -3298,7 +6448,25 @@
         "UZB"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Persian-speaking and predominantly Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "A mountainous, landlocked country dominated by the Pamir range."
+        }
+      ]
     },
     {
       "iso3": "THA",
@@ -3315,7 +6483,25 @@
         "MYS"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "The only Southeast Asian country never colonized by a European power."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy."
+        },
+        {
+          "category": "society",
+          "text": "Predominantly Theravada Buddhist."
+        },
+        {
+          "category": "geography",
+          "text": "Located in the center of mainland Southeast Asia."
+        }
+      ]
     },
     {
       "iso3": "BHS",
@@ -3327,7 +6513,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1973."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Its economy relies heavily on tourism and finance."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago of hundreds of islands in the Atlantic Ocean."
+        }
+      ]
     },
     {
       "iso3": "TGO",
@@ -3343,7 +6547,25 @@
         "GHA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1960."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to dozens of ethnic groups."
+        },
+        {
+          "category": "geography",
+          "text": "A narrow West African country stretching inland from the Gulf of Guinea."
+        }
+      ]
     },
     {
       "iso3": "TON",
@@ -3356,7 +6578,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Never formally colonized and gained full autonomy in 1970."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy, the last in the Pacific."
+        },
+        {
+          "category": "society",
+          "text": "A predominantly Christian Polynesian society."
+        },
+        {
+          "category": "geography",
+          "text": "An archipelago in the South Pacific Ocean."
+        }
+      ]
     },
     {
       "iso3": "TTO",
@@ -3368,7 +6608,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1962."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "Birthplace of steelpan music and a famous Carnival."
+        },
+        {
+          "category": "geography",
+          "text": "A twin-island nation off the coast of Venezuela."
+        }
+      ]
     },
     {
       "iso3": "TUN",
@@ -3383,7 +6641,25 @@
         "LBY"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from France in 1956."
+        },
+        {
+          "category": "politics",
+          "text": "A republic where the 2011 revolution sparked the Arab Spring."
+        },
+        {
+          "category": "society",
+          "text": "Population is largely Arab-Berber and Muslim."
+        },
+        {
+          "category": "geography",
+          "text": "The northernmost country in Africa."
+        }
+      ]
     },
     {
       "iso3": "TUR",
@@ -3404,7 +6680,25 @@
         "SYR"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Founded as a republic in 1923 from the former Ottoman Empire."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "A secular state with a Muslim-majority population."
+        },
+        {
+          "category": "geography",
+          "text": "Spans both Europe and Asia across the Bosphorus strait."
+        }
+      ]
     },
     {
       "iso3": "TKM",
@@ -3422,7 +6716,25 @@
         "UZB"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Holds some of the world's largest natural gas reserves."
+        },
+        {
+          "category": "geography",
+          "text": "Largely covered by the Karakum Desert in Central Asia."
+        }
+      ]
     },
     {
       "iso3": "TCA",
@@ -3447,7 +6759,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1978."
+        },
+        {
+          "category": "politics",
+          "text": "Parliamentary democracy and Commonwealth realm."
+        },
+        {
+          "category": "society",
+          "text": "Among the world's smallest populations."
+        },
+        {
+          "category": "geography",
+          "text": "A low-lying group of atolls threatened by rising seas."
+        }
+      ]
     },
     {
       "iso3": "UGA",
@@ -3466,7 +6796,25 @@
         "TZA"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1962."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Has one of the world's youngest populations."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country sharing Lake Victoria in East Africa."
+        }
+      ]
     },
     {
       "iso3": "UKR",
@@ -3486,7 +6834,25 @@
         "SVK"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A semi-presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Long known as a major grain producer, the 'breadbasket of Europe'."
+        },
+        {
+          "category": "geography",
+          "text": "The largest country located entirely within Europe."
+        }
+      ]
     },
     {
       "iso3": "ARE",
@@ -3501,7 +6867,25 @@
         "SAU"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed as a federation of seven emirates in 1971."
+        },
+        {
+          "category": "politics",
+          "text": "A federal monarchy of seven emirates."
+        },
+        {
+          "category": "society",
+          "text": "A large majority of residents are foreign nationals."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the Arabian Peninsula along the Persian Gulf."
+        }
+      ]
     },
     {
       "iso3": "GBR",
@@ -3515,7 +6899,25 @@
         "IRL"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed by the union of England, Scotland, Wales, and Northern Ireland."
+        },
+        {
+          "category": "politics",
+          "text": "A constitutional monarchy with a parliamentary system."
+        },
+        {
+          "category": "society",
+          "text": "The birthplace of the Industrial Revolution."
+        },
+        {
+          "category": "geography",
+          "text": "An island nation off the northwestern coast of Europe."
+        }
+      ]
     },
     {
       "iso3": "TZA",
@@ -3537,7 +6939,25 @@
         "ZMB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Formed in 1964 from the union of Tanganyika and Zanzibar."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Swahili serves as a unifying national language."
+        },
+        {
+          "category": "geography",
+          "text": "Home to Mount Kilimanjaro, Africa's highest peak."
+        }
+      ]
     },
     {
       "iso3": "USA",
@@ -3552,7 +6972,25 @@
         "MEX"
       ],
       "enabled": true,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Declared independence from Britain in 1776."
+        },
+        {
+          "category": "politics",
+          "text": "A federal presidential republic with a bicameral congress."
+        },
+        {
+          "category": "society",
+          "text": "A diverse nation shaped by centuries of immigration."
+        },
+        {
+          "category": "geography",
+          "text": "Spans North America between the Atlantic and Pacific oceans."
+        }
+      ]
     },
     {
       "iso3": "UMI",
@@ -3591,7 +7029,25 @@
         "BRA"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained its independence in 1828."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic with a strong democratic tradition."
+        },
+        {
+          "category": "society",
+          "text": "One of the most secular and socially progressive nations in Latin America."
+        },
+        {
+          "category": "geography",
+          "text": "A small country on the Atlantic coast of South America."
+        }
+      ]
     },
     {
       "iso3": "UZB",
@@ -3610,7 +7066,25 @@
         "TKM"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the Soviet Union in 1991."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Home to Silk Road cities like Samarkand and Bukhara."
+        },
+        {
+          "category": "geography",
+          "text": "A doubly landlocked country in Central Asia."
+        }
+      ]
     },
     {
       "iso3": "VUT",
@@ -3623,7 +7097,25 @@
       ],
       "neighbors": [],
       "enabled": true,
-      "region": "oceania"
+      "region": "oceania",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from joint British-French rule in 1980."
+        },
+        {
+          "category": "politics",
+          "text": "A parliamentary republic."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's most linguistically dense nations."
+        },
+        {
+          "category": "geography",
+          "text": "A volcanic archipelago in the South Pacific."
+        }
+      ]
     },
     {
       "iso3": "VAT",
@@ -3638,7 +7130,25 @@
         "ITA"
       ],
       "enabled": true,
-      "region": "europe"
+      "region": "europe",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Established as an independent state by the Lateran Treaty in 1929."
+        },
+        {
+          "category": "politics",
+          "text": "An absolute elective monarchy led by the Pope."
+        },
+        {
+          "category": "society",
+          "text": "The spiritual center of the Roman Catholic Church."
+        },
+        {
+          "category": "geography",
+          "text": "The world's smallest sovereign state, an enclave within Rome."
+        }
+      ]
     },
     {
       "iso3": "VEN",
@@ -3654,7 +7164,25 @@
         "GUY"
       ],
       "enabled": true,
-      "region": "southAmerica"
+      "region": "southAmerica",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from Spain in 1811."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Holds the world's largest proven oil reserves."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the northern coast of South America."
+        }
+      ]
     },
     {
       "iso3": "VNM",
@@ -3670,7 +7198,25 @@
         "LAO"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Reunified under communist rule in 1975 after decades of war."
+        },
+        {
+          "category": "politics",
+          "text": "A one-party socialist republic."
+        },
+        {
+          "category": "society",
+          "text": "One of the world's fastest-growing economies in recent decades."
+        },
+        {
+          "category": "geography",
+          "text": "A long, narrow country along the eastern coast of mainland Southeast Asia."
+        }
+      ]
     },
     {
       "iso3": "WLF",
@@ -3714,7 +7260,25 @@
         "SAU"
       ],
       "enabled": true,
-      "region": "asia"
+      "region": "asia",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Unified its north and south into a single state in 1990."
+        },
+        {
+          "category": "politics",
+          "text": "Engulfed in civil war since 2014."
+        },
+        {
+          "category": "society",
+          "text": "Home to the ancient walled city of Sana'a."
+        },
+        {
+          "category": "geography",
+          "text": "Located on the southern tip of the Arabian Peninsula."
+        }
+      ]
     },
     {
       "iso3": "ZMB",
@@ -3735,7 +7299,25 @@
         "ZWE"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1964."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Its economy is heavily dependent on copper mining."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country home to part of Victoria Falls."
+        }
+      ]
     },
     {
       "iso3": "ZWE",
@@ -3753,7 +7335,25 @@
         "ZMB"
       ],
       "enabled": true,
-      "region": "africa"
+      "region": "africa",
+      "facts": [
+        {
+          "category": "history",
+          "text": "Gained independence from the United Kingdom in 1980."
+        },
+        {
+          "category": "politics",
+          "text": "A presidential republic."
+        },
+        {
+          "category": "society",
+          "text": "Named after the medieval ruins of Great Zimbabwe."
+        },
+        {
+          "category": "geography",
+          "text": "A landlocked country sharing Victoria Falls with Zambia."
+        }
+      ]
     }
   ]
 }
