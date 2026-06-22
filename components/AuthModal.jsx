@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import Input from "@/components/ui/Input";
+import ValidationMessage from "@/components/ui/ValidationMessage";
 
 export default function AuthModal({ open, onClose, initialMode = "signin", onSuccess }) {
   const [mode, setMode] = useState(initialMode);
@@ -97,62 +99,58 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <label className="auth-field">
-              <span>Name</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                autoComplete="name"
-                required
-              />
-            </label>
+            <Input
+              label="Name"
+              id="auth-name"
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              autoComplete="name"
+              required
+            />
           )}
 
-          <label className="auth-field">
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </label>
+          <Input
+            label="Email"
+            id="auth-email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+          />
 
-          <label className="auth-field">
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                if (error) setError("");
-              }}
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              minLength={mode === "signup" ? 8 : undefined}
-              required
-            />
-          </label>
+          <Input
+            label="Password"
+            id="auth-password"
+            type="password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (error) setError("");
+            }}
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
+            minLength={mode === "signup" ? 8 : undefined}
+            required
+          />
 
           {mode === "signup" && (
-            <label className="auth-field">
-              <span>Confirm password</span>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => {
-                  setConfirmPassword(event.target.value);
-                  if (error) setError("");
-                }}
-                autoComplete="new-password"
-                minLength={8}
-                required
-              />
-            </label>
+            <Input
+              label="Confirm password"
+              id="auth-confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value);
+                if (error) setError("");
+              }}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
           )}
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && <ValidationMessage type="error" message={error} />}
 
           <button type="submit" className="primary-btn" disabled={loading}>
             {loading

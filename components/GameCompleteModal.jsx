@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/AuthModal";
+import CelebrationOverlay from "@/components/CelebrationOverlay";
+import { detectMilestone } from "@/lib/milestones";
 import { formatGameScore } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
 import { formatElapsedTime } from "@/lib/time";
@@ -23,6 +25,7 @@ export default function GameCompleteModal({
   totalElapsedMs = 0,
   isReview = false,
   isLearning = false,
+  milestoneStats,
   canReviewIncorrect = false,
   onReviewIncorrect,
   onPlayAgain,
@@ -33,6 +36,8 @@ export default function GameCompleteModal({
   const [saveState, setSaveState] = useState({ loading: false, result: null, error: null });
   const [pendingSave, setPendingSave] = useState(null);
   const [streakMessage, setStreakMessage] = useState(null);
+  const [milestone, setMilestone] = useState(null);
+  const milestoneResolvedRef = useRef(false);
 
   const signedIn = status === "authenticated" && session?.user;
 
@@ -41,8 +46,52 @@ export default function GameCompleteModal({
       setSaveState({ loading: false, result: null, error: null });
       setPendingSave(null);
       setStreakMessage(null);
+      setMilestone(null);
+      milestoneResolvedRef.current = false;
     }
   }, [open]);
+
+  // Detect a milestone once both the score save and the mastery snapshot have
+  // settled, so the priority ordering uses complete data.
+  useEffect(() => {
+    if (!open || milestoneResolvedRef.current) return;
+
+    const saveSettled =
+      !signedIn ||
+      isReview ||
+      isLearning ||
+      saveState.result != null ||
+      saveState.error != null;
+    const masterySettled = milestoneStats !== undefined;
+    if (!saveSettled || !masterySettled) return;
+
+    const perfectGame =
+      !isReview && !isLearning && total > 0 && rightCount === total && wrongCount === 0;
+
+    milestoneResolvedRef.current = true;
+    setMilestone(
+      detectMilestone({
+        saveResult: saveState.result,
+        perfectGame,
+        milestoneStats,
+        regionLabel,
+        modeLabel,
+      })
+    );
+  }, [
+    open,
+    signedIn,
+    isReview,
+    isLearning,
+    saveState.result,
+    saveState.error,
+    milestoneStats,
+    total,
+    rightCount,
+    wrongCount,
+    regionLabel,
+    modeLabel,
+  ]);
 
   useEffect(() => {
     if (!open || !signedIn) return;
@@ -186,6 +235,16 @@ export default function GameCompleteModal({
 
   const message = saveMessage();
 
+  function getCompletionHeading() {
+    if (isLearning) return "Learning complete!";
+    if (isReview) return "Review complete!";
+    const pct = total > 0 ? rightCount / total : 0;
+    if (pct === 1) return "Perfect!";
+    if (pct >= 0.8) return "Nice work!";
+    if (pct >= 0.5) return "Keep it up!";
+    return "Keep practicing";
+  }
+
   return (
     <>
       <div className="modal-overlay">
@@ -196,7 +255,7 @@ export default function GameCompleteModal({
           aria-labelledby="game-complete-title"
         >
           <h2 id="game-complete-title" className="modal-title">
-            {isLearning ? "Learning complete!" : isReview ? "Review complete!" : "Congrats!"}
+            {getCompletionHeading()}
           </h2>
           <p className="modal-score">
             You scored {rightCount}/{total}
@@ -206,14 +265,8 @@ export default function GameCompleteModal({
             {modeLabel} of {regionLabel} · {levelLabel}
           </p>
           <div className="game-complete-stats">
-            <span className="score-correct">
-              correct: {rightCount}/{total}
-            </span>
-            <span className="score-incorrect">
-              incorrect: {wrongCount}/{total}
-            </span>
             <span className="game-timer game-timer--modal">
-              time: {formatElapsedTime(totalElapsedMs)}
+              🕐 {formatElapsedTime(totalElapsedMs)}
             </span>
           </div>
 
@@ -268,6 +321,11 @@ export default function GameCompleteModal({
           </div>
         </div>
       </div>
+
+      <CelebrationOverlay
+        milestone={milestone}
+        onDismiss={() => setMilestone(null)}
+      />
 
       <AuthModal
         open={authOpen}

@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAdjacentCountryNames } from "@/lib/adjacentCountries";
 
+const FACT_CATEGORY_LABELS = {
+  history: "History",
+  politics: "Politics",
+  society: "Society",
+  geography: "Geography",
+};
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -11,6 +18,7 @@ function isEditableTarget(target) {
 
 export default function CountryHintsPanel({ country, allCountries, open, onToggle }) {
   const [revealedCount, setRevealedCount] = useState(0);
+  const [factIndex, setFactIndex] = useState(0);
 
   const countriesById = useMemo(
     () => new Map(allCountries.map((entry) => [entry.id, entry])),
@@ -22,8 +30,16 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
     [country, countriesById],
   );
 
+  const facts = useMemo(
+    () => (Array.isArray(country?.facts) ? country.facts : []),
+    [country?.facts],
+  );
+  const hasFacts = facts.length > 0;
+  const activeFact = hasFacts ? facts[factIndex % facts.length] : null;
+
   useEffect(() => {
     setRevealedCount(0);
+    setFactIndex(0);
   }, [country?.id]);
 
   useEffect(() => {
@@ -105,6 +121,38 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
             </>
           )}
         </section>
+
+        {hasFacts && (
+          <section className="country-hint country-hint--facts">
+            <div className="country-hint-header">
+              <h3 className="country-hint-title">Facts</h3>
+              {facts.length > 1 && (
+                <span className="country-hint-count">
+                  {(factIndex % facts.length) + 1} / {facts.length}
+                </span>
+              )}
+            </div>
+
+            <div className="country-fact">
+              <span
+                className={`country-fact-badge country-fact-badge--${activeFact.category}`}
+              >
+                {FACT_CATEGORY_LABELS[activeFact.category] ?? activeFact.category}
+              </span>
+              <p className="country-fact-text">{activeFact.text}</p>
+            </div>
+
+            {facts.length > 1 && (
+              <button
+                type="button"
+                className="country-fact-next"
+                onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
+              >
+                Next fact →
+              </button>
+            )}
+          </section>
+        )}
       </div>
     </aside>
   );
