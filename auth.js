@@ -24,7 +24,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const valid = await bcrypt.compare(password, user.password);
           if (!valid) return null;
 
-          return { id: user.id, email: user.email, name: user.name };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            emailVerified: Boolean(user.emailVerifiedAt),
+          };
         } catch {
           return null;
         }
@@ -36,15 +41,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/",
   },
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        token.emailVerified = user.emailVerified ?? false;
+      }
+      if (trigger === "update" && session?.emailVerified != null) {
+        token.emailVerified = session.emailVerified;
       }
       return token;
     },
     session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id;
+      }
+      if (token?.emailVerified != null) {
+        session.user.emailVerified = token.emailVerified;
       }
       return session;
     },

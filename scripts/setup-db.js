@@ -72,9 +72,38 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
 
 CREATE INDEX IF NOT EXISTS practice_sessions_user_lookup_idx
   ON practice_sessions (user_id, practiced_at DESC);
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  type TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS auth_tokens_lookup_idx
+  ON auth_tokens (token_hash, type);
+
+CREATE INDEX IF NOT EXISTS auth_tokens_user_type_idx
+  ON auth_tokens (user_id, type, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS rate_limit_events (
+  id TEXT PRIMARY KEY,
+  key TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS rate_limit_events_key_idx
+  ON rate_limit_events (key, created_at DESC);
 `;
 
 const MIGRATIONS = `
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+UPDATE users SET email_verified_at = created_at
+WHERE email_verified_at IS NULL AND created_at < TIMESTAMPTZ '2025-06-22T00:00:00Z';
+
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS mastery_score REAL NOT NULL DEFAULT 0;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS fast_streak INT NOT NULL DEFAULT 0;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS speed_baseline_ms INT;

@@ -1,12 +1,14 @@
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import { createUser, getUserByEmail } from "@/lib/db";
+import { issueVerificationEmail } from "@/lib/verification";
+import { isValidEmail, normalizeEmail, validatePassword } from "@/lib/validation";
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const name = body.name?.trim();
-    const email = body.email?.trim().toLowerCase();
+    const email = normalizeEmail(body.email);
     const password = body.password;
 
     if (!name || !email || !password) {
@@ -16,11 +18,13 @@ export async function POST(request) {
       );
     }
 
-    if (password.length < 8) {
-      return Response.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 }
-      );
+    if (!isValidEmail(email)) {
+      return Response.json({ error: "Please enter a valid email address." }, { status: 400 });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return Response.json({ error: passwordError }, { status: 400 });
     }
 
     const existing = await getUserByEmail(email);
@@ -38,6 +42,12 @@ export async function POST(request) {
       email,
       password: hashedPassword,
     });
+
+    try {
+      await issueVerificationEmail({ user, request });
+    } catch (emailError) {
+      console.error("Verification email error:", emailError);
+    }
 
     return Response.json({ user }, { status: 201 });
   } catch (error) {

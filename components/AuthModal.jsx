@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Input from "@/components/ui/Input";
@@ -163,6 +164,14 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
           )}
 
           {error && <ValidationMessage type="error" message={error} />}
+
+          {mode === "signin" && (
+            <p className="m-0 text-right text-sm">
+              <Link href="/forgot-password" className={linkBtn} onClick={onClose}>
+                Forgot password?
+              </Link>
+            </p>
+          )}
 
           <button type="submit" className={primaryBtn} disabled={loading}>
             {loading

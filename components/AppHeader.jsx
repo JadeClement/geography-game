@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
+import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import {
   appHeader,
   appHeaderActions,
@@ -95,6 +96,7 @@ export default function AppHeader({ onHomeClick }) {
 
   return (
     <>
+      <EmailVerificationBanner />
       <header className={appHeader}>
         {onHomeClick ? (
           <button
