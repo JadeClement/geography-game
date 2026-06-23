@@ -18,7 +18,13 @@ import {
 } from "@/lib/ui";
 import { cn } from "@/lib/cn";
 
-export default function AuthModal({ open, onClose, initialMode = "signin", onSuccess }) {
+export default function AuthModal({
+  open,
+  onClose,
+  initialMode = "signin",
+  onSuccess,
+  signInSubtitle,
+}) {
   const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -107,7 +113,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin", onSuc
         <p className={modalSubtitle}>
           {mode === "signup"
             ? "Save your scores and track progress across games."
-            : "Sign in to save scores and track your progress."}
+            : signInSubtitle ?? "Sign in to save scores and track your progress."}
         </p>
 
         <form className={authForm} onSubmit={handleSubmit}>

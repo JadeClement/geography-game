@@ -71,12 +71,13 @@ function StartStepHeader({ title, subtitle }) {
   );
 }
 
-export default function StartScreen({ onStart, disabled, countries = [] }) {
+export default function StartScreen({ onStart, gameReady = false, countries = [] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [selectedSessionSize, setSelectedSessionSize] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authPendingLearn, setAuthPendingLearn] = useState(false);
   const [weakCount, setWeakCount] = useState(null);
   const [weakLoading, setWeakLoading] = useState(false);
   const [weakError, setWeakError] = useState(null);
@@ -129,7 +130,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
   // Advance from Explore once both mode and region are chosen.
   useEffect(() => {
     if (step !== START_STEPS.EXPLORE || !pendingExploreAdvanceRef.current) return;
-    if (!exploreMode || !exploreRegion || disabled) return;
+    if (!exploreMode || !exploreRegion) return;
 
     pendingExploreAdvanceRef.current = false;
     navigate({
@@ -137,7 +138,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
       mode: exploreMode,
       region: exploreRegion,
     });
-  }, [step, exploreMode, exploreRegion, disabled, navigate]);
+  }, [step, exploreMode, exploreRegion, navigate]);
 
   useEffect(() => {
     if (
@@ -179,7 +180,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
   }, [step, isLearning, signedIn, selectedMode, selectedRegion, selectedLevel, weakReloadKey]);
 
   const handleGo = async () => {
-    if (disabled || starting) return;
+    if (!gameReady || starting) return;
     setStarting(true);
     try {
       await onStart({ go: true });
@@ -189,12 +190,22 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
   };
 
   const handleTestStart = (level) => {
-    if (selectedMode && selectedRegion && !disabled) {
+    if (selectedMode && selectedRegion && gameReady) {
       onStart({
         gameType: GAME_TYPES.TEST,
         mode: selectedMode,
         region: selectedRegion,
         level,
+      });
+    }
+  };
+
+  const handleDiscoverStart = () => {
+    if (selectedMode && selectedRegion && gameReady) {
+      onStart({
+        gameType: GAME_TYPES.DISCOVER,
+        mode: selectedMode,
+        region: selectedRegion,
       });
     }
   };
@@ -205,7 +216,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
       !selectedRegion ||
       selectedLevel == null ||
       !selectedSessionSize ||
-      disabled ||
+      !gameReady ||
       starting
     ) {
       return;
@@ -291,9 +302,9 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
                 type="button"
                 className={choiceBtnLevel({
                   selected: selectedSessionSize === option.id,
-                  disabled: disabled || starting,
+                  disabled: !gameReady || starting,
                 })}
-                disabled={disabled || starting}
+                disabled={!gameReady || starting}
                 onClick={() => setSelectedSessionSize(option.id)}
               >
                 <span className={choiceBtnLevelTitle}>{option.label}</span>
@@ -302,7 +313,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             <button
               type="button"
               className={cn(primaryBtn, "mt-1 w-full")}
-              disabled={!selectedSessionSize || disabled || starting}
+              disabled={!selectedSessionSize || !gameReady || starting}
               onClick={handleLearningStart}
             >
               {starting ? "Starting…" : "Start learning"}
@@ -341,11 +352,11 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
                     className={cn(
                       choiceBtnLevel({
                         selected: isLearning && selectedLevel === option.level,
-                        disabled,
+                        disabled: !gameReady && !isLearning,
                       }),
                       startLevelBtn,
                     )}
-                    disabled={disabled}
+                    disabled={!isLearning && !gameReady}
                     onClick={() => {
                       if (isLearning) {
                         setSelectedSessionSize(null);
@@ -375,21 +386,59 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
 
   if (step === START_STEPS.CHOOSE_TYPE) {
     const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
-    const learnDisabled = disabled || !signedIn;
+
+    const handleLearnSelect = () => {
+      if (!signedIn) {
+        setAuthPendingLearn(true);
+        setAuthOpen(true);
+        return;
+      }
+      navigate({
+        step: START_STEPS.LEVEL,
+        mode: selectedMode,
+        region: selectedRegion,
+        gameType: GAME_TYPES.LEARNING,
+      });
+    };
+
+    const handleAuthClose = () => {
+      setAuthOpen(false);
+      setAuthPendingLearn(false);
+    };
+
+    const handleAuthSuccess = () => {
+      if (authPendingLearn && selectedMode && selectedRegion) {
+        navigate({
+          step: START_STEPS.LEVEL,
+          mode: selectedMode,
+          region: selectedRegion,
+          gameType: GAME_TYPES.LEARNING,
+        });
+      }
+      setAuthPendingLearn(false);
+    };
 
     return (
       <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBackToExplore} />
         <StartStepHeader
-          title="Test or Learn?"
+          title="Discover, Test, or Learn?"
           subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
         />
 
         <div className={cn(startSection, startGameTypeList)}>
           <button
             type="button"
-            className={choiceBtnLevel({ disabled })}
-            disabled={disabled}
+            className={choiceBtnLevel({ disabled: !gameReady })}
+            disabled={!gameReady}
+            onClick={handleDiscoverStart}
+          >
+            <span className={choiceBtnLevelTitle}>Discover</span>
+            <span className={choiceBtnLevelDesc}>Tap countries to see their names. No score.</span>
+          </button>
+          <button
+            type="button"
+            className={choiceBtnLevel()}
             onClick={() => {
               navigate({
                 step: START_STEPS.LEVEL,
@@ -402,34 +451,18 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             <span className={choiceBtnLevelTitle}>Test</span>
             <span className={choiceBtnLevelDesc}>Full quiz — builds your learning list.</span>
           </button>
-          <button
-            type="button"
-            className={choiceBtnLevel({ disabled: learnDisabled })}
-            disabled={learnDisabled}
-            onClick={() => {
-              navigate({
-                step: START_STEPS.LEVEL,
-                mode: selectedMode,
-                region: selectedRegion,
-                gameType: GAME_TYPES.LEARNING,
-              });
-            }}
-          >
+          <button type="button" className={choiceBtnLevel()} onClick={handleLearnSelect}>
             <span className={choiceBtnLevelTitle}>Learn</span>
             <span className={choiceBtnLevelDesc}>Drill the ones you miss most.</span>
           </button>
         </div>
 
-        {!signedIn && status !== "loading" && (
-          <div className={startMessage}>
-            <p>Sign in to use Learn — your progress is tracked per country.</p>
-            <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
-              Sign in
-            </button>
-          </div>
-        )}
-
-        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+        <AuthModal
+          open={authOpen}
+          onClose={handleAuthClose}
+          onSuccess={handleAuthSuccess}
+          signInSubtitle="Please sign in to use Learn."
+        />
       </div>
     );
   }
@@ -447,24 +480,21 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
           <div className={cn(startRow, startModeRow, "mx-auto w-full max-w-xl")}>
             <button
               type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.COUNTRIES, disabled })}
-              disabled={disabled}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.COUNTRIES })}
               onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
             >
               Countries
             </button>
             <button
               type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.CAPITALS, disabled })}
-              disabled={disabled}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.CAPITALS })}
               onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
             >
               Capitals
             </button>
             <button
               type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.FLAGS, disabled })}
-              disabled={disabled}
+              className={startModeBtn({ selected: exploreMode === GAME_MODES.FLAGS })}
               onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
             >
               Flags
@@ -475,7 +505,6 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
             countries={countries}
             selectedRegion={exploreRegion}
             onSelect={handleRegionSelect}
-            disabled={disabled}
           />
         </div>
       </div>
@@ -498,7 +527,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
           <button
             type="button"
             className={goBtn}
-            disabled={disabled || starting}
+            disabled={!gameReady || starting}
             onClick={handleGo}
           >
             <span className={goBtnIcon} aria-hidden="true">
@@ -512,8 +541,7 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
 
           <button
             type="button"
-            className={choiceBtnLevel({ disabled, className: exploreBtn })}
-            disabled={disabled}
+            className={choiceBtnLevel({ className: exploreBtn })}
             onClick={() => navigate({ step: START_STEPS.EXPLORE })}
           >
             <span className={choiceBtnLevelTitle}>Explore</span>
