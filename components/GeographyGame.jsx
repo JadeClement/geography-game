@@ -6,10 +6,12 @@ import AppHeader from "@/components/AppHeader";
 import MapCountryInfoPanels from "@/components/MapCountryInfoPanels";
 import FlagPrompt from "@/components/FlagPrompt";
 import GameCompleteModal from "@/components/GameCompleteModal";
+import DiscoverCompleteModal from "@/components/DiscoverCompleteModal";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
+import SoundVolumeButton from "@/components/SoundVolumeButton";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
 import {
@@ -53,6 +55,7 @@ import {
   filterCountriesByRegion,
 } from "@/lib/regions";
 import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
+import { playCorrectSound, playIncorrectSound } from "@/lib/sounds";
 import { formatElapsedTime } from "@/lib/time";
 import {
   answerInput,
@@ -167,6 +170,8 @@ export default function GeographyGame() {
   }, []);
   const [gamePaused, setGamePaused] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
+  const [discoverCompleteModalOpen, setDiscoverCompleteModalOpen] = useState(false);
+  const discoverCompleteShownRef = useRef(false);
   // Snapshot of mastery before/after the just-finished game, used to detect
   // milestones in the complete modal. `undefined` until the game finishes.
   const [milestoneStats, setMilestoneStats] = useState(undefined);
@@ -762,6 +767,8 @@ export default function GeographyGame() {
       setReferencePanelOpen(false);
       setHintsPanelOpen(false);
       setFeedback({ text: "", type: "" });
+      discoverCompleteShownRef.current = false;
+      setDiscoverCompleteModalOpen(false);
 
       router.push(buildPlayingUrl());
       gameInHistoryRef.current = true;
@@ -1103,6 +1110,7 @@ export default function GeographyGame() {
 
       setFeedback({ text: "Correct!", type: "correct" });
       markRoundCorrect();
+      playCorrectSound();
 
       if (
         session?.level === GAME_LEVELS.FIND_FILL ||
@@ -1265,6 +1273,8 @@ export default function GeographyGame() {
         markRoundIncorrect(target);
       }
 
+      playIncorrectSound();
+
       if (attempts >= MAX_ATTEMPTS) {
         handleRevealRound(target);
       } else {
@@ -1322,6 +1332,36 @@ export default function GeographyGame() {
     ]
   );
 
+  useEffect(() => {
+    if (!isDiscoverGame || !gameActive || discoverCompleteShownRef.current) return;
+    if (activeCountries.length === 0) return;
+
+    const allDiscovered = activeCountries.every((country) =>
+      filledCountryIds.includes(country.id)
+    );
+    if (!allDiscovered) return;
+
+    discoverCompleteShownRef.current = true;
+    setDiscoverCompleteModalOpen(true);
+  }, [activeCountries, filledCountryIds, gameActive, isDiscoverGame]);
+
+  const handleKeepDiscovering = useCallback(() => {
+    setDiscoverCompleteModalOpen(false);
+  }, []);
+
+  const handleDiscoverStartTest = useCallback(() => {
+    if (!session?.mode || !session?.region) return;
+
+    setDiscoverCompleteModalOpen(false);
+    setShowMenuConfirm(false);
+    startGame({
+      gameType: GAME_TYPES.TEST,
+      mode: session.mode,
+      region: session.region,
+      level: GAME_LEVELS.FIND_FILL,
+    });
+  }, [session?.mode, session?.region, startGame]);
+
   const handleAnswerSubmit = useCallback(() => {
     if (gamePausedRef.current) {
       setShowResumeConfirm(true);
@@ -1360,6 +1400,8 @@ export default function GeographyGame() {
     if (attempts === 1) {
       markRoundIncorrect(target);
     }
+
+    playIncorrectSound();
 
     if (attempts >= MAX_ATTEMPTS) {
       setSpellingSuggestion(null);
@@ -1598,23 +1640,26 @@ export default function GeographyGame() {
                     </>
                   )}
                   <div className={gameControls}>
-                    <button
-                      type="button"
-                      className={gameControlBtn}
-                      onClick={handleTogglePause}
-                      aria-label={gamePaused ? "Resume game" : "Pause game"}
-                      title={gamePaused ? "Resume" : "Pause"}
-                    >
-                      {gamePaused ? (
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                          <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
-                        </svg>
-                      )}
-                    </button>
+                    <SoundVolumeButton />
+                    {!isDiscoverGame && (
+                      <button
+                        type="button"
+                        className={gameControlBtn}
+                        onClick={handleTogglePause}
+                        aria-label={gamePaused ? "Resume game" : "Pause game"}
+                        title={gamePaused ? "Resume" : "Pause"}
+                      >
+                        {gamePaused ? (
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                            <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={`${gameControlBtn} ${gameControlBtnStop}`}
@@ -1719,7 +1764,7 @@ export default function GeographyGame() {
                   onCountryClick={mapCountryClickHandler}
                 />
               )}
-              {gamePaused && !gameComplete && (
+              {gamePaused && !gameComplete && !isDiscoverGame && (
                 <button
                   type="button"
                   className={mapPauseOverlay}
@@ -1817,13 +1862,22 @@ export default function GeographyGame() {
                 </h2>
                 <p className={modalSubtitle}>
                   {isDiscoverGame
-                    ? "Are you sure you want to leave?"
+                    ? "Jump into a Find it · Level 1 quiz, keep exploring, or return to the menu."
                     : "Are you sure you want to go back to menu? Your progress in this game will be lost."}
                 </p>
                 <div className={modalActions}>
+                  {isDiscoverGame && (
+                    <button
+                      type="button"
+                      className={primaryBtn}
+                      onClick={handleDiscoverStartTest}
+                    >
+                      Ready to test yourself?
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className={primaryBtn}
+                    className={isDiscoverGame ? secondaryBtn : primaryBtn}
                     onClick={handleBackToMenu}
                   >
                     Yes, go to menu
@@ -1838,6 +1892,17 @@ export default function GeographyGame() {
                 </div>
               </div>
             </div>
+          )}
+          {discoverCompleteModalOpen && (
+            <DiscoverCompleteModal
+              open={discoverCompleteModalOpen}
+              countryCount={activeCountries.length}
+              regionLabel={regionLabel}
+              modeLabel={modeLabel}
+              testLevelLabel={getLevelLabel(GAME_LEVELS.FIND_FILL)}
+              onKeepDiscovering={handleKeepDiscovering}
+              onStartTest={handleDiscoverStartTest}
+            />
           )}
         </>
       )}

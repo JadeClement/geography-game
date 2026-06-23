@@ -13,8 +13,8 @@ import {
 } from "@/lib/ui";
 import { useTheme } from "@/components/ThemeProvider";
 import {
-  ACTIVE_LAND_COLOR,
   CORRECT_COUNTRY_COLOR,
+  getActiveLandColor,
   WRONG_COUNTRY_COLOR,
 } from "@/lib/countryColors";
 import {
@@ -59,7 +59,7 @@ const MAP_THEME_COLORS = {
   },
 };
 
-function buildCountryPaths(countries, mapView, colorMap) {
+function buildCountryPaths(countries, mapView, colorMap, landColor) {
   return countries
     .map((country) => {
       const path = geometryToPathData(
@@ -72,7 +72,7 @@ function buildCountryPaths(countries, mapView, colorMap) {
       return {
         id: country.id,
         path,
-        assignedColor: colorMap[country.id] ?? ACTIVE_LAND_COLOR,
+        assignedColor: colorMap[country.id] ?? landColor,
         isSmall: country.isSmall,
         centroid: country.centroid,
       };
@@ -105,6 +105,7 @@ export default function PacificMap({
 }) {
   const { theme } = useTheme();
   const colors = MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
+  const landColor = getActiveLandColor(theme);
   const [highlightVisible, setHighlightVisible] = useState(true);
   const [flashVisible, setFlashVisible] = useState(true);
   const [viewBox, setViewBox] = useState(getDefaultPacificViewBox);
@@ -117,13 +118,13 @@ export default function PacificMap({
   viewBoxRef.current = viewBox;
 
   const inactivePaths = useMemo(
-    () => buildCountryPaths(inactiveCountries, PACIFIC_GAME_VIEW, countryColorMap),
-    [inactiveCountries, countryColorMap]
+    () => buildCountryPaths(inactiveCountries, PACIFIC_GAME_VIEW, countryColorMap, landColor),
+    [inactiveCountries, countryColorMap, landColor]
   );
 
   const activePaths = useMemo(
-    () => buildCountryPaths(activeCountries, PACIFIC_GAME_VIEW, countryColorMap),
-    [activeCountries, countryColorMap]
+    () => buildCountryPaths(activeCountries, PACIFIC_GAME_VIEW, countryColorMap, landColor),
+    [activeCountries, countryColorMap, landColor]
   );
 
   useEffect(() => {
@@ -257,7 +258,7 @@ export default function PacificMap({
 
     if (level === GAME_LEVELS.FIND_FILL) {
       if (isFlashWrong || isWrong) return WRONG_COUNTRY_COLOR;
-      if (isFilled) return assignedColor ?? ACTIVE_LAND_COLOR;
+      if (isFilled) return assignedColor ?? landColor;
       return colors.smallCountryStroke;
     }
 
@@ -323,13 +324,14 @@ export default function PacificMap({
               filledCountryIds,
               highlightTargetCountryId,
               isActive: true,
+              activeLandColor: landColor,
             });
 
             return (
               <path
                 key={country.id}
                 d={country.path}
-                fill={fill ?? ACTIVE_LAND_COLOR}
+                fill={fill ?? landColor}
                 fillRule="evenodd"
                 className={cn("pacific-map-country", gameActive && pacificMapCountryClickable)}
                 onClick={() => handleCountryPointer(country.id)}

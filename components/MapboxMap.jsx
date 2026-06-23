@@ -6,8 +6,8 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useTheme } from "@/components/ThemeProvider";
 import {
-  ACTIVE_LAND_COLOR,
   CORRECT_COUNTRY_COLOR,
+  getActiveLandColor,
   TARGET_HIGHLIGHT_COLOR,
   WRONG_COUNTRY_COLOR,
 } from "@/lib/countryColors";
@@ -84,7 +84,7 @@ function getMapThemeColors(theme) {
   return MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
 }
 
-function getLevelFillColorExpression(level) {
+function getLevelFillColorExpression(level, landColor) {
   if (level === GAME_LEVELS.FIND_FILL) {
     return [
       "case",
@@ -93,8 +93,8 @@ function getLevelFillColorExpression(level) {
       ["==", ["feature-state", "flashWrong"], true],
       WRONG_COUNTRY_COLOR,
       ["==", ["feature-state", "filled"], true],
-      ["coalesce", ["get", "assignedColor"], ACTIVE_LAND_COLOR],
-      ACTIVE_LAND_COLOR,
+      ["coalesce", ["get", "assignedColor"], landColor],
+      landColor,
     ];
   }
 
@@ -107,7 +107,7 @@ function getLevelFillColorExpression(level) {
       CORRECT_COUNTRY_COLOR,
       ["==", ["feature-state", "target"], true],
       TARGET_HIGHLIGHT_COLOR,
-      ACTIVE_LAND_COLOR,
+      landColor,
     ];
   }
 
@@ -116,8 +116,8 @@ function getLevelFillColorExpression(level) {
     ["==", ["feature-state", "wrong"], true],
     WRONG_COUNTRY_COLOR,
     ["==", ["feature-state", "showColor"], true],
-    ["coalesce", ["get", "assignedColor"], ACTIVE_LAND_COLOR],
-    ACTIVE_LAND_COLOR,
+    ["coalesce", ["get", "assignedColor"], landColor],
+    landColor,
   ];
 }
 
@@ -153,7 +153,7 @@ function isCircleClickTarget(map, circleFeature) {
   return (state?.opacity ?? 0) > 0;
 }
 
-function getSmallCircleStrokeColorExpression(level, defaultStrokeColor) {
+function getSmallCircleStrokeColorExpression(level, defaultStrokeColor, landColor) {
   if (!isProgressiveFillLevel(level)) {
     return defaultStrokeColor;
   }
@@ -166,7 +166,7 @@ function getSmallCircleStrokeColorExpression(level, defaultStrokeColor) {
       ["==", ["feature-state", "wrong"], true],
       WRONG_COUNTRY_COLOR,
       ["==", ["feature-state", "filled"], true],
-      ["coalesce", ["get", "assignedColor"], ACTIVE_LAND_COLOR],
+      ["coalesce", ["get", "assignedColor"], landColor],
       defaultStrokeColor,
     ];
   }
@@ -181,7 +181,7 @@ function getSmallCircleStrokeColorExpression(level, defaultStrokeColor) {
   ];
 }
 
-function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level) {
+function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, landColor) {
   if (!smallCountriesGeojson?.features?.length) return;
 
   if (!map.getSource("small-countries")) {
@@ -198,7 +198,7 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level) {
       paint: {
         "circle-radius": ["coalesce", ["feature-state", "radius"], 0],
         "circle-color": "transparent",
-        "circle-stroke-color": getSmallCircleStrokeColorExpression(level, strokeColor),
+        "circle-stroke-color": getSmallCircleStrokeColorExpression(level, strokeColor, landColor),
         "circle-stroke-width": 2,
         "circle-stroke-opacity": ["coalesce", ["feature-state", "opacity"], 0],
       },
@@ -296,7 +296,7 @@ function configureBaseStyle(map, theme) {
   }
 }
 
-function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level) {
+function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor) {
   if (map.getSource("inactive-countries")) {
     map.getSource("inactive-countries").setData(inactiveGeojson);
   } else {
@@ -320,7 +320,7 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level) {
   if (map.getSource("countries")) {
     map.getSource("countries").setData(geojson);
     if (map.getLayer("country-fill")) {
-      map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level));
+      map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level, landColor));
     }
     return;
   }
@@ -336,7 +336,7 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level) {
     type: "fill",
     source: "countries",
     paint: {
-      "fill-color": getLevelFillColorExpression(level),
+      "fill-color": getLevelFillColorExpression(level, landColor),
       "fill-opacity": 0.92,
       "fill-outline-color": mapColors.levelBorder,
     },
@@ -477,6 +477,7 @@ export default function MapboxMap({
         ? "mapbox://styles/mapbox/light-v11"
         : "mapbox://styles/mapbox/dark-v11";
     const mapColors = getMapThemeColors(theme);
+    const landColor = getActiveLandColor(theme);
     const initialCenter =
       mapView?.type === "camera" ? mapView.center : [10, 20];
     const initialZoom = mapView?.type === "camera" ? mapView.zoom : 1.2;
@@ -538,10 +539,10 @@ export default function MapboxMap({
         configureGlobeAtmosphere(map, theme);
         configureMobileGlobeControls(map);
       }
-      addCountryLayers(map, geojson, inactiveGeojson, mapColors, level);
+      addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor);
 
       if (smallCountriesGeojson?.features?.length) {
-        addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level);
+        addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level, landColor);
       }
 
       map.on("zoom", handleViewChangeForCircles);
@@ -596,8 +597,9 @@ export default function MapboxMap({
     if (!map?.isStyleLoaded() || !map.getSource("countries")) return;
 
     const mapColors = getMapThemeColors(theme);
+    const landColor = getActiveLandColor(theme);
 
-    addCountryLayers(map, geojson, inactiveGeojson, mapColors, level);
+    addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor);
 
     if (map.getLayer("inactive-country-fill")) {
       map.setPaintProperty("inactive-country-fill", "fill-color", mapColors.inactiveLand);
@@ -609,7 +611,7 @@ export default function MapboxMap({
     }
 
     if (map.getLayer("country-fill")) {
-      map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level));
+      map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level, landColor));
       map.setPaintProperty("country-fill", "fill-outline-color", mapColors.levelBorder);
       map.setPaintProperty("country-borders", "line-color", mapColors.levelBorder);
     }
@@ -618,12 +620,12 @@ export default function MapboxMap({
       map.setPaintProperty(
         "small-country-circles",
         "circle-stroke-color",
-        getSmallCircleStrokeColorExpression(level, mapColors.smallCountryStroke)
+        getSmallCircleStrokeColorExpression(level, mapColors.smallCountryStroke, landColor)
       );
     }
 
     if (smallCountriesGeojson?.features?.length) {
-      addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level);
+      addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level, landColor);
     } else if (map.getSource("small-countries")) {
       map.getSource("small-countries").setData({
         type: "FeatureCollection",
