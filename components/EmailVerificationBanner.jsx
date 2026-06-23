@@ -88,7 +88,7 @@ export default function EmailVerificationBanner() {
 
   return (
     <div
-      className="flex shrink-0 items-start justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-text"
+      className="flex shrink-0 items-start justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-text max-md:px-3"
       role="status"
     >
       <div className="min-w-0 flex-1">
@@ -113,7 +113,7 @@ export default function EmailVerificationBanner() {
       <button
         type="button"
         className={cn(
-          "shrink-0 rounded-sm border-0 bg-transparent px-2 py-1 text-lg leading-none text-text-muted cursor-pointer hover:text-text",
+          "shrink-0 rounded-sm border-0 bg-transparent px-3 py-2 text-lg leading-none text-text-muted cursor-pointer hover:text-text",
           focusRing
         )}
         onClick={handleDismiss}

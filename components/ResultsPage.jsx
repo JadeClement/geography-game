@@ -22,6 +22,13 @@ import {
   resultsGroupTitle,
   resultsMessage,
   resultsMessageError,
+  resultsMobileCard,
+  resultsMobileCards,
+  resultsMobileCell,
+  resultsMobileCellLabel,
+  resultsMobileCellValue,
+  resultsMobileCardTitle,
+  resultsMobileGrid,
   resultsPage,
   resultsSection,
   resultsSignIn,
@@ -35,42 +42,70 @@ import {
   resultsTitle,
 } from "@/lib/ui";
 
-function ScoreTable({ title, mode, scoreMap }) {
+function ScoreTableMobile({ title, mode, scoreMap }) {
   return (
     <section className={resultsSection}>
       <h2 className={resultsTableTitle}>{title}</h2>
-      <div className={resultsTableWrap}>
-        <table className={resultsTable}>
-          <thead>
-            <tr>
-              <th scope="col" className={resultsTableColHeader}>
-                Region
-              </th>
+      <div className={resultsMobileCards}>
+        {REGIONS.map((region) => (
+          <div key={region.id} className={resultsMobileCard}>
+            <h3 className={resultsMobileCardTitle}>{region.label}</h3>
+            <div className={resultsMobileGrid}>
               {LEVELS.map((level) => (
-                <th key={level} scope="col" className={resultsTableColHeader}>
-                  {getLevelShortLabel(level)}
-                </th>
+                <div key={level} className={resultsMobileCell}>
+                  <span className={resultsMobileCellLabel}>{getLevelShortLabel(level)}</span>
+                  <span className={resultsMobileCellValue}>
+                    {formatGameScore(scoreMap.get(`${mode}:${region.id}:${level}`), region.id)}
+                  </span>
+                </div>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {REGIONS.map((region) => (
-              <tr key={region.id}>
-                <th scope="row" className={resultsTableRowHeader}>
-                  {region.label}
-                </th>
-                {LEVELS.map((level) => {
-                  const score = scoreMap.get(`${mode}:${region.id}:${level}`);
-                  return (
-                    <td key={level}>{formatGameScore(score, region.id)}</td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
+  );
+}
+
+function ScoreTable({ title, mode, scoreMap }) {
+  return (
+    <>
+      <section className={cn(resultsSection, "max-md:hidden")}>
+        <h2 className={resultsTableTitle}>{title}</h2>
+        <div className={resultsTableWrap}>
+          <table className={resultsTable}>
+            <thead>
+              <tr>
+                <th scope="col" className={resultsTableColHeader}>
+                  Region
+                </th>
+                {LEVELS.map((level) => (
+                  <th key={level} scope="col" className={resultsTableColHeader}>
+                    {getLevelShortLabel(level)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {REGIONS.map((region) => (
+                <tr key={region.id}>
+                  <th scope="row" className={resultsTableRowHeader}>
+                    {region.label}
+                  </th>
+                  {LEVELS.map((level) => {
+                    const score = scoreMap.get(`${mode}:${region.id}:${level}`);
+                    return (
+                      <td key={level}>{formatGameScore(score, region.id)}</td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <ScoreTableMobile title={title} mode={mode} scoreMap={scoreMap} />
+    </>
   );
 }
 
@@ -102,39 +137,68 @@ function MasteryCell({ pct }) {
   );
 }
 
-function MasteryTable({ title, lookup }) {
+function MasteryTableMobile({ title, lookup }) {
   return (
     <section className={resultsSection}>
       <h2 className={resultsTableTitle}>{title}</h2>
-      <div className={resultsTableWrap}>
-        <table className={resultsTable}>
-          <thead>
-            <tr>
-              <th scope="col" className={resultsTableColHeader}>
-                Region
-              </th>
-              {LEVELS.map((level) => (
-                <th key={level} scope="col" className={resultsTableColHeader}>
-                  {getLevelShortLabel(level)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {REGIONS.map((region) => (
-              <tr key={region.id}>
-                <th scope="row" className={resultsTableRowHeader}>
-                  {region.label}
-                </th>
-                {LEVELS.map((level) => (
-                  <MasteryCell key={level} pct={regionMasteryPct(lookup, region.id, level)} />
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className={resultsMobileCards}>
+        {REGIONS.map((region) => (
+          <div key={region.id} className={resultsMobileCard}>
+            <h3 className={resultsMobileCardTitle}>{region.label}</h3>
+            <div className={resultsMobileGrid}>
+              {LEVELS.map((level) => {
+                const pct = regionMasteryPct(lookup, region.id, level);
+                return (
+                  <div key={level} className={resultsMobileCell}>
+                    <span className={resultsMobileCellLabel}>{getLevelShortLabel(level)}</span>
+                    <span className={resultsMobileCellValue}>{pct == null ? "—" : `${pct}%`}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
+  );
+}
+
+function MasteryTable({ title, lookup }) {
+  return (
+    <>
+      <section className={cn(resultsSection, "max-md:hidden")}>
+        <h2 className={resultsTableTitle}>{title}</h2>
+        <div className={resultsTableWrap}>
+          <table className={resultsTable}>
+            <thead>
+              <tr>
+                <th scope="col" className={resultsTableColHeader}>
+                  Region
+                </th>
+                {LEVELS.map((level) => (
+                  <th key={level} scope="col" className={resultsTableColHeader}>
+                    {getLevelShortLabel(level)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {REGIONS.map((region) => (
+                <tr key={region.id}>
+                  <th scope="row" className={resultsTableRowHeader}>
+                    {region.label}
+                  </th>
+                  {LEVELS.map((level) => (
+                    <MasteryCell key={level} pct={regionMasteryPct(lookup, region.id, level)} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <MasteryTableMobile title={title} lookup={lookup} />
+    </>
   );
 }
 

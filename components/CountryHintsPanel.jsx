@@ -113,7 +113,7 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
           <div className={countryHintHeader}>
             <h3 className={countryHintTitle}>Adjacent countries</h3>
             {hasNeighbors && !allRevealed && (
-              <kbd className={mapSidePanelShortcut} aria-hidden="true">
+              <kbd className={cn(mapSidePanelShortcut, "max-md:hidden")} aria-hidden="true">
                 Space
               </kbd>
             )}

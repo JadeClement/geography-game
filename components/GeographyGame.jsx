@@ -1305,10 +1305,10 @@ export default function GeographyGame() {
                 <span className={gameMetaTag}>{regionLabel}</span>
                 <span className={gameMetaTag}>{levelLabel}</span>
                 {session.review && (
-                  <span className={gameMetaTag}>Review</span>
+                  <span className={cn(gameMetaTag, "max-sm:hidden")}>Review</span>
                 )}
                 {isLearningGame && (
-                  <span className={gameMetaTag}>Learning</span>
+                  <span className={cn(gameMetaTag, "max-sm:hidden")}>Learning</span>
                 )}
               </div>
             </div>

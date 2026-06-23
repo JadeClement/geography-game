@@ -302,7 +302,10 @@ export default function MasteryPage() {
                 {hoverInfo && (
                   <div
                     className={masteryTooltip}
-                    style={{ left: hoverInfo.point.x + 14, top: hoverInfo.point.y + 14 }}
+                    style={{
+                      left: Math.min(hoverInfo.point.x + 14, typeof window !== "undefined" ? window.innerWidth - 160 : hoverInfo.point.x + 14),
+                      top: Math.min(hoverInfo.point.y + 14, typeof window !== "undefined" ? window.innerHeight - 120 : hoverInfo.point.y + 14),
+                    }}
                   >
                     <strong>{hoverInfo.name}</strong>
                     {hoverInfo.rows.map((row) => (

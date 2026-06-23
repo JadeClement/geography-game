@@ -67,7 +67,7 @@ export default function CountryReferencePanel({
       <div className={mapSidePanelHeader({ open })}>
         <div className={mapSidePanelHeading}>
           <h2 className={mapSidePanelTitle}>Reference</h2>
-          <kbd className={mapSidePanelShortcut} aria-hidden="true">
+          <kbd className={cn(mapSidePanelShortcut, "max-md:hidden")} aria-hidden="true">
             {isMac ? "⌘I" : "Ctrl+I"}
           </kbd>
         </div>

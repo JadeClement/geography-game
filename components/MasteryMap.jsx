@@ -309,6 +309,13 @@ export default forwardRef(function MasteryMap(
 
       map.on("mousemove", "mastery-base", handleMove);
       map.on("mouseleave", "mastery-base", handleLeave);
+      map.on("click", "mastery-base", handleMove);
+      map.on("click", (event) => {
+        const features = map.queryRenderedFeatures(event.point, { layers: ["mastery-base"] });
+        if (!features.length) {
+          onHoverRef.current?.(null);
+        }
+      });
 
       readyRef.current = true;
       applyAll();
