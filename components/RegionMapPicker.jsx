@@ -9,7 +9,7 @@ import {
   REGION_MAP_OCEAN,
 } from "@/lib/regionMapColors";
 import { cn } from "@/lib/cn";
-import { choiceBtn } from "@/lib/ui";
+import { regionMapBtn } from "@/lib/ui";
 
 const PATH_SIMPLIFY_TOLERANCE = 0.25;
 
@@ -89,15 +89,14 @@ export default function RegionMapPicker({
           <button
             key={zone.id}
             type="button"
-            className={choiceBtn({
+            className={regionMapBtn({
               selected: selectedRegion === zone.id,
               disabled,
               className: cn(
                 "region-map-region-btn",
-                "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:!shadow-none max-[40rem]:min-h-11 max-[40rem]:min-w-11",
-                "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none max-[40rem]:bg-surface/90",
-                "enabled:hover:translate-x-[-50%] enabled:hover:translate-y-[-50%]",
-                "enabled:active:translate-x-[-50%] enabled:active:translate-y-[-50%]",
+                "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:min-h-11 max-[40rem]:min-w-11",
+                "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none",
+                selectedRegion !== zone.id && "max-[40rem]:bg-surface/90",
               ),
             })}
             style={{
@@ -118,14 +117,14 @@ export default function RegionMapPicker({
 
         <button
           type="button"
-          className={choiceBtn({
+          className={regionMapBtn({
             selected: selectedRegion === "world",
             disabled,
             className: cn(
               "region-map-world-btn absolute bottom-[5%] left-1/2 min-w-32 -translate-x-1/2 max-[40rem]:min-w-0",
-              "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:!shadow-none max-[40rem]:min-h-11 max-[40rem]:min-w-11",
-              "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none max-[40rem]:bg-surface/90",
-              "enabled:hover:-translate-x-1/2 enabled:active:-translate-x-1/2",
+              "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:min-h-11 max-[40rem]:min-w-11",
+              "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none",
+              selectedRegion !== "world" && "max-[40rem]:bg-surface/90",
             ),
           })}
           disabled={disabled}
