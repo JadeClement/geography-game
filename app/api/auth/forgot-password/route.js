@@ -48,8 +48,15 @@ export async function POST(request) {
 
     const user = await getUserByEmailWithVerification(email);
 
-    if (user?.emailVerifiedAt) {
-      await issuePasswordResetEmail({ user, request });
+    if (user) {
+      try {
+        const result = await issuePasswordResetEmail({ user, request });
+        if (!result?.sent) {
+          console.error("Password reset email not sent:", result?.error, email);
+        }
+      } catch (emailError) {
+        console.error("Password reset email error:", emailError);
+      }
     }
 
     return Response.json({ message: SUCCESS_MESSAGE });
