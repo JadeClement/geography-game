@@ -88,6 +88,16 @@ function getPacificCentroid(country) {
   return PACIFIC_CENTROID_OVERRIDES[country.id] ?? country.centroid;
 }
 
+function isCountryEventTarget(target) {
+  if (!(target instanceof Element)) return false;
+  return (
+    target.classList.contains("pacific-map-country") ||
+    (target instanceof SVGCircleElement &&
+      target.closest(".pacific-map-circles") &&
+      target.getAttribute("fill") === "transparent")
+  );
+}
+
 export default function PacificMap({
   activeCountries,
   inactiveCountries,
@@ -203,6 +213,7 @@ export default function PacificMap({
 
   const handlePointerDown = useCallback((event) => {
     if (event.button !== 0) return;
+    if (isCountryEventTarget(event.target)) return;
 
     suppressClickRef.current = false;
     dragRef.current = {
@@ -210,8 +221,8 @@ export default function PacificMap({
       startX: event.clientX,
       startY: event.clientY,
       viewBox: viewBoxRef.current,
+      captured: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
   }, []);
 
   const handlePointerMove = useCallback((event) => {
@@ -221,8 +232,12 @@ export default function PacificMap({
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
 
-    if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+    if (!drag.captured) {
+      if (Math.hypot(dx, dy) <= DRAG_THRESHOLD_PX) return;
+
       suppressClickRef.current = true;
+      drag.captured = true;
+      svgRef.current?.setPointerCapture(event.pointerId);
     }
 
     const svg = svgRef.current;
@@ -237,10 +252,18 @@ export default function PacificMap({
   }, []);
 
   const handlePointerUp = useCallback((event) => {
-    if (dragRef.current?.pointerId === event.pointerId) {
-      dragRef.current = null;
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (drag.captured) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    dragRef.current = null;
+  }, []);
+
+  const handleCountryPointerDown = useCallback((event) => {
+    event.stopPropagation();
+    suppressClickRef.current = false;
   }, []);
 
   const handleCountryPointer = useCallback(
@@ -334,6 +357,7 @@ export default function PacificMap({
                 fill={fill ?? landColor}
                 fillRule="evenodd"
                 className={cn("pacific-map-country", gameActive && pacificMapCountryClickable)}
+                onPointerDown={handleCountryPointerDown}
                 onClick={() => handleCountryPointer(country.id)}
               />
             );
@@ -369,6 +393,7 @@ export default function PacificMap({
                   stroke={stroke}
                   strokeWidth={2}
                   className={gameActive ? pacificMapCountryClickable : undefined}
+                  onPointerDown={handleCountryPointerDown}
                   onClick={() => handleCountryPointer(country.id)}
                 />
                 {isFlashing && (

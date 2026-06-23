@@ -8,6 +8,7 @@
     "start": "next start",
     "generate-countries": "node scripts/generate-countries.js",
     "generate-globe-map": "node scripts/generate-globe-map.js",
+    "generate-pronunciations": "node --env-file=.env scripts/generate-pronunciations.js",
     "db:setup": "node --env-file=.env scripts/setup-db.js"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "three": "^0.184.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-polly": "^3.848.0",
     "@tailwindcss/postcss": "^4.3.1",
     "tailwindcss": "^4.3.1"
   }

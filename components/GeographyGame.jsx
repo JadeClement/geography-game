@@ -81,6 +81,7 @@ import {
   gameShell,
   gameTimer,
   mapPauseOverlay,
+  mapFeedbackAnchor,
   mapStage,
   modalActions,
   modalCard,
@@ -1502,12 +1503,8 @@ export default function GeographyGame() {
   const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => (
     <div className={promptFeedback({ wrong: promptWrong, className })}>
       {isDiscoverGame ? (
-        isFlagsMode && targetCountry?.iso2 ? (
-          <FlagPrompt
-            iso2={targetCountry.iso2}
-            size={showFlagInPrompt ? "card" : "prompt"}
-            className={showFlagInPrompt ? "mx-auto" : undefined}
-          />
+        isFlagsMode && targetCountry?.iso2 && showFlagInPrompt ? (
+          <FlagPrompt iso2={targetCountry.iso2} size="card" className="mx-auto" />
         ) : (
           promptText
         )
@@ -1793,7 +1790,7 @@ export default function GeographyGame() {
                   onOpenHints={openHintsPanel}
                 />
               )}
-              <div className="max-md:hidden">
+              <div className={mapFeedbackAnchor}>
                 <MapFeedback text={feedback.text} type={feedback.type} />
               </div>
             </div>
