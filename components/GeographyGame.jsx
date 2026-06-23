@@ -67,6 +67,9 @@ import {
   gameHeaderLeft,
   gameHeaderRight,
   gameHeaderStats,
+  gamePromptMobileFloat,
+  gamePromptMobileCard,
+  gamePromptMobileInput,
   gameMeta,
   gameMetaTag,
   gameProgress,
@@ -1313,6 +1316,75 @@ export default function GeographyGame() {
   const mapInteractionEnabled =
     gameActive && !gamePaused && session?.level != null && isFindLevel(session.level);
 
+  const promptWrong =
+    feedback.type === "wrong" ||
+    feedback.type === "reveal" ||
+    feedback.type === "got-it";
+
+  const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => (
+    <div className={promptFeedback({ wrong: promptWrong, className })}>
+      {isNameGame ? (
+        <div className={answerPrompt}>
+          <input
+            ref={answerInputRef}
+            type="text"
+            className={compactInput ? gamePromptMobileInput : answerInput}
+            value={answerInput}
+            placeholder={
+              session.mode === GAME_MODES.CAPITALS
+                ? "Type the capital…"
+                : "Type the country…"
+            }
+            aria-label={
+              session.mode === GAME_MODES.CAPITALS
+                ? "Capital answer"
+                : "Country answer"
+            }
+            autoComplete="off"
+            spellCheck={false}
+            disabled={!gameActive || gamePaused}
+            onChange={handleAnswerInputChange}
+            onKeyDown={handleAnswerKeyDown}
+          />
+          {spellingSuggestion && (
+            <p className={spellingSuggestion}>
+              Did you mean{" "}
+              <button
+                type="button"
+                className={spellingSuggestionLink}
+                onClick={handleSpellingSuggestionClick}
+              >
+                {spellingSuggestion}
+              </button>
+              ?
+            </p>
+          )}
+        </div>
+      ) : isFindFlagsGame ? (
+        flagsClickHeader ? (
+          <span
+            className={
+              flagsClickHeader.tone === "correct" ? "prompt-correct" : "prompt-wrong"
+            }
+          >
+            {flagsClickHeader.name}
+          </span>
+        ) : null
+      ) : showFlagInPrompt && showFlagPrompt ? (
+        <FlagPrompt iso2={targetCountry.iso2} size="card" className="mx-auto" />
+      ) : isFlagsMode ? null : (
+        promptText
+      )}
+    </div>
+  );
+
+  const showMobilePrompt =
+    !gameComplete &&
+    (isNameGame ||
+      (isFindFlagsGame && flagsClickHeader) ||
+      showFlagPrompt ||
+      Boolean(promptText));
+
   return (
     <div className={gameShell}>
       <AppHeader onHomeClick={handleHeaderHome} />
@@ -1346,70 +1418,7 @@ export default function GeographyGame() {
               </div>
             </div>
 
-            {!gameComplete && (
-              <div
-                className={promptFeedback({
-                  wrong:
-                    feedback.type === "wrong" ||
-                    feedback.type === "reveal" ||
-                    feedback.type === "got-it",
-                  className: gameHeaderCenter,
-                })}
-              >
-                {isNameGame ? (
-                  <div className={answerPrompt}>
-                    <input
-                      ref={answerInputRef}
-                      type="text"
-                      className={answerInput}
-                      value={answerInput}
-                      placeholder={
-                        session.mode === GAME_MODES.CAPITALS
-                          ? "Type the capital…"
-                          : "Type the country…"
-                      }
-                      aria-label={
-                        session.mode === GAME_MODES.CAPITALS
-                          ? "Capital answer"
-                          : "Country answer"
-                      }
-                      autoComplete="off"
-                      spellCheck={false}
-                      disabled={!gameActive || gamePaused}
-                      onChange={handleAnswerInputChange}
-                      onKeyDown={handleAnswerKeyDown}
-                    />
-                    {spellingSuggestion && (
-                      <p className={spellingSuggestion}>
-                        Did you mean{" "}
-                        <button
-                          type="button"
-                          className={spellingSuggestionLink}
-                          onClick={handleSpellingSuggestionClick}
-                        >
-                          {spellingSuggestion}
-                        </button>
-                        ?
-                      </p>
-                    )}
-                  </div>
-                ) : isFindFlagsGame ? (
-                  flagsClickHeader ? (
-                    <span
-                      className={
-                        flagsClickHeader.tone === "correct"
-                          ? "prompt-correct"
-                          : "prompt-wrong"
-                      }
-                    >
-                      {flagsClickHeader.name}
-                    </span>
-                  ) : null
-                ) : isFlagsMode ? null : (
-                  promptText
-                )}
-              </div>
-            )}
+            {!gameComplete && renderGamePrompt(gameHeaderCenter)}
 
             <div className={gameHeaderRight}>
               {!gameComplete && (
@@ -1497,6 +1506,14 @@ export default function GeographyGame() {
           </header>
           {(isOceaniaRegion || hasToken) && !gameComplete && (
             <div className={mapStage}>
+              {showMobilePrompt && (
+                <div className={gamePromptMobileFloat}>
+                  {renderGamePrompt(gamePromptMobileCard, {
+                    showFlagInPrompt: true,
+                    compactInput: true,
+                  })}
+                </div>
+              )}
               {isOceaniaRegion ? (
                 <PacificMap
                   activeCountries={activeCountries}
@@ -1540,7 +1557,7 @@ export default function GeographyGame() {
                 />
               )}
               {showFlagPrompt && (
-                <div className={flagCard} aria-hidden="true">
+                <div className={cn(flagCard, "max-md:hidden")} aria-hidden="true">
                   <FlagPrompt iso2={targetCountry.iso2} size="card" />
                 </div>
               )}

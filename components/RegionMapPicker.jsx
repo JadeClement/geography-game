@@ -84,6 +84,7 @@ export default function RegionMapPicker({
           </g>
         </svg>
 
+        <div className="region-map-labels">
         {REGION_MAP_LABELS.map((zone) => (
           <button
             key={zone.id}
@@ -93,8 +94,8 @@ export default function RegionMapPicker({
               disabled,
               className: cn(
                 "region-map-region-btn",
-                "max-[40rem]:!px-1 max-[40rem]:!py-0.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-sm max-[40rem]:!shadow-none",
-                "bg-surface/10 backdrop-blur-sm",
+                "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:!shadow-none max-[40rem]:min-h-11 max-[40rem]:min-w-11",
+                "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none max-[40rem]:bg-surface/90",
                 "enabled:hover:translate-x-[-50%] enabled:hover:translate-y-[-50%]",
                 "enabled:active:translate-x-[-50%] enabled:active:translate-y-[-50%]",
               ),
@@ -122,8 +123,8 @@ export default function RegionMapPicker({
             disabled,
             className: cn(
               "region-map-world-btn absolute bottom-[5%] left-1/2 min-w-32 -translate-x-1/2 max-[40rem]:min-w-0",
-              "max-[40rem]:!px-1 max-[40rem]:!py-0.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-sm max-[40rem]:!shadow-none",
-              "bg-surface/10 backdrop-blur-sm",
+              "max-[40rem]:!px-2 max-[40rem]:!py-1.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-md max-[40rem]:!shadow-none max-[40rem]:min-h-11 max-[40rem]:min-w-11",
+              "bg-surface/10 backdrop-blur-sm max-[40rem]:backdrop-blur-none max-[40rem]:bg-surface/90",
               "enabled:hover:-translate-x-1/2 enabled:active:-translate-x-1/2",
             ),
           })}
@@ -132,6 +133,7 @@ export default function RegionMapPicker({
         >
           World
         </button>
+        </div>
       </div>
     </div>
   );
