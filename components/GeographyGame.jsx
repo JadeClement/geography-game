@@ -11,6 +11,7 @@ import IdlePromptModal from "@/components/IdlePromptModal";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
+import PronunciationButton from "@/components/PronunciationButton";
 import SoundVolumeButton from "@/components/SoundVolumeButton";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS } from "@/lib/constants";
@@ -56,6 +57,7 @@ import {
 } from "@/lib/regions";
 import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
 import { playCorrectSound, playIncorrectSound } from "@/lib/sounds";
+import { playCountryPronunciation } from "@/lib/pronunciation";
 import { formatElapsedTime } from "@/lib/time";
 import {
   answerInput,
@@ -90,6 +92,7 @@ import {
   modalTitle,
   primaryBtn,
   promptFeedback,
+  promptWithPronunciation,
   scoreboard,
   scoreCorrect,
   scoreIncorrect,
@@ -109,6 +112,21 @@ import { useSession } from "next-auth/react";
 
 // Number of countries in a "Go" quick-review session.
 const GO_SESSION_SIZE = 10;
+
+function CountryPromptLabel({ text, iso3, toneClassName }) {
+  if (!text) return null;
+
+  if (!iso3) {
+    return toneClassName ? <span className={toneClassName}>{text}</span> : text;
+  }
+
+  return (
+    <span className={promptWithPronunciation}>
+      <span className={toneClassName}>{text}</span>
+      <PronunciationButton iso3={iso3} label={text} inline />
+    </span>
+  );
+}
 
 // A country counts as already mastered for a level if it is effectively
 // graduated at that level or at a proving level (the mastery API applies decay).
@@ -1234,6 +1252,7 @@ export default function GeographyGame() {
       if (isFindFlagsGame) {
         setFlagsClickHeader({
           name: clicked.name,
+          iso3: clicked.iso3,
           tone: isCorrectCountry(clicked, target) ? "correct" : "wrong",
         });
       }
@@ -1321,11 +1340,19 @@ export default function GeographyGame() {
       setHighlightCountryId(null);
       setFlashSmallCountryId(null);
       setFeedback({ text: "", type: "" });
+
+      if (
+        clicked.iso3 &&
+        (session?.mode === GAME_MODES.COUNTRIES || session?.mode === GAME_MODES.FLAGS)
+      ) {
+        playCountryPronunciation(clicked.iso3);
+      }
     },
     [
       activeCountries,
       addFilledCountry,
       gamePausedRef,
+      session?.mode,
       setFeedback,
       setFlashSmallCountryId,
       setHighlightCountryId,
@@ -1500,11 +1527,21 @@ export default function GeographyGame() {
           ? { label: "Incorrect", tone: "error" }
           : null;
 
+  const showTargetPronunciation =
+    session?.mode === GAME_MODES.COUNTRIES &&
+    targetCountry?.iso3 &&
+    promptText === targetCountry.name;
+
   const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => (
     <div className={promptFeedback({ wrong: promptWrong, className })}>
       {isDiscoverGame ? (
         isFlagsMode && targetCountry?.iso2 && showFlagInPrompt ? (
           <FlagPrompt iso2={targetCountry.iso2} size="card" className="mx-auto" />
+        ) : showTargetPronunciation ? (
+          <CountryPromptLabel
+            text={promptText}
+            iso3={targetCountry.iso3}
+          />
         ) : (
           promptText
         )
@@ -1547,17 +1584,19 @@ export default function GeographyGame() {
         </div>
       ) : isFindFlagsGame ? (
         flagsClickHeader ? (
-          <span
-            className={
+          <CountryPromptLabel
+            text={flagsClickHeader.name}
+            iso3={flagsClickHeader.iso3}
+            toneClassName={
               flagsClickHeader.tone === "correct" ? "prompt-correct" : "prompt-wrong"
             }
-          >
-            {flagsClickHeader.name}
-          </span>
+          />
         ) : null
       ) : showFlagInPrompt && showFlagPrompt ? (
         <FlagPrompt iso2={targetCountry.iso2} size="card" className="mx-auto" />
-      ) : isFlagsMode ? null : (
+      ) : isFlagsMode ? null : showTargetPronunciation ? (
+        <CountryPromptLabel text={promptText} iso3={targetCountry.iso3} />
+      ) : (
         promptText
       )}
     </div>
