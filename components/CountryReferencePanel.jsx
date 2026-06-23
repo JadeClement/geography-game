@@ -46,6 +46,7 @@ export default function CountryReferencePanel({
   revealMode,
   open,
   onToggle,
+  embedded = false,
 }) {
   const visibility = getReferenceVisibility({ mode, level, revealMode });
   const rows = buildReferenceRows(country, visibility);
@@ -56,6 +57,53 @@ export default function CountryReferencePanel({
   );
 
   const shortcutLabel = isMac ? "Command+I" : "Control+I";
+
+  const bodyContent = (
+    <>
+      {rows.length === 0 ? (
+        <p className={countryReferenceEmpty}>No reference details available.</p>
+      ) : (
+        <dl className={countryReferenceList}>
+          {rows.map((row) => (
+            <div key={row.id} className={countryReferenceRow}>
+              <dt className={countryReferenceLabel}>{row.label}</dt>
+              <dd className={countryReferenceValue}>
+                {row.type === "flag" ? (
+                  <FlagPrompt iso2={row.value} size="card" className={countryReferenceFlag} />
+                ) : (
+                  row.value
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {showHiddenNote && (
+        <p className={countryReferenceNote}>Some details hidden while you&apos;re guessing.</p>
+      )}
+
+      {facts.length > 0 && (
+        <section className={countryReferenceFacts}>
+          <h3 className={countryReferenceFactsTitle}>Did you know?</h3>
+          <ul className={countryReferenceFactsList}>
+            {facts.map((fact, index) => (
+              <li key={`${fact.category}-${index}`} className={countryReferenceFact}>
+                <span className={countryFactBadge(fact.category)}>
+                  {FACT_CATEGORY_LABELS[fact.category] ?? fact.category}
+                </span>
+                <span className={countryReferenceFactText}>{fact.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return bodyContent;
+  }
 
   return (
     <aside
@@ -88,44 +136,7 @@ export default function CountryReferencePanel({
       </div>
 
       <div id="country-reference-panel-body" className={mapSidePanelBody({ open })}>
-        {rows.length === 0 ? (
-          <p className={countryReferenceEmpty}>No reference details available.</p>
-        ) : (
-          <dl className={countryReferenceList}>
-            {rows.map((row) => (
-              <div key={row.id} className={countryReferenceRow}>
-                <dt className={countryReferenceLabel}>{row.label}</dt>
-                <dd className={countryReferenceValue}>
-                  {row.type === "flag" ? (
-                    <FlagPrompt iso2={row.value} size="card" className={countryReferenceFlag} />
-                  ) : (
-                    row.value
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-
-        {showHiddenNote && (
-          <p className={countryReferenceNote}>Some details hidden while you&apos;re guessing.</p>
-        )}
-
-        {facts.length > 0 && (
-          <section className={countryReferenceFacts}>
-            <h3 className={countryReferenceFactsTitle}>Did you know?</h3>
-            <ul className={countryReferenceFactsList}>
-              {facts.map((fact, index) => (
-                <li key={`${fact.category}-${index}`} className={countryReferenceFact}>
-                  <span className={countryFactBadge(fact.category)}>
-                    {FACT_CATEGORY_LABELS[fact.category] ?? fact.category}
-                  </span>
-                  <span className={countryReferenceFactText}>{fact.text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {bodyContent}
       </div>
     </aside>
   );

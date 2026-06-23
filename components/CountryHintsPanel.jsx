@@ -39,7 +39,7 @@ function isEditableTarget(target) {
   return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
 }
 
-export default function CountryHintsPanel({ country, allCountries, open, onToggle }) {
+export default function CountryHintsPanel({ country, allCountries, open, onToggle, embedded = false }) {
   const [revealedCount, setRevealedCount] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
 
@@ -85,6 +85,90 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
   const allRevealed = revealedCount >= adjacentNames.length;
   const hasNeighbors = adjacentNames.length > 0;
 
+  const bodyContent = (
+    <>
+      <section>
+        <div className={countryHintHeader}>
+          <h3 className={countryHintTitle}>Adjacent countries</h3>
+          {hasNeighbors && !allRevealed && (
+            <kbd className={cn(mapSidePanelShortcut, "max-md:hidden")} aria-hidden="true">
+              Space
+            </kbd>
+          )}
+        </div>
+
+        {!hasNeighbors ? (
+          <p className={countryHintEmpty}>No land neighbors for this country.</p>
+        ) : (
+          <>
+            <ul className={countryHintList}>
+              {adjacentNames.map((name, index) => {
+                const revealed = index < revealedCount;
+                return (
+                  <li key={name} className={countryHintItem({ revealed })}>
+                    {revealed ? name : "???"}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className={countryHintNote}>
+              {allRevealed
+                ? `${adjacentNames.length} ${adjacentNames.length === 1 ? "neighbor" : "neighbors"} revealed.`
+                : embedded
+                  ? "Tap below to reveal the next neighbor."
+                  : "Press Space to reveal the next neighbor."}
+            </p>
+            {embedded && hasNeighbors && !allRevealed && (
+              <button
+                type="button"
+                className={countryFactNext}
+                onClick={() =>
+                  setRevealedCount((count) => Math.min(count + 1, adjacentNames.length))
+                }
+              >
+                Reveal next →
+              </button>
+            )}
+          </>
+        )}
+      </section>
+
+      {hasFacts && (
+        <section className={countryHintFacts}>
+          <div className={countryHintHeader}>
+            <h3 className={countryHintTitle}>Facts</h3>
+            {facts.length > 1 && (
+              <span className={countryHintCount}>
+                {(factIndex % facts.length) + 1} / {facts.length}
+              </span>
+            )}
+          </div>
+
+          <div className={countryFact}>
+            <span className={countryFactBadge(activeFact.category)}>
+              {FACT_CATEGORY_LABELS[activeFact.category] ?? activeFact.category}
+            </span>
+            <p className={countryFactText}>{activeFact.text}</p>
+          </div>
+
+          {facts.length > 1 && (
+            <button
+              type="button"
+              className={countryFactNext}
+              onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
+            >
+              Next fact →
+            </button>
+          )}
+        </section>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return bodyContent;
+  }
+
   return (
     <aside
       id="country-hints-panel"
@@ -109,68 +193,7 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
       </div>
 
       <div id="country-hints-panel-body" className={mapSidePanelBody({ open })}>
-        <section>
-          <div className={countryHintHeader}>
-            <h3 className={countryHintTitle}>Adjacent countries</h3>
-            {hasNeighbors && !allRevealed && (
-              <kbd className={cn(mapSidePanelShortcut, "max-md:hidden")} aria-hidden="true">
-                Space
-              </kbd>
-            )}
-          </div>
-
-          {!hasNeighbors ? (
-            <p className={countryHintEmpty}>No land neighbors for this country.</p>
-          ) : (
-            <>
-              <ul className={countryHintList}>
-                {adjacentNames.map((name, index) => {
-                  const revealed = index < revealedCount;
-                  return (
-                    <li key={name} className={countryHintItem({ revealed })}>
-                      {revealed ? name : "???"}
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className={countryHintNote}>
-                {allRevealed
-                  ? `${adjacentNames.length} ${adjacentNames.length === 1 ? "neighbor" : "neighbors"} revealed.`
-                  : "Press Space to reveal the next neighbor."}
-              </p>
-            </>
-          )}
-        </section>
-
-        {hasFacts && (
-          <section className={countryHintFacts}>
-            <div className={countryHintHeader}>
-              <h3 className={countryHintTitle}>Facts</h3>
-              {facts.length > 1 && (
-                <span className={countryHintCount}>
-                  {(factIndex % facts.length) + 1} / {facts.length}
-                </span>
-              )}
-            </div>
-
-            <div className={countryFact}>
-              <span className={countryFactBadge(activeFact.category)}>
-                {FACT_CATEGORY_LABELS[activeFact.category] ?? activeFact.category}
-              </span>
-              <p className={countryFactText}>{activeFact.text}</p>
-            </div>
-
-            {facts.length > 1 && (
-              <button
-                type="button"
-                className={countryFactNext}
-                onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
-              >
-                Next fact →
-              </button>
-            )}
-          </section>
-        )}
+        {bodyContent}
       </div>
     </aside>
   );

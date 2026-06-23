@@ -519,20 +519,20 @@
   z-index: 2;
 }
 
-.choice-btn.region-map-region-btn,
-.choice-btn.region-map-world-btn {
+.region-map-region-btn,
+.region-map-world-btn {
   background: color-mix(in srgb, var(--color-bg-surface) 10%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-.choice-btn.region-map-region-btn:hover:not(:disabled),
-.choice-btn.region-map-region-btn:active:not(:disabled) {
+.region-map-region-btn:hover:not(:disabled),
+.region-map-region-btn:active:not(:disabled) {
   transform: translate(-50%, -50%);
 }
 
-.choice-btn.region-map-world-btn:hover:not(:disabled),
-.choice-btn.region-map-world-btn:active:not(:disabled) {
+.region-map-world-btn:hover:not(:disabled),
+.region-map-world-btn:active:not(:disabled) {
   transform: translateX(-50%);
 }
 
@@ -583,6 +583,15 @@
   .region-map-region-btn-label--short {
     display: inline;
   }
+
+  .region-map-region-btn,
+  .region-map-world-btn {
+    padding: 0.125rem 0.3rem !important;
+    font-size: 0.6875rem !important;
+    line-height: 1.1 !important;
+    border-radius: 0.25rem;
+    box-shadow: none;
+  }
 }
 
 .mapboxgl-canvas {
@@ -591,23 +600,68 @@
 
 @media (max-width: 48rem) {
   .spinning-globe {
-    width: min(118vw, 26rem);
-    height: min(118vw, 26rem);
+    width: min(88vw, 20rem);
+    height: min(88vw, 20rem);
   }
 
   .start-screen--with-globe .spinning-globe {
-    top: 38%;
+    top: clamp(5rem, 18vw, 6.5rem);
+    transform: translate(-50%, 0);
+  }
+
+  .start-globe-spacer {
+    min-height: min(48vw, 10.5rem);
+  }
+
+  .start-home-actions {
+    margin-top: 0.5rem;
   }
 }
 
 @media (max-width: 30rem) {
   .spinning-globe {
-    width: min(112vw, 20rem);
-    height: min(112vw, 20rem);
+    width: min(82vw, 15.5rem);
+    height: min(82vw, 15.5rem);
   }
 
   .start-screen--with-globe .spinning-globe {
-    top: 36%;
+    top: clamp(4.5rem, 15vw, 5.75rem);
+    transform: translate(-50%, 0);
+  }
+
+  .start-globe-spacer {
+    min-height: min(52vw, 11.5rem);
+  }
+
+  .start-home-actions {
+    margin-top: 0.75rem;
+  }
+
+  .start-title-globe {
+    font-size: clamp(3.25rem, 20vw, 6rem);
+  }
+}
+
+@media (max-width: 30rem) and (max-height: 45rem) {
+  .spinning-globe {
+    width: min(76vw, 14rem);
+    height: min(76vw, 14rem);
+  }
+
+  .start-screen--with-globe .spinning-globe {
+    top: clamp(4.25rem, 14vw, 5.25rem);
+  }
+
+  .start-globe-spacer {
+    min-height: min(46vw, 9.5rem);
+  }
+
+  .start-home-actions {
+    margin-top: 0.5rem;
+  }
+
+  .start-title-globe {
+    font-size: clamp(2.75rem, 18vw, 5rem);
   }
 }
 

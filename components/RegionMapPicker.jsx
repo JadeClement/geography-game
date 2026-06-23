@@ -93,6 +93,7 @@ export default function RegionMapPicker({
               disabled,
               className: cn(
                 "region-map-region-btn",
+                "max-[40rem]:!px-1 max-[40rem]:!py-0.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-sm max-[40rem]:!shadow-none",
                 "bg-surface/10 backdrop-blur-sm",
                 "enabled:hover:translate-x-[-50%] enabled:hover:translate-y-[-50%]",
                 "enabled:active:translate-x-[-50%] enabled:active:translate-y-[-50%]",
@@ -120,7 +121,8 @@ export default function RegionMapPicker({
             selected: selectedRegion === "world",
             disabled,
             className: cn(
-              "region-map-world-btn absolute bottom-[5%] left-1/2 min-w-32 -translate-x-1/2",
+              "region-map-world-btn absolute bottom-[5%] left-1/2 min-w-32 -translate-x-1/2 max-[40rem]:min-w-0",
+              "max-[40rem]:!px-1 max-[40rem]:!py-0.5 max-[40rem]:!text-[0.6875rem] max-[40rem]:!leading-tight max-[40rem]:rounded-sm max-[40rem]:!shadow-none",
               "bg-surface/10 backdrop-blur-sm",
               "enabled:hover:-translate-x-1/2 enabled:active:-translate-x-1/2",
             ),

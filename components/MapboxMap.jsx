@@ -17,6 +17,7 @@ import {
 } from "@/lib/geometry";
 import { GAME_LEVELS, isProgressiveFillLevel } from "@/lib/levels";
 import { THEMES } from "@/lib/theme";
+import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
   [THEMES.LIGHT]: {
@@ -38,6 +39,46 @@ const MAP_THEME_COLORS = {
     levelBorder: "#e2e8f0",
   },
 };
+
+function getMapProjection() {
+  return isMobileViewport() ? "globe" : "naturalEarth";
+}
+
+function configureGlobeAtmosphere(map, theme) {
+  if (typeof map.setFog !== "function") return;
+
+  if (theme === THEMES.LIGHT) {
+    map.setFog({
+      color: "rgb(186, 210, 235)",
+      "high-color": "rgb(36, 92, 223)",
+      "horizon-blend": 0.02,
+      "space-color": "rgb(186, 210, 235)",
+      "star-intensity": 0,
+    });
+    return;
+  }
+
+  map.setFog({
+    color: "rgb(186, 210, 235)",
+    "high-color": "rgb(36, 92, 223)",
+    "horizon-blend": 0.02,
+    "space-color": "rgb(11, 11, 25)",
+    "star-intensity": 0.35,
+  });
+}
+
+function applyMapProjection(map, theme) {
+  const useGlobe = isMobileViewport();
+  map.setProjection(useGlobe ? "globe" : "naturalEarth");
+  if (useGlobe) {
+    configureGlobeAtmosphere(map, theme);
+  }
+}
+
+function configureMobileGlobeControls(map) {
+  map.touchZoomRotate.enable();
+  map.dragPan.enable();
+}
 
 function getMapThemeColors(theme) {
   return MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
@@ -440,15 +481,19 @@ export default function MapboxMap({
       mapView?.type === "camera" ? mapView.center : [10, 20];
     const initialZoom = mapView?.type === "camera" ? mapView.zoom : 1.2;
 
+    const useGlobe = isMobileViewport();
+
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
       center: initialCenter,
       zoom: initialZoom,
-      projection: "naturalEarth",
+      projection: getMapProjection(),
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
+    if (!useGlobe) {
+      map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
+    }
     mapRef.current = map;
 
     const handleClick = (event) => {
@@ -489,6 +534,10 @@ export default function MapboxMap({
 
     map.on("load", () => {
       configureBaseStyle(map, theme);
+      if (useGlobe) {
+        configureGlobeAtmosphere(map, theme);
+        configureMobileGlobeControls(map);
+      }
       addCountryLayers(map, geojson, inactiveGeojson, mapColors, level);
 
       if (smallCountriesGeojson?.features?.length) {
@@ -516,7 +565,18 @@ export default function MapboxMap({
 
     window.addEventListener("resize", handleResize);
 
+    const mobileMediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const handleProjectionChange = () => {
+      if (!mapRef.current) return;
+      applyMapProjection(mapRef.current, theme);
+      mapRef.current.once("idle", () => {
+        updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current);
+      });
+    };
+    mobileMediaQuery.addEventListener("change", handleProjectionChange);
+
     return () => {
+      mobileMediaQuery.removeEventListener("change", handleProjectionChange);
       window.removeEventListener("resize", handleResize);
       map.off("zoom", handleViewChangeForCircles);
       map.off("moveend", handleViewChangeForCircles);

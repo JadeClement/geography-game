@@ -32,9 +32,11 @@ import {
   secondaryBtn,
   startBrandSubtitle,
   startGameTypeList,
+  startGlobeSpacer,
   startHeroTitleGroup,
   startHomeActions,
   startLevelList,
+  startLevelBtn,
   startLevelSection,
   startLevelSectionDesc,
   startLevelSectionHeader,
@@ -489,6 +491,8 @@ export default function StartScreen({ onStart, disabled, countries = [] }) {
           <h1 className={startTitleGlobe}>Worldly</h1>
           <p className={cn(startSubtitle, startBrandSubtitle)}>learning geography</p>
         </div>
+
+        <div className={startGlobeSpacer} aria-hidden="true" />
 
         <div className={startHomeActions}>
           <button

@@ -3,8 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
-import CountryReferencePanel from "@/components/CountryReferencePanel";
-import CountryHintsPanel from "@/components/CountryHintsPanel";
+import MapCountryInfoPanels from "@/components/MapCountryInfoPanels";
 import FlagPrompt from "@/components/FlagPrompt";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import IdlePromptModal from "@/components/IdlePromptModal";
@@ -27,6 +26,7 @@ import {
   shuffleCountries,
 } from "@/lib/countries";
 import { getSpellingSuggestion } from "@/lib/spelling";
+import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
 import { getMapViewForRegion, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES } from "@/lib/gameTypes";
@@ -66,6 +66,7 @@ import {
   gameHeaderCenter,
   gameHeaderLeft,
   gameHeaderRight,
+  gameHeaderStats,
   gameMeta,
   gameMetaTag,
   gameProgress,
@@ -73,7 +74,6 @@ import {
   gameShell,
   gameTimer,
   mapPauseOverlay,
-  mapSidePanels,
   mapStage,
   modalActions,
   modalCard,
@@ -130,6 +130,37 @@ export default function GeographyGame() {
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [referencePanelOpen, setReferencePanelOpen] = useState(false);
   const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
+
+  const closeInfoPanels = useCallback(() => {
+    setReferencePanelOpen(false);
+    setHintsPanelOpen(false);
+  }, []);
+
+  const openReferencePanel = useCallback(() => {
+    setHintsPanelOpen(false);
+    setReferencePanelOpen(true);
+  }, []);
+
+  const openHintsPanel = useCallback(() => {
+    setReferencePanelOpen(false);
+    setHintsPanelOpen(true);
+  }, []);
+
+  const toggleReferencePanel = useCallback(() => {
+    setReferencePanelOpen((open) => {
+      if (open) return false;
+      setHintsPanelOpen(false);
+      return true;
+    });
+  }, []);
+
+  const toggleHintsPanel = useCallback(() => {
+    setHintsPanelOpen((open) => {
+      if (open) return false;
+      setReferencePanelOpen(false);
+      return true;
+    });
+  }, []);
   const [gamePaused, setGamePaused] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
   // Snapshot of mastery before/after the just-finished game, used to detect
@@ -352,7 +383,7 @@ export default function GeographyGame() {
 
       if (isReferenceShortcut) {
         event.preventDefault();
-        setReferencePanelOpen((open) => !open);
+        toggleReferencePanel();
       }
     };
 
@@ -364,6 +395,7 @@ export default function GeographyGame() {
     hintsPanelOpen,
     referencePanelOpen,
     targetCountry,
+    toggleReferencePanel,
   ]);
 
   const preCreditedCount = session?.preCreditedCount ?? 0;
@@ -648,6 +680,7 @@ export default function GeographyGame() {
       setAnswerInput("");
       setSpellingSuggestion(null);
       setReferencePanelOpen(getReferencePanelDefaultOpen());
+      setHintsPanelOpen(false);
       updateShowColorForRound(first, level, mode);
 
       if (isNameLevel(level)) {
@@ -1383,7 +1416,7 @@ export default function GeographyGame() {
                 <div className={gameHeaderActions}>
                   <span className={gameTimer}>{formatElapsedTime(elapsedMs)}</span>
                   <div
-                    className={gameProgress}
+                    className={cn(gameProgress, "max-md:hidden")}
                     role="progressbar"
                     aria-valuenow={queuePosition}
                     aria-valuemin={0}
@@ -1427,13 +1460,38 @@ export default function GeographyGame() {
                   </div>
                 </div>
               )}
-              <div className={scoreboard}>
-                <span className={scoreCorrect}>
-                  correct: {displayedCorrect}/{totalRounds}
-                </span>
-                <span className={scoreIncorrect}>
-                  incorrect: {wrongCount}/{totalRounds}
-                </span>
+              <div className={gameHeaderStats}>
+                <div className={scoreboard}>
+                  <span className={scoreCorrect}>
+                    <span className="max-md:hidden">correct: </span>
+                    <span className="md:hidden" aria-hidden="true">
+                      ✓{" "}
+                    </span>
+                    {displayedCorrect}/{totalRounds}
+                  </span>
+                  <span className={scoreIncorrect}>
+                    <span className="max-md:hidden">incorrect: </span>
+                    <span className="md:hidden" aria-hidden="true">
+                      ✗{" "}
+                    </span>
+                    {wrongCount}/{totalRounds}
+                  </span>
+                </div>
+                {!gameComplete && (
+                  <div
+                    className={cn(gameProgress, "md:hidden")}
+                    role="progressbar"
+                    aria-valuenow={queuePosition}
+                    aria-valuemin={0}
+                    aria-valuemax={totalRounds}
+                    aria-label={`Game progress: ${queuePosition} of ${totalRounds}`}
+                  >
+                    <div
+                      className={gameProgressFill}
+                      style={{ width: `${queueProgress * 100}%` }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </header>
@@ -1487,22 +1545,20 @@ export default function GeographyGame() {
                 </div>
               )}
               {targetCountry && (
-                <div className={mapSidePanels}>
-                  <CountryReferencePanel
-                    country={targetCountry}
-                    mode={session.mode}
-                    level={session.level}
-                    revealMode={revealMode}
-                    open={referencePanelOpen}
-                    onToggle={() => setReferencePanelOpen((isOpen) => !isOpen)}
-                  />
-                  <CountryHintsPanel
-                    country={targetCountry}
-                    allCountries={allCountries}
-                    open={hintsPanelOpen}
-                    onToggle={() => setHintsPanelOpen((isOpen) => !isOpen)}
-                  />
-                </div>
+                <MapCountryInfoPanels
+                  country={targetCountry}
+                  allCountries={allCountries}
+                  mode={session.mode}
+                  level={session.level}
+                  revealMode={revealMode}
+                  referenceOpen={referencePanelOpen}
+                  hintsOpen={hintsPanelOpen}
+                  onReferenceToggle={toggleReferencePanel}
+                  onHintsToggle={toggleHintsPanel}
+                  onCloseAll={closeInfoPanels}
+                  onOpenReference={openReferencePanel}
+                  onOpenHints={openHintsPanel}
+                />
               )}
               <MapFeedback text={feedback.text} type={feedback.type} />
             </div>
