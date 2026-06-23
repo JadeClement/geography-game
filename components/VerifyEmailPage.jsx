@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import AppHeader from "@/components/AppHeader";
 import ValidationMessage from "@/components/ui/ValidationMessage";
@@ -27,6 +27,7 @@ function VerifyEmailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const verifyStartedRef = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -34,6 +35,11 @@ function VerifyEmailContent() {
       setError("Verification link is missing or invalid.");
       return;
     }
+
+    if (verifyStartedRef.current) {
+      return;
+    }
+    verifyStartedRef.current = true;
 
     let cancelled = false;
 

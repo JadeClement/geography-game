@@ -1,11 +1,12 @@
-import { Sail } from "next/font/google";
+import { Averia_Libre } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
-const brandFont = Sail({
-  weight: "400",
+const brandFont = Averia_Libre({
+  weight: ["300", "400", "700"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
   variable: "--font-brand",
 });

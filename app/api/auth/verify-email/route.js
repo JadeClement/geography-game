@@ -1,5 +1,6 @@
 import {
   TOKEN_TYPES,
+  findAuthToken,
   findValidAuthToken,
   markAuthTokenUsed,
   markEmailVerified,
@@ -20,6 +21,13 @@ export async function POST(request) {
     });
 
     if (!authToken) {
+      const usedToken = await findAuthToken({
+        rawToken: token,
+        type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      });
+      if (usedToken?.emailVerifiedAt) {
+        return Response.json({ message: "Email is already verified." });
+      }
       return Response.json(
         { error: "This verification link is invalid or has expired." },
         { status: 400 }

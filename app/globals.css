@@ -419,6 +419,7 @@
 
 /* ===== Home hero theme-specific text shadows ===== */
 .start-title-globe {
+  color: #f8fafc;
   text-shadow:
     0 2px 16px rgba(2, 6, 23, 0.95),
     0 0 40px rgba(2, 6, 23, 0.75);
