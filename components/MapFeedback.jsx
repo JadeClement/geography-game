@@ -50,11 +50,13 @@ function FeedbackIcon({ type }) {
 export default function MapFeedback({ text, type }) {
   if (!text) return null;
 
+  const isAssertive = type === "wrong" || type === "reveal";
+
   return (
     <div
       className={mapFeedback({ type })}
       role="status"
-      aria-live="polite"
+      aria-live={isAssertive ? "assertive" : "polite"}
       key={`${type}-${text}`}
     >
       <FeedbackIcon type={type} />

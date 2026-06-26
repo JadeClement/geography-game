@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import {
   modalActions,
   modalCard,
@@ -10,11 +12,14 @@ import {
 } from "@/lib/ui";
 
 export default function IdlePromptModal({ open, onContinue }) {
+  const dialogRef = useFocusTrap(open);
+
   if (!open) return null;
 
   return (
     <div className={modalOverlay}>
       <div
+        ref={dialogRef}
         className={modalCard}
         role="dialog"
         aria-modal="true"

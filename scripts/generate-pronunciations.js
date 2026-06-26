@@ -2,7 +2,7 @@
  * Generate country name pronunciation MP3s via AWS Polly.
  *
  * Reads data/countries.json and writes:
- *   public/audio/pronunciation/{iso3}.mp3   (ISO3 country code, lowercase)
+ *   public/audio/{outputDir}/{iso3}.mp3   (ISO3 country code, lowercase)
  *
  * Required env (e.g. in .env):
  *   AWS_ACCESS_KEY_ID
@@ -12,10 +12,12 @@
  * Optional env:
  *   POLLY_VOICE             (default: Joanna)
  *   POLLY_ENGINE            (default: neural — falls back to standard if unsupported)
+ *   POLLY_OUTPUT_DIR        (default: pronunciation)
  *
  * Usage:
  *   npm run generate-pronunciations
  *   npm run generate-pronunciations -- --force
+ *   npm run generate-pronunciations -- --output-dir pronunciation2
  *   npm run generate-pronunciations -- --country USA
  *   npm run generate-pronunciations -- --all
  *   npm run generate-pronunciations -- --limit 5
@@ -30,7 +32,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const countriesPath = join(root, "data/countries.json");
-const outputDir = join(root, "public/audio/pronunciation");
+const DEFAULT_OUTPUT_DIR = "pronunciation";
 
 const DEFAULT_REGION = "us-east-1";
 const DEFAULT_VOICE = "Joanna";
@@ -43,6 +45,7 @@ function parseArgs(argv) {
     all: false,
     limit: null,
     country: null,
+    outputDir: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -63,10 +66,23 @@ function parseArgs(argv) {
     if (arg === "--country") {
       options.country = String(argv[i + 1] ?? "").toUpperCase();
       i += 1;
+      continue;
+    }
+    if (arg === "--output-dir") {
+      options.outputDir = String(argv[i + 1] ?? "").trim();
+      i += 1;
     }
   }
 
   return options;
+}
+
+function resolveOutputDir(options) {
+  const folder = options.outputDir || process.env.POLLY_OUTPUT_DIR || DEFAULT_OUTPUT_DIR;
+  if (!folder || folder.includes("/") || folder.includes("..")) {
+    throw new Error(`Invalid output directory: ${folder}`);
+  }
+  return join(root, "public/audio", folder);
 }
 
 function sleep(ms) {
@@ -147,6 +163,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const { client, voiceId, engine } = getPollyConfig();
   const countries = loadCountries(options);
+  const outputDir = resolveOutputDir(options);
 
   if (options.limit != null && Number.isFinite(options.limit) && options.limit > 0) {
     countries.splice(options.limit);

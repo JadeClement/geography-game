@@ -14,9 +14,18 @@ import {
 import {
   CIRCLE_CLICK_RADIUS_PX,
   MIN_CLICK_TARGET_PX,
+  SMALL_COUNTRY_FLASH_RADIUS_PX,
+  TUTORIAL_CIRCLE_RADIUS_PX,
+  TUTORIAL_CIRCLE_STROKE_COLOR,
+  TUTORIAL_CIRCLE_STROKE_WIDTH,
 } from "@/lib/geometry";
 import { GAME_LEVELS, isProgressiveFillLevel } from "@/lib/levels";
 import { THEMES } from "@/lib/theme";
+import { getCountryClickExpandEnabled } from "@/lib/countryClickExpandPrefs";
+import {
+  addCountryClickExpandLayers,
+  playMapCountryClickExpand,
+} from "@/lib/mapCountryClickExpand";
 import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
@@ -127,7 +136,7 @@ function getScreenSizePx(map, { minLng, minLat, maxLng, maxLat }) {
   return Math.max(Math.abs(se.x - nw.x), Math.abs(se.y - nw.y));
 }
 
-function updateSmallCountryCircles(map, smallCountriesGeojson) {
+function updateSmallCountryCircles(map, smallCountriesGeojson, { forceShow = false } = {}) {
   if (!map.getSource("small-countries") || !smallCountriesGeojson?.features?.length) {
     return;
   }
@@ -135,16 +144,52 @@ function updateSmallCountryCircles(map, smallCountriesGeojson) {
   for (const feature of smallCountriesGeojson.features) {
     const { id, minLng, minLat, maxLng, maxLat } = feature.properties;
     const screenSize = getScreenSizePx(map, { minLng, minLat, maxLng, maxLat });
-    const show = screenSize < MIN_CLICK_TARGET_PX;
+    const show = forceShow || screenSize < MIN_CLICK_TARGET_PX;
 
     map.setFeatureState(
       { source: "small-countries", id },
       {
         opacity: show ? 1 : 0,
-        radius: show ? CIRCLE_CLICK_RADIUS_PX : 0,
+        radius: show
+          ? forceShow
+            ? TUTORIAL_CIRCLE_RADIUS_PX
+            : CIRCLE_CLICK_RADIUS_PX
+          : 0,
       }
     );
   }
+}
+
+function applySmallCountryCirclePaintMode(
+  map,
+  { forceShow, level, strokeColor, landColor }
+) {
+  if (!map.getLayer("small-country-circles")) return;
+
+  if (forceShow) {
+    map.setPaintProperty("small-country-circles", "circle-radius", TUTORIAL_CIRCLE_RADIUS_PX);
+    map.setPaintProperty("small-country-circles", "circle-stroke-opacity", 1);
+    map.setPaintProperty("small-country-circles", "circle-stroke-width", TUTORIAL_CIRCLE_STROKE_WIDTH);
+    map.setPaintProperty("small-country-circles", "circle-stroke-color", TUTORIAL_CIRCLE_STROKE_COLOR);
+    return;
+  }
+
+  map.setPaintProperty("small-country-circles", "circle-radius", [
+    "coalesce",
+    ["feature-state", "radius"],
+    0,
+  ]);
+  map.setPaintProperty("small-country-circles", "circle-stroke-opacity", [
+    "coalesce",
+    ["feature-state", "opacity"],
+    0,
+  ]);
+  map.setPaintProperty("small-country-circles", "circle-stroke-width", 2);
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-stroke-color",
+    getSmallCircleStrokeColorExpression(level, strokeColor, landColor)
+  );
 }
 
 function isCircleClickTarget(map, circleFeature) {
@@ -209,15 +254,12 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
       type: "circle",
       source: "small-countries",
       paint: {
-        "circle-radius": [
-          "+",
-          ["coalesce", ["feature-state", "radius"], 0],
-          1,
-        ],
-        "circle-color": "transparent",
-        "circle-stroke-color": "#ef4444",
+        "circle-radius": SMALL_COUNTRY_FLASH_RADIUS_PX,
+        "circle-color": WRONG_COUNTRY_COLOR,
+        "circle-opacity": 0,
+        "circle-stroke-color": WRONG_COUNTRY_COLOR,
         "circle-stroke-width": 3,
-        "circle-stroke-opacity": 0.9,
+        "circle-stroke-opacity": 0,
       },
       filter: ["==", ["get", "id"], ""],
     });
@@ -449,20 +491,26 @@ export default function MapboxMap({
   highlightCountryId,
   flashSmallCountryId,
   mapView,
+  forceShowSmallCountryCircles = false,
   onCountryClick,
+  onRegisterMapProject,
+  onMapViewChange,
 }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const fillFlashIntervalRef = useRef(null);
   const circleFlashIntervalRef = useRef(null);
+  const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
   const gameActiveRef = useRef(gameActive);
   const smallCountriesGeojsonRef = useRef(smallCountriesGeojson);
+  const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
 
   onCountryClickRef.current = onCountryClick;
   gameActiveRef.current = gameActive;
   smallCountriesGeojsonRef.current = smallCountriesGeojson;
+  forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
 
   useEffect(() => {
     if (!containerRef.current || !geojson) return;
@@ -507,7 +555,23 @@ export default function MapboxMap({
       const features = map.queryRenderedFeatures(event.point, { layers });
       if (features.length === 0) return;
 
-      onCountryClickRef.current(pickClickedFeature(map, features));
+      const feature = pickClickedFeature(map, features);
+      const countryId = feature.properties?.id ?? feature.id;
+
+      if (getCountryClickExpandEnabled() && countryId) {
+        if (expandCleanupRef.current) {
+          expandCleanupRef.current();
+          expandCleanupRef.current = null;
+        }
+        const isSmallCircle =
+          feature.layer?.id === "small-country-circles" &&
+          isCircleClickTarget(map, feature);
+        expandCleanupRef.current = playMapCountryClickExpand(map, countryId, {
+          isSmallCircle,
+        });
+      }
+
+      onCountryClickRef.current(feature);
     };
 
     const setCirclePointerCursor = (event) => {
@@ -524,13 +588,25 @@ export default function MapboxMap({
       map.getCanvas().style.cursor = "";
     };
 
+    const refreshSmallCountryCircles = () => {
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: forceShowSmallCountryCirclesRef.current,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+      });
+      updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
+        forceShow: forceShowSmallCountryCirclesRef.current,
+      });
+    };
+
     const handleResize = () => {
       map.resize();
-      updateSmallCountryCircles(map, smallCountriesGeojsonRef.current);
+      refreshSmallCountryCircles();
     };
 
     const handleViewChangeForCircles = () => {
-      updateSmallCountryCircles(map, smallCountriesGeojsonRef.current);
+      refreshSmallCountryCircles();
     };
 
     map.on("load", () => {
@@ -545,6 +621,8 @@ export default function MapboxMap({
         addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level, landColor);
       }
 
+      addCountryClickExpandLayers(map);
+
       map.on("zoom", handleViewChangeForCircles);
       map.on("moveend", handleViewChangeForCircles);
 
@@ -556,9 +634,9 @@ export default function MapboxMap({
 
       if (mapView) {
         applyMapView(map, mapView);
-        map.once("idle", handleViewChangeForCircles);
+        map.once("idle", refreshSmallCountryCircles);
       } else {
-        handleViewChangeForCircles();
+        refreshSmallCountryCircles();
       }
 
       map.resize();
@@ -571,7 +649,16 @@ export default function MapboxMap({
       if (!mapRef.current) return;
       applyMapProjection(mapRef.current, theme);
       mapRef.current.once("idle", () => {
-        updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current);
+        if (!mapRef.current) return;
+        applySmallCountryCirclePaintMode(mapRef.current, {
+          forceShow: forceShowSmallCountryCirclesRef.current,
+          level,
+          strokeColor: getMapThemeColors(theme).smallCountryStroke,
+          landColor: getActiveLandColor(theme),
+        });
+        updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current, {
+          forceShow: forceShowSmallCountryCirclesRef.current,
+        });
       });
     };
     mobileMediaQuery.addEventListener("change", handleProjectionChange);
@@ -586,6 +673,10 @@ export default function MapboxMap({
       }
       if (circleFlashIntervalRef.current) {
         clearInterval(circleFlashIntervalRef.current);
+      }
+      if (expandCleanupRef.current) {
+        expandCleanupRef.current();
+        expandCleanupRef.current = null;
       }
       map.remove();
       mapRef.current = null;
@@ -617,11 +708,12 @@ export default function MapboxMap({
     }
 
     if (map.getLayer("small-country-circles")) {
-      map.setPaintProperty(
-        "small-country-circles",
-        "circle-stroke-color",
-        getSmallCircleStrokeColorExpression(level, mapColors.smallCountryStroke, landColor)
-      );
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: forceShowSmallCountryCircles,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+      });
     }
 
     if (smallCountriesGeojson?.features?.length) {
@@ -633,15 +725,58 @@ export default function MapboxMap({
       });
     }
 
+    addCountryClickExpandLayers(map);
+
     if (mapView) {
       applyMapView(map, mapView);
       map.once("idle", () => {
-        updateSmallCountryCircles(map, smallCountriesGeojson);
+        applySmallCountryCirclePaintMode(map, {
+          forceShow: forceShowSmallCountryCircles,
+          level,
+          strokeColor: mapColors.smallCountryStroke,
+          landColor,
+        });
+        updateSmallCountryCircles(map, smallCountriesGeojson, {
+          forceShow: forceShowSmallCountryCircles,
+        });
       });
     } else {
-      updateSmallCountryCircles(map, smallCountriesGeojson);
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: forceShowSmallCountryCircles,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+      });
+      updateSmallCountryCircles(map, smallCountriesGeojson, {
+        forceShow: forceShowSmallCountryCircles,
+      });
     }
-  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level]);
+  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level, forceShowSmallCountryCircles]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getLayer("small-country-circles")) return;
+
+    const mapColors = getMapThemeColors(theme);
+    const landColor = getActiveLandColor(theme);
+
+    const refresh = () => {
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: forceShowSmallCountryCircles,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+      });
+      updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
+        forceShow: forceShowSmallCountryCircles,
+      });
+    };
+
+    refresh();
+    if (map.isStyleLoaded()) {
+      map.once("idle", refresh);
+    }
+  }, [forceShowSmallCountryCircles, level, theme]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -740,15 +875,15 @@ export default function MapboxMap({
     let visible = true;
     const updateFlashOpacity = () => {
       if (!mapRef.current?.getLayer("small-country-flash")) return;
-      const state = map.getFeatureState({
-        source: "small-countries",
-        id: flashSmallCountryId,
-      });
-      const show = (state?.opacity ?? 0) > 0;
+      map.setPaintProperty(
+        "small-country-flash",
+        "circle-opacity",
+        visible ? 0.42 : 0.1
+      );
       map.setPaintProperty(
         "small-country-flash",
         "circle-stroke-opacity",
-        show ? (visible ? 0.95 : 0.15) : 0
+        visible ? 1 : 0.35
       );
     };
 
@@ -770,6 +905,49 @@ export default function MapboxMap({
       }
     };
   }, [flashSmallCountryId, smallCountriesGeojson]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!map || !container || !onRegisterMapProject) return undefined;
+
+    const register = () => {
+      if (!map.getSource("countries")) return;
+
+      onRegisterMapProject((country) => {
+        const centroid = country.centroid;
+        if (!centroid) return null;
+        const [lng, lat] = centroid;
+        const point = map.project([lng, lat]);
+        return { x: point.x, y: point.y };
+      });
+    };
+
+    const handleViewChange = () => {
+      onMapViewChange?.();
+    };
+
+    const setup = () => {
+      register();
+      map.on("move", handleViewChange);
+      map.on("zoom", handleViewChange);
+      map.on("resize", handleViewChange);
+    };
+
+    if (map.isStyleLoaded()) {
+      setup();
+    } else {
+      map.once("load", setup);
+    }
+
+    return () => {
+      map.off("load", setup);
+      map.off("move", handleViewChange);
+      map.off("zoom", handleViewChange);
+      map.off("resize", handleViewChange);
+      onRegisterMapProject(null);
+    };
+  }, [geojson, onRegisterMapProject, onMapViewChange]);
 
   return <div ref={containerRef} className={mapContainer} />;
 }

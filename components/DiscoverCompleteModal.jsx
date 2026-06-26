@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import {
   discoverCompleteAction,
   discoverCompleteActionDesc,
@@ -51,6 +52,8 @@ export default function DiscoverCompleteModal({
   onKeepDiscovering,
   onStartTest,
 }) {
+  const dialogRef = useFocusTrap(open);
+
   if (!open) return null;
 
   const countryLabel = countryCount === 1 ? "country" : "countries";
@@ -58,6 +61,7 @@ export default function DiscoverCompleteModal({
   return (
     <div className={modalOverlay}>
       <div
+        ref={dialogRef}
         className={discoverCompleteModalCard}
         role="dialog"
         aria-modal="true"

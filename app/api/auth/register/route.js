@@ -1,8 +1,22 @@
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import { createUser, getUserByEmail } from "@/lib/db";
+import { isRateLimited, recordRateLimitEvent } from "@/lib/rate-limit";
 import { issueVerificationEmail } from "@/lib/verification";
 import { isValidEmail, normalizeEmail, validatePassword } from "@/lib/validation";
+
+const SUCCESS_MESSAGE =
+  "If this email is not already registered, we've created your account and sent a verification link.";
+
+const RATE_LIMIT = { max: 5, windowMs: 15 * 60 * 1000 };
+
+function getClientIp(request) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
 
 export async function POST(request) {
   try {
@@ -27,15 +41,31 @@ export async function POST(request) {
       return Response.json({ error: passwordError }, { status: 400 });
     }
 
-    const existing = await getUserByEmail(email);
-    if (existing) {
+    const emailKey = `register:email:${email}`;
+    const ip = getClientIp(request);
+    const ipKey = `register:ip:${ip}`;
+
+    const [emailLimited, ipLimited] = await Promise.all([
+      isRateLimited(emailKey, RATE_LIMIT),
+      isRateLimited(ipKey, RATE_LIMIT),
+    ]);
+
+    if (emailLimited || ipLimited) {
       return Response.json(
-        { error: "An account with this email already exists." },
-        { status: 409 }
+        { error: "Too many requests. Please try again in a few minutes." },
+        { status: 429 }
       );
     }
 
+    await Promise.all([recordRateLimitEvent(emailKey), recordRateLimitEvent(ipKey)]);
+
     const hashedPassword = await bcrypt.hash(password, 12);
+    const existing = await getUserByEmail(email);
+
+    if (existing) {
+      return Response.json({ message: SUCCESS_MESSAGE });
+    }
+
     const user = await createUser({
       id: randomUUID(),
       name,
@@ -49,7 +79,7 @@ export async function POST(request) {
       console.error("Verification email error:", emailError);
     }
 
-    return Response.json({ user }, { status: 201 });
+    return Response.json({ message: SUCCESS_MESSAGE });
   } catch (error) {
     console.error("Registration error:", error);
     if (error.message?.includes("DATABASE_URL")) {

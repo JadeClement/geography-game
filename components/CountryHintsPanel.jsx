@@ -6,6 +6,8 @@ import { cn } from "@/lib/cn";
 import {
   countryFact,
   countryFactBadge,
+  countryFactNav,
+  countryFactNavBtn,
   countryFactNext,
   countryFactText,
   countryHintCount,
@@ -152,13 +154,26 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
           </div>
 
           {facts.length > 1 && (
-            <button
-              type="button"
-              className={countryFactNext}
-              onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
-            >
-              Next fact →
-            </button>
+            <div className={countryFactNav}>
+              <button
+                type="button"
+                className={countryFactNavBtn}
+                aria-label="Previous fact"
+                onClick={() =>
+                  setFactIndex((index) => (index - 1 + facts.length) % facts.length)
+                }
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className={countryFactNavBtn}
+                aria-label="Next fact"
+                onClick={() => setFactIndex((index) => (index + 1) % facts.length)}
+              >
+                →
+              </button>
+            </div>
           )}
         </section>
       )}

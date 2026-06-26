@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/AuthModal";
 import CelebrationOverlay from "@/components/CelebrationOverlay";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { detectMilestone } from "@/lib/milestones";
 import { formatGameScore } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
@@ -53,6 +54,7 @@ export default function GameCompleteModal({
   const [streakMessage, setStreakMessage] = useState(null);
   const [milestone, setMilestone] = useState(null);
   const milestoneResolvedRef = useRef(false);
+  const dialogRef = useFocusTrap(open);
 
   const signedIn = status === "authenticated" && session?.user;
 
@@ -264,6 +266,7 @@ export default function GameCompleteModal({
     <>
       <div className={modalOverlay}>
         <div
+          ref={dialogRef}
           className={modalCard}
           role="dialog"
           aria-modal="true"

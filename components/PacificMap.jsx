@@ -21,7 +21,18 @@ import {
   geometryToPathData,
   PACIFIC_GAME_VIEW,
 } from "@/lib/globeProjection";
-import { CIRCLE_CLICK_RADIUS_PX } from "@/lib/geometry";
+import {
+  CIRCLE_CLICK_RADIUS_PX,
+  getBboxScreenSizePx,
+  getCountryMeasureBbox,
+  MIN_CLICK_TARGET_PX,
+  SMALL_COUNTRY_FLASH_RADIUS_PX,
+  TUTORIAL_CIRCLE_RADIUS_PX,
+  TUTORIAL_CIRCLE_STROKE_COLOR,
+  TUTORIAL_CIRCLE_STROKE_WIDTH,
+} from "@/lib/geometry";
+import { COUNTRY_CLICK_EXPAND_MS } from "@/lib/mapCountryClickExpand";
+import { getCountryClickExpandEnabled } from "@/lib/countryClickExpandPrefs";
 import { GAME_LEVELS } from "@/lib/levels";
 import { getPacificCountryFill, shouldShowPacificCircle } from "@/lib/pacificMapStyles";
 import {
@@ -59,6 +70,38 @@ const MAP_THEME_COLORS = {
   },
 };
 
+function getPacificCentroid(country) {
+  return country.centroid;
+}
+
+function projectMeasureBboxToSvg(country, mapView) {
+  const centroid = getPacificCentroid(country);
+  const { minLng, minLat, maxLng, maxLat } = getCountryMeasureBbox(
+    country.feature,
+    country.id,
+    centroid
+  );
+  const corners = [
+    [minLng, minLat],
+    [maxLng, minLat],
+    [maxLng, maxLat],
+    [minLng, maxLat],
+  ];
+  const projected = corners
+    .map(([lng, lat]) => mapView.project(lng, lat, mapView.width, mapView.height))
+    .filter(Boolean);
+  if (projected.length === 0) return null;
+
+  const xs = projected.map(([x]) => x);
+  const ys = projected.map(([, y]) => y);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+  };
+}
+
 function buildCountryPaths(countries, mapView, colorMap, landColor) {
   return countries
     .map((country) => {
@@ -74,18 +117,11 @@ function buildCountryPaths(countries, mapView, colorMap, landColor) {
         path,
         assignedColor: colorMap[country.id] ?? landColor,
         isSmall: country.isSmall,
-        centroid: country.centroid,
+        centroid: getPacificCentroid(country),
+        measureBbox: projectMeasureBboxToSvg(country, mapView),
       };
     })
     .filter(Boolean);
-}
-
-const PACIFIC_CENTROID_OVERRIDES = {
-  KIR: [173.0, 1.4],
-};
-
-function getPacificCentroid(country) {
-  return PACIFIC_CENTROID_OVERRIDES[country.id] ?? country.centroid;
 }
 
 function isCountryEventTarget(target) {
@@ -112,20 +148,61 @@ export default function PacificMap({
   highlightCountryId,
   flashSmallCountryId,
   onCountryClick,
+  onRegisterMapProject,
+  onMapViewChange,
+  mapControlsRef,
+  forceShowSmallCountryCircles = false,
 }) {
   const { theme } = useTheme();
   const colors = MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
   const landColor = getActiveLandColor(theme);
   const [highlightVisible, setHighlightVisible] = useState(true);
   const [flashVisible, setFlashVisible] = useState(true);
+  const [expandingCountryId, setExpandingCountryId] = useState(null);
   const [viewBox, setViewBox] = useState(getDefaultPacificViewBox);
+  const [svgWidth, setSvgWidth] = useState(PACIFIC_MAP_WIDTH);
 
   const svgRef = useRef(null);
   const viewBoxRef = useRef(viewBox);
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
+  const expandTimeoutRef = useRef(null);
 
   viewBoxRef.current = viewBox;
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return undefined;
+
+    const updateWidth = () => {
+      setSvgWidth(svg.clientWidth || PACIFIC_MAP_WIDTH);
+    };
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
+
+  const getCountryScreenSizePx = useCallback(
+    (country) => {
+      if (!country.measureBbox) return MIN_CLICK_TARGET_PX;
+      return getBboxScreenSizePx({
+        ...country.measureBbox,
+        viewWidth: viewBox.width,
+        containerWidth: svgWidth,
+      });
+    },
+    [svgWidth, viewBox.width]
+  );
+
+  const showCountryCircle = useCallback(
+    (country) => {
+      if (forceShowSmallCountryCircles && country.isSmall) return true;
+      return shouldShowPacificCircle(country, getCountryScreenSizePx(country));
+    },
+    [forceShowSmallCountryCircles, getCountryScreenSizePx]
+  );
 
   const inactivePaths = useMemo(
     () => buildCountryPaths(inactiveCountries, PACIFIC_GAME_VIEW, countryColorMap, landColor),
@@ -148,14 +225,14 @@ export default function PacificMap({
   }, [highlightCountryId]);
 
   useEffect(() => {
-    if (!flashSmallCountryId) return undefined;
+    if (!flashSmallCountryId && !highlightCountryId) return undefined;
 
     const intervalId = setInterval(() => {
       setFlashVisible((visible) => !visible);
     }, 450);
 
     return () => clearInterval(intervalId);
-  }, [flashSmallCountryId]);
+  }, [flashSmallCountryId, highlightCountryId]);
 
   const zoomAt = useCallback((factor, clientX, clientY) => {
     const svg = svgRef.current;
@@ -210,6 +287,49 @@ export default function PacificMap({
     svg.addEventListener("wheel", handleWheel, { passive: false });
     return () => svg.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
+
+  useEffect(() => {
+    onMapViewChange?.();
+  }, [viewBox, onMapViewChange]);
+
+  useEffect(() => {
+    if (!onRegisterMapProject) return undefined;
+
+    const svg = svgRef.current;
+    const container = svg?.parentElement;
+    if (!svg || !container) return undefined;
+
+    onRegisterMapProject((country) => {
+      const [lng, lat] = getPacificCentroid(country);
+      const point = PACIFIC_GAME_VIEW.project(
+        lng,
+        lat,
+        PACIFIC_GAME_VIEW.width,
+        PACIFIC_GAME_VIEW.height
+      );
+      if (!point) return null;
+
+      const [svgX, svgY] = point;
+      const svgRect = svg.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const currentViewBox = viewBoxRef.current;
+
+      return {
+        x:
+          ((svgX - currentViewBox.x) / currentViewBox.width) * svgRect.width +
+          svgRect.left -
+          containerRect.left,
+        y:
+          ((svgY - currentViewBox.y) / currentViewBox.height) * svgRect.height +
+          svgRect.top -
+          containerRect.top,
+      };
+    });
+
+    return () => {
+      onRegisterMapProject(null);
+    };
+  }, [onRegisterMapProject]);
 
   const handlePointerDown = useCallback((event) => {
     if (event.button !== 0) return;
@@ -266,18 +386,46 @@ export default function PacificMap({
     suppressClickRef.current = false;
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (expandTimeoutRef.current) {
+        clearTimeout(expandTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const triggerCountryExpand = useCallback((countryId) => {
+    if (!getCountryClickExpandEnabled()) return;
+
+    if (expandTimeoutRef.current) {
+      clearTimeout(expandTimeoutRef.current);
+    }
+
+    setExpandingCountryId(null);
+    requestAnimationFrame(() => {
+      setExpandingCountryId(countryId);
+      expandTimeoutRef.current = setTimeout(() => {
+        setExpandingCountryId(null);
+        expandTimeoutRef.current = null;
+      }, COUNTRY_CLICK_EXPAND_MS);
+    });
+  }, []);
+
   const handleCountryPointer = useCallback(
     (countryId) => {
       if (suppressClickRef.current || !gameActive) return;
+      triggerCountryExpand(countryId);
       onCountryClick({ properties: { id: countryId }, id: countryId });
     },
-    [gameActive, onCountryClick]
+    [gameActive, onCountryClick, triggerCountryExpand]
   );
+
+  const filledCountryIdSet = useMemo(() => new Set(filledCountryIds), [filledCountryIds]);
 
   const getCircleStroke = (countryId, assignedColor) => {
     const isWrong = wrongCountryIds.includes(countryId);
     const isFlashWrong = flashWrongCountryIds.includes(countryId);
-    const isFilled = filledCountryIds.includes(countryId);
+    const isFilled = filledCountryIdSet.has(countryId);
 
     if (level === GAME_LEVELS.FIND_FILL) {
       if (isFlashWrong || isWrong) return WRONG_COUNTRY_COLOR;
@@ -333,7 +481,7 @@ export default function PacificMap({
           strokeLinejoin="round"
         >
           {activePaths.map((country) => {
-            if (shouldShowPacificCircle({ isSmall: country.isSmall })) {
+            if (showCountryCircle(country)) {
               return null;
             }
 
@@ -344,7 +492,7 @@ export default function PacificMap({
               wrongCountryIds,
               flashWrongCountryIds,
               showColorCountryIds,
-              filledCountryIds,
+              filledCountryIdSet,
               highlightTargetCountryId,
               isActive: true,
               activeLandColor: landColor,
@@ -356,7 +504,11 @@ export default function PacificMap({
                 d={country.path}
                 fill={fill ?? landColor}
                 fillRule="evenodd"
-                className={cn("pacific-map-country", gameActive && pacificMapCountryClickable)}
+                className={cn(
+                  "pacific-map-country",
+                  gameActive && pacificMapCountryClickable,
+                  expandingCountryId === country.id && "country-click-expanding"
+                )}
                 onPointerDown={handleCountryPointerDown}
                 onClick={() => handleCountryPointer(country.id)}
               />
@@ -366,11 +518,11 @@ export default function PacificMap({
 
         <g className="pacific-map-circles">
           {activePaths.map((country) => {
-            if (!shouldShowPacificCircle({ isSmall: country.isSmall })) {
+            if (!showCountryCircle(country)) {
               return null;
             }
 
-            const [lng, lat] = getPacificCentroid(country);
+            const [lng, lat] = [country.centroid[0], country.centroid[1]];
             const point = PACIFIC_GAME_VIEW.project(
               lng,
               lat,
@@ -381,32 +533,54 @@ export default function PacificMap({
 
             const [cx, cy] = point;
             const isFlashing = flashSmallCountryId === country.id;
+            const isHighlighted =
+              highlightCountryId === country.id && showCountryCircle(country);
+            const showFlashMarker = isFlashing || isHighlighted;
             const stroke = getCircleStroke(country.id, country.assignedColor);
+            const circleRadius = forceShowSmallCountryCircles
+              ? TUTORIAL_CIRCLE_RADIUS_PX
+              : CIRCLE_CLICK_RADIUS_PX;
+            const circleStroke = forceShowSmallCountryCircles
+              ? TUTORIAL_CIRCLE_STROKE_COLOR
+              : stroke;
+            const circleStrokeWidth = forceShowSmallCountryCircles
+              ? TUTORIAL_CIRCLE_STROKE_WIDTH
+              : 2;
 
             return (
-              <g key={`circle-${country.id}`}>
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={CIRCLE_CLICK_RADIUS_PX}
-                  fill="transparent"
-                  stroke={stroke}
-                  strokeWidth={2}
-                  className={gameActive ? pacificMapCountryClickable : undefined}
-                  onPointerDown={handleCountryPointerDown}
-                  onClick={() => handleCountryPointer(country.id)}
-                />
-                {isFlashing && (
+              <g key={`circle-${country.id}`} transform={`translate(${cx}, ${cy})`}>
+                <g className={expandingCountryId === country.id ? "country-click-expanding" : undefined}>
                   <circle
-                    cx={cx}
-                    cy={cy}
-                    r={CIRCLE_CLICK_RADIUS_PX + 2}
+                    cx={0}
+                    cy={0}
+                    r={circleRadius}
                     fill="transparent"
-                    stroke={WRONG_COUNTRY_COLOR}
-                    strokeWidth={3}
-                    strokeOpacity={flashVisible ? 0.95 : 0.15}
-                    pointerEvents="none"
+                    stroke={circleStroke}
+                    strokeWidth={circleStrokeWidth}
+                    className={gameActive ? pacificMapCountryClickable : undefined}
+                    onPointerDown={handleCountryPointerDown}
+                    onClick={() => handleCountryPointer(country.id)}
                   />
+                </g>
+                {showFlashMarker && (
+                  <g pointerEvents="none" className="pacific-map-small-flash">
+                    <circle
+                      cx={0}
+                      cy={0}
+                      r={SMALL_COUNTRY_FLASH_RADIUS_PX}
+                      fill={WRONG_COUNTRY_COLOR}
+                      fillOpacity={flashVisible ? 0.42 : 0.1}
+                    />
+                    <circle
+                      cx={0}
+                      cy={0}
+                      r={SMALL_COUNTRY_FLASH_RADIUS_PX}
+                      fill="transparent"
+                      stroke={WRONG_COUNTRY_COLOR}
+                      strokeWidth={3}
+                      strokeOpacity={flashVisible ? 1 : 0.35}
+                    />
+                  </g>
                 )}
               </g>
             );
@@ -416,7 +590,10 @@ export default function PacificMap({
         {highlightCountryId && (
           <g className="pacific-map-highlight" pointerEvents="none">
             {activePaths
-              .filter((country) => country.id === highlightCountryId)
+              .filter(
+                (country) =>
+                  country.id === highlightCountryId && !showCountryCircle(country)
+              )
               .map((country) => (
                 <path
                   key={`highlight-${country.id}`}
@@ -432,7 +609,7 @@ export default function PacificMap({
         )}
       </svg>
 
-      <div className={pacificMapControls} aria-label="Map zoom controls">
+      <div className={pacificMapControls} ref={mapControlsRef} aria-label="Map zoom controls">
         <button type="button" className={pacificMapControlBtn} onClick={zoomIn} aria-label="Zoom in">
           +
         </button>

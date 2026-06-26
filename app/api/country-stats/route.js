@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession } from "@/lib/db";
 import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
+import { GAME_MODES } from "@/lib/regions";
 import countriesManifest from "@/data/countries.json";
 
 const VALID_OUTCOMES = new Set([
@@ -12,6 +13,10 @@ const VALID_OUTCOMES = new Set([
 ]);
 
 const VALID_GAME_TYPES = new Set(Object.values(GAME_TYPE_FOR_STATS));
+const VALID_MODES = new Set(Object.values(GAME_MODES));
+const ENABLED_COUNTRY_IDS = new Set(
+  countriesManifest.countries.filter((country) => country.enabled).map((country) => country.iso3)
+);
 
 function getRegionCountryIds(regionId) {
   const ids = new Set();
@@ -96,6 +101,8 @@ export async function POST(request) {
     if (
       !countryId ||
       !mode ||
+      !VALID_MODES.has(mode) ||
+      !ENABLED_COUNTRY_IDS.has(countryId) ||
       !isValidLevel(level) ||
       !VALID_OUTCOMES.has(outcome) ||
       !VALID_GAME_TYPES.has(gameType)

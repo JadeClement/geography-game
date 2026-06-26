@@ -1,11 +1,27 @@
 "use client";
 
-import { playCountryPronunciation } from "@/lib/pronunciation";
+import {
+  playCapitalPronunciation,
+  playCountryPronunciation,
+} from "@/lib/pronunciation";
+import { PRONUNCIATION_KINDS } from "@/lib/pronunciationVoices";
 import { cn } from "@/lib/cn";
 import { gameControlBtn } from "@/lib/ui";
 
-export default function PronunciationButton({ iso3, label, className, inline = false }) {
+export default function PronunciationButton({
+  iso3,
+  label,
+  kind = PRONUNCIATION_KINDS.COUNTRY,
+  className,
+  inline = false,
+  disabled = false,
+}) {
   if (!iso3) return null;
+
+  const play =
+    kind === PRONUNCIATION_KINDS.CAPITAL
+      ? playCapitalPronunciation
+      : playCountryPronunciation;
 
   return (
     <button
@@ -17,8 +33,9 @@ export default function PronunciationButton({ iso3, label, className, inline = f
       )}
       onClick={(event) => {
         event.stopPropagation();
-        playCountryPronunciation(iso3);
+        play(iso3);
       }}
+      disabled={disabled}
       aria-label={label ? `Play pronunciation of ${label}` : "Play pronunciation"}
       title="Listen"
     >

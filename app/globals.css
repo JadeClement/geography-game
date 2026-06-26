@@ -215,6 +215,25 @@
   }
 }
 
+@keyframes country-click-expand {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.08);
+  }
+  65% {
+    transform: scale(1.03);
+  }
+}
+
+.country-click-expanding {
+  animation: country-click-expand 1s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @keyframes map-feedback-in {
   from {
     opacity: 0;
@@ -529,6 +548,9 @@
 .region-map-world-btn {
   position: absolute;
   z-index: 2;
+  left: 50%;
+  bottom: 5%;
+  translate: -50% 0;
   pointer-events: auto;
   touch-action: manipulation;
 }
@@ -543,11 +565,6 @@
 .region-map-region-btn:hover:not(:disabled),
 .region-map-region-btn:active:not(:disabled) {
   transform: translate(-50%, -50%);
-}
-
-.region-map-world-btn:hover:not(:disabled),
-.region-map-world-btn:active:not(:disabled) {
-  transform: translateX(-50%);
 }
 
 .region-map-picker:not(.region-map-picker--disabled)

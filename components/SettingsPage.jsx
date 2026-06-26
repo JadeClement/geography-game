@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/cn";
 import AppHeader from "@/components/AppHeader";
 import ThemeToggle from "@/components/ThemeToggle";
+import { usePronunciationPrefs } from "@/lib/hooks/usePronunciationPrefs";
 import { useSoundPrefs } from "@/lib/hooks/useSoundPrefs";
+import { previewCountryPronunciation } from "@/lib/pronunciation";
 import {
   getReferencePanelDefaultOpen,
   setReferencePanelDefaultOpen,
 } from "@/lib/referencePanelPrefs";
+import {
+  getCountryClickExpandEnabled,
+  setCountryClickExpandEnabled,
+} from "@/lib/countryClickExpandPrefs";
 import { previewCorrectSound } from "@/lib/sounds";
 import {
   referenceDefaultSetting,
@@ -24,15 +31,20 @@ import {
   settingsVolumeRow,
   settingsVolumeSlider,
   settingsVolumeValue,
+  settingsVoiceList,
+  settingsVoiceOption,
 } from "@/lib/ui";
 
 export default function SettingsPage() {
   const [referenceDefaultOpen, setReferenceDefaultOpen] = useState(false);
+  const [countryClickExpand, setCountryClickExpand] = useState(true);
   const { volume, setVolume } = useSoundPrefs();
+  const { voiceId, voices, setVoiceId } = usePronunciationPrefs();
   const volumePercent = Math.round(volume * 100);
 
   useEffect(() => {
     setReferenceDefaultOpen(getReferencePanelDefaultOpen());
+    setCountryClickExpand(getCountryClickExpandEnabled());
   }, []);
 
   const handleVolumeChange = (event) => {
@@ -42,6 +54,10 @@ export default function SettingsPage() {
 
   const handleVolumeCommit = () => {
     previewCorrectSound(volume);
+  };
+
+  const handlePronunciationPreview = () => {
+    previewCountryPronunciation("USA", { voiceId, volume });
   };
 
   return (
@@ -92,6 +108,48 @@ export default function SettingsPage() {
               Test sound
             </button>
           </div>
+          <p className={cn(settingsSectionDescription, "mt-4")}>
+            Voice used when country and capital names are spoken in Discover and Find modes.
+          </p>
+          <div className={settingsVoiceList}>
+            {voices.map((voice) => (
+              <label key={voice.id} className={settingsVoiceOption}>
+                <input
+                  type="radio"
+                  name="pronunciation-voice"
+                  value={voice.id}
+                  checked={voiceId === voice.id}
+                  onChange={() => setVoiceId(voice.id)}
+                />
+                <span>
+                  {voice.label}
+                  <span className="text-text-muted"> — {voice.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <button type="button" className={secondaryBtn} onClick={handlePronunciationPreview}>
+            Test pronunciation
+          </button>
+        </section>
+
+        <section className={settingsSection}>
+          <h2 className={settingsSectionTitle}>Gameplay</h2>
+          <p className={settingsSectionDescription}>
+            Briefly expand countries when you click them on the map.
+          </p>
+          <label className={referenceDefaultSetting}>
+            <input
+              type="checkbox"
+              checked={countryClickExpand}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setCountryClickExpand(next);
+                setCountryClickExpandEnabled(next);
+              }}
+            />
+            <span>Country click expand</span>
+          </label>
         </section>
 
         <section className={settingsSection}>

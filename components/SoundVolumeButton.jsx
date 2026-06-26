@@ -11,7 +11,7 @@ export default function SoundVolumeButton() {
       type="button"
       className={gameControlBtn}
       onClick={toggleMuted}
-      aria-label={muted ? "Unmute sound" : "Mute sound"}
+      aria-label={muted ? "Unmute sounds" : "Mute sounds"}
       aria-pressed={muted}
       title={muted ? "Unmute" : "Mute"}
     >

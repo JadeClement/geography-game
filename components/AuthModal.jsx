@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { signIn } from "next-auth/react";
 import Input from "@/components/ui/Input";
 import ValidationMessage from "@/components/ui/ValidationMessage";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import {
   authForm,
   authSwitch,
@@ -32,6 +33,7 @@ export default function AuthModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialogRef = useFocusTrap(open);
 
   if (!open) return null;
 
@@ -97,6 +99,7 @@ export default function AuthModal({
   return (
     <div className={modalOverlay} onClick={onClose}>
       <div
+        ref={dialogRef}
         className={cn(modalCard, "max-w-md")}
         onClick={(event) => event.stopPropagation()}
         role="dialog"

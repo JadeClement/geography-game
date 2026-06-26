@@ -224,13 +224,22 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
 
     setStarting(true);
     try {
-      await onStart({
+      const result = await onStart({
         gameType: GAME_TYPES.LEARNING,
         mode: selectedMode,
         region: selectedRegion,
         level: selectedLevel,
         learningSessionSize: selectedSessionSize,
       });
+      if (result?.ok === false) {
+        if (result.reason === "no-eligible") {
+          setWeakError(
+            "No countries to practice yet. Play Test mode first to build your learning queue."
+          );
+        } else {
+          setWeakError(result.message || "Could not start learning session. Please try again.");
+        }
+      }
     } finally {
       setStarting(false);
     }

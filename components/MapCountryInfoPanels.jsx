@@ -2,6 +2,7 @@
 
 import CountryHintsPanel from "@/components/CountryHintsPanel";
 import CountryReferencePanel from "@/components/CountryReferencePanel";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useMobileViewport } from "@/lib/hooks/useMobileViewport";
 import {
   mapInfoMobile,
@@ -34,6 +35,7 @@ export default function MapCountryInfoPanels({
   const isMobile = useMobileViewport();
   const activeTab = referenceOpen ? "reference" : hintsOpen ? "hints" : null;
   const sheetOpen = activeTab !== null;
+  const sheetDialogRef = useFocusTrap(isMobile && sheetOpen);
 
   const handleReferenceTab = () => {
     if (referenceOpen) {
@@ -86,6 +88,7 @@ export default function MapCountryInfoPanels({
       <div className={mapInfoMobile}>
         {sheetOpen && (
           <div
+            ref={sheetDialogRef}
             className={mapInfoMobileSheet}
             role="dialog"
             aria-modal="true"
