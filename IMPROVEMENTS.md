@@ -80,47 +80,22 @@ Read-only review, 2026-06-25. No code was changed. Suggestions are grouped by ca
 
 ---
 
-## Content and Variety
 
-### 10. "Czech Republic" shown as canonical name; "Czechia" is an alias
-**What prompted it:** `data/countries.json` stores `"name": "Czech Republic"` with `"Czechia"` as an alias in `lib/spelling.js`. The Czech government and the UN have preferred "Czechia" in international usage since 2016.
-**Why it helps:** Displaying the outdated name as the prompt is a minor credibility issue. Swapping the canonical name and alias would be a one-line data change.
-**Effort:** Small (data edit)
-**Judgment needed** — editorial call; both names are in common use.
 
 ---
 
-### 11. Diacritic stripping absent from name normalization
-**What prompted it:** `normalizeName` in `lib/spelling.js` lowercases but does not strip diacritics. Aliases cover common cases (São Tomé, etc.) but any enabled country with unaliased diacritics in its canonical name would silently reject otherwise-correct typed answers.
-**Why it helps:** Adding `.normalize('NFD').replace(/\p{Diacritic}/gu, '')` to `normalizeName` makes diacritic-free typing work universally, reducing the alias maintenance burden.
-**Effort:** Small
-**Agent-safe**
+
 
 ---
 
-### 12. Countries with missing or contested capital data should be audited
-**What prompted it:** `GeographyGame.jsx` guards against empty capital strings (`!targetCountry.capital?.trim()`), implying some capitals may be absent. The capitals mode would show a blank prompt for any enabled country missing this field.
-**Why it helps:** A one-pass audit of all enabled countries in `data/countries.json` for missing or contested capitals prevents silent blank-prompt bugs in Capitals mode.
-**Effort:** Small (data audit)
-**Agent-safe** (data verification)
 
----
 
-### 13. Country facts are uniform across all countries — no standout or surprising entries
-**What prompted it:** Every country in `data/countries.json` has exactly 4 facts in the same 4 categories (history, politics, society, geography). The structure is consistent, but the uniformity makes the Reference panel feel like a form rather than a discovery.
-**Why it helps:** Adding a small number of distinctive "did you know" facts — world records, cultural quirks, geographic superlatives — would give the Reference panel replay value and transform it from a study aid into something occasionally surprising.
-**Effort:** Large (content at scale, likely AI-assisted)
-**Judgment needed** — tone and fact selection criteria.
+
 
 ---
 
 ## Accessibility and Inclusivity
 
-### 14. Color-only distinction for correct vs. wrong countries on the map
-**What prompted it:** Wrong countries flash red and correct ones fill green via `countryColorMap`. There is no pattern, icon, or non-color signal to differentiate them.
-**Why it helps:** Players with deuteranopia or protanopia cannot distinguish red and green fills. A subtle border variation or pattern on wrong-fill countries would make the distinction accessible without changing the design for color-normal users.
-**Effort:** Medium
-**Judgment needed** — design decision; needs visual prototyping.
 
 ---
 
@@ -174,21 +149,6 @@ Read-only review, 2026-06-25. No code was changed. Suggestions are grouped by ca
 **Effort:** Medium
 **Agent-safe** (additive endpoint, existing callers unchanged)
 
----
-
-### 21. GeoJSON served from `public/` with default zero-cache headers
-**What prompted it:** `loadCountriesGeoJSON` fetches the GeoJSON from `public/` via `fetch`. Next.js serves `public/` files with `Cache-Control: public, max-age=0, must-revalidate` by default, so every hard refresh re-downloads what is likely a multi-MB file.
-**Why it helps:** Adding a long `max-age` (or content-addressed path) for the GeoJSON in `next.config.mjs` headers config would let browsers cache it across sessions — the main cold-start latency improvement on mobile.
-**Effort:** Small
-**Agent-safe**
-
----
-
-### 22. `loadCountriesGeoJSON` result is not cached at the module level
-**What prompted it:** `loadCountriesGeoJSON` is called in a `useEffect` in `GeographyGame`. If the component remounts (auth state change, etc.) the fetch fires again. There is no module-level singleton cache.
-**Why it helps:** A `let cachedGeoJSON = null` singleton in `lib/countries.js` prevents redundant fetches on re-mounts, keeping the map data available instantly for the common "sign in while on the game screen" flow.
-**Effort:** Small
-**Agent-safe**
 
 ---
 

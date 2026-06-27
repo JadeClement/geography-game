@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Optional standout facts keyed by ISO3. Merged into country facts at load time with category \"highlight\".",
+  "highlights": {
+    "AUS": "Australia is the only continent where all three groups of mammals—monotremes, marsupials, and placentals—live in the wild.",
+    "BHU": "Bhutan is one of the only countries in the world that absorbs more CO₂ than it emits.",
+    "BRA": "Brazil contains about 60% of the Amazon rainforest—the largest tropical rainforest on Earth.",
+    "CAN": "Canada has more lakes than every other country in the world combined.",
+    "CHN": "Mandarin has more native speakers than any other language—most of them live in China.",
+    "EGY": "The Great Pyramid of Giza is the oldest of the Seven Wonders of the Ancient World and the only one still standing.",
+    "IND": "India recognizes 22 official languages; hundreds more are spoken across the country.",
+    "ISL": "Iceland has no native mosquito species—the cold climate keeps them from establishing populations.",
+    "JPN": "Japan has one of the highest densities of vending machines in the world—roughly one for every 23 people.",
+    "KIR": "Kiribati is one of the few countries with territory in all four hemispheres.",
+    "LSO": "Lesotho is a true enclave—every border it has is with South Africa.",
+    "MCO": "Monaco is smaller in area than New York's Central Park.",
+    "MNG": "Mongolia is the most sparsely populated fully sovereign country in the world.",
+    "NLD": "About a quarter of the Netherlands is below sea level, protected by an extensive system of dikes and pumps.",
+    "NPL": "Nepal's flag is the world's only national flag that is not a quadrilateral.",
+    "RUS": "Russia spans eleven time zones—more than any other country.",
+    "SAU": "Saudi Arabia has no permanent rivers; water comes from desalination, aquifers, and seasonal wadis.",
+    "SGP": "Singapore banned most chewing-gum sales in 1992 to keep public spaces clean.",
+    "USA": "The United States has no official language at the federal level.",
+    "VAT": "Vatican City is the world's smallest independent state by both area and population."
+  }
+}

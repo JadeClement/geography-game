@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAdjacentCountryNames } from "@/lib/adjacentCountries";
 import { cn } from "@/lib/cn";
+import { FACT_CATEGORY_LABELS, getHintsFacts } from "@/lib/countryFacts";
 import {
   countryFact,
   countryFactBadge,
+  countryFactHighlight,
   countryFactNav,
   countryFactNavBtn,
   countryFactNext,
@@ -28,13 +30,6 @@ import {
   mapSidePanelToggle,
 } from "@/lib/ui";
 
-const FACT_CATEGORY_LABELS = {
-  history: "History",
-  politics: "Politics",
-  society: "Society",
-  geography: "Geography",
-};
-
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -56,11 +51,12 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
   );
 
   const facts = useMemo(
-    () => (Array.isArray(country?.facts) ? country.facts : []),
+    () => getHintsFacts(country?.facts),
     [country?.facts],
   );
   const hasFacts = facts.length > 0;
   const activeFact = hasFacts ? facts[factIndex % facts.length] : null;
+  const activeFactIsHighlight = activeFact?.category === "highlight";
 
   useEffect(() => {
     setRevealedCount(0);
@@ -146,7 +142,7 @@ export default function CountryHintsPanel({ country, allCountries, open, onToggl
             )}
           </div>
 
-          <div className={countryFact}>
+          <div className={activeFactIsHighlight ? countryFactHighlight : countryFact}>
             <span className={countryFactBadge(activeFact.category)}>
               {FACT_CATEGORY_LABELS[activeFact.category] ?? activeFact.category}
             </span>

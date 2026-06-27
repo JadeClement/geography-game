@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Additional accepted capitals keyed by ISO3. The primary capital in countries.json is used as the quiz prompt; all listed names are accepted as answers and shown in Reference.",
+  "alternates": {
+    "BEN": ["Cotonou"],
+    "BOL": ["La Paz"],
+    "CIV": ["Abidjan"],
+    "LKA": ["Sri Jayawardenepura Kotte"],
+    "MMR": ["Yangon"],
+    "MYS": ["Putrajaya"],
+    "NLD": ["The Hague"],
+    "SWZ": ["Lobamba"],
+    "TZA": ["Dar es Salaam"],
+    "ZAF": ["Cape Town", "Bloemfontein"]
+  }
+}

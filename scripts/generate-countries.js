@@ -39,7 +39,7 @@ const NAME_ALIASES = {
   "Lao People's Democratic Republic": "Laos",
   "Syrian Arab Republic": "Syria",
   "Viet Nam": "Vietnam",
-  "Czechia": "Czech Republic",
+  "Czech Republic": "Czechia",
   "Türkiye": "Turkey",
   "Cabo Verde": "Cape Verde",
   "Eswatini": "Swaziland",
@@ -132,6 +132,7 @@ async function main() {
         neighbors,
         enabled: existing?.enabled ?? true,
         region: existing?.region ?? "world",
+        facts: existing?.facts ?? [],
       };
     })
     .filter(Boolean)

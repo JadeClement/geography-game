@@ -3,6 +3,7 @@
 import { useState } from "react";
 import FlagPrompt from "@/components/FlagPrompt";
 import { cn } from "@/lib/cn";
+import { FACT_CATEGORY_LABELS, partitionCountryFacts } from "@/lib/countryFacts";
 import {
   buildReferenceRows,
   getReferenceVisibility,
@@ -17,6 +18,8 @@ import {
   countryReferenceFactsTitle,
   countryReferenceFactText,
   countryReferenceFlag,
+  countryReferenceHighlight,
+  countryReferenceHighlights,
   countryReferenceLabel,
   countryReferenceList,
   countryReferenceNote,
@@ -32,13 +35,6 @@ import {
   mapSidePanelToggle,
 } from "@/lib/ui";
 
-const FACT_CATEGORY_LABELS = {
-  history: "History",
-  politics: "Politics",
-  society: "Society",
-  geography: "Geography",
-};
-
 export default function CountryReferencePanel({
   country,
   mode,
@@ -51,7 +47,7 @@ export default function CountryReferencePanel({
   const visibility = getReferenceVisibility({ mode, level, revealMode });
   const rows = buildReferenceRows(country, visibility);
   const showHiddenNote = hasHiddenReferenceFields(visibility);
-  const facts = Array.isArray(country?.facts) ? country.facts : [];
+  const { standardFacts, highlights } = partitionCountryFacts(country?.facts);
   const [isMac] = useState(
     () => typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent),
   );
@@ -83,11 +79,24 @@ export default function CountryReferencePanel({
         <p className={countryReferenceNote}>Some details hidden while you&apos;re guessing.</p>
       )}
 
-      {facts.length > 0 && (
-        <section className={countryReferenceFacts}>
+      {highlights.length > 0 && (
+        <section className={countryReferenceHighlights}>
           <h3 className={countryReferenceFactsTitle}>Did you know?</h3>
           <ul className={countryReferenceFactsList}>
-            {facts.map((fact, index) => (
+            {highlights.map((fact, index) => (
+              <li key={`highlight-${index}`}>
+                <p className={countryReferenceHighlight}>{fact.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {standardFacts.length > 0 && (
+        <section className={countryReferenceFacts}>
+          <h3 className={countryReferenceFactsTitle}>Country profile</h3>
+          <ul className={countryReferenceFactsList}>
+            {standardFacts.map((fact, index) => (
               <li key={`${fact.category}-${index}`} className={countryReferenceFact}>
                 <span className={countryFactBadge(fact.category)}>
                   {FACT_CATEGORY_LABELS[fact.category] ?? fact.category}
