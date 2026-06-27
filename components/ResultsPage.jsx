@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
-import { fetchMasteryStats } from "@/lib/countryStats";
+import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { getLevelShortLabel } from "@/lib/levels";
 import { getMasteryProvingLevels } from "@/lib/levels";
 import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion, getModeLabel } from "@/lib/regions";
@@ -225,19 +225,15 @@ export default function ResultsPage() {
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      fetchScores(),
-      fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }),
-      fetchMasteryStats({ mode: GAME_MODES.CAPITALS }),
-      fetchMasteryStats({ mode: GAME_MODES.FLAGS }),
-    ])
-      .then(([scoreData, countriesMastery, capitalsMastery, flagsMastery]) => {
+    Promise.all([fetchScores(), fetchAllMasteryStats()])
+      .then(([scoreData, masteryData]) => {
         if (cancelled) return;
+        const masteryByMode = masteryData.mastery ?? {};
         setScores(scoreData);
         setMastery({
-          countries: countriesMastery.mastery ?? [],
-          capitals: capitalsMastery.mastery ?? [],
-          flags: flagsMastery.mastery ?? [],
+          countries: masteryByMode.countries ?? [],
+          capitals: masteryByMode.capitals ?? [],
+          flags: masteryByMode.flags ?? [],
         });
         setLoading(false);
       })

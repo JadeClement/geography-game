@@ -7,7 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import MasteryMap from "@/components/MasteryMap";
 import { loadCountriesGeoJSON } from "@/lib/countries";
-import { fetchMasteryStats } from "@/lib/countryStats";
+import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { GAME_MODES, getModeLabel } from "@/lib/regions";
 import {
   ALL_MODE,
@@ -114,21 +114,17 @@ export default function MasteryPage() {
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      loadCountriesGeoJSON(),
-      fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }),
-      fetchMasteryStats({ mode: GAME_MODES.CAPITALS }),
-      fetchMasteryStats({ mode: GAME_MODES.FLAGS }),
-    ])
-      .then(([geo, countriesM, capitalsM, flagsM]) => {
+    Promise.all([loadCountriesGeoJSON(), fetchAllMasteryStats()])
+      .then(([geo, masteryData]) => {
         if (cancelled) return;
+        const mastery = masteryData.mastery ?? {};
         setData({
           countries: geo.countries,
           geojson: geo.geojson,
           maps: {
-            [GAME_MODES.COUNTRIES]: buildModeMasteryMap(countriesM.mastery ?? []),
-            [GAME_MODES.CAPITALS]: buildModeMasteryMap(capitalsM.mastery ?? []),
-            [GAME_MODES.FLAGS]: buildModeMasteryMap(flagsM.mastery ?? []),
+            [GAME_MODES.COUNTRIES]: buildModeMasteryMap(mastery.countries ?? []),
+            [GAME_MODES.CAPITALS]: buildModeMasteryMap(mastery.capitals ?? []),
+            [GAME_MODES.FLAGS]: buildModeMasteryMap(mastery.flags ?? []),
           },
         });
         setLoading(false);

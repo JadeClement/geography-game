@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { getCountryStatsForUser } from "@/lib/db";
-import { getDecayAdjustedMastery, isEffectivelyGraduated } from "@/lib/mastery";
+import { mapStatsToMasteryEntries } from "@/lib/mastery";
 
 export async function GET(request) {
   const session = await auth();
@@ -17,15 +17,7 @@ export async function GET(request) {
     }
 
     const stats = await getCountryStatsForUser(session.user.id, { mode });
-
-    const mastery = stats.map((stat) => ({
-      countryId: stat.countryId,
-      level: stat.level,
-      masteryScore: getDecayAdjustedMastery(stat),
-      graduated: isEffectivelyGraduated(stat),
-    }));
-
-    return Response.json({ mastery });
+    return Response.json({ mastery: mapStatsToMasteryEntries(stats) });
   } catch (error) {
     console.error("Mastery fetch error:", error);
     if (error?.code === "42P01") {
