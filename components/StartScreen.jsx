@@ -179,11 +179,16 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     };
   }, [step, isLearning, signedIn, selectedMode, selectedRegion, selectedLevel, weakReloadKey]);
 
-  const handleGo = async () => {
+  const handleGo = () => {
+    if (!gameReady || starting) return;
+    navigate({ step: START_STEPS.GO_REGION });
+  };
+
+  const handleGoRegionSelect = async (regionId) => {
     if (!gameReady || starting) return;
     setStarting(true);
     try {
-      await onStart({ go: true });
+      await onStart({ go: true, region: regionId });
     } finally {
       setStarting(false);
     }
@@ -472,6 +477,28 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           onSuccess={handleAuthSuccess}
           signInSubtitle="Please sign in to use Learn."
         />
+      </div>
+    );
+  }
+
+  if (step === START_STEPS.GO_REGION) {
+    return (
+      <div className={cn(startScreen, startScreenSub, startScreenExplore)}>
+        <StartBackButton onClick={() => navigate({ step: START_STEPS.HOME }, { replace: true })} />
+        <StartStepHeader
+          title="Pick a region"
+          subtitle="10 countries from your learning list in this region."
+        />
+
+        <div className={startExploreSection}>
+          {starting && <p className={startSubtitle}>Starting…</p>}
+          <RegionMapPicker
+            countries={countries}
+            selectedRegion={null}
+            onSelect={handleGoRegionSelect}
+            disabled={!gameReady || starting}
+          />
+        </div>
       </div>
     );
   }

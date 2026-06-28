@@ -36,13 +36,6 @@ Read-only review, 2026-06-25. No code was changed. Suggestions are grouped by ca
 **Effort:** Small
 **Agent-safe once copy is approved**
 
----
-
-### 5. Streak shown in header but not surfaced on completion when it doesn't increment
-**What prompted it:** `GameCompleteModal` shows a streak message only if the streak just went up. If a user plays their second session of the day (no increment), no streak is shown despite the current streak being meaningful.
-**Why it helps:** Showing "Day 5 — keep it up!" even on non-increment days provides positive reinforcement without requiring behavior change from the player.
-**Effort:** Small
-**Judgment needed** — tone question: how insistent should streak messaging be?
 
 ---
 
@@ -142,12 +135,6 @@ Read-only review, 2026-06-25. No code was changed. Suggestions are grouped by ca
 ---
 
 ## Performance
-
-### 20. Mastery page makes 3 separate API calls (one per mode) — no combined endpoint
-**What prompted it:** `MasteryPage` and `ResultsPage` each call `fetchMasteryStats` three times (once per mode), plus `fetchScores`. All go to separate `/api/mastery?mode=…` queries.
-**Why it helps:** A single `/api/mastery/all` endpoint returning all modes in one query would cut DB round-trips by two-thirds and improve page load as user count grows.
-**Effort:** Medium
-**Agent-safe** (additive endpoint, existing callers unchanged)
 
 
 ---

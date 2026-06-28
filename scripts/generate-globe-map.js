@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { GEOJSON_ISO_OVERRIDES } from "../lib/constants.js";
+import { getCountryColor } from "../lib/countryColors.js";
 import {
   GLOBE_MAP_HEIGHT,
   GLOBE_MAP_WIDTH,
@@ -54,14 +55,14 @@ for (const feature of geojson.features) {
   if (!pathData) continue;
 
   paths.push(
-    `    <path fill-rule="evenodd" d="${pathData}" data-iso3="${iso3}" />`
+    `    <path fill-rule="evenodd" fill="${getCountryColor(iso3)}" d="${pathData}" data-iso3="${iso3}" />`
   );
 }
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GLOBE_MAP_WIDTH} ${GLOBE_MAP_HEIGHT}" preserveAspectRatio="none">
   <rect width="${GLOBE_MAP_WIDTH}" height="${GLOBE_MAP_HEIGHT}" fill="#0284c7"/>
-  <g fill="#b3d1a1" stroke="#478a39" stroke-width="0.35" stroke-linejoin="round">
+  <g stroke="rgba(15, 23, 42, 0.35)" stroke-width="0.35" stroke-linejoin="round">
 ${paths.join("\n")}
   </g>
 </svg>

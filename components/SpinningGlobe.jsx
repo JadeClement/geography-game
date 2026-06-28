@@ -2,15 +2,43 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { getCountryColor } from "@/lib/countryColors";
 
 const GLOBE_TEXTURE_PATH = "/globe-map.svg";
 const TEXTURE_WIDTH = 2048;
 const TEXTURE_HEIGHT = 1024;
 
-function loadGlobeTexture() {
+function colorizeGlobeSvg(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const paths = doc.querySelectorAll("path[data-iso3]");
+
+  for (const path of paths) {
+    const iso3 = path.getAttribute("data-iso3");
+    if (!iso3) continue;
+    path.setAttribute("fill", getCountryColor(iso3));
+  }
+
+  const land = doc.querySelector("g");
+  if (land) {
+    land.removeAttribute("fill");
+    land.setAttribute("stroke", "rgba(15, 23, 42, 0.35)");
+    land.setAttribute("stroke-width", "0.35");
+    land.setAttribute("stroke-linejoin", "round");
+  }
+
+  return new XMLSerializer().serializeToString(doc.documentElement);
+}
+
+function svgToCanvasTexture(svgText) {
   return new Promise((resolve, reject) => {
+    const coloredSvg = colorizeGlobeSvg(svgText);
+    const blob = new Blob([coloredSvg], { type: "image/svg+xml" });
+    const objectUrl = URL.createObjectURL(blob);
     const image = new Image();
+
     image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
       const canvas = document.createElement("canvas");
       canvas.width = TEXTURE_WIDTH;
       canvas.height = TEXTURE_HEIGHT;
@@ -27,9 +55,22 @@ function loadGlobeTexture() {
       texture.anisotropy = 8;
       resolve(texture);
     };
-    image.onerror = () => reject(new Error("Failed to load globe map texture."));
-    image.src = GLOBE_TEXTURE_PATH;
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Failed to render globe map texture."));
+    };
+
+    image.src = objectUrl;
   });
+}
+
+async function loadGlobeTexture() {
+  const response = await fetch(GLOBE_TEXTURE_PATH);
+  if (!response.ok) {
+    throw new Error("Failed to load globe map texture.");
+  }
+  return svgToCanvasTexture(await response.text());
 }
 
 export default function SpinningGlobe() {

@@ -1009,12 +1009,12 @@ export default function GeographyGame() {
     ]
   );
 
-  // "Go": a quick 10-country review of your weakest countries worldwide
-  // (Countries · Find it · Level 1). Falls back to random countries when there
-  // is no weak data or the player is signed out.
-  const startGoSession = useCallback(async () => {
-    const worldPool = filterCountriesByRegion(allCountries, "world");
-    if (worldPool.length === 0) return;
+  // "Go": a quick 10-country review of your weakest countries in the
+  // chosen region (Countries · Find it · Level 1). Falls back to random
+  // countries when there is no weak data or the player is signed out.
+  const startGoSession = useCallback(async (region = "world") => {
+    const regionPool = filterCountriesByRegion(allCountries, region);
+    if (regionPool.length === 0) return;
 
     let chosen = [];
     if (signedIn) {
@@ -1022,12 +1022,12 @@ export default function GeographyGame() {
         const data = await fetchWeakCountryStats({
           mode: GAME_MODES.COUNTRIES,
           level: GAME_LEVELS.FIND_FILL,
-          region: "world",
+          region,
         });
         if ((data.weakCount ?? 0) > 0) {
           const ids = buildLearningQueue(data.stats, Math.min(GO_SESSION_SIZE, data.weakCount));
           chosen = ids
-            .map((id) => worldPool.find((country) => country.id === id))
+            .map((id) => regionPool.find((country) => country.id === id))
             .filter(Boolean);
         }
       } catch (error) {
@@ -1038,7 +1038,7 @@ export default function GeographyGame() {
     if (chosen.length < GO_SESSION_SIZE) {
       const have = new Set(chosen.map((country) => country.id));
       const fillers = shuffleCountries(
-        worldPool.filter((country) => !have.has(country.id))
+        regionPool.filter((country) => !have.has(country.id))
       ).slice(0, GO_SESSION_SIZE - chosen.length);
       chosen = [...chosen, ...fillers];
     }
@@ -1049,7 +1049,7 @@ export default function GeographyGame() {
     startGame({
       gameType: GAME_TYPES.LEARNING,
       mode: GAME_MODES.COUNTRIES,
-      region: "world",
+      region,
       level: GAME_LEVELS.FIND_FILL,
       countries: chosen,
       learningCountryIds: chosen.map((country) => country.id),
@@ -1104,7 +1104,7 @@ export default function GeographyGame() {
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.go) {
-        await startGoSession();
+        await startGoSession(config.region ?? "world");
         return { ok: true };
       }
 
@@ -1285,7 +1285,7 @@ export default function GeographyGame() {
   const handlePlayAgain = () => {
     if (!session) return;
     if (session.go) {
-      startGoSession();
+      startGoSession(session.region ?? "world");
       return;
     }
     if (isLearningGame) {
