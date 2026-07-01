@@ -15,6 +15,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import {
   CORRECT_COUNTRY_COLOR,
   getActiveLandColor,
+  TARGET_HIGHLIGHT_COLOR,
   WRONG_COUNTRY_COLOR,
 } from "@/lib/countryColors";
 import {
@@ -158,6 +159,7 @@ export default function PacificMap({
   const landColor = getActiveLandColor(theme);
   const [highlightVisible, setHighlightVisible] = useState(true);
   const [flashVisible, setFlashVisible] = useState(true);
+  const [targetFlashVisible, setTargetFlashVisible] = useState(true);
   const [expandingCountryId, setExpandingCountryId] = useState(null);
   const [viewBox, setViewBox] = useState(getDefaultPacificViewBox);
   const [svgWidth, setSvgWidth] = useState(PACIFIC_MAP_WIDTH);
@@ -233,6 +235,18 @@ export default function PacificMap({
 
     return () => clearInterval(intervalId);
   }, [flashSmallCountryId, highlightCountryId]);
+
+  useEffect(() => {
+    if (!highlightTargetCountryId || level !== GAME_LEVELS.NAME_FILL) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      setTargetFlashVisible((visible) => !visible);
+    }, 450);
+
+    return () => clearInterval(intervalId);
+  }, [highlightTargetCountryId, level]);
 
   const zoomAt = useCallback((factor, clientX, clientY) => {
     const svg = svgRef.current;
@@ -494,6 +508,7 @@ export default function PacificMap({
               showColorCountryIds,
               filledCountryIdSet,
               highlightTargetCountryId,
+              targetFlashOn: targetFlashVisible,
               isActive: true,
               activeLandColor: landColor,
             });
@@ -536,7 +551,20 @@ export default function PacificMap({
             const isHighlighted =
               highlightCountryId === country.id && showCountryCircle(country);
             const showFlashMarker = isFlashing || isHighlighted;
-            const stroke = getCircleStroke(country.id, country.assignedColor);
+            const isTargetCircle =
+              level === GAME_LEVELS.NAME_FILL &&
+              highlightTargetCountryId === country.id;
+            const baseStroke = getCircleStroke(country.id, country.assignedColor);
+            const stroke =
+              isTargetCircle && !forceShowSmallCountryCircles
+                ? targetFlashVisible
+                  ? TARGET_HIGHLIGHT_COLOR
+                  : colors.smallCountryStroke
+                : baseStroke;
+            const circleFill =
+              isTargetCircle && !forceShowSmallCountryCircles && targetFlashVisible
+                ? TARGET_HIGHLIGHT_COLOR
+                : "transparent";
             const circleRadius = forceShowSmallCountryCircles
               ? TUTORIAL_CIRCLE_RADIUS_PX
               : CIRCLE_CLICK_RADIUS_PX;
@@ -554,7 +582,7 @@ export default function PacificMap({
                     cx={0}
                     cy={0}
                     r={circleRadius}
-                    fill="transparent"
+                    fill={circleFill}
                     stroke={circleStroke}
                     strokeWidth={circleStrokeWidth}
                     className={gameActive ? pacificMapCountryClickable : undefined}

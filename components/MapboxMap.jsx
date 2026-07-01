@@ -222,6 +222,8 @@ function getSmallCircleStrokeColorExpression(level, defaultStrokeColor, landColo
     WRONG_COUNTRY_COLOR,
     ["==", ["feature-state", "filled"], true],
     CORRECT_COUNTRY_COLOR,
+    ["==", ["feature-state", "target"], true],
+    TARGET_HIGHLIGHT_COLOR,
     defaultStrokeColor,
   ];
 }
@@ -242,7 +244,12 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
       source: "small-countries",
       paint: {
         "circle-radius": ["coalesce", ["feature-state", "radius"], 0],
-        "circle-color": "transparent",
+        "circle-color": [
+          "case",
+          ["==", ["feature-state", "target"], true],
+          TARGET_HIGHLIGHT_COLOR,
+          "transparent",
+        ],
         "circle-stroke-color": getSmallCircleStrokeColorExpression(level, strokeColor, landColor),
         "circle-stroke-width": 2,
         "circle-stroke-opacity": ["coalesce", ["feature-state", "opacity"], 0],
@@ -447,13 +454,7 @@ function syncSmallCountryFeatureStates(
 function syncCountryFeatureStates(
   map,
   geojson,
-  {
-    wrongCountryIds,
-    flashWrongCountryIds,
-    showColorCountryIds,
-    filledCountryIds,
-    highlightTargetCountryId,
-  }
+  { wrongCountryIds, flashWrongCountryIds, showColorCountryIds, filledCountryIds }
 ) {
   if (!map.getSource("countries") || !geojson?.features?.length) return;
 
@@ -464,6 +465,8 @@ function syncCountryFeatureStates(
 
   for (const feature of geojson.features) {
     const id = feature.properties.id;
+    // The `target` feature-state is owned by the target-flash effect so it can
+    // blink; merging without it here preserves the current blink value.
     map.setFeatureState(
       { source: "countries", id },
       {
@@ -471,7 +474,6 @@ function syncCountryFeatureStates(
         flashWrong: flashWrongSet.has(id),
         showColor: showColorSet.has(id),
         filled: filledSet.has(id),
-        target: id === highlightTargetCountryId,
       }
     );
   }
@@ -501,6 +503,7 @@ export default function MapboxMap({
   const mapRef = useRef(null);
   const fillFlashIntervalRef = useRef(null);
   const circleFlashIntervalRef = useRef(null);
+  const targetFlashIntervalRef = useRef(null);
   const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
   const gameActiveRef = useRef(gameActive);
@@ -789,7 +792,6 @@ export default function MapboxMap({
         flashWrongCountryIds,
         showColorCountryIds,
         filledCountryIds,
-        highlightTargetCountryId,
       });
       syncSmallCountryFeatureStates(map, smallCountriesGeojson, {
         wrongCountryIds,
@@ -810,8 +812,50 @@ export default function MapboxMap({
     flashWrongCountryIds,
     showColorCountryIds,
     filledCountryIds,
-    highlightTargetCountryId,
   ]);
+
+  // Blinks the Name-it Level 1 target between yellow and the neutral land color
+  // so it's obvious which country to name. Owns the `target` feature-state for
+  // both the country fill and the small-country circle (fill + stroke).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (targetFlashIntervalRef.current) {
+      clearInterval(targetFlashIntervalRef.current);
+      targetFlashIntervalRef.current = null;
+    }
+
+    const targetId = highlightTargetCountryId;
+
+    const applyTargetState = (on) => {
+      const activeMap = mapRef.current;
+      if (!activeMap || !targetId) return;
+      if (activeMap.getSource("countries")) {
+        activeMap.setFeatureState({ source: "countries", id: targetId }, { target: on });
+      }
+      if (activeMap.getSource("small-countries")) {
+        activeMap.setFeatureState({ source: "small-countries", id: targetId }, { target: on });
+      }
+    };
+
+    if (!targetId) return;
+
+    let visible = true;
+    applyTargetState(true);
+    targetFlashIntervalRef.current = setInterval(() => {
+      visible = !visible;
+      applyTargetState(visible);
+    }, 450);
+
+    return () => {
+      if (targetFlashIntervalRef.current) {
+        clearInterval(targetFlashIntervalRef.current);
+        targetFlashIntervalRef.current = null;
+      }
+      applyTargetState(false);
+    };
+  }, [highlightTargetCountryId]);
 
   useEffect(() => {
     const map = mapRef.current;
