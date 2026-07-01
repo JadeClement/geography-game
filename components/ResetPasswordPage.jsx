@@ -159,7 +159,7 @@ export default function ResetPasswordPage() {
       <AppHeader />
       <main className={settingsContent}>
         <Link href="/" className={settingsBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <h1 className={settingsTitle}>Reset password</h1>

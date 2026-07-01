@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
-import { createUser, getUserByEmail } from "@/lib/db";
+import { createUser, getUserByEmail, getUserByUsername } from "@/lib/db";
 import { isRateLimited, recordRateLimitEvent } from "@/lib/rate-limit";
 import { issueVerificationEmail } from "@/lib/verification";
+import { normalizeUsername, validateUsername } from "@/lib/usernames";
 import { isValidEmail, normalizeEmail, validatePassword } from "@/lib/validation";
 
 const SUCCESS_MESSAGE =
@@ -24,12 +25,18 @@ export async function POST(request) {
     const name = body.name?.trim();
     const email = normalizeEmail(body.email);
     const password = body.password;
+    const username = normalizeUsername(body.username);
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !username) {
       return Response.json(
-        { error: "Name, email, and password are required." },
+        { error: "Name, username, email, and password are required." },
         { status: 400 }
       );
+    }
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      return Response.json({ error: usernameError }, { status: 400 });
     }
 
     if (!isValidEmail(email)) {
@@ -59,6 +66,10 @@ export async function POST(request) {
 
     await Promise.all([recordRateLimitEvent(emailKey), recordRateLimitEvent(ipKey)]);
 
+    if (await getUserByUsername(username)) {
+      return Response.json({ error: "That username is already taken." }, { status: 409 });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
     const existing = await getUserByEmail(email);
 
@@ -69,6 +80,7 @@ export async function POST(request) {
     const user = await createUser({
       id: randomUUID(),
       name,
+      username,
       email,
       password: hashedPassword,
     });
@@ -93,6 +105,9 @@ export async function POST(request) {
         },
         { status: 503 }
       );
+    }
+    if (error.code === "23505") {
+      return Response.json({ error: "That username is already taken." }, { status: 409 });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }

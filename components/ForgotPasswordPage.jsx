@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
       <AppHeader />
       <main className={settingsContent}>
         <Link href="/" className={settingsBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <h1 className={settingsTitle}>Forgot password</h1>

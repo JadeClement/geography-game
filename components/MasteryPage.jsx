@@ -220,7 +220,7 @@ export default function MasteryPage() {
 
       <main className={masteryContent}>
         <Link href="/" className={masteryBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <div className={masteryHead}>

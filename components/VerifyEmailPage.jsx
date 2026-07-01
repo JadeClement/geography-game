@@ -116,7 +116,7 @@ export default function VerifyEmailPage() {
       <AppHeader />
       <main className={settingsContent}>
         <Link href="/" className={settingsBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <h1 className={settingsTitle}>Email verification</h1>

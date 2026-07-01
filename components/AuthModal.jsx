@@ -28,6 +28,7 @@ export default function AuthModal({
 }) {
   const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -40,6 +41,7 @@ export default function AuthModal({
   const resetForm = () => {
     setError("");
     setName("");
+    setUsername("");
     setEmail("");
     setPassword("");
     setConfirmPassword("");
@@ -64,7 +66,7 @@ export default function AuthModal({
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, username, email, password }),
         });
         const data = await response.json();
         if (!response.ok) {
@@ -121,15 +123,27 @@ export default function AuthModal({
 
         <form className={authForm} onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <Input
-              label="Name"
-              id="auth-name"
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              autoComplete="name"
-              required
-            />
+            <>
+              <Input
+                label="Name"
+                id="auth-name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                autoComplete="name"
+                required
+              />
+              <Input
+                label="Username"
+                id="auth-username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                helpText="3–20 letters, numbers, or underscores. Shown on the scoreboard."
+                required
+              />
+            </>
           )}
 
           <Input

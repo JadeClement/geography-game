@@ -9,9 +9,19 @@ import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { detectMilestone } from "@/lib/milestones";
 import { formatGameScore } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
+import { fetchAllMasteryStats } from "@/lib/countryStats";
+import { loadCountriesGeoJSON } from "@/lib/countries";
+import {
+  computeWorldlyBeforeAfter,
+  getCrossedWorldlyMilestone,
+} from "@/lib/worldlyScore";
 import { formatElapsedTime } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import {
+  gameCompleteGraduated,
+  gameCompleteGraduatedChip,
+  gameCompleteGraduatedList,
+  gameCompleteGraduatedTitle,
   gameCompleteStats,
   gameTimer,
   gameTimerModal,
@@ -42,6 +52,7 @@ export default function GameCompleteModal({
   isReview = false,
   isLearning = false,
   milestoneStats,
+  graduatedCountryNames = [],
   canReviewIncorrect = false,
   onReviewIncorrect,
   onPlayAgain,
@@ -53,6 +64,7 @@ export default function GameCompleteModal({
   const [pendingSave, setPendingSave] = useState(null);
   const [streakMessage, setStreakMessage] = useState(null);
   const [milestone, setMilestone] = useState(null);
+  const [worldly, setWorldly] = useState({ settled: false, crossing: null });
   const milestoneResolvedRef = useRef(false);
   const dialogRef = useFocusTrap(open);
 
@@ -64,9 +76,47 @@ export default function GameCompleteModal({
       setPendingSave(null);
       setStreakMessage(null);
       setMilestone(null);
+      setWorldly({ settled: false, crossing: null });
       milestoneResolvedRef.current = false;
     }
   }, [open]);
+
+  // Compute the %Worldly score before/after this game and detect whether it
+  // crossed a celebration boundary (25/50/75/90/100). Runs once the round's
+  // stat saves have settled (mastery snapshot ready) so the fetch is current.
+  useEffect(() => {
+    if (!open) return undefined;
+    if (!signedIn) {
+      setWorldly({ settled: true, crossing: null });
+      return undefined;
+    }
+    if (milestoneStats === undefined) return undefined;
+
+    let cancelled = false;
+    Promise.all([fetchAllMasteryStats(), loadCountriesGeoJSON()])
+      .then(([masteryData, geo]) => {
+        if (cancelled) return;
+        const countryIds = geo.countries.map((country) => country.id);
+        const { beforePercent, afterPercent } = computeWorldlyBeforeAfter({
+          mastery: masteryData.mastery ?? {},
+          countryIds,
+          mode,
+          level,
+          statRecords: milestoneStats?.statRecords ?? {},
+        });
+        setWorldly({
+          settled: true,
+          crossing: getCrossedWorldlyMilestone(beforePercent, afterPercent),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setWorldly({ settled: true, crossing: null });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, signedIn, milestoneStats, mode, level]);
 
   // Detect a milestone once both the score save and the mastery snapshot have
   // settled, so the priority ordering uses complete data.
@@ -80,7 +130,7 @@ export default function GameCompleteModal({
       saveState.result != null ||
       saveState.error != null;
     const masterySettled = milestoneStats !== undefined;
-    if (!saveSettled || !masterySettled) return;
+    if (!saveSettled || !masterySettled || !worldly.settled) return;
 
     const perfectGame =
       !isReview && !isLearning && total > 0 && rightCount === total && wrongCount === 0;
@@ -91,6 +141,7 @@ export default function GameCompleteModal({
         saveResult: saveState.result,
         perfectGame,
         milestoneStats,
+        worldlyMilestone: worldly.crossing,
         regionLabel,
         modeLabel,
       })
@@ -103,6 +154,8 @@ export default function GameCompleteModal({
     saveState.result,
     saveState.error,
     milestoneStats,
+    worldly.settled,
+    worldly.crossing,
     total,
     rightCount,
     wrongCount,
@@ -252,6 +305,20 @@ export default function GameCompleteModal({
 
   const message = saveMessage();
 
+  const GRADUATED_NOUNS = {
+    countries: ["country", "countries"],
+    capitals: ["capital", "capitals"],
+    flags: ["flag", "flags"],
+  };
+
+  function getGraduatedHeading() {
+    const count = graduatedCountryNames.length;
+    const [singular, plural] = GRADUATED_NOUNS[mode] ?? GRADUATED_NOUNS.countries;
+    return count === 1
+      ? `You graduated a new ${singular}!`
+      : `You graduated ${count} new ${plural}!`;
+  }
+
   function getCompletionHeading() {
     if (isLearning) return "Learning complete!";
     if (isReview) return "Review complete!";
@@ -303,6 +370,19 @@ export default function GameCompleteModal({
             <p className={modalMessage({ className: "text-center font-semibold" })}>
               {streakMessage}
             </p>
+          )}
+
+          {graduatedCountryNames.length > 0 && (
+            <div className={gameCompleteGraduated}>
+              <p className={gameCompleteGraduatedTitle}>🎓 {getGraduatedHeading()}</p>
+              <div className={gameCompleteGraduatedList}>
+                {graduatedCountryNames.map((name) => (
+                  <span key={name} className={gameCompleteGraduatedChip}>
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className={modalActions}>

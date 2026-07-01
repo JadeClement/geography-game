@@ -1,9 +1,10 @@
-import { pool, query } from "../lib/db.js";
+import { pool, query, backfillMissingUsernames } from "../lib/db.js";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  username TEXT UNIQUE,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -97,6 +98,18 @@ CREATE TABLE IF NOT EXISTS rate_limit_events (
 
 CREATE INDEX IF NOT EXISTS rate_limit_events_key_idx
   ON rate_limit_events (key, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS user_friends (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  friend_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, friend_id),
+  CHECK (user_id <> friend_id)
+);
+
+CREATE INDEX IF NOT EXISTS user_friends_user_id_idx ON user_friends (user_id);
+CREATE INDEX IF NOT EXISTS user_friends_friend_id_idx ON user_friends (friend_id);
 `;
 
 const MIGRATIONS = `
@@ -104,11 +117,24 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
 UPDATE users SET email_verified_at = created_at
 WHERE email_verified_at IS NULL AND created_at < TIMESTAMPTZ '2025-06-22T00:00:00Z';
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_idx ON users (username);
+
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS mastery_score REAL NOT NULL DEFAULT 0;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS fast_streak INT NOT NULL DEFAULT 0;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS speed_baseline_ms INT;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS graduated BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type TEXT NOT NULL DEFAULT 'color';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_flag TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image TEXT;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type TEXT NOT NULL DEFAULT 'color';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_flag TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image TEXT;
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted
@@ -138,6 +164,10 @@ async function main() {
   await query(SCHEMA);
   await query(MIGRATIONS);
   await query(LEVEL_MIGRATIONS);
+  const backfilled = await backfillMissingUsernames();
+  if (backfilled > 0) {
+    console.log(`Backfilled usernames for ${backfilled} user(s).`);
+  }
   console.log("Database tables are ready.");
   await pool.end();
 }

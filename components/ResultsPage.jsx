@@ -20,6 +20,7 @@ import {
   resultsContent,
   resultsGroupNote,
   resultsGroupTitle,
+  resultsInfoLink,
   resultsMessage,
   resultsMessageError,
   resultsMobileCard,
@@ -278,12 +279,15 @@ export default function ResultsPage() {
 
       <main className={resultsContent}>
         <Link href="/" className={resultsBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <h1 className={resultsTitle}>Results</h1>
         <p className={resultsSubtitle}>
-          Your best scores and mastery for each mode, region, and level.
+          Your best scores and mastery for each mode, region, and level.{" "}
+          <Link href="/results/how-it-works" className={resultsInfoLink}>
+            How does scoring work?
+          </Link>
         </p>
 
         {status === "loading" && <p className={resultsMessage}>Loading…</p>}

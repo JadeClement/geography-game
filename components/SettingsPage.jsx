@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/cn";
 import AppHeader from "@/components/AppHeader";
 import ThemeToggle from "@/components/ThemeToggle";
 import { usePronunciationPrefs } from "@/lib/hooks/usePronunciationPrefs";
@@ -17,6 +16,7 @@ import {
   setCountryClickExpandEnabled,
 } from "@/lib/countryClickExpandPrefs";
 import { previewCorrectSound } from "@/lib/sounds";
+import { cn } from "@/lib/cn";
 import {
   referenceDefaultSetting,
   secondaryBtn,
@@ -65,7 +65,7 @@ export default function SettingsPage() {
       <AppHeader />
       <main className={settingsContent}>
         <Link href="/" className={settingsBack}>
-          ← Back to game
+          Play now!
         </Link>
 
         <h1 className={settingsTitle}>Settings</h1>

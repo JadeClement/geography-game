@@ -416,6 +416,22 @@ export default function GeographyGame() {
     return filterCountriesByRegion(allCountries, session.region);
   }, [allCountries, session]);
 
+  // Countries that crossed the graduation bar for the first time this round
+  // (were not graduated before, are now), surfaced in the end-of-game modal.
+  const newlyGraduatedNames = useMemo(() => {
+    const records = milestoneStats?.statRecords;
+    if (!records) return [];
+
+    const nameById = new Map(allCountries.map((country) => [country.id, country.name]));
+    const names = [];
+    for (const [countryId, record] of Object.entries(records)) {
+      if (record?.afterGraduated && !record?.beforeGraduated) {
+        names.push(nameById.get(countryId) ?? countryId);
+      }
+    }
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [milestoneStats, allCountries]);
+
   useEffect(() => {
     regionCountryIdsRef.current = activeCountries.map((country) => country.id);
   }, [activeCountries]);
@@ -2171,6 +2187,7 @@ export default function GeographyGame() {
             isReview={session.review}
             isLearning={isLearningGame}
             milestoneStats={milestoneStats}
+            graduatedCountryNames={newlyGraduatedNames}
             canReviewIncorrect={isTestGame && !session.review && wrongCount > 0}
             onReviewIncorrect={handleReviewIncorrect}
             onPlayAgain={handlePlayAgain}
