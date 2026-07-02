@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
@@ -11,6 +11,7 @@ import {
   gameTutorialCardBody,
   gameTutorialCardTitle,
   gameTutorialFooter,
+  gameTutorialHelpBadge,
   gameTutorialNavBtn,
   gameTutorialNavBtnPrimary,
   gameTutorialOverlay,
@@ -22,6 +23,7 @@ import {
   gameTutorialSpotlightRing,
   gameTutorialTooltip,
   gameTutorialTooltipArrow,
+  gameTutorialTooltipMobileSheet,
 } from "@/lib/ui";
 
 const TOOLTIP_GAP = 14;
@@ -31,6 +33,22 @@ const TOOLTIP_ESTIMATED_WIDTH = 320;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function renderBody(body) {
+  if (typeof body !== "string" || !body.includes("{{help}}")) {
+    return body;
+  }
+  return body.split("{{help}}").flatMap((segment, index) =>
+    index === 0
+      ? [segment]
+      : [
+          <span key={`help-${index}`} className={gameTutorialHelpBadge} aria-label="help">
+            ?
+          </span>,
+          segment,
+        ]
+  );
 }
 
 function resolveTarget(target) {
@@ -48,20 +66,21 @@ function getTargetRect(targetEl) {
   return rect;
 }
 
-function choosePlacement(preferred, rect) {
+function choosePlacement(preferred, rect, tooltipHeight) {
   if (!rect || typeof window === "undefined") return preferred;
 
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const height = tooltipHeight ?? TOOLTIP_ESTIMATED_HEIGHT;
 
   if (preferred === "bottom") {
-    const overflow = rect.bottom + TOOLTIP_GAP + TOOLTIP_ESTIMATED_HEIGHT;
+    const overflow = rect.bottom + TOOLTIP_GAP + height;
     if (overflow > viewportHeight - VIEWPORT_PADDING) return "top";
     return preferred;
   }
 
   if (preferred === "top") {
-    const overflow = rect.top - TOOLTIP_GAP - TOOLTIP_ESTIMATED_HEIGHT;
+    const overflow = rect.top - TOOLTIP_GAP - height;
     if (overflow < VIEWPORT_PADDING) return "bottom";
     return preferred;
   }
@@ -81,65 +100,125 @@ function choosePlacement(preferred, rect) {
   return preferred;
 }
 
-function getTooltipStyle(placement, rect) {
-  if (!rect || typeof window === "undefined") {
+function getTooltipDockedStyle() {
+  return {
+    left: VIEWPORT_PADDING,
+    right: VIEWPORT_PADDING,
+    bottom: `max(${VIEWPORT_PADDING}px, env(safe-area-inset-bottom, 0px))`,
+    top: "auto",
+    transform: "none",
+    maxWidth: "none",
+  };
+}
+
+function getTooltipBounds(style, placement, width, height) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  if (style.top === "auto" && style.bottom != null) {
+    const bottomPx =
+      typeof style.bottom === "number"
+        ? style.bottom
+        : VIEWPORT_PADDING;
     return {
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      maxWidth: "min(22rem, calc(100vw - 2rem))",
+      top: viewportHeight - bottomPx - height,
+      bottom: viewportHeight - bottomPx,
+      left: VIEWPORT_PADDING,
+      right: viewportWidth - VIEWPORT_PADDING,
     };
   }
 
-  const resolvedPlacement = choosePlacement(placement, rect);
+  const top = style.top ?? 0;
+  const left = style.left ?? 0;
+  const transform = style.transform ?? "";
+
+  let boxTop = top;
+  let boxLeft = left;
+
+  if (transform.includes("-100%")) {
+    if (transform.includes("-50%")) {
+      boxTop = top - height;
+      boxLeft = left - width / 2;
+    } else {
+      boxTop = top - height;
+    }
+  } else if (transform.includes("-50%")) {
+    boxLeft = left - width / 2;
+    if (transform.includes("translateY")) {
+      boxTop = top - height / 2;
+    }
+  } else if (transform.includes("translateX(-50%)")) {
+    boxLeft = left - width / 2;
+  }
+
+  return {
+    top: boxTop,
+    left: boxLeft,
+    bottom: boxTop + height,
+    right: boxLeft + width,
+  };
+}
+
+function tooltipFitsViewport(style, placement, width, height) {
+  if (typeof window === "undefined") return true;
+  const bounds = getTooltipBounds(style, placement, width, height);
+  return (
+    bounds.top >= VIEWPORT_PADDING &&
+    bounds.left >= VIEWPORT_PADDING &&
+    bounds.bottom <= window.innerHeight - VIEWPORT_PADDING &&
+    bounds.right <= window.innerWidth - VIEWPORT_PADDING
+  );
+}
+
+function computeTooltipStyle(placement, rect, width, height) {
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
   const maxWidth = "min(22rem, calc(100vw - 2rem))";
 
-  if (resolvedPlacement === "bottom") {
+  if (placement === "bottom") {
     return {
       top: clamp(
         rect.bottom + TOOLTIP_GAP,
         VIEWPORT_PADDING,
-        window.innerHeight - TOOLTIP_ESTIMATED_HEIGHT - VIEWPORT_PADDING
+        window.innerHeight - height - VIEWPORT_PADDING
       ),
       left: clamp(
         centerX,
-        VIEWPORT_PADDING + TOOLTIP_ESTIMATED_WIDTH / 2,
-        window.innerWidth - VIEWPORT_PADDING - TOOLTIP_ESTIMATED_WIDTH / 2
+        VIEWPORT_PADDING + width / 2,
+        window.innerWidth - VIEWPORT_PADDING - width / 2
       ),
       transform: "translateX(-50%)",
       maxWidth,
     };
   }
 
-  if (resolvedPlacement === "top") {
+  if (placement === "top") {
     return {
       top: clamp(
         rect.top - TOOLTIP_GAP,
-        VIEWPORT_PADDING + TOOLTIP_ESTIMATED_HEIGHT,
+        VIEWPORT_PADDING + height,
         window.innerHeight - VIEWPORT_PADDING
       ),
       left: clamp(
         centerX,
-        VIEWPORT_PADDING + TOOLTIP_ESTIMATED_WIDTH / 2,
-        window.innerWidth - VIEWPORT_PADDING - TOOLTIP_ESTIMATED_WIDTH / 2
+        VIEWPORT_PADDING + width / 2,
+        window.innerWidth - VIEWPORT_PADDING - width / 2
       ),
       transform: "translate(-50%, -100%)",
       maxWidth,
     };
   }
 
-  if (resolvedPlacement === "left") {
+  if (placement === "left") {
     return {
       top: clamp(
         centerY,
-        VIEWPORT_PADDING + TOOLTIP_ESTIMATED_HEIGHT / 2,
-        window.innerHeight - VIEWPORT_PADDING - TOOLTIP_ESTIMATED_HEIGHT / 2
+        VIEWPORT_PADDING + height / 2,
+        window.innerHeight - VIEWPORT_PADDING - height / 2
       ),
       left: clamp(
         rect.left - TOOLTIP_GAP,
-        VIEWPORT_PADDING + TOOLTIP_ESTIMATED_WIDTH,
+        VIEWPORT_PADDING + width,
         window.innerWidth - VIEWPORT_PADDING
       ),
       transform: "translate(-100%, -50%)",
@@ -150,17 +229,40 @@ function getTooltipStyle(placement, rect) {
   return {
     top: clamp(
       centerY,
-      VIEWPORT_PADDING + TOOLTIP_ESTIMATED_HEIGHT / 2,
-      window.innerHeight - VIEWPORT_PADDING - TOOLTIP_ESTIMATED_HEIGHT / 2
+      VIEWPORT_PADDING + height / 2,
+      window.innerHeight - VIEWPORT_PADDING - height / 2
     ),
     left: clamp(
       rect.right + TOOLTIP_GAP,
       VIEWPORT_PADDING,
-      window.innerWidth - TOOLTIP_ESTIMATED_WIDTH - VIEWPORT_PADDING
+      window.innerWidth - width - VIEWPORT_PADDING
     ),
     transform: "translateY(-50%)",
     maxWidth: "min(18rem, calc(100vw - 2rem))",
   };
+}
+
+function getTooltipStyle(placement, rect, tooltipSize = {}) {
+  if (!rect || typeof window === "undefined") {
+    return getTooltipDockedStyle();
+  }
+
+  const width = tooltipSize.width ?? TOOLTIP_ESTIMATED_WIDTH;
+  const height = tooltipSize.height ?? TOOLTIP_ESTIMATED_HEIGHT;
+  const resolvedPlacement = choosePlacement(placement, rect, height);
+  const style = computeTooltipStyle(resolvedPlacement, rect, width, height);
+
+  if (tooltipFitsViewport(style, resolvedPlacement, width, height)) {
+    return style;
+  }
+
+  const alternatePlacement = resolvedPlacement === "top" ? "bottom" : "top";
+  const alternateStyle = computeTooltipStyle(alternatePlacement, rect, width, height);
+  if (tooltipFitsViewport(alternateStyle, alternatePlacement, width, height)) {
+    return alternateStyle;
+  }
+
+  return getTooltipDockedStyle();
 }
 
 function getSpotlightPlacement(target, rect, isMobile) {
@@ -182,7 +284,9 @@ export default function GameTutorial({
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
+  const [tooltipSize, setTooltipSize] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const tooltipRef = useRef(null);
 
   const step = steps[stepIndex] ?? null;
   const isFirst = stepIndex === 0;
@@ -217,12 +321,28 @@ export default function GameTutorial({
     if (!open) {
       setStepIndex(0);
       setTargetRect(null);
+      setTooltipSize(null);
     }
   }, [open]);
 
   useLayoutEffect(() => {
     measureTarget();
   }, [measureTarget, stepIndex]);
+
+  useLayoutEffect(() => {
+    if (!open || !step || step.type !== "spotlight" || isMobile) {
+      setTooltipSize(null);
+      return;
+    }
+
+    const el = tooltipRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setTooltipSize({ width: rect.width, height: rect.height });
+    }
+  }, [open, step, stepIndex, targetRect, isMobile]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -253,11 +373,25 @@ export default function GameTutorial({
         event.preventDefault();
         setStepIndex((index) => Math.max(index - 1, 0));
       }
+      if (event.key === "Enter") {
+        const el = event.target;
+        const tag = el?.tagName?.toLowerCase();
+        if (tag === "input" || tag === "textarea" || tag === "select" || el?.isContentEditable) {
+          return;
+        }
+        event.preventDefault();
+        if (isLast) {
+          onComplete?.();
+          onClose?.({ completed: true, skipped: false });
+        } else {
+          setStepIndex((index) => Math.min(index + 1, steps.length - 1));
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, isFirst, isLast, onClose, steps.length]);
+  }, [open, isFirst, isLast, onClose, onComplete, steps.length]);
 
   if (!open || !step || !mounted) return null;
 
@@ -322,7 +456,7 @@ export default function GameTutorial({
           <h2 id="game-tutorial-title" className={gameTutorialCardTitle}>
             {step.title}
           </h2>
-          <p className={gameTutorialCardBody}>{step.body}</p>
+          <p className={gameTutorialCardBody}>{renderBody(step.body)}</p>
           {footer}
         </div>
       </div>
@@ -340,8 +474,14 @@ export default function GameTutorial({
           : null;
 
         const placement = getSpotlightPlacement(step.target, targetRect, isMobile);
-        const tooltipStyle = getTooltipStyle(placement, targetRect);
-        const tooltipClassName = gameTutorialTooltip;
+        const useMobileSheet = isMobile;
+        const tooltipStyle = useMobileSheet
+          ? undefined
+          : getTooltipStyle(placement, targetRect, tooltipSize ?? undefined);
+        const tooltipClassName = useMobileSheet
+          ? gameTutorialTooltipMobileSheet
+          : gameTutorialTooltip;
+        const showArrow = !useMobileSheet && Boolean(spotlightStyle);
 
         return (
           <div
@@ -367,18 +507,18 @@ export default function GameTutorial({
             ) : (
               <div className={gameTutorialBackdrop} aria-hidden="true" />
             )}
-            <div className={tooltipClassName} style={tooltipStyle}>
-              {!spotlightStyle ? null : (
+            <div ref={tooltipRef} className={tooltipClassName} style={tooltipStyle}>
+              {showArrow ? (
                 <div
                   className={gameTutorialTooltipArrow}
                   data-placement={placement}
                   aria-hidden="true"
                 />
-              )}
+              ) : null}
               <h2 id="game-tutorial-title" className={gameTutorialCardTitle}>
                 {step.title}
               </h2>
-              <p className={gameTutorialCardBody}>{step.body}</p>
+              <p className={gameTutorialCardBody}>{renderBody(step.body)}</p>
               {footer}
             </div>
           </div>
