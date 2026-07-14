@@ -27,7 +27,31 @@ function VerifyEmailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
   const verifyStartedRef = useRef(false);
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+    setResendError("");
+
+    try {
+      const response = await fetch("/api/auth/verify-email/resend", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not send verification email.");
+      }
+
+      setResendMessage(data.message || "Verification email sent.");
+    } catch (resendErr) {
+      setResendError(resendErr.message || "Could not send verification email.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!token) {
@@ -87,15 +111,22 @@ function VerifyEmailContent() {
           <button
             type="button"
             className={linkBtn}
-            onClick={() =>
-              fetch("/api/auth/verify-email/resend", { method: "POST" })
-                .then((res) => res.json())
-                .then((data) => setSuccess(data.message || data.error))
-            }
+            onClick={handleResend}
+            disabled={resendLoading}
           >
-            Resend verification email
+            {resendLoading ? "Sending…" : "Resend verification email"}
           </button>
         </p>
+        {resendMessage && (
+          <div className="mt-3">
+            <ValidationMessage type="success" message={resendMessage} />
+          </div>
+        )}
+        {resendError && (
+          <div className="mt-3">
+            <ValidationMessage type="error" message={resendError} />
+          </div>
+        )}
       </>
     );
   }
