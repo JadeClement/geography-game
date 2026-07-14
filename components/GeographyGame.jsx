@@ -457,6 +457,8 @@ export default function GeographyGame() {
   const isDiscoverGame = session?.gameType === GAME_TYPES.DISCOVER;
   const isTestGame = session?.gameType === GAME_TYPES.TEST;
   const isLearningGame = session?.gameType === GAME_TYPES.LEARNING;
+  const showLearnMorePanel =
+    isDiscoverGame || isLearningGame || Boolean(session?.review);
   const isFindGame = Boolean(
     session?.level && isFindLevel(session.level) && !isDiscoverGame
   );
@@ -584,7 +586,7 @@ export default function GeographyGame() {
   }, [session, gameComplete]);
 
   useEffect(() => {
-    if (!gameActive || gameComplete || !targetCountry) return;
+    if (!gameActive || gameComplete || !targetCountry || !showLearnMorePanel) return;
 
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -611,6 +613,7 @@ export default function GeographyGame() {
   }, [
     gameActive,
     gameComplete,
+    showLearnMorePanel,
     learnMorePanelOpen,
     targetCountry,
     toggleLearnMorePanel,
@@ -902,7 +905,9 @@ export default function GeographyGame() {
       roundStartTimeRef.current = Date.now();
       setAnswerText("");
       setSpellingSuggestionText(null);
-      setLearnMorePanelOpen(getReferencePanelDefaultOpen());
+      setLearnMorePanelOpen(
+        (gameType === GAME_TYPES.LEARNING || review) && getReferencePanelDefaultOpen()
+      );
       updateShowColorForRound(first, level, mode);
 
       if (isNameLevel(level)) {
@@ -2114,7 +2119,7 @@ export default function GeographyGame() {
                   />
                 </div>
               )}
-              {targetCountry && (
+              {targetCountry && showLearnMorePanel && (
                 <MapCountryInfoPanels
                   country={targetCountry}
                   allCountries={allCountries}
