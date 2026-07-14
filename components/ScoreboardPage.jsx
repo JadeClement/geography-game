@@ -164,6 +164,9 @@ function PendingRequestRow({ user }) {
 
   return (
     <div className={sbPendingRow}>
+      <span className={sbRank} aria-hidden="true">
+        -
+      </span>
       <span className={sbAvatar(avatarColor(entry))} aria-hidden="true">
         {initialFor(entry)}
       </span>
@@ -186,6 +189,9 @@ function IncomingRequestRow({ request, onAccept, onDecline, pendingAction }) {
 
   return (
     <div className={sbPendingRow}>
+      <span className={sbRank} aria-hidden="true">
+        -
+      </span>
       <span className={sbAvatar(avatarColor(entry))} aria-hidden="true">
         {initialFor(entry)}
       </span>
