@@ -1809,7 +1809,9 @@ export default function GeographyGame() {
             aria-label={
               session.mode === GAME_MODES.CAPITALS
                 ? "Capital answer"
-                : "Country answer"
+                : session.mode === GAME_MODES.FLAGS
+                  ? "Country answer — identify the flag"
+                  : "Country answer"
             }
             autoComplete="off"
             spellCheck={false}
@@ -1841,6 +1843,8 @@ export default function GeographyGame() {
             }
             pronunciationDisabled={!pronunciationAllowed}
           />
+        ) : showFlagPrompt ? (
+          <span className="sr-only">{flagPromptAlt}</span>
         ) : null
       ) : showFlagInPrompt && showFlagPrompt ? (
         <FlagPrompt
@@ -2102,8 +2106,12 @@ export default function GeographyGame() {
                 />
               )}
               {showFlagPrompt && (
-                <div className={cn(flagCard, "max-md:hidden")} aria-hidden="true">
-                  <FlagPrompt iso2={targetCountry.iso2} size="card" />
+                <div className={cn(flagCard, "max-md:hidden")}>
+                  <FlagPrompt
+                    iso2={targetCountry.iso2}
+                    size="card"
+                    alt={flagPromptAlt}
+                  />
                 </div>
               )}
               {targetCountry && (
