@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import AuthModal from "@/components/AuthModal";
 import Input from "@/components/ui/Input";
 import ValidationMessage from "@/components/ui/ValidationMessage";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/lib/ui";
 
 function ResetPasswordForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
 
@@ -31,6 +33,7 @@ function ResetPasswordForm() {
   const [tokenValid, setTokenValid] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -113,9 +116,14 @@ function ResetPasswordForm() {
     return (
       <>
         <p className={modalMessage({ success: true })}>{success}</p>
-        <Link href="/" className={primaryBtn}>
+        <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
           Sign in
-        </Link>
+        </button>
+        <AuthModal
+          open={authOpen}
+          onClose={() => setAuthOpen(false)}
+          onSuccess={() => router.push("/")}
+        />
       </>
     );
   }
