@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import {
   getCountryStatsForUsers,
   getFriendsForUser,
+  getOutgoingFriendRequestsForUser,
   getOutgoingFriendRequestUserIds,
   getPendingFriendRequestsForUser,
   getPracticeSessionCountsForUsers,
@@ -47,11 +48,11 @@ export async function GET() {
   const userId = session.user.id;
 
   try {
-    const [self, friends, pendingRequests, outgoingRequestUserIds] = await Promise.all([
+    const [self, friends, pendingRequests, outgoingRequests] = await Promise.all([
       getUserById(userId),
       getFriendsForUser(userId),
       getPendingFriendRequestsForUser(userId),
-      getOutgoingFriendRequestUserIds(userId),
+      getOutgoingFriendRequestsForUser(userId),
     ]);
 
     const people = [
@@ -115,12 +116,21 @@ export async function GET() {
           username: request.username,
         },
       })),
-      outgoingRequestUserIds,
+      outgoingRequests: outgoingRequests.map((request) => ({
+        id: request.id,
+        requestedAt: request.requestedAt,
+        toUser: {
+          id: request.toUserId,
+          name: request.name,
+          username: request.username,
+        },
+      })),
+      outgoingRequestUserIds: outgoingRequests.map((request) => request.toUserId),
     });
   } catch (error) {
     console.error("Leaderboard fetch error:", error);
     if (error?.code === "42P01") {
-      return Response.json({ leaderboard: [], pendingRequests: [], outgoingRequestUserIds: [] });
+      return Response.json({ leaderboard: [], pendingRequests: [], outgoingRequests: [], outgoingRequestUserIds: [] });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }

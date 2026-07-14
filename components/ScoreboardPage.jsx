@@ -25,9 +25,10 @@ import {
   sbModalCard,
   sbName,
   sbRank,
+  sbPendingLabel,
+  sbPendingRow,
   sbRequestActionBtn,
   sbRequestActions,
-  sbRequestHeading,
   sbRequestSection,
   sbResultAddBtn,
   sbResultAvatar,
@@ -153,7 +154,28 @@ function LeaderboardRow({ rank, entry, tab }) {
   );
 }
 
-function FriendRequestRow({ request, onAccept, onDecline, pendingAction }) {
+function PendingRequestRow({ user }) {
+  const entry = {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    isYou: false,
+  };
+
+  return (
+    <div className={sbPendingRow}>
+      <span className={sbAvatar(avatarColor(entry))} aria-hidden="true">
+        {initialFor(entry)}
+      </span>
+      <div className={sbRowMain}>
+        <p className={sbName}>{displayName(entry)}</p>
+      </div>
+      <span className={sbPendingLabel}>Pending</span>
+    </div>
+  );
+}
+
+function IncomingRequestRow({ request, onAccept, onDecline, pendingAction }) {
   const user = request.fromUser;
   const entry = {
     id: user.id,
@@ -163,13 +185,12 @@ function FriendRequestRow({ request, onAccept, onDecline, pendingAction }) {
   };
 
   return (
-    <div className={sbRow()}>
+    <div className={sbPendingRow}>
       <span className={sbAvatar(avatarColor(entry))} aria-hidden="true">
         {initialFor(entry)}
       </span>
       <div className={sbRowMain}>
         <p className={sbName}>{displayName(entry)}</p>
-        <p className={sbStats}>Wants to be your friend</p>
       </div>
       <div className={sbRequestActions}>
         <button
@@ -391,6 +412,7 @@ export default function ScoreboardPage() {
   const [tab, setTab] = useState("week");
   const [leaderboard, setLeaderboard] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [outgoingRequestUserIds, setOutgoingRequestUserIds] = useState([]);
   const [requestActionId, setRequestActionId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -410,6 +432,7 @@ export default function ScoreboardPage() {
       .then((data) => {
         setLeaderboard(data.leaderboard ?? []);
         setPendingRequests(data.pendingRequests ?? []);
+        setOutgoingRequests(data.outgoingRequests ?? []);
         setOutgoingRequestUserIds(data.outgoingRequestUserIds ?? []);
         setLoading(false);
       })
@@ -423,6 +446,7 @@ export default function ScoreboardPage() {
     if (!signedIn) {
       setLeaderboard([]);
       setPendingRequests([]);
+      setOutgoingRequests([]);
       setOutgoingRequestUserIds([]);
       setLoading(false);
       setError(null);
@@ -487,6 +511,9 @@ export default function ScoreboardPage() {
       setRequestActionId(null);
     }
   };
+
+  const hasPending =
+    pendingRequests.length > 0 || outgoingRequests.length > 0;
 
   const passedBy = useMemo(() => {
     const you = leaderboard.find((entry) => entry.isYou);
@@ -562,11 +589,10 @@ export default function ScoreboardPage() {
                 <LeaderboardRow key={entry.id} rank={index + 1} entry={entry} tab={tab} />
               ))}
 
-              {pendingRequests.length > 0 && (
+              {(pendingRequests.length > 0 || outgoingRequests.length > 0) && (
                 <div className={sbRequestSection}>
-                  <p className={sbRequestHeading}>Friend requests</p>
                   {pendingRequests.map((request) => (
-                    <FriendRequestRow
+                    <IncomingRequestRow
                       key={request.id}
                       request={request}
                       onAccept={handleAcceptRequest}
@@ -574,11 +600,14 @@ export default function ScoreboardPage() {
                       pendingAction={requestActionId}
                     />
                   ))}
+                  {outgoingRequests.map((request) => (
+                    <PendingRequestRow key={request.id} user={request.toUser} />
+                  ))}
                 </div>
               )}
             </div>
 
-            {!hasFriends && pendingRequests.length === 0 && (
+            {!hasFriends && !hasPending && (
               <p className={cn(scoreboardEmpty, "text-center")}>
                 Send friend requests to see how you compare.
               </p>
@@ -600,11 +629,7 @@ export default function ScoreboardPage() {
         onClose={() => setAddOpen(false)}
         existingIds={existingIds}
         requestedIds={requestedIds}
-        onRequested={(userId) => {
-          setOutgoingRequestUserIds((current) =>
-            current.includes(userId) ? current : [...current, userId]
-          );
-        }}
+        onRequested={() => loadLeaderboard()}
         currentUserId={session?.user?.id}
         currentUsername={session?.user?.username}
       />
