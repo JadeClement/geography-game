@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import AuthModal from "@/components/AuthModal";
 import UserAvatar from "@/components/UserAvatar";
 import Input from "@/components/ui/Input";
 import ValidationMessage from "@/components/ui/ValidationMessage";
@@ -27,6 +28,8 @@ import {
   accountUploadArea,
   accountUploadBtn,
   accountUploadHint,
+  primaryBtn,
+  scoreboardSignIn,
   secondaryBtn,
   settingsBack,
   settingsContent,
@@ -47,6 +50,7 @@ export default function AccountPage() {
   const { data: session, status, update } = useSession();
   const { profile, avatar, refresh } = useUserProfile();
   const signedIn = status === "authenticated";
+  const [authOpen, setAuthOpen] = useState(false);
 
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
@@ -234,21 +238,6 @@ export default function AccountPage() {
     }
   };
 
-  if (!signedIn) {
-    return (
-      <div className={settingsPage}>
-        <AppHeader />
-        <main className={settingsContent}>
-          <Link href="/" className={settingsBack}>
-            Play now!
-          </Link>
-          <h1 className={settingsTitle}>Account</h1>
-          <p className={settingsSectionDescription}>Sign in to manage your profile.</p>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className={settingsPage}>
       <AppHeader />
@@ -259,6 +248,21 @@ export default function AccountPage() {
 
         <h1 className={settingsTitle}>Account</h1>
 
+        {status === "loading" && (
+          <p className={settingsSectionDescription}>Loading…</p>
+        )}
+
+        {!signedIn && status !== "loading" && (
+          <div className={scoreboardSignIn}>
+            <p className={settingsSectionDescription}>Sign in to manage your profile.</p>
+            <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
+              Sign in / Create account
+            </button>
+          </div>
+        )}
+
+        {signedIn && (
+          <>
         <section className={settingsSection}>
           <h2 className={settingsSectionTitle}>Avatar</h2>
           <p className={settingsSectionDescription}>
@@ -423,7 +427,10 @@ export default function AccountPage() {
             </button>
           </form>
         </section>
+          </>
+        )}
       </main>
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }
