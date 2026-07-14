@@ -135,6 +135,25 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type TEXT NOT NULL DEFAULT 'co
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_flag TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image TEXT;
+
+CREATE TABLE IF NOT EXISTS friend_requests (
+  id TEXT PRIMARY KEY,
+  from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  responded_at TIMESTAMPTZ,
+  UNIQUE (from_user_id, to_user_id),
+  CHECK (from_user_id <> to_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS friend_requests_to_user_pending_idx
+  ON friend_requests (to_user_id, created_at DESC)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS friend_requests_from_user_pending_idx
+  ON friend_requests (from_user_id, created_at DESC)
+  WHERE status = 'pending';
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted

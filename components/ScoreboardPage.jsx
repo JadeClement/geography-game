@@ -25,6 +25,10 @@ import {
   sbModalCard,
   sbName,
   sbRank,
+  sbRequestActionBtn,
+  sbRequestActions,
+  sbRequestHeading,
+  sbRequestSection,
   sbResultAddBtn,
   sbResultAvatar,
   sbResultMain,
@@ -149,14 +153,54 @@ function LeaderboardRow({ rank, entry, tab }) {
   );
 }
 
-function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, currentUsername }) {
+function FriendRequestRow({ request, onAccept, onDecline, pendingAction }) {
+  const user = request.fromUser;
+  const entry = {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    isYou: false,
+  };
+
+  return (
+    <div className={sbRow()}>
+      <span className={sbAvatar(avatarColor(entry))} aria-hidden="true">
+        {initialFor(entry)}
+      </span>
+      <div className={sbRowMain}>
+        <p className={sbName}>{displayName(entry)}</p>
+        <p className={sbStats}>Wants to be your friend</p>
+      </div>
+      <div className={sbRequestActions}>
+        <button
+          type="button"
+          className={sbRequestActionBtn({ variant: "accept" })}
+          disabled={pendingAction === request.id}
+          onClick={() => onAccept(request)}
+        >
+          {pendingAction === request.id ? "…" : "Accept"}
+        </button>
+        <button
+          type="button"
+          className={sbRequestActionBtn({ variant: "decline" })}
+          disabled={pendingAction === request.id}
+          onClick={() => onDecline(request)}
+        >
+          Decline
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddFriendsModal({ open, onClose, existingIds, requestedIds, onRequested, currentUserId, currentUsername }) {
   const dialogRef = useFocusTrap(open);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [addedIds, setAddedIds] = useState(() => new Set());
+  const [requestedIdsLocal, setRequestedIdsLocal] = useState(() => new Set());
   const [pendingId, setPendingId] = useState(null);
 
   useEffect(() => {
@@ -166,7 +210,7 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
       setLoading(false);
       setError(null);
       setHasSearched(false);
-      setAddedIds(new Set());
+      setRequestedIdsLocal(new Set());
       setPendingId(null);
     }
   }, [open]);
@@ -232,7 +276,7 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  const handleAdd = async (user) => {
+  const handleRequest = async (user) => {
     setPendingId(user.id);
     setError(null);
     try {
@@ -242,11 +286,11 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
         body: JSON.stringify({ friendId: user.id }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Could not add friend.");
-      setAddedIds((prev) => new Set(prev).add(user.id));
-      onAdded?.();
-    } catch (addError) {
-      setError(addError.message || "Could not add friend.");
+      if (!response.ok) throw new Error(data.error || "Could not send friend request.");
+      setRequestedIdsLocal((prev) => new Set(prev).add(user.id));
+      onRequested?.(user.id);
+    } catch (requestError) {
+      setError(requestError.message || "Could not send friend request.");
     } finally {
       setPendingId(null);
     }
@@ -272,7 +316,7 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
           Add friends
         </h2>
         <p className={modalSubtitle}>
-          Search for other players by username to add them to your leaderboard.
+          Search for other players by username to send them a friend request.
         </p>
 
         <Input
@@ -300,7 +344,9 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
               </p>
             ) : (
               results.map((user) => {
-                const alreadyFriend = existingIds.has(user.id) || addedIds.has(user.id);
+                const alreadyFriend = existingIds.has(user.id);
+                const requestPending =
+                  requestedIds.has(user.id) || requestedIdsLocal.has(user.id);
                 return (
                   <div key={user.id} className={sbResultRow}>
                     <span className={sbResultAvatar} aria-hidden="true">
@@ -312,15 +358,20 @@ function AddFriendsModal({ open, onClose, existingIds, onAdded, currentUserId, c
                     </div>
                     <button
                       type="button"
-                      className={sbResultAddBtn({ added: alreadyFriend })}
-                      disabled={alreadyFriend || pendingId === user.id}
-                      onClick={() => handleAdd(user)}
+                      className={sbResultAddBtn({
+                        added: alreadyFriend,
+                        pending: requestPending && !alreadyFriend,
+                      })}
+                      disabled={alreadyFriend || requestPending || pendingId === user.id}
+                      onClick={() => handleRequest(user)}
                     >
                       {alreadyFriend
-                        ? "Added"
-                        : pendingId === user.id
-                          ? "Adding…"
-                          : "Add"}
+                        ? "Friends"
+                        : requestPending
+                          ? "Requested"
+                          : pendingId === user.id
+                            ? "Sending…"
+                            : "Request"}
                     </button>
                   </div>
                 );
@@ -339,6 +390,9 @@ export default function ScoreboardPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState("week");
   const [leaderboard, setLeaderboard] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [outgoingRequestUserIds, setOutgoingRequestUserIds] = useState([]);
+  const [requestActionId, setRequestActionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -351,10 +405,12 @@ export default function ScoreboardPage() {
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || "Could not load leaderboard.");
-        return data.leaderboard ?? [];
+        return data;
       })
-      .then((entries) => {
-        setLeaderboard(entries);
+      .then((data) => {
+        setLeaderboard(data.leaderboard ?? []);
+        setPendingRequests(data.pendingRequests ?? []);
+        setOutgoingRequestUserIds(data.outgoingRequestUserIds ?? []);
         setLoading(false);
       })
       .catch((fetchError) => {
@@ -366,6 +422,8 @@ export default function ScoreboardPage() {
   useEffect(() => {
     if (!signedIn) {
       setLeaderboard([]);
+      setPendingRequests([]);
+      setOutgoingRequestUserIds([]);
       setLoading(false);
       setError(null);
       return;
@@ -386,6 +444,49 @@ export default function ScoreboardPage() {
     () => new Set(leaderboard.filter((entry) => !entry.isYou).map((entry) => entry.id)),
     [leaderboard]
   );
+
+  const requestedIds = useMemo(
+    () => new Set(outgoingRequestUserIds),
+    [outgoingRequestUserIds]
+  );
+
+  const handleAcceptRequest = async (request) => {
+    setRequestActionId(request.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/users/friend-requests/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "accept" }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not accept friend request.");
+      await loadLeaderboard();
+    } catch (acceptError) {
+      setError(acceptError.message || "Could not accept friend request.");
+    } finally {
+      setRequestActionId(null);
+    }
+  };
+
+  const handleDeclineRequest = async (request) => {
+    setRequestActionId(request.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/users/friend-requests/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "decline" }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not decline friend request.");
+      setPendingRequests((current) => current.filter((item) => item.id !== request.id));
+    } catch (declineError) {
+      setError(declineError.message || "Could not decline friend request.");
+    } finally {
+      setRequestActionId(null);
+    }
+  };
 
   const passedBy = useMemo(() => {
     const you = leaderboard.find((entry) => entry.isYou);
@@ -408,7 +509,7 @@ export default function ScoreboardPage() {
 
         <h1 className={scoreboardTitle}>Scoreboard</h1>
         <p className={scoreboardSubtitle}>
-          See how you stack up against your friends. Add friends to grow your leaderboard.
+          See how you stack up against your friends. Send requests to grow your leaderboard.
         </p>
 
         {status === "loading" && <p className={scoreboardMessage}>Loading…</p>}
@@ -460,11 +561,26 @@ export default function ScoreboardPage() {
               {ranked.map((entry, index) => (
                 <LeaderboardRow key={entry.id} rank={index + 1} entry={entry} tab={tab} />
               ))}
+
+              {pendingRequests.length > 0 && (
+                <div className={sbRequestSection}>
+                  <p className={sbRequestHeading}>Friend requests</p>
+                  {pendingRequests.map((request) => (
+                    <FriendRequestRow
+                      key={request.id}
+                      request={request}
+                      onAccept={handleAcceptRequest}
+                      onDecline={handleDeclineRequest}
+                      pendingAction={requestActionId}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {!hasFriends && (
+            {!hasFriends && pendingRequests.length === 0 && (
               <p className={cn(scoreboardEmpty, "text-center")}>
-                Add friends to see how you compare.
+                Send friend requests to see how you compare.
               </p>
             )}
 
@@ -483,7 +599,12 @@ export default function ScoreboardPage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         existingIds={existingIds}
-        onAdded={loadLeaderboard}
+        requestedIds={requestedIds}
+        onRequested={(userId) => {
+          setOutgoingRequestUserIds((current) =>
+            current.includes(userId) ? current : [...current, userId]
+          );
+        }}
         currentUserId={session?.user?.id}
         currentUsername={session?.user?.username}
       />

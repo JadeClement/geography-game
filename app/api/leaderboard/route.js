@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import {
   getCountryStatsForUsers,
   getFriendsForUser,
+  getOutgoingFriendRequestUserIds,
+  getPendingFriendRequestsForUser,
   getPracticeSessionCountsForUsers,
   getStreaksForUsers,
   getUserById,
@@ -45,9 +47,11 @@ export async function GET() {
   const userId = session.user.id;
 
   try {
-    const [self, friends] = await Promise.all([
+    const [self, friends, pendingRequests, outgoingRequestUserIds] = await Promise.all([
       getUserById(userId),
       getFriendsForUser(userId),
+      getPendingFriendRequestsForUser(userId),
+      getOutgoingFriendRequestUserIds(userId),
     ]);
 
     const people = [
@@ -100,11 +104,23 @@ export async function GET() {
       };
     });
 
-    return Response.json({ leaderboard });
+    return Response.json({
+      leaderboard,
+      pendingRequests: pendingRequests.map((request) => ({
+        id: request.id,
+        requestedAt: request.requestedAt,
+        fromUser: {
+          id: request.fromUserId,
+          name: request.name,
+          username: request.username,
+        },
+      })),
+      outgoingRequestUserIds,
+    });
   } catch (error) {
     console.error("Leaderboard fetch error:", error);
     if (error?.code === "42P01") {
-      return Response.json({ leaderboard: [] });
+      return Response.json({ leaderboard: [], pendingRequests: [], outgoingRequestUserIds: [] });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }
