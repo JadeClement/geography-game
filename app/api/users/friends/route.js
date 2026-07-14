@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { createFriendRequest, getFriendsForUser } from "@/lib/db";
+import { createFriendRequest, FRIEND_REQUEST_DECLINE_COOLDOWN_DAYS, getFriendsForUser } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
@@ -60,6 +60,15 @@ export async function POST(request) {
         { error: "This user already sent you a friend request. Accept it on your scoreboard." },
         { status: 409 }
       );
+    }
+
+    if (result.reason === "decline_cooldown") {
+      const days = result.daysRemaining ?? FRIEND_REQUEST_DECLINE_COOLDOWN_DAYS;
+      const error =
+        days === 1
+          ? "This user declined your request recently. You can try again in 1 day."
+          : `This user declined your request recently. You can try again in ${days} days.`;
+      return Response.json({ error }, { status: 429 });
     }
 
     return Response.json({
