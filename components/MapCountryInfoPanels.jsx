@@ -1,7 +1,6 @@
 "use client";
 
-import CountryHintsPanel from "@/components/CountryHintsPanel";
-import CountryReferencePanel from "@/components/CountryReferencePanel";
+import CountryLearnMorePanel from "@/components/CountryLearnMorePanel";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useMobileViewport } from "@/lib/hooks/useMobileViewport";
 import {
@@ -14,7 +13,6 @@ import {
   mapInfoMobileSheetTitle,
   mapInfoMobileTab,
   mapInfoMobileTabBar,
-  mapInfoMobileTabDivider,
   mapSidePanels,
 } from "@/lib/ui";
 
@@ -24,51 +22,26 @@ export default function MapCountryInfoPanels({
   mode,
   level,
   revealMode,
-  referenceOpen,
-  hintsOpen,
-  onReferenceToggle,
-  onHintsToggle,
-  onCloseAll,
-  onOpenReference,
-  onOpenHints,
+  isDiscover = false,
+  open,
+  onToggle,
+  onClose,
 }) {
   const isMobile = useMobileViewport();
-  const activeTab = referenceOpen ? "reference" : hintsOpen ? "hints" : null;
-  const sheetOpen = activeTab !== null;
-  const sheetDialogRef = useFocusTrap(isMobile && sheetOpen);
-
-  const handleReferenceTab = () => {
-    if (referenceOpen) {
-      onReferenceToggle();
-      return;
-    }
-    onOpenReference();
-  };
-
-  const handleHintsTab = () => {
-    if (hintsOpen) {
-      onHintsToggle();
-      return;
-    }
-    onOpenHints();
-  };
+  const sheetDialogRef = useFocusTrap(isMobile && open);
 
   if (!isMobile) {
     return (
       <div className={mapSidePanels}>
-        <CountryReferencePanel
+        <CountryLearnMorePanel
           country={country}
+          allCountries={allCountries}
           mode={mode}
           level={level}
           revealMode={revealMode}
-          open={referenceOpen}
-          onToggle={onReferenceToggle}
-        />
-        <CountryHintsPanel
-          country={country}
-          allCountries={allCountries}
-          open={hintsOpen}
-          onToggle={onHintsToggle}
+          isDiscover={isDiscover}
+          open={open}
+          onToggle={onToggle}
         />
       </div>
     );
@@ -76,80 +49,59 @@ export default function MapCountryInfoPanels({
 
   return (
     <>
-      {sheetOpen && (
+      {open && (
         <button
           type="button"
           className={mapInfoMobileBackdrop}
-          onClick={onCloseAll}
-          aria-label="Close panel"
+          onClick={onClose}
+          aria-label="Close Learn More"
         />
       )}
 
       <div className={mapInfoMobile}>
-        {sheetOpen && (
+        {open && (
           <div
             ref={sheetDialogRef}
             className={mapInfoMobileSheet}
             role="dialog"
             aria-modal="true"
-            aria-label={activeTab === "reference" ? "Country reference" : "Country hints"}
+            aria-label="Learn more about this country"
           >
             <div className={mapInfoMobileSheetHeader}>
-              <h2 className={mapInfoMobileSheetTitle}>
-                {activeTab === "reference" ? "Reference" : "Hints"}
-              </h2>
+              <h2 className={mapInfoMobileSheetTitle}>Learn More</h2>
               <button
                 type="button"
                 className={mapInfoMobileSheetClose}
-                onClick={onCloseAll}
-                aria-label="Close panel"
+                onClick={onClose}
+                aria-label="Close Learn More"
               >
                 ×
               </button>
             </div>
             <div className={mapInfoMobileSheetBody}>
-              {activeTab === "reference" ? (
-                <CountryReferencePanel
-                  embedded
-                  country={country}
-                  mode={mode}
-                  level={level}
-                  revealMode={revealMode}
-                  open
-                  onToggle={onReferenceToggle}
-                />
-              ) : (
-                <CountryHintsPanel
-                  embedded
-                  country={country}
-                  allCountries={allCountries}
-                  open
-                  onToggle={onHintsToggle}
-                />
-              )}
+              <CountryLearnMorePanel
+                embedded
+                country={country}
+                allCountries={allCountries}
+                mode={mode}
+                level={level}
+                revealMode={revealMode}
+                isDiscover={isDiscover}
+                open
+                onToggle={onToggle}
+              />
             </div>
           </div>
         )}
 
-        <div className={mapInfoMobileTabBar} role="tablist" aria-label="Country info">
+        <div className={mapInfoMobileTabBar}>
           <button
             type="button"
-            role="tab"
-            className={mapInfoMobileTab({ active: referenceOpen })}
-            aria-selected={referenceOpen}
-            onClick={handleReferenceTab}
+            className={mapInfoMobileTab({ active: open })}
+            aria-expanded={open}
+            onClick={onToggle}
           >
-            Reference
-          </button>
-          <div className={mapInfoMobileTabDivider} aria-hidden="true" />
-          <button
-            type="button"
-            role="tab"
-            className={mapInfoMobileTab({ active: hintsOpen })}
-            aria-selected={hintsOpen}
-            onClick={handleHintsTab}
-          >
-            Hints
+            Learn More
           </button>
         </div>
       </div>

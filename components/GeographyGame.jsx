@@ -184,8 +184,7 @@ export default function GeographyGame() {
   const [spellingSuggestionText, setSpellingSuggestionText] = useState(null);
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
-  const [referencePanelOpen, setReferencePanelOpen] = useState(false);
-  const [hintsPanelOpen, setHintsPanelOpen] = useState(false);
+  const [learnMorePanelOpen, setLearnMorePanelOpen] = useState(false);
   const [discoverLabelsById, setDiscoverLabelsById] = useState({});
   const [discoverAnimatingLabel, setDiscoverAnimatingLabel] = useState(null);
   const [mapViewRevision, setMapViewRevision] = useState(0);
@@ -206,34 +205,11 @@ export default function GeographyGame() {
   const mapProjectRef = useRef(null);
 
   const closeInfoPanels = useCallback(() => {
-    setReferencePanelOpen(false);
-    setHintsPanelOpen(false);
+    setLearnMorePanelOpen(false);
   }, []);
 
-  const openReferencePanel = useCallback(() => {
-    setHintsPanelOpen(false);
-    setReferencePanelOpen(true);
-  }, []);
-
-  const openHintsPanel = useCallback(() => {
-    setReferencePanelOpen(false);
-    setHintsPanelOpen(true);
-  }, []);
-
-  const toggleReferencePanel = useCallback(() => {
-    setReferencePanelOpen((open) => {
-      if (open) return false;
-      setHintsPanelOpen(false);
-      return true;
-    });
-  }, []);
-
-  const toggleHintsPanel = useCallback(() => {
-    setHintsPanelOpen((open) => {
-      if (open) return false;
-      setReferencePanelOpen(false);
-      return true;
-    });
+  const toggleLearnMorePanel = useCallback(() => {
+    setLearnMorePanelOpen((open) => !open);
   }, []);
 
   const assignGamePromptAnchorRef = useCallback((node) => {
@@ -612,25 +588,21 @@ export default function GeographyGame() {
 
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
-        if (hintsPanelOpen) {
-          setHintsPanelOpen(false);
-          return;
-        }
-        if (referencePanelOpen) {
-          setReferencePanelOpen(false);
+        if (learnMorePanelOpen) {
+          setLearnMorePanelOpen(false);
         }
         return;
       }
 
-      const isReferenceShortcut =
+      const isLearnMoreShortcut =
         (event.metaKey || event.ctrlKey) &&
         !event.altKey &&
         !event.shiftKey &&
         (event.key === "i" || event.key === "I");
 
-      if (isReferenceShortcut) {
+      if (isLearnMoreShortcut) {
         event.preventDefault();
-        toggleReferencePanel();
+        toggleLearnMorePanel();
       }
     };
 
@@ -639,10 +611,9 @@ export default function GeographyGame() {
   }, [
     gameActive,
     gameComplete,
-    hintsPanelOpen,
-    referencePanelOpen,
+    learnMorePanelOpen,
     targetCountry,
-    toggleReferencePanel,
+    toggleLearnMorePanel,
   ]);
 
   const preCreditedCount = session?.preCreditedCount ?? 0;
@@ -931,8 +902,7 @@ export default function GeographyGame() {
       roundStartTimeRef.current = Date.now();
       setAnswerText("");
       setSpellingSuggestionText(null);
-      setReferencePanelOpen(getReferencePanelDefaultOpen());
-      setHintsPanelOpen(false);
+      setLearnMorePanelOpen(getReferencePanelDefaultOpen());
       updateShowColorForRound(first, level, mode);
 
       if (isNameLevel(level)) {
@@ -997,8 +967,7 @@ export default function GeographyGame() {
       setHighlightCountryId(null);
       setFlashSmallCountryId(null);
       setFlagsClickHeader(null);
-      setReferencePanelOpen(false);
-      setHintsPanelOpen(false);
+      setLearnMorePanelOpen(true);
       setFeedback({ text: "", type: "" });
       discoverCompleteShownRef.current = false;
       setDiscoverCompleteModalOpen(false);
@@ -2144,13 +2113,10 @@ export default function GeographyGame() {
                   mode={session.mode}
                   level={session.level}
                   revealMode={isDiscoverGame || revealMode}
-                  referenceOpen={referencePanelOpen}
-                  hintsOpen={hintsPanelOpen}
-                  onReferenceToggle={toggleReferencePanel}
-                  onHintsToggle={toggleHintsPanel}
-                  onCloseAll={closeInfoPanels}
-                  onOpenReference={openReferencePanel}
-                  onOpenHints={openHintsPanel}
+                  isDiscover={isDiscoverGame}
+                  open={learnMorePanelOpen}
+                  onToggle={toggleLearnMorePanel}
+                  onClose={closeInfoPanels}
                 />
               )}
               <div className={mapFeedbackAnchor}>
