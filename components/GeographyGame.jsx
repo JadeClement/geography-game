@@ -37,6 +37,13 @@ import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors
 import { getMapViewForRegion, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS } from "@/lib/mastery";
+import {
+  appendGuestRound,
+  clearPendingGuestGame,
+  getPendingGuestGame,
+  setPendingGuestScore,
+  syncPendingGuestGame,
+} from "@/lib/pendingGuestGame";
 import { buildLearningQueue } from "@/lib/learning";
 import { getGameTourId } from "@/lib/gameTutorial";
 import { getGameTutorialSteps } from "@/lib/gameTutorialSteps";
@@ -230,6 +237,7 @@ export default function GeographyGame() {
   // Snapshot of mastery before/after the just-finished game, used to detect
   // milestones in the complete modal. `undefined` until the game finishes.
   const [milestoneStats, setMilestoneStats] = useState(undefined);
+  const [guestSyncState, setGuestSyncState] = useState(null);
 
   // Game stopwatch (runs only while a scored game is active and not finished).
   const timer = useGameTimer(
@@ -334,6 +342,8 @@ export default function GeographyGame() {
   const gamePausedRef = useSyncRef(gamePaused);
 
   const signedIn = authStatus === "authenticated" && authSession?.user;
+  const signedInRef = useSyncRef(signedIn);
+  const sessionRef = useSyncRef(session);
 
   // "Are you still there?" idle handling. onIdleReturn runs handleBackToMenu,
   // which is defined later, so we route it through a ref to break the cycle.
@@ -658,6 +668,21 @@ export default function GeographyGame() {
     setGameComplete(true);
     finishGameBoard();
 
+    const activeSession = sessionRef.current;
+    if (
+      !signedInRef.current &&
+      activeSession?.gameType === GAME_TYPES.TEST &&
+      !activeSession.review
+    ) {
+      setPendingGuestScore({
+        mode: activeSession.mode,
+        region: activeSession.region,
+        level: activeSession.level,
+        score:
+          rightCountRef.current + (activeSession.preCreditedCount ?? 0),
+      });
+    }
+
     // Wait for the in-flight round-stat saves to resolve so the snapshot
     // reflects the final round's mastery/graduation before we detect milestones.
     const pending = [...pendingStatPromisesRef.current];
@@ -684,22 +709,37 @@ export default function GeographyGame() {
   const recordRoundOutcome = useCallback(
     (outcome) => {
       const target = targetCountryRef.current;
-      if (!signedIn || !target || !session) return;
+      const activeSession = sessionRef.current;
+      if (!target || !activeSession) return;
 
       const responseTimeMs =
         outcome === ROUND_OUTCOMES.NEEDED_REVEAL || roundStartTimeRef.current == null
           ? undefined
           : Date.now() - roundStartTimeRef.current;
 
+      const gameType = activeSession.review
+        ? GAME_TYPE_FOR_STATS.REVIEW
+        : (activeSession.gameType ?? GAME_TYPES.TEST);
+
+      if (!signedInRef.current) {
+        appendGuestRound({
+          countryId: target.id,
+          mode: activeSession.mode,
+          level: activeSession.level,
+          outcome,
+          responseTimeMs,
+          gameType,
+        });
+        return;
+      }
+
       const promise = recordCountryStat({
         countryId: target.id,
-        mode: session.mode,
-        level: session.level,
+        mode: activeSession.mode,
+        level: activeSession.level,
         outcome,
         responseTimeMs,
-        gameType: session.review
-          ? GAME_TYPE_FOR_STATS.REVIEW
-          : (session.gameType ?? GAME_TYPES.TEST),
+        gameType,
       })
         .then((res) => {
           const stat = res?.stat;
@@ -718,8 +758,64 @@ export default function GeographyGame() {
 
       pendingStatPromisesRef.current.push(promise);
     },
-    [session, signedIn, targetCountryRef]
+    [targetCountryRef]
   );
+
+  useEffect(() => {
+    if (!signedIn) {
+      setGuestSyncState(null);
+      return undefined;
+    }
+
+    const pending = getPendingGuestGame();
+    if (!pending?.rounds?.length && !pending?.score) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setGuestSyncState({ loading: true, result: null, error: null, synced: false });
+
+    syncPendingGuestGame({
+      onRoundRecorded: (stat) => {
+        if (!stat?.countryId) return;
+        const prior = sessionStatRecordsRef.current.get(stat.countryId);
+        sessionStatRecordsRef.current.set(stat.countryId, {
+          beforeMastery: prior?.beforeMastery ?? stat.previousMasteryScore ?? 0,
+          beforeGraduated: prior?.beforeGraduated ?? stat.previousGraduated ?? false,
+          afterMastery: stat.masteryScore ?? 0,
+          afterGraduated: stat.graduated ?? false,
+        });
+      },
+    })
+      .then(({ synced, saveResult }) => {
+        if (cancelled) return;
+        if (synced) {
+          buildMilestoneStats();
+          setGuestSyncState({
+            loading: false,
+            result: saveResult,
+            error: null,
+            synced: true,
+          });
+        } else {
+          setGuestSyncState(null);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setGuestSyncState({
+            loading: false,
+            result: null,
+            error: error.message || "Could not save your game progress.",
+            synced: false,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn, buildMilestoneStats]);
 
   const clearColorFlash = useCallback(() => {
     if (colorFlashTimeoutRef.current) {
@@ -845,6 +941,7 @@ export default function GeographyGame() {
       const totalRounds = pool.length + preCredited.length;
       if (totalRounds === 0) return;
 
+      clearPendingGuestGame();
       setMasteryLoadWarning(showMasteryLoadWarning);
 
       if (nextRoundTimeoutRef.current) {
@@ -939,6 +1036,8 @@ export default function GeographyGame() {
     ({ mode, region }) => {
       const pool = filterCountriesByRegion(allCountries, region);
       if (pool.length === 0) return;
+
+      clearPendingGuestGame();
 
       if (nextRoundTimeoutRef.current) {
         clearTimeout(nextRoundTimeoutRef.current);
@@ -2167,6 +2266,7 @@ export default function GeographyGame() {
             isLearning={isLearningGame}
             milestoneStats={milestoneStats}
             graduatedCountryNames={newlyGraduatedNames}
+            guestSyncState={guestSyncState}
             canReviewIncorrect={isTestGame && !session.review && wrongCount > 0}
             onReviewIncorrect={handleReviewIncorrect}
             onPlayAgain={handlePlayAgain}
