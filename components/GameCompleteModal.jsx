@@ -11,6 +11,7 @@ import { formatGameScore } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { loadCountriesGeoJSON } from "@/lib/countries";
+import { getPendingGuestGame } from "@/lib/pendingGuestGame";
 import {
   computeWorldlyBeforeAfter,
   getCrossedWorldlyMilestone,
@@ -51,8 +52,10 @@ export default function GameCompleteModal({
   totalElapsedMs = 0,
   isReview = false,
   isLearning = false,
+  isGo = false,
   milestoneStats,
   graduatedCountryNames = [],
+  guestSyncState = null,
   canReviewIncorrect = false,
   onReviewIncorrect,
   onPlayAgain,
@@ -61,7 +64,6 @@ export default function GameCompleteModal({
   const { data: session, status } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [saveState, setSaveState] = useState({ loading: false, result: null, error: null });
-  const [pendingSave, setPendingSave] = useState(null);
   const [streakMessage, setStreakMessage] = useState(null);
   const [milestone, setMilestone] = useState(null);
   const [worldly, setWorldly] = useState({ settled: false, crossing: null });
@@ -73,13 +75,18 @@ export default function GameCompleteModal({
   useEffect(() => {
     if (!open) {
       setSaveState({ loading: false, result: null, error: null });
-      setPendingSave(null);
       setStreakMessage(null);
       setMilestone(null);
       setWorldly({ settled: false, crossing: null });
       milestoneResolvedRef.current = false;
     }
   }, [open]);
+
+  useEffect(() => {
+    if (guestSyncState?.synced) {
+      milestoneResolvedRef.current = false;
+    }
+  }, [guestSyncState?.synced]);
 
   // Compute the %Worldly score before/after this game and detect whether it
   // crossed a celebration boundary (25/50/75/90/100). Runs once the round's
@@ -93,6 +100,8 @@ export default function GameCompleteModal({
     if (milestoneStats === undefined) return undefined;
 
     let cancelled = false;
+    setWorldly({ settled: false, crossing: null });
+
     Promise.all([fetchAllMasteryStats(), loadCountriesGeoJSON()])
       .then(([masteryData, geo]) => {
         if (cancelled) return;
@@ -123,22 +132,27 @@ export default function GameCompleteModal({
   useEffect(() => {
     if (!open || milestoneResolvedRef.current) return;
 
+    const usingGuestSync = guestSyncState != null;
     const saveSettled =
       !signedIn ||
       isReview ||
       isLearning ||
-      saveState.result != null ||
-      saveState.error != null;
+      (usingGuestSync
+        ? !guestSyncState.loading &&
+          (guestSyncState.synced || Boolean(guestSyncState.error))
+        : saveState.result != null || saveState.error != null);
     const masterySettled = milestoneStats !== undefined;
     if (!saveSettled || !masterySettled || !worldly.settled) return;
 
     const perfectGame =
       !isReview && !isLearning && total > 0 && rightCount === total && wrongCount === 0;
 
+    const saveResult = usingGuestSync ? guestSyncState.result : saveState.result;
+
     milestoneResolvedRef.current = true;
     setMilestone(
       detectMilestone({
-        saveResult: saveState.result,
+        saveResult,
         perfectGame,
         milestoneStats,
         worldlyMilestone: worldly.crossing,
@@ -153,6 +167,7 @@ export default function GameCompleteModal({
     isLearning,
     saveState.result,
     saveState.error,
+    guestSyncState,
     milestoneStats,
     worldly.settled,
     worldly.crossing,
@@ -207,6 +222,7 @@ export default function GameCompleteModal({
 
   useEffect(() => {
     if (!open || !signedIn || isReview || isLearning) return;
+    if (getPendingGuestGame()) return;
 
     let cancelled = false;
 
@@ -239,66 +255,31 @@ export default function GameCompleteModal({
     };
   }, [open, signedIn, isReview, isLearning, mode, region, score, level]);
 
-  useEffect(() => {
-    if (!open || !signedIn || !pendingSave) return;
-
-    let cancelled = false;
-
-    async function savePending() {
-      setSaveState({ loading: true, result: null, error: null });
-      try {
-        const result = await saveScore(pendingSave);
-        if (!cancelled) {
-          setSaveState({ loading: false, result, error: null });
-          setPendingSave(null);
-          onBackToMenu();
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setSaveState({
-            loading: false,
-            result: null,
-            error: error.message || "Could not save score.",
-          });
-        }
-      }
-    }
-
-    savePending();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, signedIn, pendingSave, onBackToMenu]);
-
   if (!open) return null;
 
   const handleAuthSuccess = () => {
-    setPendingSave({
-      mode,
-      region,
-      score,
-      level,
-    });
     setAuthOpen(false);
   };
+
+  const activeSaveState = guestSyncState ?? saveState;
 
   const saveMessage = () => {
     if (!signedIn) {
       return "Sign in or create an account to save your score and track progress.";
     }
-    if (saveState.loading) {
-      return "Saving your score…";
+    if (activeSaveState.loading) {
+      return guestSyncState ? "Saving your game progress…" : "Saving your score…";
     }
-    if (saveState.error) {
-      return saveState.error;
+    if (activeSaveState.error) {
+      return activeSaveState.error;
     }
-    if (saveState.result?.isPersonalBest) {
-      return saveState.result.previousBest == null
+    if (activeSaveState.result?.isPersonalBest) {
+      return activeSaveState.result.previousBest == null
         ? "Score saved — your first result for this game!"
-        : `New personal best! Previous best: ${formatGameScore(saveState.result.previousBest, region)}`;
+        : `New personal best! Previous best: ${formatGameScore(activeSaveState.result.previousBest, region)}`;
     }
-    if (saveState.result && !saveState.result.isPersonalBest) {
-      return `Your best for this game is still ${formatGameScore(saveState.result.previousBest, region)}.`;
+    if (activeSaveState.result && !activeSaveState.result.isPersonalBest) {
+      return `Your best for this game is still ${formatGameScore(activeSaveState.result.previousBest, region)}.`;
     }
     return null;
   };
@@ -320,6 +301,13 @@ export default function GameCompleteModal({
   }
 
   function getCompletionHeading() {
+    if (isGo) {
+      const pct = total > 0 ? rightCount / total : 0;
+      if (pct === 1) return "Perfect!";
+      if (pct >= 0.8) return "Nice work!";
+      if (pct >= 0.5) return "Keep it up!";
+      return "Keep going!";
+    }
     if (isLearning) return "Learning complete!";
     if (isReview) return "Review complete!";
     const pct = total > 0 ? rightCount / total : 0;
@@ -334,7 +322,7 @@ export default function GameCompleteModal({
       <div className={modalOverlay}>
         <div
           ref={dialogRef}
-          className={modalCard}
+          className={cn(modalCard, "max-w-md")}
           role="dialog"
           aria-modal="true"
           aria-labelledby="game-complete-title"
@@ -346,7 +334,7 @@ export default function GameCompleteModal({
             You scored {rightCount}/{total}
           </p>
           <p className={modalGameContext}>
-            {isLearning ? "Learning · " : isReview ? "Review · " : ""}
+            {isGo ? "Go · " : isLearning ? "Learning · " : isReview ? "Review · " : ""}
             {modeLabel} of {regionLabel} · {levelLabel}
           </p>
           <div className={gameCompleteStats}>
@@ -358,8 +346,8 @@ export default function GameCompleteModal({
           {message && !isReview && !isLearning && (
             <p
               className={modalMessage({
-                success: saveState.result?.isPersonalBest,
-                error: Boolean(saveState.error),
+                success: activeSaveState.result?.isPersonalBest,
+                error: Boolean(activeSaveState.error),
               })}
             >
               {message}
@@ -410,7 +398,7 @@ export default function GameCompleteModal({
               </button>
             )}
             <button type="button" className={secondaryBtn} onClick={onPlayAgain}>
-              {isLearning ? "Practice again" : "Play again"}
+              {isGo ? "Go again!" : isLearning ? "Practice again" : "Play again"}
             </button>
             <button type="button" className={secondaryBtn} onClick={onBackToMenu}>
               Back to menu
