@@ -8,6 +8,7 @@ import FlagPrompt from "@/components/FlagPrompt";
 import GameTutorial from "@/components/GameTutorial";
 import GameTutorialButton from "@/components/GameTutorialButton";
 import DiscoverCompleteModal from "@/components/DiscoverCompleteModal";
+import DiscoverCountrySheet from "@/components/DiscoverCountrySheet";
 import DiscoverMapLabels from "@/components/DiscoverMapLabels";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import IdlePromptModal from "@/components/IdlePromptModal";
@@ -192,6 +193,7 @@ export default function GeographyGame() {
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [learnMorePanelOpen, setLearnMorePanelOpen] = useState(false);
+  const [discoverCountrySheetOpen, setDiscoverCountrySheetOpen] = useState(false);
   const [discoverLabelsById, setDiscoverLabelsById] = useState({});
   const [discoverAnimatingLabel, setDiscoverAnimatingLabel] = useState(null);
   const [mapViewRevision, setMapViewRevision] = useState(0);
@@ -213,6 +215,11 @@ export default function GeographyGame() {
 
   const closeInfoPanels = useCallback(() => {
     setLearnMorePanelOpen(false);
+    setDiscoverCountrySheetOpen(false);
+  }, []);
+
+  const closeDiscoverCountrySheet = useCallback(() => {
+    setDiscoverCountrySheetOpen(false);
   }, []);
 
   const toggleLearnMorePanel = useCallback(() => {
@@ -467,8 +474,11 @@ export default function GeographyGame() {
   const isDiscoverGame = session?.gameType === GAME_TYPES.DISCOVER;
   const isTestGame = session?.gameType === GAME_TYPES.TEST;
   const isLearningGame = session?.gameType === GAME_TYPES.LEARNING;
+  // Discover on phone uses DiscoverCountrySheet instead of the Learn More panel.
   const showLearnMorePanel =
-    isDiscoverGame || isLearningGame || Boolean(session?.review);
+    (isDiscoverGame && !isMobile) ||
+    isLearningGame ||
+    Boolean(session?.review);
   const isFindGame = Boolean(
     session?.level && isFindLevel(session.level) && !isDiscoverGame
   );
@@ -1072,6 +1082,7 @@ export default function GeographyGame() {
       setFlashSmallCountryId(null);
       setFlagsClickHeader(null);
       setLearnMorePanelOpen(true);
+      setDiscoverCountrySheetOpen(false);
       setFeedback({ text: "", type: "" });
       discoverCompleteShownRef.current = false;
       setDiscoverCompleteModalOpen(false);
@@ -1642,6 +1653,7 @@ export default function GeographyGame() {
       setHighlightCountryId(null);
       setFlashSmallCountryId(null);
       setFeedback({ text: "", type: "" });
+      setDiscoverCountrySheetOpen(true);
 
       if (isNewDiscovery) {
         setDiscoverAnimatingLabel((current) => {
@@ -1725,16 +1737,19 @@ export default function GeographyGame() {
 
     discoverCompleteShownRef.current = true;
     setDiscoverCompleteModalOpen(true);
+    setDiscoverCountrySheetOpen(false);
   }, [activeCountries, filledCountryIdSet, gameActive, isDiscoverGame]);
 
   const handleKeepDiscovering = useCallback(() => {
     setDiscoverCompleteModalOpen(false);
+    setDiscoverCountrySheetOpen(false);
   }, []);
 
   const handleDiscoverStartTest = useCallback(() => {
     if (!session?.mode || !session?.region) return;
 
     setDiscoverCompleteModalOpen(false);
+    setDiscoverCountrySheetOpen(false);
     setShowMenuConfirm(false);
     startGame({
       gameType: GAME_TYPES.TEST,
@@ -2229,6 +2244,13 @@ export default function GeographyGame() {
                   open={learnMorePanelOpen}
                   onToggle={toggleLearnMorePanel}
                   onClose={closeInfoPanels}
+                />
+              )}
+              {isDiscoverGame && (
+                <DiscoverCountrySheet
+                  country={targetCountry}
+                  open={discoverCountrySheetOpen}
+                  onClose={closeDiscoverCountrySheet}
                 />
               )}
               <div className={mapFeedbackAnchor}>
