@@ -13,6 +13,8 @@ import {
 } from "@/lib/countryColors";
 import {
   CIRCLE_CLICK_RADIUS_PX,
+  getCountryScreenBounds,
+  getCountryVisibleScreenAnchor,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
@@ -26,6 +28,7 @@ import {
   addCountryClickExpandLayers,
   playMapCountryClickExpand,
 } from "@/lib/mapCountryClickExpand";
+import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
 import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
@@ -37,15 +40,19 @@ const MAP_THEME_COLORS = {
     ocean: "#bae6fd",
     smallCountryStroke: "#1e293b",
     levelBorder: "#334155",
+    baseLandBg: "#ece5d6",
+    baseLandLine: "#b8ab90",
   },
   [THEMES.DARK]: {
     countryFill: "#1e3a5f",
     countryBorder: "#94a3b8",
     inactiveLand: "#334155",
     inactiveBorder: "#475569",
-    ocean: null,
+    ocean: "#0c4a6e",
     smallCountryStroke: "#ffffff",
     levelBorder: "#e2e8f0",
+    baseLandBg: "#2c3644",
+    baseLandLine: "#5b6b82",
   },
 };
 
@@ -288,7 +295,7 @@ function pickClickedFeature(map, features) {
   return circleFeature ?? fillFeature ?? features[0];
 }
 
-function applyMapView(map, mapView) {
+function applyMapView(map, mapView, { onSettled } = {}) {
   if (!mapView) return;
 
   const runFit = () => {
@@ -301,14 +308,17 @@ function applyMapView(map, mapView) {
         padding: mapView.padding ?? 48,
         duration: 0,
       });
-      return;
+    } else {
+      map.fitBounds(mapView.bounds, {
+        padding: mapView.padding ?? 48,
+        duration: 0,
+        maxZoom: mapView.maxZoom ?? 5,
+      });
     }
 
-    map.fitBounds(mapView.bounds, {
-      padding: mapView.padding ?? 48,
-      duration: 0,
-      maxZoom: mapView.maxZoom ?? 5,
-    });
+    if (onSettled) {
+      map.once("idle", () => onSettled(map.getZoom()));
+    }
   };
 
   if (map.isStyleLoaded() && map.loaded()) {
@@ -342,6 +352,62 @@ function configureBaseStyle(map, theme) {
         map.setPaintProperty(id, "fill-color", colors.ocean);
       }
     }
+  }
+}
+
+const BASE_LAND_HATCH_ID = "base-land-hatch";
+
+function createHatchPatternImage(bgColor, lineColor) {
+  const size = 8;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 1.25;
+  ctx.lineCap = "square";
+  // Corner-to-corner diagonal tiles seamlessly; overshoot slightly so the
+  // stroke joins cleanly across tile edges.
+  ctx.beginPath();
+  ctx.moveTo(-1, size + 1);
+  ctx.lineTo(size + 1, -1);
+  ctx.stroke();
+  return ctx.getImageData(0, 0, size, size);
+}
+
+function addBaseLandLayer(map, baseLandGeojson, mapColors, beforeId) {
+  const data = baseLandGeojson ?? { type: "FeatureCollection", features: [] };
+  const image = createHatchPatternImage(mapColors.baseLandBg, mapColors.baseLandLine);
+
+  if (map.hasImage(BASE_LAND_HATCH_ID)) {
+    map.updateImage(BASE_LAND_HATCH_ID, image);
+  } else {
+    map.addImage(BASE_LAND_HATCH_ID, image, { pixelRatio: 1 });
+  }
+
+  if (map.getSource("base-land")) {
+    map.getSource("base-land").setData(data);
+    return;
+  }
+
+  map.addSource("base-land", { type: "geojson", data });
+
+  const layer = {
+    id: "base-land-fill",
+    type: "fill",
+    source: "base-land",
+    paint: {
+      "fill-pattern": BASE_LAND_HATCH_ID,
+      "fill-outline-color": mapColors.baseLandLine,
+    },
+  };
+
+  if (beforeId && map.getLayer(beforeId)) {
+    map.addLayer(layer, beforeId);
+  } else {
+    map.addLayer(layer);
   }
 }
 
@@ -482,6 +548,7 @@ function syncCountryFeatureStates(
 export default function MapboxMap({
   geojson,
   inactiveGeojson,
+  baseLandGeojson,
   smallCountriesGeojson,
   gameActive,
   level,
@@ -495,22 +562,26 @@ export default function MapboxMap({
   mapView,
   forceShowSmallCountryCircles = false,
   onCountryClick,
+  onCountryHover,
   onRegisterMapProject,
   onMapViewChange,
 }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
+  const referenceZoomRef = useRef(null);
   const fillFlashIntervalRef = useRef(null);
   const circleFlashIntervalRef = useRef(null);
   const targetFlashIntervalRef = useRef(null);
   const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
+  const onCountryHoverRef = useRef(onCountryHover);
   const gameActiveRef = useRef(gameActive);
   const smallCountriesGeojsonRef = useRef(smallCountriesGeojson);
   const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
 
   onCountryClickRef.current = onCountryClick;
+  onCountryHoverRef.current = onCountryHover;
   gameActiveRef.current = gameActive;
   smallCountriesGeojsonRef.current = smallCountriesGeojson;
   forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
@@ -619,6 +690,7 @@ export default function MapboxMap({
         configureMobileGlobeControls(map);
       }
       addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor);
+      addBaseLandLayer(map, baseLandGeojson, mapColors, "country-fill");
 
       if (smallCountriesGeojson?.features?.length) {
         addSmallCountryLayers(map, smallCountriesGeojson, mapColors.smallCountryStroke, level, landColor);
@@ -636,9 +708,16 @@ export default function MapboxMap({
       map.on("mouseleave", "small-country-circles", clearPointerCursor);
 
       if (mapView) {
-        applyMapView(map, mapView);
+        applyMapView(map, mapView, {
+          onSettled: (zoom) => {
+            referenceZoomRef.current = zoom;
+          },
+        });
         map.once("idle", refreshSmallCountryCircles);
       } else {
+        map.once("idle", () => {
+          referenceZoomRef.current = map.getZoom();
+        });
         refreshSmallCountryCircles();
       }
 
@@ -684,7 +763,53 @@ export default function MapboxMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level]);
+  }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, mapView, theme, level]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !onCountryHover) return undefined;
+
+    const handleHover = (event) => {
+      const feature = event.features?.[0];
+      const countryId = feature?.properties?.id ?? feature?.id ?? null;
+      onCountryHoverRef.current?.(countryId);
+    };
+
+    const handleLeave = () => {
+      onCountryHoverRef.current?.(null);
+    };
+
+    const attach = () => {
+      if (!map.getLayer("country-fill")) return;
+
+      map.on("mousemove", "country-fill", handleHover);
+      map.on("mouseleave", "country-fill", handleLeave);
+
+      if (map.getLayer("small-country-circles")) {
+        map.on("mousemove", "small-country-circles", handleHover);
+        map.on("mouseleave", "small-country-circles", handleLeave);
+      }
+    };
+
+    const detach = () => {
+      map.off("mousemove", "country-fill", handleHover);
+      map.off("mouseleave", "country-fill", handleLeave);
+      map.off("mousemove", "small-country-circles", handleHover);
+      map.off("mouseleave", "small-country-circles", handleLeave);
+    };
+
+    if (map.isStyleLoaded()) {
+      attach();
+    } else {
+      map.once("load", attach);
+    }
+
+    return () => {
+      map.off("load", attach);
+      detach();
+      onCountryHoverRef.current?.(null);
+    };
+  }, [onCountryHover, geojson]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -694,6 +819,7 @@ export default function MapboxMap({
     const landColor = getActiveLandColor(theme);
 
     addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor);
+    addBaseLandLayer(map, baseLandGeojson, mapColors, "country-fill");
 
     if (map.getLayer("inactive-country-fill")) {
       map.setPaintProperty("inactive-country-fill", "fill-color", mapColors.inactiveLand);
@@ -731,7 +857,12 @@ export default function MapboxMap({
     addCountryClickExpandLayers(map);
 
     if (mapView) {
-      applyMapView(map, mapView);
+      applyMapView(map, mapView, {
+        onSettled: (zoom) => {
+          referenceZoomRef.current = zoom;
+          onMapViewChange?.();
+        },
+      });
       map.once("idle", () => {
         applySmallCountryCirclePaintMode(map, {
           forceShow: forceShowSmallCountryCircles,
@@ -754,7 +885,7 @@ export default function MapboxMap({
         forceShow: forceShowSmallCountryCircles,
       });
     }
-  }, [geojson, inactiveGeojson, smallCountriesGeojson, mapView, theme, level, forceShowSmallCountryCircles]);
+  }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, mapView, theme, level, forceShowSmallCountryCircles]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -958,12 +1089,38 @@ export default function MapboxMap({
     const register = () => {
       if (!map.getSource("countries")) return;
 
-      onRegisterMapProject((country) => {
-        const centroid = country.centroid;
-        if (!centroid) return null;
-        const [lng, lat] = centroid;
+      const projectToOverlay = (lng, lat) => {
         const point = map.project([lng, lat]);
-        return { x: point.x, y: point.y };
+        const overlayRoot = container.parentElement;
+        if (!overlayRoot) return { x: point.x, y: point.y };
+
+        const mapRect = container.getBoundingClientRect();
+        const overlayRect = overlayRoot.getBoundingClientRect();
+        return {
+          x: point.x + mapRect.left - overlayRect.left,
+          y: point.y + mapRect.top - overlayRect.top,
+        };
+      };
+
+      onRegisterMapProject({
+        projectPoint(country) {
+          const centroid = country.centroid;
+          if (!centroid) return null;
+          const [lng, lat] = centroid;
+          return projectToOverlay(lng, lat);
+        },
+        projectBounds(country) {
+          return getCountryScreenBounds(country, projectToOverlay);
+        },
+        projectDiscoverAnchor(country, viewportRect) {
+          return getCountryVisibleScreenAnchor(country, projectToOverlay, viewportRect);
+        },
+        getDiscoverLabelScale() {
+          const refZoom = referenceZoomRef.current;
+          if (refZoom == null) return 1;
+          const zoomRatio = 2 ** (map.getZoom() - refZoom);
+          return getDiscoverLabelScaleFromRatio(zoomRatio);
+        },
       });
     };
 

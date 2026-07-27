@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import { loadCountriesGeoJSON } from "@/lib/countries";
+import { fetchAllMasteryStats } from "@/lib/countryStats";
+import { computeWorldlyScoreFromMastery } from "@/lib/worldlyScore";
 import {
   infoBack,
   infoCallout,
@@ -184,6 +189,37 @@ function WeightBreakdown({ items }) {
 }
 
 export default function HowItWorksPage() {
+  const { status } = useSession();
+  const signedIn = status === "authenticated";
+  const [worldlyPercent, setWorldlyPercent] = useState(null);
+
+  useEffect(() => {
+    if (!signedIn) {
+      setWorldlyPercent(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    Promise.all([fetchAllMasteryStats(), loadCountriesGeoJSON()])
+      .then(([masteryData, geo]) => {
+        if (cancelled) return;
+        const countryIds = geo.countries.map((country) => country.id);
+        const { percent } = computeWorldlyScoreFromMastery(
+          masteryData.mastery ?? {},
+          countryIds
+        );
+        setWorldlyPercent(Math.round(percent));
+      })
+      .catch(() => {
+        if (!cancelled) setWorldlyPercent(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
   return (
     <div className={infoPage}>
       <AppHeader />
@@ -205,15 +241,29 @@ export default function HowItWorksPage() {
         <div className={infoHero}>
           <span className={infoHeroBadge}>
             <IconGlobe />
-            Your headline number
+            {signedIn && worldlyPercent != null
+              ? `${worldlyPercent}% WORLDLY`
+              : "Your %Worldly Score"}
           </span>
           <h2 className={infoHeroTitle}>The %Worldly Score</h2>
           <p className={infoHeroBody}>
-            One percentage that answers &ldquo;how much of the world do I really know?&rdquo;
-            It blends your mastery of countries, capitals, and flags across every region into
-            a single number from <strong>0%</strong> to <strong>100%</strong>. Reaching 100%
-            means you&apos;ve mastered every place, in every mode, at every level. Read on to
-            see exactly how it&apos;s built from the ground up.
+            {signedIn && worldlyPercent != null ? (
+              <>
+                Right now you&apos;re at <strong>{worldlyPercent}%</strong> — one number that
+                answers &ldquo;how much of the world do I really know?&rdquo; It blends your
+                mastery of countries, capitals, and flags across every region. Reaching{" "}
+                <strong>100%</strong> means you&apos;ve mastered every place, in every mode, at
+                every level. Read on to see exactly how it&apos;s built from the ground up.
+              </>
+            ) : (
+              <>
+                One percentage that answers &ldquo;how much of the world do I really know?&rdquo;
+                It blends your mastery of countries, capitals, and flags across every region into
+                a single number from <strong>0%</strong> to <strong>100%</strong>. Reaching 100%
+                means you&apos;ve mastered every place, in every mode, at every level. Read on to
+                see exactly how it&apos;s built from the ground up.
+              </>
+            )}
           </p>
         </div>
 

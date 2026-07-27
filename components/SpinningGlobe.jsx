@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { getCountryColor } from "@/lib/countryColors";
+import { REGION_MAP_OCEAN } from "@/lib/regionMapColors";
 
 const GLOBE_TEXTURE_PATH = "/globe-map.svg";
 const TEXTURE_WIDTH = 2048;
@@ -15,7 +16,7 @@ function colorizeGlobeSvg(svgText) {
   for (const path of paths) {
     const iso3 = path.getAttribute("data-iso3");
     if (!iso3) continue;
-    path.setAttribute("fill", getCountryColor(iso3));
+    path.setAttribute("fill", getCountryColor(iso3, { saturationScale: 0.55 }));
   }
 
   const land = doc.querySelector("g");
@@ -100,7 +101,7 @@ export default function SpinningGlobe() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.05);
     keyLight.position.set(4, 2.5, 5);
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.35);
+    const fillLight = new THREE.DirectionalLight(0x7a9eb0, 0.35);
     fillLight.position.set(-3, -1, 2);
     scene.add(ambientLight, keyLight, fillLight);
 
@@ -116,7 +117,7 @@ export default function SpinningGlobe() {
 
     const atmosphereGeometry = new THREE.SphereGeometry(1.035, 72, 72);
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
+      color: 0x5a95ad,
       transparent: true,
       opacity: 0.12,
       side: THREE.BackSide,
@@ -161,7 +162,7 @@ export default function SpinningGlobe() {
         animate();
       })
       .catch(() => {
-        material.color = new THREE.Color(0x0284c7);
+        material.color = new THREE.Color(REGION_MAP_OCEAN);
         animate();
       });
 

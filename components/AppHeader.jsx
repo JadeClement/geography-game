@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import UserAvatar from "@/components/UserAvatar";
@@ -140,49 +140,75 @@ const menuIcons = {
   ),
 };
 
+const PROFILE_MENU_ID = "app-header-profile-menu";
+
 function ProfileDropdown({ signedIn, userName, username, onClose, onSignIn, onSignOut }) {
   return (
-    <div className={profileDropdown}>
+    <div
+      id={PROFILE_MENU_ID}
+      className={profileDropdown}
+      role="menu"
+      aria-label="Account menu"
+    >
       {signedIn && userName && (
         <>
-          <Link href="/account" className={profileAccountLink} onClick={onClose}>
+          <Link
+            href="/account"
+            role="menuitem"
+            className={profileAccountLink}
+            onClick={onClose}
+          >
             <DropdownIcon>{menuIcons.profile}</DropdownIcon>
             {userName}
           </Link>
-          {username && <p className={profileHandle}>@{username}</p>}
+          {username && (
+            <p className={profileHandle} aria-hidden="true">
+              @{username}
+            </p>
+          )}
         </>
       )}
 
-      <Link href="/settings" className={dropdownItem} onClick={onClose}>
+      <Link href="/settings" role="menuitem" className={dropdownItem} onClick={onClose}>
         <DropdownIcon>{menuIcons.settings}</DropdownIcon>
         Settings
       </Link>
 
       {signedIn ? (
         <>
-          <Link href="/scoreboard" className={dropdownItem} onClick={onClose}>
+          <Link
+            href="/scoreboard"
+            role="menuitem"
+            className={dropdownItem}
+            onClick={onClose}
+          >
             <DropdownIcon>{menuIcons.scoreboard}</DropdownIcon>
             Scoreboard
           </Link>
-          <Link href="/mastery" className={dropdownItem} onClick={onClose}>
+          <Link href="/mastery" role="menuitem" className={dropdownItem} onClick={onClose}>
             <DropdownIcon>{menuIcons.mastery}</DropdownIcon>
             Mastery Map
           </Link>
-          <Link href="/results" className={dropdownItem} onClick={onClose}>
+          <Link href="/results" role="menuitem" className={dropdownItem} onClick={onClose}>
             <DropdownIcon>{menuIcons.results}</DropdownIcon>
             Results
           </Link>
-          <Link href="/results/how-it-works" className={dropdownItem} onClick={onClose}>
+          <Link
+            href="/results/how-it-works"
+            role="menuitem"
+            className={dropdownItem}
+            onClick={onClose}
+          >
             <DropdownIcon>{menuIcons.howItWorks}</DropdownIcon>
             How it Works
           </Link>
-          <button type="button" className={dropdownItem} onClick={onSignOut}>
+          <button type="button" role="menuitem" className={dropdownItem} onClick={onSignOut}>
             <DropdownIcon>{menuIcons.signOut}</DropdownIcon>
             Sign out
           </button>
         </>
       ) : (
-        <button type="button" className={dropdownItem} onClick={onSignIn}>
+        <button type="button" role="menuitem" className={dropdownItem} onClick={onSignIn}>
           <DropdownIcon>{menuIcons.signIn}</DropdownIcon>
           Sign in
         </button>
@@ -198,10 +224,13 @@ export default function AppHeader({ onHomeClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [worldlyPercent, setWorldlyPercent] = useState(null);
+  const menuTriggerRef = useRef(null);
 
   const signedIn = status === "authenticated" && session?.user;
   const userName = session?.user?.name || session?.user?.email;
   const username = session?.user?.username;
+
+  const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
     if (!signedIn) {
@@ -254,7 +283,19 @@ export default function AppHeader({ onHomeClick }) {
     };
   }, [signedIn]);
 
-  const closeMenu = () => setMenuOpen(false);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeMenu();
+      menuTriggerRef.current?.focus();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
 
   const brandContent = (
     <>
@@ -303,6 +344,7 @@ export default function AppHeader({ onHomeClick }) {
           )}
           <div className={profileMenu}>
             <button
+              ref={menuTriggerRef}
               type="button"
               className={cn(
                 profileBtn,
@@ -310,7 +352,9 @@ export default function AppHeader({ onHomeClick }) {
               )}
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="Account menu"
+              aria-haspopup="menu"
               aria-expanded={menuOpen}
+              aria-controls={menuOpen ? PROFILE_MENU_ID : undefined}
             >
               {signedIn ? (
                 <UserAvatar

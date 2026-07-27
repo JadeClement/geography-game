@@ -45,7 +45,7 @@ import {
 
 function ScoreTableMobile({ title, mode, scoreMap }) {
   return (
-    <section className={resultsSection}>
+    <section className={cn(resultsSection, "md:hidden")}>
       <h2 className={resultsTableTitle}>{title}</h2>
       <div className={resultsMobileCards}>
         {REGIONS.map((region) => (
@@ -140,7 +140,7 @@ function MasteryCell({ pct }) {
 
 function MasteryTableMobile({ title, lookup }) {
   return (
-    <section className={resultsSection}>
+    <section className={cn(resultsSection, "md:hidden")}>
       <h2 className={resultsTableTitle}>{title}</h2>
       <div className={resultsMobileCards}>
         {REGIONS.map((region) => (

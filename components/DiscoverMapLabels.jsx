@@ -1,16 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import FlagPrompt from "@/components/FlagPrompt";
 import { cn } from "@/lib/cn";
+import { layoutDiscoverLabelsFromElements } from "@/lib/discoverLabelLayout";
+import { isDiscoverLabelVisible } from "@/lib/discoverLabelVisibility";
 import {
   discoverMapLabelFlagSettled,
   discoverMapLabelFlying,
+  discoverMapLabelItemsLayer,
   discoverMapLabelLayer,
+  discoverMapLabelLeaderLayer,
+  discoverMapLabelPlaced,
   discoverMapLabelSettled,
+  discoverMapLabelText,
+  discoverMapLabelTextFlying,
+  discoverMapLabelTextShadow,
 } from "@/lib/ui";
 
 const LABEL_ANIMATION_MS = 1300;
+const MAP_EDGE_PADDING = 4;
 // Flying label uses text-2xl; settled labels use 0.875rem — match visual size at landing.
 const SETTLED_SCALE = 0.58;
 
@@ -24,18 +33,34 @@ function getMapCenterPoint(mapContainerRef) {
   };
 }
 
-function LabelContent({ label, compact = false }) {
+function LabelContent({ label, compact = false, flying = false, scale = 1 }) {
   if (label.kind === "flag" && label.iso2) {
+    const baseHeight = compact ? 20 : 32;
     return (
       <FlagPrompt
         iso2={label.iso2}
         size="prompt"
-        className={compact ? "h-5 w-auto rounded-sm border-0 shadow-none" : "h-8 w-auto"}
+        className={
+          scale !== 1
+            ? "w-auto rounded-sm border-0 shadow-none"
+            : compact
+              ? "h-5 w-auto rounded-sm border-0 shadow-none"
+              : "h-8 w-auto"
+        }
+        style={scale !== 1 ? { height: baseHeight * scale } : undefined}
       />
     );
   }
 
-  return <span>{label.text}</span>;
+  const baseRem = flying ? 1.5 : 0.8125;
+  return (
+    <span
+      className={flying ? discoverMapLabelTextFlying : discoverMapLabelText}
+      style={scale !== 1 ? { fontSize: `${baseRem * scale}rem` } : undefined}
+    >
+      {label.text}
+    </span>
+  );
 }
 
 export default function DiscoverMapLabels({
@@ -46,29 +71,178 @@ export default function DiscoverMapLabels({
   animatingLabel,
   countriesById,
   projectCountry,
+  projectDiscoverAnchor,
+  projectCountryBounds,
+  getDiscoverLabelScale,
   mapViewRevision,
+  hoveredCountryId,
+  learnMorePanelRef,
+  learnMorePanelActive = false,
   onLabelLanded,
 }) {
-  const [positions, setPositions] = useState({});
+  const [labelLayouts, setLabelLayouts] = useState({});
+  const [layoutRightInset, setLayoutRightInset] = useState(0);
+  const labelRefs = useRef({});
+  const lastLayoutKeyRef = useRef(null);
   const animElRef = useRef(null);
   const animationRef = useRef(null);
 
-  const updatePositions = useCallback(() => {
-    if (!projectCountry) return;
+  const labelScale = useMemo(() => {
+    return getDiscoverLabelScale?.() ?? 1;
+  }, [getDiscoverLabelScale, mapViewRevision]);
+
+  const positions = useMemo(() => {
+    const container = mapContainerRef.current;
+    if (!container) return {};
+
+    const viewportRect = {
+      left: MAP_EDGE_PADDING,
+      top: MAP_EDGE_PADDING,
+      right: container.clientWidth - layoutRightInset - MAP_EDGE_PADDING,
+      bottom: container.clientHeight - MAP_EDGE_PADDING,
+    };
 
     const next = {};
     for (const [id] of Object.entries(labelsById)) {
       const country = countriesById[id];
       if (!country) continue;
-      const pos = projectCountry(country);
+
+      const pos =
+        projectDiscoverAnchor?.(country, viewportRect) ??
+        projectCountry?.(country);
       if (pos) next[id] = pos;
     }
-    setPositions(next);
-  }, [labelsById, countriesById, projectCountry]);
+    return next;
+  }, [
+    labelsById,
+    countriesById,
+    layoutRightInset,
+    projectCountry,
+    projectDiscoverAnchor,
+    mapViewRevision,
+    mapContainerRef,
+  ]);
+
+  const layoutKey = useMemo(
+    () =>
+      JSON.stringify({
+        ids: Object.keys(labelsById),
+        positions,
+        mapViewRevision,
+        layoutRightInset,
+        labelScale,
+      }),
+    [labelsById, layoutRightInset, mapViewRevision, positions, labelScale]
+  );
+
+  const needsLayout = lastLayoutKeyRef.current !== layoutKey;
+
+  const labelVisibility = useMemo(() => {
+    const visibility = {};
+    const otherLabelRects = {};
+    for (const [id, layout] of Object.entries(labelLayouts)) {
+      if (layout?.rect) otherLabelRects[id] = layout.rect;
+    }
+
+    const allCountryBounds = projectCountryBounds
+      ? Object.values(countriesById)
+          .map((country) => projectCountryBounds(country))
+          .filter(Boolean)
+      : [];
+
+    for (const [id, label] of Object.entries(labelsById)) {
+      const layout = labelLayouts[id];
+      const anchor = positions[id];
+      const country = countriesById[id];
+      if (!layout || !anchor || !country) {
+        visibility[id] = true;
+        continue;
+      }
+
+      const labelWidth = layout.rect.right - layout.rect.left;
+      const labelHeight = layout.rect.bottom - layout.rect.top;
+      const countryBounds = projectCountryBounds?.(country) ?? null;
+
+      visibility[id] = isDiscoverLabelVisible({
+        labelWidth,
+        labelHeight,
+        countryBounds,
+        anchor,
+        isSmallCountry: country.isSmall,
+        layoutRect: layout.rect,
+        countryId: id,
+        otherLabelRects,
+        allCountryBounds,
+        hoveredCountryId,
+        isAnimating: animatingLabel?.countryId === id,
+      });
+    }
+
+    return visibility;
+  }, [
+    animatingLabel,
+    countriesById,
+    hoveredCountryId,
+    labelLayouts,
+    labelsById,
+    positions,
+    projectCountryBounds,
+  ]);
 
   useLayoutEffect(() => {
-    updatePositions();
-  }, [updatePositions, mapViewRevision]);
+    const container = mapContainerRef.current;
+    const panel = learnMorePanelRef?.current;
+
+    const measureInset = () => {
+      if (!container || !panel) {
+        setLayoutRightInset(0);
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      const overlap = Math.max(0, containerRect.right - panelRect.left);
+      setLayoutRightInset(overlap);
+    };
+
+    measureInset();
+
+    const observer = new ResizeObserver(measureInset);
+    if (container) observer.observe(container);
+    if (panel) observer.observe(panel);
+
+    return () => observer.disconnect();
+  }, [learnMorePanelActive, learnMorePanelRef, mapContainerRef, mapViewRevision]);
+
+  useLayoutEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || Object.keys(labelsById).length === 0) {
+      setLabelLayouts({});
+      lastLayoutKeyRef.current = layoutKey;
+      return;
+    }
+
+    const layouts = layoutDiscoverLabelsFromElements({
+      labelsById,
+      positions,
+      labelElements: labelRefs.current,
+      containerRect: container.getBoundingClientRect(),
+      countriesById,
+      projectCountryBounds,
+      layoutInsets: { right: layoutRightInset },
+    });
+
+    setLabelLayouts(layouts);
+    lastLayoutKeyRef.current = layoutKey;
+  }, [
+    countriesById,
+    labelsById,
+    layoutKey,
+    layoutRightInset,
+    mapContainerRef,
+    positions,
+    projectCountryBounds,
+  ]);
 
   useEffect(() => {
     const el = animElRef.current;
@@ -78,7 +252,18 @@ export default function DiscoverMapLabels({
     if (!country) return undefined;
 
     const center = getMapCenterPoint(mapContainerRef);
-    const target = projectCountry(country);
+    const container = mapContainerRef.current;
+    const viewportRect = container
+      ? {
+          left: MAP_EDGE_PADDING,
+          top: MAP_EDGE_PADDING,
+          right: container.clientWidth - layoutRightInset - MAP_EDGE_PADDING,
+          bottom: container.clientHeight - MAP_EDGE_PADDING,
+        }
+      : null;
+    const target =
+      (viewportRect && projectDiscoverAnchor?.(country, viewportRect)) ??
+      projectCountry?.(country);
     if (!center || !target) return undefined;
 
     if (animationRef.current) {
@@ -157,34 +342,86 @@ export default function DiscoverMapLabels({
     animatingLabel,
     countriesById,
     mapContainerRef,
+    layoutRightInset,
     onLabelLanded,
     projectCountry,
+    projectDiscoverAnchor,
   ]);
 
   return (
-    <div className={discoverMapLabelLayer} aria-hidden="true">
-      {Object.entries(labelsById).map(([id, label]) => {
-        const pos = positions[id];
-        if (!pos) return null;
-
-        return (
-          <div
-            key={id}
-            className={cn(
-              label.kind === "flag" ? discoverMapLabelFlagSettled : discoverMapLabelSettled
-            )}
-            style={{ left: pos.x, top: pos.y }}
-          >
-            <LabelContent label={label} compact />
-          </div>
-        );
-      })}
-
-      {animatingLabel && (
-        <div ref={animElRef} className={discoverMapLabelFlying}>
-          <LabelContent label={animatingLabel} />
-        </div>
+    <div
+      className={discoverMapLabelLayer}
+      style={{
+        "--discover-label-shadow": discoverMapLabelTextShadow,
+        ...(layoutRightInset > 0
+          ? { right: layoutRightInset, overflow: "hidden" }
+          : null),
+      }}
+      aria-hidden="true"
+    >
+      {!needsLayout && (
+        <svg className={discoverMapLabelLeaderLayer}>
+          {Object.entries(labelLayouts).map(([id, layout]) => {
+            if (!labelVisibility[id]) return null;
+            if (!layout.showLeader || !layout.leader) return null;
+            return (
+              <line
+                key={id}
+                x1={layout.anchor.x}
+                y1={layout.anchor.y}
+                x2={layout.leader.x}
+                y2={layout.leader.y}
+                stroke="#000"
+                strokeWidth={1.5}
+              />
+            );
+          })}
+        </svg>
       )}
+
+      <div className={discoverMapLabelItemsLayer}>
+        {Object.entries(labelsById).map(([id, label]) => {
+          const anchor = positions[id];
+          if (!anchor) return null;
+
+          const layout = labelLayouts[id];
+          const isFlag = label.kind === "flag";
+          const measuring = needsLayout || !layout;
+          const isVisible = measuring || labelVisibility[id] !== false;
+
+          return (
+            <div
+              key={id}
+              ref={(node) => {
+                if (node) labelRefs.current[id] = node;
+                else delete labelRefs.current[id];
+              }}
+              className={cn(
+                measuring
+                  ? isFlag
+                    ? discoverMapLabelFlagSettled
+                    : discoverMapLabelSettled
+                  : discoverMapLabelPlaced,
+                measuring && "opacity-0",
+                !measuring && !isVisible && "pointer-events-none opacity-0"
+              )}
+              style={
+                measuring
+                  ? { left: anchor.x, top: anchor.y }
+                  : { left: layout.left, top: layout.top }
+              }
+            >
+              <LabelContent label={label} compact scale={labelScale} />
+            </div>
+          );
+        })}
+
+        {animatingLabel && (
+          <div ref={animElRef} className={discoverMapLabelFlying}>
+            <LabelContent label={animatingLabel} flying />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

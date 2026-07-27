@@ -26,12 +26,14 @@ import {
   CIRCLE_CLICK_RADIUS_PX,
   getBboxScreenSizePx,
   getCountryMeasureBbox,
+  getCountryVisibleScreenAnchor,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
   TUTORIAL_CIRCLE_STROKE_COLOR,
   TUTORIAL_CIRCLE_STROKE_WIDTH,
 } from "@/lib/geometry";
+import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
 import { COUNTRY_CLICK_EXPAND_MS } from "@/lib/mapCountryClickExpand";
 import { getCountryClickExpandEnabled } from "@/lib/countryClickExpandPrefs";
 import { GAME_LEVELS } from "@/lib/levels";
@@ -149,6 +151,7 @@ export default function PacificMap({
   highlightCountryId,
   flashSmallCountryId,
   onCountryClick,
+  onCountryHover,
   onRegisterMapProject,
   onMapViewChange,
   mapControlsRef,
@@ -313,17 +316,7 @@ export default function PacificMap({
     const container = svg?.parentElement;
     if (!svg || !container) return undefined;
 
-    onRegisterMapProject((country) => {
-      const [lng, lat] = getPacificCentroid(country);
-      const point = PACIFIC_GAME_VIEW.project(
-        lng,
-        lat,
-        PACIFIC_GAME_VIEW.width,
-        PACIFIC_GAME_VIEW.height
-      );
-      if (!point) return null;
-
-      const [svgX, svgY] = point;
+    function toContainerPoint(svgX, svgY) {
       const svgRect = svg.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
       const currentViewBox = viewBoxRef.current;
@@ -338,6 +331,58 @@ export default function PacificMap({
           svgRect.top -
           containerRect.top,
       };
+    }
+
+    onRegisterMapProject({
+      projectPoint(country) {
+        const [lng, lat] = getPacificCentroid(country);
+        const point = PACIFIC_GAME_VIEW.project(
+          lng,
+          lat,
+          PACIFIC_GAME_VIEW.width,
+          PACIFIC_GAME_VIEW.height
+        );
+        if (!point) return null;
+
+        return toContainerPoint(point[0], point[1]);
+      },
+      projectBounds(country) {
+        const svgBounds = projectMeasureBboxToSvg(country, PACIFIC_GAME_VIEW);
+        if (!svgBounds) return null;
+
+        const nw = toContainerPoint(svgBounds.minX, svgBounds.minY);
+        const se = toContainerPoint(svgBounds.maxX, svgBounds.maxY);
+
+        return {
+          countryId: country.id,
+          left: Math.min(nw.x, se.x),
+          top: Math.min(nw.y, se.y),
+          right: Math.max(nw.x, se.x),
+          bottom: Math.max(nw.y, se.y),
+        };
+      },
+      projectDiscoverAnchor(country, viewportRect) {
+        return getCountryVisibleScreenAnchor(
+          country,
+          (lng, lat) => {
+            const point = PACIFIC_GAME_VIEW.project(
+              lng,
+              lat,
+              PACIFIC_GAME_VIEW.width,
+              PACIFIC_GAME_VIEW.height
+            );
+            if (!point) return null;
+            return toContainerPoint(point[0], point[1]);
+          },
+          viewportRect
+        );
+      },
+      getDiscoverLabelScale() {
+        const current = viewBoxRef.current;
+        const defaultViewBox = getDefaultPacificViewBox();
+        const zoomRatio = defaultViewBox.width / current.width;
+        return getDiscoverLabelScaleFromRatio(zoomRatio);
+      },
     });
 
     return () => {
@@ -434,6 +479,13 @@ export default function PacificMap({
     [gameActive, onCountryClick, triggerCountryExpand]
   );
 
+  const handleCountryHover = useCallback(
+    (countryId) => {
+      onCountryHover?.(countryId);
+    },
+    [onCountryHover]
+  );
+
   const filledCountryIdSet = useMemo(() => new Set(filledCountryIds), [filledCountryIds]);
 
   const getCircleStroke = (countryId, assignedColor) => {
@@ -526,6 +578,8 @@ export default function PacificMap({
                 )}
                 onPointerDown={handleCountryPointerDown}
                 onClick={() => handleCountryPointer(country.id)}
+                onPointerEnter={() => handleCountryHover(country.id)}
+                onPointerLeave={() => handleCountryHover(null)}
               />
             );
           })}
@@ -588,6 +642,8 @@ export default function PacificMap({
                     className={gameActive ? pacificMapCountryClickable : undefined}
                     onPointerDown={handleCountryPointerDown}
                     onClick={() => handleCountryPointer(country.id)}
+                    onPointerEnter={() => handleCountryHover(country.id)}
+                    onPointerLeave={() => handleCountryHover(null)}
                   />
                 </g>
                 {showFlashMarker && (

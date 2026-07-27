@@ -73,7 +73,12 @@ import {
   buildInactiveGeojson,
   filterCountriesByRegion,
 } from "@/lib/regions";
-import { buildPlayingUrl, isPlayingSearchParams } from "@/lib/startNavigation";
+import {
+  START_STEPS,
+  buildPlayingUrl,
+  buildStartScreenUrl,
+  isPlayingSearchParams,
+} from "@/lib/startNavigation";
 import { playCorrectSound, playIncorrectSound } from "@/lib/sounds";
 import { playCapitalPronunciation, playCountryPronunciation } from "@/lib/pronunciation";
 import { PRONUNCIATION_KINDS } from "@/lib/pronunciationVoices";
@@ -134,6 +139,7 @@ import { useCountryQueue } from "@/lib/hooks/useCountryQueue";
 import { useIdleDetection } from "@/lib/hooks/useIdleDetection";
 import { useGameBoard } from "@/lib/hooks/useGameBoard";
 import { useSession } from "next-auth/react";
+import { dbg, dbgTrace, isDebugEnabled } from "@/lib/debug";
 
 // Number of countries in a "Go" quick-review session.
 const GO_SESSION_SIZE = 10;
@@ -196,6 +202,7 @@ export default function GeographyGame() {
   const [discoverCountrySheetOpen, setDiscoverCountrySheetOpen] = useState(false);
   const [discoverLabelsById, setDiscoverLabelsById] = useState({});
   const [discoverAnimatingLabel, setDiscoverAnimatingLabel] = useState(null);
+  const [discoverHoveredCountryId, setDiscoverHoveredCountryId] = useState(null);
   const [mapViewRevision, setMapViewRevision] = useState(0);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tutorialManualOpen, setTutorialManualOpen] = useState(false);
@@ -211,6 +218,7 @@ export default function GeographyGame() {
   const tutorialAutoShownRef = useRef(null);
   const discoverHeaderAnchorRef = useRef(null);
   const discoverMobileAnchorRef = useRef(null);
+  const learnMorePanelRef = useRef(null);
   const mapProjectRef = useRef(null);
 
   const closeInfoPanels = useCallback(() => {
@@ -352,6 +360,34 @@ export default function GeographyGame() {
   const signedInRef = useSyncRef(signedIn);
   const sessionRef = useSyncRef(session);
 
+  // TEMP debug instrumentation for the "Learn game bounces to home" bug.
+  // Distinguishes a full page reload (fresh mount + beforeunload) from an
+  // in-app router redirect, and surfaces silent crashes / rejected promises.
+  useEffect(() => {
+    if (!isDebugEnabled()) return;
+    dbg("GeographyGame MOUNTED", {
+      href: window.location.href,
+      search: window.location.search,
+    });
+    const onBeforeUnload = () =>
+      dbg("beforeunload -> FULL PAGE NAVIGATION/RELOAD", {
+        href: window.location.href,
+      });
+    const onError = (event) =>
+      dbg("window 'error'", event.message, event.error?.stack ?? event.error);
+    const onRejection = (event) =>
+      dbg("window 'unhandledrejection'", event.reason?.message ?? event.reason, event.reason?.stack);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      dbg("GeographyGame UNMOUNTED");
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
   // "Are you still there?" idle handling. onIdleReturn runs handleBackToMenu,
   // which is defined later, so we route it through a ref to break the cycle.
   const handleIdleReturn = useCallback(() => handleBackToMenuRef.current(), []);
@@ -474,6 +510,7 @@ export default function GeographyGame() {
   const isDiscoverGame = session?.gameType === GAME_TYPES.DISCOVER;
   const isTestGame = session?.gameType === GAME_TYPES.TEST;
   const isLearningGame = session?.gameType === GAME_TYPES.LEARNING;
+  const isGoGame = Boolean(session?.go);
   // Discover on phone uses DiscoverCountrySheet instead of the Learn More panel.
   const showLearnMorePanel =
     (isDiscoverGame && !isMobile) ||
@@ -949,7 +986,19 @@ export default function GeographyGame() {
       const pool = countries ?? filterCountriesByRegion(allCountries, region);
       const preCredited = preCreditedCountryIds ?? [];
       const totalRounds = pool.length + preCredited.length;
-      if (totalRounds === 0) return;
+      dbg("startGame() called", {
+        gameType,
+        mode,
+        region,
+        level,
+        poolLength: pool.length,
+        preCredited: preCredited.length,
+        totalRounds,
+      });
+      if (totalRounds === 0) {
+        dbg("startGame() EARLY RETURN: totalRounds === 0 (no session set)");
+        return;
+      }
 
       clearPendingGuestGame();
       setMasteryLoadWarning(showMasteryLoadWarning);
@@ -996,6 +1045,7 @@ export default function GeographyGame() {
 
       // Everything was already mastered — nothing left to quiz.
       if (pool.length === 0) {
+        dbg("startGame() pool empty -> gameComplete (no router.push to play=1)");
         setGameActive(false);
         setGameComplete(true);
         setTarget(null);
@@ -1021,6 +1071,7 @@ export default function GeographyGame() {
         requestAnimationFrame(() => answerInputRef.current?.focus());
       }
 
+      dbg("startGame() -> router.push('/?play=1')");
       router.push(buildPlayingUrl());
       gameInHistoryRef.current = true;
     },
@@ -1161,7 +1212,15 @@ export default function GeographyGame() {
   const buildLearningCountries = useCallback(
     async ({ mode, level, region, learningSessionSize }) => {
       const data = await fetchWeakCountryStats({ mode, level, region });
-      if ((data.weakCount ?? 0) === 0) return null;
+      dbg("buildLearningCountries: fetchWeakCountryStats result", {
+        weakCount: data.weakCount,
+        statsLength: data.stats?.length,
+        unauthorized: data.unauthorized,
+      });
+      if ((data.weakCount ?? 0) === 0) {
+        dbg("buildLearningCountries -> null (weakCount 0)");
+        return null;
+      }
 
       const queueIds = buildLearningQueue(
         data.stats,
@@ -1172,7 +1231,17 @@ export default function GeographyGame() {
         .map((id) => regionPool.find((country) => country.id === id))
         .filter(Boolean);
 
-      if (countries.length === 0) return null;
+      dbg("buildLearningCountries: built queue", {
+        queueIds: queueIds.length,
+        regionPool: regionPool.length,
+        countries: countries.length,
+        allCountries: allCountries.length,
+      });
+
+      if (countries.length === 0) {
+        dbg("buildLearningCountries -> null (0 countries after region filter)");
+        return null;
+      }
       return { countries, queueIds };
     },
     [allCountries]
@@ -1214,9 +1283,11 @@ export default function GeographyGame() {
       }
 
       if (config.gameType === GAME_TYPES.LEARNING) {
+        dbg("handleSessionStart: LEARNING branch", config);
         try {
           const learning = await buildLearningCountries(config);
           if (!learning) {
+            dbg("handleSessionStart: no eligible learning countries -> {ok:false}");
             return { ok: false, reason: "no-eligible" };
           }
 
@@ -1229,8 +1300,10 @@ export default function GeographyGame() {
             learningCountryIds: learning.queueIds,
             learningSessionSize: config.learningSessionSize,
           });
+          dbg("handleSessionStart: LEARNING started -> {ok:true}");
           return { ok: true };
         } catch (error) {
+          dbg("handleSessionStart: LEARNING threw", error?.message, error?.stack);
           console.error("Failed to start learning session:", error);
           return {
             ok: false,
@@ -1263,32 +1336,50 @@ export default function GeographyGame() {
     [buildLearningCountries, buildWorldTestCountries, signedIn, startDiscoverGame, startGame, startGoSession]
   );
 
+  const exitToStartScreen = useCallback(
+    (url = "/") => {
+      dbgTrace("exitToStartScreen()", { url });
+      resetIdleState();
+      setShowMenuConfirm(false);
+      setShowResumeConfirm(false);
+      setGamePaused(false);
+      if (nextRoundTimeoutRef.current) {
+        clearTimeout(nextRoundTimeoutRef.current);
+      }
+      clearColorFlash();
+      clearWrongFlash();
+      resetGameTimer();
+      setSession(null);
+      setGameActive(false);
+      setGameComplete(false);
+      setMilestoneStats(undefined);
+      setMasteryLoadWarning(false);
+      resetQueue();
+      resetScoring();
+      beginRoundScoring();
+      resetBoard();
+      wrongAttemptsRef.current = 0;
+      setAnswerText("");
+      setSpellingSuggestionText(null);
+      suppressPlayCheckRef.current = true;
+      gameInHistoryRef.current = false;
+      router.replace(url);
+    },
+    [
+      beginRoundScoring,
+      clearColorFlash,
+      clearWrongFlash,
+      resetBoard,
+      resetGameTimer,
+      resetIdleState,
+      resetQueue,
+      resetScoring,
+      router,
+    ]
+  );
+
   const handleBackToMenu = () => {
-    resetIdleState();
-    setShowMenuConfirm(false);
-    setShowResumeConfirm(false);
-    setGamePaused(false);
-    if (nextRoundTimeoutRef.current) {
-      clearTimeout(nextRoundTimeoutRef.current);
-    }
-    clearColorFlash();
-    clearWrongFlash();
-    resetGameTimer();
-    setSession(null);
-    setGameActive(false);
-    setGameComplete(false);
-    setMilestoneStats(undefined);
-    setMasteryLoadWarning(false);
-    resetQueue();
-    resetScoring();
-    beginRoundScoring();
-    resetBoard();
-    wrongAttemptsRef.current = 0;
-    setAnswerText("");
-    setSpellingSuggestionText(null);
-    suppressPlayCheckRef.current = true;
-    gameInHistoryRef.current = false;
-    router.replace("/");
+    exitToStartScreen("/");
   };
 
   const handleMenuClick = () => {
@@ -1316,7 +1407,21 @@ export default function GeographyGame() {
     // any render where `useSearchParams()` hasn't yet caught up to the freshly
     // pushed playing URL, which would otherwise pop the leave prompt on start.
     const leftPlaying = wasPlayingRef.current && !playing;
+    const wasPlaying = wasPlayingRef.current;
     wasPlayingRef.current = playing;
+
+    if (isDebugEnabled()) {
+      dbg("play-detection effect", {
+        search: searchParams.toString(),
+        playing,
+        wasPlaying,
+        leftPlaying,
+        hasSession: !!session,
+        gameInHistory: gameInHistoryRef.current,
+        suppressPlayCheck: suppressPlayCheckRef.current,
+        gameComplete,
+      });
+    }
 
     if (!session || !gameInHistoryRef.current) return;
     if (playing || !leftPlaying) return;
@@ -1327,10 +1432,12 @@ export default function GeographyGame() {
     }
 
     if (!gameComplete) {
+      dbg("play-detection: leftPlaying while mid-game -> re-push play=1 + confirm");
       setShowMenuConfirm(true);
       router.replace(buildPlayingUrl());
       return;
     }
+    dbg("play-detection: leftPlaying while gameComplete -> handleBackToMenu (HOME)");
 
     handleBackToMenuRef.current();
   }, [searchParams, session, gameComplete, router]);
@@ -1385,7 +1492,7 @@ export default function GeographyGame() {
   const handlePlayAgain = () => {
     if (!session) return;
     if (session.go) {
-      startGoSession(session.region ?? "world");
+      exitToStartScreen(buildStartScreenUrl({ step: START_STEPS.GO_REGION }));
       return;
     }
     if (isLearningGame) {
@@ -1707,13 +1814,42 @@ export default function GeographyGame() {
     setMapViewRevision((revision) => revision + 1);
   }, []);
 
+  const handleDiscoverCountryHover = useCallback((countryId) => {
+    setDiscoverHoveredCountryId(countryId);
+  }, []);
+
   const registerMapProject = useCallback((projectFn) => {
     mapProjectRef.current = projectFn;
     setMapViewRevision((revision) => revision + 1);
   }, []);
 
   const projectCountry = useCallback((country) => {
-    return mapProjectRef.current?.(country) ?? null;
+    const api = mapProjectRef.current;
+    if (!api) return null;
+    if (typeof api === "function") return api(country);
+    return api.projectPoint?.(country) ?? null;
+  }, []);
+
+  const projectDiscoverAnchor = useCallback((country, viewportRect) => {
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return null;
+    return (
+      api.projectDiscoverAnchor?.(country, viewportRect) ??
+      api.projectPoint?.(country) ??
+      null
+    );
+  }, []);
+
+  const projectCountryBounds = useCallback((country) => {
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return null;
+    return api.projectBounds?.(country) ?? null;
+  }, []);
+
+  const getDiscoverLabelScale = useCallback(() => {
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return 1;
+    return api.getDiscoverLabelScale?.() ?? 1;
   }, []);
 
   const handleDiscoverLabelLanded = useCallback((label) => {
@@ -2190,6 +2326,7 @@ export default function GeographyGame() {
                   highlightCountryId={isDiscoverGame ? null : highlightCountryId}
                   flashSmallCountryId={flashSmallCountryId}
                   onCountryClick={mapCountryClickHandler}
+                  onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={isDiscoverGame ? registerMapProject : undefined}
                   onMapViewChange={isDiscoverGame ? handleMapViewChange : undefined}
                   mapControlsRef={pacificControlsRef}
@@ -2212,6 +2349,7 @@ export default function GeographyGame() {
                   mapView={mapView}
                   forceShowSmallCountryCircles={tutorialOpen}
                   onCountryClick={mapCountryClickHandler}
+                  onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={isDiscoverGame ? registerMapProject : undefined}
                   onMapViewChange={isDiscoverGame ? handleMapViewChange : undefined}
                 />
@@ -2235,6 +2373,7 @@ export default function GeographyGame() {
               )}
               {targetCountry && showLearnMorePanel && (
                 <MapCountryInfoPanels
+                  panelRef={learnMorePanelRef}
                   country={targetCountry}
                   allCountries={allCountries}
                   mode={session.mode}
@@ -2265,7 +2404,13 @@ export default function GeographyGame() {
                   animatingLabel={discoverAnimatingLabel}
                   countriesById={activeCountriesById}
                   projectCountry={projectCountry}
+                  projectDiscoverAnchor={projectDiscoverAnchor}
+                  projectCountryBounds={projectCountryBounds}
+                  getDiscoverLabelScale={getDiscoverLabelScale}
                   mapViewRevision={mapViewRevision}
+                  hoveredCountryId={discoverHoveredCountryId}
+                  learnMorePanelRef={learnMorePanelRef}
+                  learnMorePanelActive={Boolean(targetCountry && showLearnMorePanel)}
                   onLabelLanded={handleDiscoverLabelLanded}
                 />
               )}
@@ -2286,6 +2431,7 @@ export default function GeographyGame() {
             totalElapsedMs={finalElapsedMs}
             isReview={session.review}
             isLearning={isLearningGame}
+            isGo={isGoGame}
             milestoneStats={milestoneStats}
             graduatedCountryNames={newlyGraduatedNames}
             guestSyncState={guestSyncState}

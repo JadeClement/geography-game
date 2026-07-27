@@ -411,8 +411,8 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(56, 189, 248, 0.38) 0%,
-    rgba(56, 189, 248, 0.1) 42%,
+    rgba(90, 149, 173, 0.32) 0%,
+    rgba(90, 149, 173, 0.08) 42%,
     transparent 72%
   );
   filter: blur(10px);
@@ -523,7 +523,7 @@
 }
 
 .region-map-ocean {
-  fill: #0284c7;
+  fill: #2e7599;
 }
 
 .region-map-countries {
@@ -585,15 +585,15 @@
 .region-map-picker:not(.region-map-picker--disabled)
   .region-map-countries:has(.region-map-country[data-region="oceania"]:hover)
   .region-map-country[data-region="oceania"] {
-  filter: brightness(1.12) saturate(1.08);
+  filter: brightness(1.08);
 }
 
 .region-map-country:focus-visible {
-  filter: brightness(1.15) saturate(1.1);
+  filter: brightness(1.1);
 }
 
 .region-map-country.selected {
-  filter: brightness(1.18) saturate(1.12);
+  filter: brightness(1.12);
 }
 
 .region-map-picker--disabled .region-map-country {

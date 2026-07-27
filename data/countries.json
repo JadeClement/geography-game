@@ -7,6 +7,8 @@
       "name": "Afghanistan",
       "capital": "Kabul",
       "population": 43844000,
+      "area": 652230,
+      "landlocked": true,
       "languages": [
         "Dari",
         "Pashto"
@@ -45,6 +47,8 @@
       "name": "Aland",
       "capital": "Mariehamn",
       "population": 30654,
+      "area": 1580,
+      "landlocked": false,
       "languages": [
         "Swedish"
       ],
@@ -57,6 +61,8 @@
       "name": "Albania",
       "capital": "Tirana",
       "population": 2363314,
+      "area": 28748,
+      "landlocked": false,
       "languages": [
         "Albanian"
       ],
@@ -92,6 +98,8 @@
       "name": "Algeria",
       "capital": "Algiers",
       "population": 47400000,
+      "area": 2381741,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -130,6 +138,8 @@
       "name": "American Samoa",
       "capital": "Pago Pago",
       "population": 49710,
+      "area": 199,
+      "landlocked": false,
       "languages": [
         "English",
         "Samoan"
@@ -143,6 +153,8 @@
       "name": "Andorra",
       "capital": "Andorra la Vella",
       "population": 88306,
+      "area": 468,
+      "landlocked": true,
       "languages": [
         "Catalan"
       ],
@@ -176,6 +188,8 @@
       "name": "Angola",
       "capital": "Luanda",
       "population": 36170961,
+      "area": 1246700,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -211,6 +225,8 @@
       "name": "Anguilla",
       "capital": "The Valley",
       "population": 16010,
+      "area": 91,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -223,6 +239,8 @@
       "name": "Antigua and Barbuda",
       "capital": "St. John's",
       "population": 103603,
+      "area": 442,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -253,6 +271,8 @@
       "name": "Argentina",
       "capital": "Buenos Aires",
       "population": 46735004,
+      "area": 2780400,
+      "landlocked": false,
       "languages": [
         "Guaraní",
         "Spanish"
@@ -290,6 +310,8 @@
       "name": "Armenia",
       "capital": "Yerevan",
       "population": 3081100,
+      "area": 29743,
+      "landlocked": true,
       "languages": [
         "Armenian"
       ],
@@ -325,6 +347,8 @@
       "name": "Aruba",
       "capital": "Oranjestad",
       "population": 107566,
+      "area": 180,
+      "landlocked": false,
       "languages": [
         "Dutch",
         "Papiamento"
@@ -338,6 +362,8 @@
       "name": "Australia",
       "capital": "Canberra",
       "population": 27400013,
+      "area": 7692024,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -368,6 +394,8 @@
       "name": "Austria",
       "capital": "Vienna",
       "population": 9200931,
+      "area": 83871,
+      "landlocked": true,
       "languages": [
         "Austro-Bavarian German"
       ],
@@ -407,6 +435,8 @@
       "name": "Azerbaijan",
       "capital": "Baku",
       "population": 10241722,
+      "area": 86600,
+      "landlocked": true,
       "languages": [
         "Azerbaijani",
         "Russian"
@@ -444,6 +474,8 @@
       "name": "Bahrain",
       "capital": "Manama",
       "population": 1594654,
+      "area": 765,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -474,6 +506,8 @@
       "name": "Bangladesh",
       "capital": "Dhaka",
       "population": 169828911,
+      "area": 147570,
+      "landlocked": false,
       "languages": [
         "Bengali"
       ],
@@ -507,6 +541,8 @@
       "name": "Barbados",
       "capital": "Bridgetown",
       "population": 267800,
+      "area": 430,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -537,6 +573,8 @@
       "name": "Belarus",
       "capital": "Minsk",
       "population": 9109280,
+      "area": 207600,
+      "landlocked": true,
       "languages": [
         "Belarusian",
         "Russian"
@@ -574,6 +612,8 @@
       "name": "Belgium",
       "capital": "Brussels",
       "population": 11825551,
+      "area": 30528,
+      "landlocked": false,
       "languages": [
         "German",
         "French"
@@ -610,6 +650,8 @@
       "name": "Belize",
       "capital": "Belmopan",
       "population": 417634,
+      "area": 22966,
+      "landlocked": false,
       "languages": [
         "Belizean Creole",
         "English"
@@ -644,6 +686,8 @@
       "name": "Benin",
       "capital": "Porto-Novo",
       "population": 13224860,
+      "area": 112622,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -679,6 +723,8 @@
       "name": "Bermuda",
       "capital": "Hamilton",
       "population": 64055,
+      "area": 54,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -709,6 +755,8 @@
       "name": "Bhutan",
       "capital": "Thimphu",
       "population": 784043,
+      "area": 38394,
+      "landlocked": true,
       "languages": [
         "Dzongkha"
       ],
@@ -742,6 +790,8 @@
       "name": "Bolivia",
       "capital": "Sucre",
       "population": 11312620,
+      "area": 1098581,
+      "landlocked": true,
       "languages": [
         "Aymara",
         "Guaraní"
@@ -779,6 +829,8 @@
       "name": "Bosnia and Herzegovina",
       "capital": "Sarajevo",
       "population": 3422000,
+      "area": 51209,
+      "landlocked": false,
       "languages": [
         "Bosnian",
         "Croatian"
@@ -814,6 +866,8 @@
       "name": "Botswana",
       "capital": "Gaborone",
       "population": 2359609,
+      "area": 582000,
+      "landlocked": true,
       "languages": [
         "English",
         "Tswana"
@@ -850,6 +904,8 @@
       "name": "Brazil",
       "capital": "Brasilia",
       "population": 213421037,
+      "area": 8515767,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -891,6 +947,8 @@
       "name": "British Indian Ocean Territory",
       "capital": "Diego Garcia",
       "population": null,
+      "area": 60,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -903,6 +961,8 @@
       "name": "British Virgin Islands",
       "capital": "Road Town",
       "population": 39471,
+      "area": 151,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -915,6 +975,8 @@
       "name": "Brunei",
       "capital": "Bandar Seri Begawan",
       "population": 455500,
+      "area": 5765,
+      "landlocked": false,
       "languages": [
         "Malay"
       ],
@@ -947,6 +1009,8 @@
       "name": "Bulgaria",
       "capital": "Sofia",
       "population": 6437360,
+      "area": 110879,
+      "landlocked": false,
       "languages": [
         "Bulgarian"
       ],
@@ -983,6 +1047,8 @@
       "name": "Burkina Faso",
       "capital": "Ouagadougou",
       "population": 24070553,
+      "area": 272967,
+      "landlocked": true,
       "languages": [
         "French"
       ],
@@ -1020,6 +1086,8 @@
       "name": "Burundi",
       "capital": "Bujumbura",
       "population": 12332788,
+      "area": 27834,
+      "landlocked": true,
       "languages": [
         "French",
         "Kirundi"
@@ -1055,6 +1123,8 @@
       "name": "Cambodia",
       "capital": "Phnom Penh",
       "population": 17577760,
+      "area": 181035,
+      "landlocked": false,
       "languages": [
         "Khmer"
       ],
@@ -1089,6 +1159,8 @@
       "name": "Cameroon",
       "capital": "Yaounde",
       "population": 29442327,
+      "area": 475442,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -1127,6 +1199,8 @@
       "name": "Canada",
       "capital": "Ottawa",
       "population": 41548787,
+      "area": 9984670,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -1160,6 +1234,8 @@
       "name": "Cape Verde",
       "capital": "Praia",
       "population": 491233,
+      "area": 4033,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -1190,6 +1266,8 @@
       "name": "Cayman Islands",
       "capital": "George Town",
       "population": 84738,
+      "area": 264,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -1202,6 +1280,8 @@
       "name": "Central African Republic",
       "capital": "Bangui",
       "population": 6470307,
+      "area": 622984,
+      "landlocked": true,
       "languages": [
         "French",
         "Sango"
@@ -1240,6 +1320,8 @@
       "name": "Chad",
       "capital": "N'Djamena",
       "population": 19340757,
+      "area": 1284000,
+      "landlocked": true,
       "languages": [
         "Arabic",
         "French"
@@ -1278,6 +1360,8 @@
       "name": "Chile",
       "capital": "Santiago",
       "population": 20206953,
+      "area": 756102,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1312,6 +1396,8 @@
       "name": "China",
       "capital": "Beijing",
       "population": 1408280000,
+      "area": 9706961,
+      "landlocked": false,
       "languages": [
         "Chinese"
       ],
@@ -1359,6 +1445,8 @@
       "name": "Colombia",
       "capital": "Bogotá",
       "population": 53057212,
+      "area": 1141748,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1395,6 +1483,8 @@
       "name": "Comoros",
       "capital": "Moroni",
       "population": 870038,
+      "area": 1862,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "French"
@@ -1426,6 +1516,8 @@
       "name": "Cook Islands",
       "capital": "Avarua",
       "population": 15040,
+      "area": 236,
+      "landlocked": false,
       "languages": [
         "English",
         "Cook Islands Māori"
@@ -1457,6 +1549,8 @@
       "name": "Costa Rica",
       "capital": "San Jose",
       "population": 5309625,
+      "area": 51100,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1490,6 +1584,8 @@
       "name": "Croatia",
       "capital": "Zagreb",
       "population": 3866233,
+      "area": 56594,
+      "landlocked": false,
       "languages": [
         "Croatian"
       ],
@@ -1526,6 +1622,8 @@
       "name": "Cuba",
       "capital": "Havana",
       "population": 9748007,
+      "area": 109884,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1556,6 +1654,8 @@
       "name": "Curaçao",
       "capital": "Willemstad",
       "population": 156115,
+      "area": 444,
+      "landlocked": false,
       "languages": [
         "English",
         "Dutch"
@@ -1569,6 +1669,8 @@
       "name": "Cyprus",
       "capital": "Nicosia",
       "population": 966400,
+      "area": 9251,
+      "landlocked": false,
       "languages": [
         "Greek",
         "Turkish"
@@ -1600,6 +1702,8 @@
       "name": "Czechia",
       "capital": "Prague",
       "population": 10876875,
+      "area": 78865,
+      "landlocked": true,
       "languages": [
         "Czech",
         "Slovak"
@@ -1636,6 +1740,8 @@
       "name": "Democratic Republic of the Congo",
       "capital": "Kinshasa",
       "population": 112832000,
+      "area": 2344858,
+      "landlocked": false,
       "languages": [
         "French",
         "Kikongo"
@@ -1677,6 +1783,8 @@
       "name": "Denmark",
       "capital": "Copenhagen",
       "population": 6004342,
+      "area": 43094,
+      "landlocked": false,
       "languages": [
         "Danish"
       ],
@@ -1709,6 +1817,8 @@
       "name": "Djibouti",
       "capital": "Djibouti",
       "population": 1066809,
+      "area": 23200,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "French"
@@ -1744,6 +1854,8 @@
       "name": "Dominica",
       "capital": "Roseau",
       "population": 67408,
+      "area": 751,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -1774,6 +1886,8 @@
       "name": "Dominican Republic",
       "capital": "Santo Domingo",
       "population": 10771504,
+      "area": 48671,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1806,6 +1920,8 @@
       "name": "East Timor",
       "capital": "Dili",
       "population": 1391221,
+      "area": 14874,
+      "landlocked": false,
       "languages": [
         "Portuguese",
         "Tetum"
@@ -1839,6 +1955,8 @@
       "name": "Ecuador",
       "capital": "Quito",
       "population": 18103660,
+      "area": 276841,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1872,6 +1990,8 @@
       "name": "Egypt",
       "capital": "Cairo",
       "population": 107271260,
+      "area": 1002450,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -1907,6 +2027,8 @@
       "name": "El Salvador",
       "capital": "San Salvador",
       "population": 6029976,
+      "area": 21041,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -1940,6 +2062,8 @@
       "name": "Equatorial Guinea",
       "capital": "Malabo",
       "population": 1668768,
+      "area": 28051,
+      "landlocked": false,
       "languages": [
         "French",
         "Portuguese"
@@ -1974,6 +2098,8 @@
       "name": "Eritrea",
       "capital": "Asmara",
       "population": 3607000,
+      "area": 117600,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "English"
@@ -2009,6 +2135,8 @@
       "name": "Estonia",
       "capital": "Tallinn",
       "population": 1369995,
+      "area": 45227,
+      "landlocked": false,
       "languages": [
         "Estonian"
       ],
@@ -2042,6 +2170,8 @@
       "name": "eSwatini",
       "capital": "Mbabane",
       "population": 1235549,
+      "area": 17364,
+      "landlocked": true,
       "languages": [
         "English",
         "Swazi"
@@ -2076,6 +2206,8 @@
       "name": "Ethiopia",
       "capital": "Addis Ababa",
       "population": 111652998,
+      "area": 1104300,
+      "landlocked": true,
       "languages": [
         "Amharic"
       ],
@@ -2113,6 +2245,8 @@
       "name": "Falkland Islands",
       "capital": "Stanley",
       "population": 3662,
+      "area": 12173,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2125,6 +2259,8 @@
       "name": "Faroe Islands",
       "capital": "Torshavn",
       "population": 55146,
+      "area": 1393,
+      "landlocked": false,
       "languages": [
         "Danish",
         "Faroese"
@@ -2138,6 +2274,8 @@
       "name": "Federated States of Micronesia",
       "capital": "Palikir",
       "population": 105564,
+      "area": 702,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2168,6 +2306,8 @@
       "name": "Fiji",
       "capital": "Suva",
       "population": 900869,
+      "area": 18272,
+      "landlocked": false,
       "languages": [
         "English",
         "Fijian"
@@ -2199,6 +2339,8 @@
       "name": "Finland",
       "capital": "Helsinki",
       "population": 5645651,
+      "area": 338424,
+      "landlocked": false,
       "languages": [
         "Finnish",
         "Swedish"
@@ -2234,6 +2376,8 @@
       "name": "France",
       "capital": "Paris",
       "population": 68688000,
+      "area": 551695,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -2273,6 +2417,8 @@
       "name": "French Polynesia",
       "capital": "Papeete",
       "population": 279500,
+      "area": 4167,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -2285,6 +2431,8 @@
       "name": "French Southern and Antarctic Lands",
       "capital": "Port-aux-Francais",
       "population": null,
+      "area": 7747,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -2297,6 +2445,8 @@
       "name": "Gabon",
       "capital": "Libreville",
       "population": 2469296,
+      "area": 267668,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -2331,6 +2481,8 @@
       "name": "Gambia",
       "capital": "Banjul",
       "population": 2422712,
+      "area": 10689,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2363,6 +2515,8 @@
       "name": "Georgia",
       "capital": "Tbilisi",
       "population": 3704500,
+      "area": 69700,
+      "landlocked": false,
       "languages": [
         "Georgian"
       ],
@@ -2398,6 +2552,8 @@
       "name": "Germany",
       "capital": "Berlin",
       "population": 83517030,
+      "area": 357114,
+      "landlocked": false,
       "languages": [
         "German"
       ],
@@ -2438,6 +2594,8 @@
       "name": "Ghana",
       "capital": "Accra",
       "population": 33742380,
+      "area": 238533,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2472,6 +2630,8 @@
       "name": "Gibraltar",
       "capital": "Gibraltar",
       "population": 38000,
+      "area": 6,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2486,6 +2646,8 @@
       "name": "Greece",
       "capital": "Athens",
       "population": 10400720,
+      "area": 131990,
+      "landlocked": false,
       "languages": [
         "Greek"
       ],
@@ -2521,6 +2683,8 @@
       "name": "Greenland",
       "capital": "Nuuk",
       "population": 56542,
+      "area": 2166086,
+      "landlocked": false,
       "languages": [
         "Greenlandic"
       ],
@@ -2533,6 +2697,8 @@
       "name": "Grenada",
       "capital": "St. George's",
       "population": 109021,
+      "area": 344,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2563,6 +2729,8 @@
       "name": "Guam",
       "capital": "Hagatna",
       "population": 153836,
+      "area": 549,
+      "landlocked": false,
       "languages": [
         "Chamorro",
         "English"
@@ -2576,6 +2744,8 @@
       "name": "Guatemala",
       "capital": "Guatemala City",
       "population": 18079810,
+      "area": 108889,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -2611,6 +2781,8 @@
       "name": "Guernsey",
       "capital": "St Peter Port",
       "population": 64781,
+      "area": 78,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -2624,6 +2796,8 @@
       "name": "Guinea",
       "capital": "Conakry",
       "population": 14363931,
+      "area": 245857,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -2661,6 +2835,8 @@
       "name": "Guinea-Bissau",
       "capital": "Bissau",
       "population": 1781308,
+      "area": 36125,
+      "landlocked": false,
       "languages": [
         "Portuguese",
         "Upper Guinea Creole"
@@ -2695,6 +2871,8 @@
       "name": "Guyana",
       "capital": "Georgetown",
       "population": 772975,
+      "area": 214969,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2729,6 +2907,8 @@
       "name": "Haiti",
       "capital": "Port-au-Prince",
       "population": 11867032,
+      "area": 27750,
+      "landlocked": false,
       "languages": [
         "French",
         "Haitian Creole"
@@ -2762,6 +2942,8 @@
       "name": "Heard Island and McDonald Islands",
       "capital": "",
       "population": null,
+      "area": 412,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -2774,6 +2956,8 @@
       "name": "Honduras",
       "capital": "Tegucigalpa",
       "population": 9892632,
+      "area": 112492,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -2808,6 +2992,8 @@
       "name": "Hong Kong S.A.R.",
       "capital": "Hong Kong",
       "population": 7527500,
+      "area": 1104,
+      "landlocked": false,
       "languages": [
         "English",
         "Chinese"
@@ -2823,6 +3009,8 @@
       "name": "Hungary",
       "capital": "Budapest",
       "population": 9539502,
+      "area": 93028,
+      "landlocked": true,
       "languages": [
         "Hungarian"
       ],
@@ -2861,6 +3049,8 @@
       "name": "Iceland",
       "capital": "Reykjavik",
       "population": 391810,
+      "area": 103000,
+      "landlocked": false,
       "languages": [
         "Icelandic"
       ],
@@ -2891,6 +3081,8 @@
       "name": "India",
       "capital": "New Delhi",
       "population": 1417492000,
+      "area": 3287590,
+      "landlocked": false,
       "languages": [
         "English",
         "Hindi"
@@ -2929,6 +3121,8 @@
       "name": "Indonesia",
       "capital": "Jakarta",
       "population": 284438782,
+      "area": 1904569,
+      "landlocked": false,
       "languages": [
         "Indonesian"
       ],
@@ -2963,6 +3157,8 @@
       "name": "Iran",
       "capital": "Tehran",
       "population": 85961000,
+      "area": 1648195,
+      "landlocked": false,
       "languages": [
         "Persian (Farsi)"
       ],
@@ -3001,6 +3197,8 @@
       "name": "Iraq",
       "capital": "Baghdad",
       "population": 46118793,
+      "area": 438317,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "Aramaic"
@@ -3039,6 +3237,8 @@
       "name": "Ireland",
       "capital": "Dublin",
       "population": 5458600,
+      "area": 70273,
+      "landlocked": false,
       "languages": [
         "English",
         "Irish"
@@ -3072,6 +3272,8 @@
       "name": "Isle of Man",
       "capital": "Douglas, Isle of Man",
       "population": 84530,
+      "area": 572,
+      "landlocked": false,
       "languages": [
         "English",
         "Manx"
@@ -3085,6 +3287,8 @@
       "name": "Israel",
       "capital": "Jerusalem",
       "population": 10119400,
+      "area": 20770,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "Hebrew"
@@ -3122,6 +3326,8 @@
       "name": "Italy",
       "capital": "Rome",
       "population": 58919230,
+      "area": 301336,
+      "landlocked": false,
       "languages": [
         "Italian"
       ],
@@ -3159,6 +3365,8 @@
       "name": "Ivory Coast",
       "capital": "Yamoussoukro",
       "population": 29389150,
+      "area": 322463,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -3195,6 +3403,8 @@
       "name": "Jamaica",
       "capital": "Kingston",
       "population": 2825544,
+      "area": 10991,
+      "landlocked": false,
       "languages": [
         "English",
         "Jamaican Patois"
@@ -3226,6 +3436,8 @@
       "name": "Japan",
       "capital": "Tokyo",
       "population": 123300000,
+      "area": 377930,
+      "landlocked": false,
       "languages": [
         "Japanese"
       ],
@@ -3256,6 +3468,8 @@
       "name": "Jersey",
       "capital": "Saint Helier",
       "population": 103267,
+      "area": 116,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -3269,6 +3483,8 @@
       "name": "Jordan",
       "capital": "Amman",
       "population": 11734000,
+      "area": 89342,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -3305,6 +3521,8 @@
       "name": "Kazakhstan",
       "capital": "Astana",
       "population": 20407844,
+      "area": 2724900,
+      "landlocked": true,
       "languages": [
         "Kazakh",
         "Russian"
@@ -3342,6 +3560,8 @@
       "name": "Kenya",
       "capital": "Nairobi",
       "population": 53330978,
+      "area": 580367,
+      "landlocked": false,
       "languages": [
         "English",
         "Swahili"
@@ -3379,6 +3599,8 @@
       "name": "Kiribati",
       "capital": "Tarawa",
       "population": 120740,
+      "area": 811,
+      "landlocked": false,
       "languages": [
         "English",
         "Gilbertese"
@@ -3410,6 +3632,8 @@
       "name": "Kosovo",
       "capital": "Pristina",
       "population": 1585566,
+      "area": 10887,
+      "landlocked": true,
       "languages": [],
       "neighbors": [],
       "enabled": true,
@@ -3438,6 +3662,8 @@
       "name": "Kuwait",
       "capital": "Kuwait City",
       "population": 4881254,
+      "area": 17818,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -3471,6 +3697,8 @@
       "name": "Kyrgyzstan",
       "capital": "Bishkek",
       "population": 7281800,
+      "area": 199951,
+      "landlocked": true,
       "languages": [
         "Kyrgyz",
         "Russian"
@@ -3507,6 +3735,8 @@
       "name": "Laos",
       "capital": "Vientiane",
       "population": 7647000,
+      "area": 236800,
+      "landlocked": true,
       "languages": [
         "Lao"
       ],
@@ -3543,6 +3773,8 @@
       "name": "Latvia",
       "capital": "Riga",
       "population": 1830400,
+      "area": 64559,
+      "landlocked": false,
       "languages": [
         "Latvian"
       ],
@@ -3578,6 +3810,8 @@
       "name": "Lebanon",
       "capital": "Beirut",
       "population": 5490000,
+      "area": 10452,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "French"
@@ -3612,6 +3846,8 @@
       "name": "Lesotho",
       "capital": "Maseru",
       "population": 2116427,
+      "area": 30355,
+      "landlocked": true,
       "languages": [
         "English",
         "Sotho"
@@ -3645,6 +3881,8 @@
       "name": "Liberia",
       "capital": "Monrovia",
       "population": 5248621,
+      "area": 111369,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -3679,6 +3917,8 @@
       "name": "Libya",
       "capital": "Tripolis",
       "population": 7459000,
+      "area": 1759540,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -3716,6 +3956,8 @@
       "name": "Liechtenstein",
       "capital": "Vaduz",
       "population": 40900,
+      "area": 160,
+      "landlocked": true,
       "languages": [
         "German"
       ],
@@ -3749,6 +3991,8 @@
       "name": "Lithuania",
       "capital": "Vilnius",
       "population": 2894548,
+      "area": 65300,
+      "landlocked": false,
       "languages": [
         "Lithuanian"
       ],
@@ -3784,6 +4028,8 @@
       "name": "Luxembourg",
       "capital": "Luxembourg",
       "population": 681973,
+      "area": 2586,
+      "landlocked": true,
       "languages": [
         "German",
         "French"
@@ -3819,6 +4065,8 @@
       "name": "Macao S.A.R",
       "capital": "Macao",
       "population": 685900,
+      "area": 30,
+      "landlocked": false,
       "languages": [
         "Portuguese",
         "Chinese"
@@ -3834,6 +4082,8 @@
       "name": "Madagascar",
       "capital": "Antananarivo",
       "population": 31727042,
+      "area": 587041,
+      "landlocked": false,
       "languages": [
         "French",
         "Malagasy"
@@ -3865,6 +4115,8 @@
       "name": "Malawi",
       "capital": "Lilongwe",
       "population": 20734262,
+      "area": 118484,
+      "landlocked": true,
       "languages": [
         "English",
         "Chewa"
@@ -3900,6 +4152,8 @@
       "name": "Malaysia",
       "capital": "Kuala Lumpur",
       "population": 34231700,
+      "area": 330803,
+      "landlocked": false,
       "languages": [
         "English",
         "Malay"
@@ -3935,6 +4189,8 @@
       "name": "Maldives",
       "capital": "Male",
       "population": 515132,
+      "area": 300,
+      "landlocked": false,
       "languages": [
         "Maldivian"
       ],
@@ -3965,6 +4221,8 @@
       "name": "Mali",
       "capital": "Bamako",
       "population": 22395489,
+      "area": 1240192,
+      "landlocked": true,
       "languages": [
         "French"
       ],
@@ -4003,6 +4261,8 @@
       "name": "Malta",
       "capital": "Valletta",
       "population": 574250,
+      "area": 316,
+      "landlocked": false,
       "languages": [
         "English",
         "Maltese"
@@ -4034,6 +4294,8 @@
       "name": "Marshall Islands",
       "capital": "Majuro",
       "population": 42418,
+      "area": 181,
+      "landlocked": false,
       "languages": [
         "English",
         "Marshallese"
@@ -4065,6 +4327,8 @@
       "name": "Mauritania",
       "capital": "Nouakchott",
       "population": 4927532,
+      "area": 1030700,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -4100,6 +4364,8 @@
       "name": "Mauritius",
       "capital": "Port Louis",
       "population": 1243741,
+      "area": 2040,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -4131,6 +4397,8 @@
       "name": "Mexico",
       "capital": "Ciudad de México",
       "population": 130575786,
+      "area": 1964375,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -4165,6 +4433,8 @@
       "name": "Moldova",
       "capital": "Chisinau",
       "population": 2381300,
+      "area": 33846,
+      "landlocked": true,
       "languages": [
         "Moldavian"
       ],
@@ -4198,6 +4468,8 @@
       "name": "Monaco",
       "capital": "Monaco",
       "population": 38423,
+      "area": 2.02,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -4230,6 +4502,8 @@
       "name": "Mongolia",
       "capital": "Ulan Bator",
       "population": 3544835,
+      "area": 1564110,
+      "landlocked": true,
       "languages": [
         "Mongolian"
       ],
@@ -4263,6 +4537,8 @@
       "name": "Montenegro",
       "capital": "Podgorica",
       "population": 623327,
+      "area": 13812,
+      "landlocked": false,
       "languages": [
         "Montenegrin"
       ],
@@ -4299,6 +4575,8 @@
       "name": "Montserrat",
       "capital": "Plymouth",
       "population": 4386,
+      "area": 102,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -4311,6 +4589,8 @@
       "name": "Morocco",
       "capital": "Rabat",
       "population": 36828330,
+      "area": 446550,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "Berber"
@@ -4346,6 +4626,8 @@
       "name": "Mozambique",
       "capital": "Maputo",
       "population": 34090466,
+      "area": 801590,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -4383,6 +4665,8 @@
       "name": "Myanmar",
       "capital": "Nay Pyi Taw",
       "population": 51316756,
+      "area": 676578,
+      "landlocked": false,
       "languages": [
         "Burmese"
       ],
@@ -4419,6 +4703,8 @@
       "name": "Namibia",
       "capital": "Windhoek",
       "population": 3022401,
+      "area": 825615,
+      "landlocked": false,
       "languages": [
         "Afrikaans",
         "German"
@@ -4455,6 +4741,8 @@
       "name": "Nauru",
       "capital": "Yaren",
       "population": 11680,
+      "area": 21,
+      "landlocked": false,
       "languages": [
         "English",
         "Nauru"
@@ -4486,6 +4774,8 @@
       "name": "Nepal",
       "capital": "Kathmandu",
       "population": 29911840,
+      "area": 147181,
+      "landlocked": true,
       "languages": [
         "Nepali"
       ],
@@ -4519,6 +4809,8 @@
       "name": "Netherlands",
       "capital": "Amsterdam",
       "population": 18080943,
+      "area": 41850,
+      "landlocked": false,
       "languages": [
         "Dutch"
       ],
@@ -4552,6 +4844,8 @@
       "name": "New Caledonia",
       "capital": "Noumea",
       "population": 264596,
+      "area": 18575,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -4564,6 +4858,8 @@
       "name": "New Zealand",
       "capital": "Wellington",
       "population": 5324700,
+      "area": 270467,
+      "landlocked": false,
       "languages": [
         "English",
         "Māori"
@@ -4595,6 +4891,8 @@
       "name": "Nicaragua",
       "capital": "Managua",
       "population": 6803886,
+      "area": 130373,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -4628,6 +4926,8 @@
       "name": "Niger",
       "capital": "Niamey",
       "population": 26312034,
+      "area": 1267000,
+      "landlocked": true,
       "languages": [
         "French"
       ],
@@ -4666,6 +4966,8 @@
       "name": "Nigeria",
       "capital": "Abuja",
       "population": 223800000,
+      "area": 923768,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -4701,6 +5003,8 @@
       "name": "Niue",
       "capital": "Alofi",
       "population": 1681,
+      "area": 260,
+      "landlocked": false,
       "languages": [
         "English",
         "Niuean"
@@ -4732,6 +5036,8 @@
       "name": "Norfolk Island",
       "capital": "Kingston",
       "population": 2188,
+      "area": 36,
+      "landlocked": false,
       "languages": [
         "English",
         "Norfuk"
@@ -4745,6 +5051,8 @@
       "name": "North Korea",
       "capital": "Pyongyang",
       "population": 25950000,
+      "area": 120538,
+      "landlocked": false,
       "languages": [
         "Korean"
       ],
@@ -4779,6 +5087,8 @@
       "name": "North Macedonia",
       "capital": "Skopje",
       "population": 1826247,
+      "area": 25713,
+      "landlocked": true,
       "languages": [
         "Macedonian"
       ],
@@ -4815,6 +5125,8 @@
       "name": "Northern Mariana Islands",
       "capital": "Saipan",
       "population": 47329,
+      "area": 464,
+      "landlocked": false,
       "languages": [
         "Carolinian",
         "Chamorro"
@@ -4828,6 +5140,8 @@
       "name": "Norway",
       "capital": "Oslo",
       "population": 5606944,
+      "area": 323802,
+      "landlocked": false,
       "languages": [
         "Norwegian Nynorsk",
         "Norwegian Bokmål"
@@ -4863,6 +5177,8 @@
       "name": "Oman",
       "capital": "Muscat",
       "population": 5306976,
+      "area": 309500,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -4897,6 +5213,8 @@
       "name": "Pakistan",
       "capital": "Islamabad",
       "population": 241499431,
+      "area": 881912,
+      "landlocked": false,
       "languages": [
         "English",
         "Urdu"
@@ -4933,6 +5251,8 @@
       "name": "Palau",
       "capital": "Melekeok",
       "population": 16733,
+      "area": 459,
+      "landlocked": false,
       "languages": [
         "English",
         "Palauan"
@@ -4964,6 +5284,8 @@
       "name": "Palestine",
       "capital": "East Jerusalem",
       "population": 5483450,
+      "area": 6220,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -4998,6 +5320,8 @@
       "name": "Panama",
       "capital": "Panama City",
       "population": 4064780,
+      "area": 75417,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -5031,6 +5355,8 @@
       "name": "Papua New Guinea",
       "capital": "Port Moresby",
       "population": 11781559,
+      "area": 462840,
+      "landlocked": false,
       "languages": [
         "English",
         "Hiri Motu"
@@ -5064,6 +5390,8 @@
       "name": "Paraguay",
       "capital": "Asunción",
       "population": 6109644,
+      "area": 406752,
+      "landlocked": true,
       "languages": [
         "Guaraní",
         "Spanish"
@@ -5099,6 +5427,8 @@
       "name": "Peru",
       "capital": "Lima",
       "population": 34350244,
+      "area": 1285216,
+      "landlocked": false,
       "languages": [
         "Aymara",
         "Quechua"
@@ -5136,6 +5466,8 @@
       "name": "Philippines",
       "capital": "Manila",
       "population": 114123600,
+      "area": 342353,
+      "landlocked": false,
       "languages": [
         "English",
         "Filipino"
@@ -5167,6 +5499,8 @@
       "name": "Pitcairn Islands",
       "capital": "Adamstown",
       "population": 35,
+      "area": 47,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -5179,6 +5513,8 @@
       "name": "Poland",
       "capital": "Warsaw",
       "population": 37401000,
+      "area": 312679,
+      "landlocked": false,
       "languages": [
         "Polish"
       ],
@@ -5217,6 +5553,8 @@
       "name": "Portugal",
       "capital": "Lisbon",
       "population": 10749635,
+      "area": 92090,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -5249,6 +5587,8 @@
       "name": "Puerto Rico",
       "capital": "San Juan",
       "population": 3203295,
+      "area": 8870,
+      "landlocked": false,
       "languages": [
         "English",
         "Spanish"
@@ -5262,6 +5602,8 @@
       "name": "Qatar",
       "capital": "Doha",
       "population": 3173024,
+      "area": 11586,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -5294,6 +5636,8 @@
       "name": "Republic of Serbia",
       "capital": "Belgrade",
       "population": 6567783,
+      "area": 88361,
+      "landlocked": true,
       "languages": [
         "Serbian"
       ],
@@ -5333,6 +5677,8 @@
       "name": "Republic of the Congo",
       "capital": "Brazzaville",
       "population": 6142180,
+      "area": 342000,
+      "landlocked": false,
       "languages": [
         "French",
         "Kikongo"
@@ -5370,6 +5716,8 @@
       "name": "Romania",
       "capital": "Bucharest",
       "population": 19036031,
+      "area": 238391,
+      "landlocked": false,
       "languages": [
         "Romanian"
       ],
@@ -5406,6 +5754,8 @@
       "name": "Russia",
       "capital": "Moscow",
       "population": 146028325,
+      "area": 17098242,
+      "landlocked": false,
       "languages": [
         "Russian"
       ],
@@ -5451,6 +5801,8 @@
       "name": "Rwanda",
       "capital": "Kigali",
       "population": 14104969,
+      "area": 26338,
+      "landlocked": true,
       "languages": [
         "English",
         "French"
@@ -5487,6 +5839,8 @@
       "name": "Saint Barthelemy",
       "capital": "Gustavia",
       "population": 10562,
+      "area": 21,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -5499,6 +5853,8 @@
       "name": "Saint Helena",
       "capital": "Jamestown",
       "population": 5651,
+      "area": 394,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -5511,6 +5867,8 @@
       "name": "Saint Martin",
       "capital": "Marigot",
       "population": 31496,
+      "area": 53,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -5525,6 +5883,8 @@
       "name": "Saint Pierre and Miquelon",
       "capital": "Saint-Pierre",
       "population": 5819,
+      "area": 242,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -5537,6 +5897,8 @@
       "name": "Samoa",
       "capital": "Apia",
       "population": 205557,
+      "area": 2842,
+      "landlocked": false,
       "languages": [
         "English",
         "Samoan"
@@ -5568,6 +5930,8 @@
       "name": "San Marino",
       "capital": "San Marino",
       "population": 34132,
+      "area": 61,
+      "landlocked": true,
       "languages": [
         "Italian"
       ],
@@ -5600,6 +5964,8 @@
       "name": "São Tomé and Principe",
       "capital": "Sao Tome",
       "population": 209607,
+      "area": 964,
+      "landlocked": false,
       "languages": [
         "Portuguese"
       ],
@@ -5630,6 +5996,8 @@
       "name": "Saudi Arabia",
       "capital": "Riyadh",
       "population": 35300280,
+      "area": 2149690,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -5668,6 +6036,8 @@
       "name": "Senegal",
       "capital": "Dakar",
       "population": 18593258,
+      "area": 196722,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -5704,6 +6074,8 @@
       "name": "Seychelles",
       "capital": "Victoria",
       "population": 122729,
+      "area": 452,
+      "landlocked": false,
       "languages": [
         "Seychellois Creole",
         "English"
@@ -5735,6 +6107,8 @@
       "name": "Sierra Leone",
       "capital": "Freetown",
       "population": 9077691,
+      "area": 71740,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -5768,6 +6142,8 @@
       "name": "Singapore",
       "capital": "Singapur",
       "population": 6036900,
+      "area": 710,
+      "landlocked": false,
       "languages": [
         "English",
         "Malay"
@@ -5799,6 +6175,8 @@
       "name": "Sint Maarten",
       "capital": "Philipsburg",
       "population": 41349,
+      "area": 34,
+      "landlocked": false,
       "languages": [
         "English",
         "French"
@@ -5814,6 +6192,8 @@
       "name": "Slovakia",
       "capital": "Bratislava",
       "population": 5413813,
+      "area": 49037,
+      "landlocked": true,
       "languages": [
         "Slovak"
       ],
@@ -5850,6 +6230,8 @@
       "name": "Slovenia",
       "capital": "Ljubljana",
       "population": 2130638,
+      "area": 20273,
+      "landlocked": false,
       "languages": [
         "Slovene"
       ],
@@ -5885,6 +6267,8 @@
       "name": "Solomon Islands",
       "capital": "Honiara",
       "population": 750325,
+      "area": 28896,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -5915,6 +6299,8 @@
       "name": "Somalia",
       "capital": "Mogadishu",
       "population": 19655000,
+      "area": 637657,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "Somali"
@@ -5950,6 +6336,8 @@
       "name": "South Africa",
       "capital": "Pretoria",
       "population": 63100945,
+      "area": 1221037,
+      "landlocked": false,
       "languages": [
         "Afrikaans",
         "English"
@@ -5988,6 +6376,8 @@
       "name": "South Georgia and the Islands",
       "capital": "Grytviken",
       "population": null,
+      "area": 3903,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6000,6 +6390,8 @@
       "name": "South Korea",
       "capital": "Seoul",
       "population": 51159889,
+      "area": 100210,
+      "landlocked": false,
       "languages": [
         "Korean"
       ],
@@ -6032,6 +6424,8 @@
       "name": "South Sudan",
       "capital": "Juba",
       "population": 15786898,
+      "area": 619745,
+      "landlocked": true,
       "languages": [
         "English"
       ],
@@ -6069,6 +6463,8 @@
       "name": "Spain",
       "capital": "Madrid",
       "population": 49315949,
+      "area": 505992,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -6105,6 +6501,8 @@
       "name": "Sri Lanka",
       "capital": "Colombo",
       "population": 21763170,
+      "area": 65610,
+      "landlocked": false,
       "languages": [
         "Sinhala",
         "Tamil"
@@ -6138,6 +6536,8 @@
       "name": "St. Kitts and Nevis",
       "capital": "Basseterre",
       "population": 51320,
+      "area": 261,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6168,6 +6568,8 @@
       "name": "St. Lucia",
       "capital": "Castries",
       "population": 184100,
+      "area": 616,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6198,6 +6600,8 @@
       "name": "St. Vincent and the Grenadines",
       "capital": "Kingstown",
       "population": 110872,
+      "area": 389,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6228,6 +6632,8 @@
       "name": "Sudan",
       "capital": "Khartoum",
       "population": 51662000,
+      "area": 1886068,
+      "landlocked": false,
       "languages": [
         "Arabic",
         "English"
@@ -6267,6 +6673,8 @@
       "name": "Suriname",
       "capital": "Paramaribo",
       "population": 616500,
+      "area": 163820,
+      "landlocked": false,
       "languages": [
         "Dutch"
       ],
@@ -6301,6 +6709,8 @@
       "name": "Sweden",
       "capital": "Stockholm",
       "population": 10596652,
+      "area": 450295,
+      "landlocked": false,
       "languages": [
         "Swedish"
       ],
@@ -6334,6 +6744,8 @@
       "name": "Switzerland",
       "capital": "Bern",
       "population": 9082848,
+      "area": 41284,
+      "landlocked": true,
       "languages": [
         "French",
         "Swiss German"
@@ -6371,6 +6783,8 @@
       "name": "Syria",
       "capital": "Damascus",
       "population": 25620000,
+      "area": 185180,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -6407,6 +6821,8 @@
       "name": "Taiwan",
       "capital": "Taipei",
       "population": 23337936,
+      "area": 36193,
+      "landlocked": false,
       "languages": [
         "Chinese"
       ],
@@ -6437,6 +6853,8 @@
       "name": "Tajikistan",
       "capital": "Dushanbe",
       "population": 10499000,
+      "area": 143100,
+      "landlocked": true,
       "languages": [
         "Russian",
         "Tajik"
@@ -6473,6 +6891,8 @@
       "name": "Thailand",
       "capital": "Bangkok",
       "population": 65859640,
+      "area": 513120,
+      "landlocked": false,
       "languages": [
         "Thai"
       ],
@@ -6508,6 +6928,8 @@
       "name": "The Bahamas",
       "capital": "Nassau",
       "population": 398165,
+      "area": 13943,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6538,6 +6960,8 @@
       "name": "Togo",
       "capital": "Lome",
       "population": 8095498,
+      "area": 56785,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -6572,6 +6996,8 @@
       "name": "Tonga",
       "capital": "Nuku'alofa",
       "population": 100179,
+      "area": 747,
+      "landlocked": false,
       "languages": [
         "English",
         "Tongan"
@@ -6603,6 +7029,8 @@
       "name": "Trinidad and Tobago",
       "capital": "Port of Spain",
       "population": 1368333,
+      "area": 5130,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6633,6 +7061,8 @@
       "name": "Tunisia",
       "capital": "Tunis",
       "population": 11972169,
+      "area": 163610,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -6666,6 +7096,8 @@
       "name": "Turkey",
       "capital": "Ankara",
       "population": 85664944,
+      "area": 783562,
+      "landlocked": false,
       "languages": [
         "Turkish"
       ],
@@ -6705,6 +7137,8 @@
       "name": "Turkmenistan",
       "capital": "Ashgabat",
       "population": 7057841,
+      "area": 488100,
+      "landlocked": true,
       "languages": [
         "Russian",
         "Turkmen"
@@ -6741,6 +7175,8 @@
       "name": "Turks and Caicos Islands",
       "capital": "Cockburn Town",
       "population": 50894,
+      "area": 948,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6753,6 +7189,8 @@
       "name": "Tuvalu",
       "capital": "Funafuti",
       "population": 10643,
+      "area": 26,
+      "landlocked": false,
       "languages": [
         "English",
         "Tuvaluan"
@@ -6784,6 +7222,8 @@
       "name": "Uganda",
       "capital": "Kampala",
       "population": 45905417,
+      "area": 241550,
+      "landlocked": true,
       "languages": [
         "English",
         "Swahili"
@@ -6821,6 +7261,8 @@
       "name": "Ukraine",
       "capital": "Kyiv",
       "population": 32862000,
+      "area": 603500,
+      "landlocked": false,
       "languages": [
         "Ukrainian"
       ],
@@ -6859,6 +7301,8 @@
       "name": "United Arab Emirates",
       "capital": "Abu Dhabi",
       "population": 10678556,
+      "area": 83600,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -6892,6 +7336,8 @@
       "name": "United Kingdom",
       "capital": "London",
       "population": 68265209,
+      "area": 242900,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6924,6 +7370,8 @@
       "name": "United Republic of Tanzania",
       "capital": "Dodoma",
       "population": 68153004,
+      "area": 945087,
+      "landlocked": false,
       "languages": [
         "English",
         "Swahili"
@@ -6964,6 +7412,8 @@
       "name": "United States",
       "capital": "Washington",
       "population": 340110988,
+      "area": 9372610,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -6997,6 +7447,8 @@
       "name": "United States Minor Outlying Islands",
       "capital": "",
       "population": null,
+      "area": 34.2,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -7009,6 +7461,8 @@
       "name": "United States Virgin Islands",
       "capital": "Charlotte Amalie",
       "population": 87146,
+      "area": 347,
+      "landlocked": false,
       "languages": [
         "English"
       ],
@@ -7021,6 +7475,8 @@
       "name": "Uruguay",
       "capital": "Montevideo",
       "population": 3499451,
+      "area": 181034,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -7054,6 +7510,8 @@
       "name": "Uzbekistan",
       "capital": "Tashkent",
       "population": 37859698,
+      "area": 447400,
+      "landlocked": true,
       "languages": [
         "Russian",
         "Uzbek"
@@ -7091,6 +7549,8 @@
       "name": "Vanuatu",
       "capital": "Port Vila",
       "population": 321409,
+      "area": 12189,
+      "landlocked": false,
       "languages": [
         "Bislama",
         "English"
@@ -7122,6 +7582,8 @@
       "name": "Vatican",
       "capital": "Vatican City",
       "population": 882,
+      "area": 0.44,
+      "landlocked": true,
       "languages": [
         "Italian",
         "Latin"
@@ -7155,6 +7617,8 @@
       "name": "Venezuela",
       "capital": "Caracas",
       "population": 28517000,
+      "area": 916445,
+      "landlocked": false,
       "languages": [
         "Spanish"
       ],
@@ -7189,6 +7653,8 @@
       "name": "Vietnam",
       "capital": "Hanoi",
       "population": 101343800,
+      "area": 331212,
+      "landlocked": false,
       "languages": [
         "Vietnamese"
       ],
@@ -7223,6 +7689,8 @@
       "name": "Wallis and Futuna",
       "capital": "Mata Utu",
       "population": 11620,
+      "area": 142,
+      "landlocked": false,
       "languages": [
         "French"
       ],
@@ -7235,6 +7703,8 @@
       "name": "Western Sahara",
       "capital": "El-Aaiun",
       "population": 600904,
+      "area": 266000,
+      "landlocked": false,
       "languages": [
         "Berber",
         "Hassaniya"
@@ -7252,6 +7722,8 @@
       "name": "Yemen",
       "capital": "Sanaa",
       "population": 32684503,
+      "area": 527968,
+      "landlocked": false,
       "languages": [
         "Arabic"
       ],
@@ -7285,6 +7757,8 @@
       "name": "Zambia",
       "capital": "Lusaka",
       "population": 19693423,
+      "area": 752612,
+      "landlocked": true,
       "languages": [
         "English"
       ],
@@ -7324,6 +7798,8 @@
       "name": "Zimbabwe",
       "capital": "Harare",
       "population": 17073087,
+      "area": 390757,
+      "landlocked": true,
       "languages": [
         "Chibarwe",
         "English"

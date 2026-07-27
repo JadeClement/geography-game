@@ -9,6 +9,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { GEOJSON_ISO_OVERRIDES } from "../lib/constants.js";
 import { getCountryColor } from "../lib/countryColors.js";
+import { REGION_MAP_OCEAN } from "../lib/regionMapColors.js";
 import {
   GLOBE_MAP_HEIGHT,
   GLOBE_MAP_WIDTH,
@@ -61,7 +62,7 @@ for (const feature of geojson.features) {
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GLOBE_MAP_WIDTH} ${GLOBE_MAP_HEIGHT}" preserveAspectRatio="none">
-  <rect width="${GLOBE_MAP_WIDTH}" height="${GLOBE_MAP_HEIGHT}" fill="#0284c7"/>
+  <rect width="${GLOBE_MAP_WIDTH}" height="${GLOBE_MAP_HEIGHT}" fill="${REGION_MAP_OCEAN}"/>
   <g stroke="rgba(15, 23, 42, 0.35)" stroke-width="0.35" stroke-linejoin="round">
 ${paths.join("\n")}
   </g>

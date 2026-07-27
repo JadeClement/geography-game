@@ -19,16 +19,13 @@ import {
 import { formatElapsedTime } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import {
-  gameCompleteGraduated,
-  gameCompleteGraduatedChip,
-  gameCompleteGraduatedList,
-  gameCompleteGraduatedTitle,
   gameCompleteStats,
   gameTimer,
   gameTimerModal,
   modalActions,
   modalCard,
   modalGameContext,
+  modalGameContextPart,
   modalMessage,
   modalOverlay,
   modalScore,
@@ -36,6 +33,33 @@ import {
   primaryBtn,
   secondaryBtn,
 } from "@/lib/ui";
+
+const MASTERED_NOUNS = {
+  countries: ["country", "countries"],
+  capitals: ["capital", "capitals"],
+  flags: ["flag", "flags"],
+};
+
+function buildGameContextSections({ isGo, isLearning, isReview, modeLabel, regionLabel, levelLabel }) {
+  const sections = [];
+
+  if (isGo) sections.push("Go");
+  else if (isLearning) sections.push("Learning");
+  else if (isReview) sections.push("Review");
+
+  sections.push(`${modeLabel} of ${regionLabel}`);
+
+  if (levelLabel) {
+    const levelParts = levelLabel.split(" · ");
+    if (levelParts.length > 1) {
+      sections.push(levelParts[0], levelParts.slice(1).join(" · "));
+    } else {
+      sections.push(levelLabel);
+    }
+  }
+
+  return sections;
+}
 
 export default function GameCompleteModal({
   open,
@@ -286,19 +310,21 @@ export default function GameCompleteModal({
 
   const message = saveMessage();
 
-  const GRADUATED_NOUNS = {
-    countries: ["country", "countries"],
-    capitals: ["capital", "capitals"],
-    flags: ["flag", "flags"],
-  };
-
-  function getGraduatedHeading() {
+  function getMasteredAnnouncement() {
     const count = graduatedCountryNames.length;
-    const [singular, plural] = GRADUATED_NOUNS[mode] ?? GRADUATED_NOUNS.countries;
-    return count === 1
-      ? `You graduated a new ${singular}!`
-      : `You graduated ${count} new ${plural}!`;
+    const [singular, plural] = MASTERED_NOUNS[mode] ?? MASTERED_NOUNS.countries;
+    const noun = count === 1 ? singular : plural;
+    return `You mastered ${count} ${noun} this game!`;
   }
+
+  const contextSections = buildGameContextSections({
+    isGo,
+    isLearning,
+    isReview,
+    modeLabel,
+    regionLabel,
+    levelLabel,
+  });
 
   function getCompletionHeading() {
     if (isGo) {
@@ -334,8 +360,12 @@ export default function GameCompleteModal({
             You scored {rightCount}/{total}
           </p>
           <p className={modalGameContext}>
-            {isGo ? "Go · " : isLearning ? "Learning · " : isReview ? "Review · " : ""}
-            {modeLabel} of {regionLabel} · {levelLabel}
+            {contextSections.map((section, index) => (
+              <span key={section + index} className={modalGameContextPart}>
+                {index > 0 ? " · " : null}
+                {section}
+              </span>
+            ))}
           </p>
           <div className={gameCompleteStats}>
             <span className={cn(gameTimer, gameTimerModal)}>
@@ -361,16 +391,9 @@ export default function GameCompleteModal({
           )}
 
           {graduatedCountryNames.length > 0 && (
-            <div className={gameCompleteGraduated}>
-              <p className={gameCompleteGraduatedTitle}>🎓 {getGraduatedHeading()}</p>
-              <div className={gameCompleteGraduatedList}>
-                {graduatedCountryNames.map((name) => (
-                  <span key={name} className={gameCompleteGraduatedChip}>
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <p className={modalMessage({ success: true, className: "text-center font-semibold" })}>
+              🎓 {getMasteredAnnouncement()}
+            </p>
           )}
 
           <div className={modalActions}>

@@ -26,13 +26,14 @@ export default function MapCountryInfoPanels({
   open,
   onToggle,
   onClose,
+  panelRef,
 }) {
   const isMobile = useMobileViewport();
   const sheetDialogRef = useFocusTrap(isMobile && open);
 
   if (!isMobile) {
     return (
-      <div className={mapSidePanels}>
+      <div ref={panelRef} className={mapSidePanels}>
         <CountryLearnMorePanel
           country={country}
           allCountries={allCountries}
