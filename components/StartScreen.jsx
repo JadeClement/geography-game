@@ -19,7 +19,6 @@ import {
   parseStartScreenSearchParams,
 } from "@/lib/startNavigation";
 import { cn } from "@/lib/cn";
-import { dbg, dbgTrace } from "@/lib/debug";
 import {
   choiceBtnLevel,
   choiceBtnLevelDesc,
@@ -117,11 +116,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     const parsedUrl = buildStartScreenUrl(parsed);
     const normalizedUrl = buildStartScreenUrl(normalized);
     if (parsedUrl !== normalizedUrl) {
-      dbgTrace("StartScreen normalize -> router.replace", {
-        search: searchParams.toString(),
-        parsedUrl,
-        normalizedUrl,
-      });
       router.replace(normalizedUrl);
     }
   }, [searchParams, router]);
@@ -233,13 +227,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
       return;
     }
 
-    dbg("StartScreen.handleLearningStart: clicked", {
-      selectedMode,
-      selectedRegion,
-      selectedLevel,
-      selectedSessionSize,
-      gameReady,
-    });
     setStarting(true);
     try {
       const result = await onStart({
@@ -249,7 +236,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         level: selectedLevel,
         learningSessionSize: selectedSessionSize,
       });
-      dbg("StartScreen.handleLearningStart: onStart resolved", result);
       if (result?.ok === false) {
         if (result.reason === "no-eligible") {
           setWeakError(
