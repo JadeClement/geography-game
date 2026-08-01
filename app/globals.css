@@ -493,6 +493,40 @@
     0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+/* Explore mode buttons — soft idle tint; clearer jump to selected */
+.start-mode-btn {
+  border-color: color-mix(in srgb, var(--color-accent) 18%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-surface));
+}
+
+.start-mode-btn:enabled:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-surface));
+}
+
+.start-mode-btn--selected,
+.start-mode-btn--selected:enabled:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 24%, var(--color-bg-surface));
+}
+
+[data-theme="dark"] .start-mode-btn {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-surface));
+}
+
+[data-theme="dark"] .start-mode-btn:enabled:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-bg-surface));
+}
+
+[data-theme="dark"] .start-mode-btn--selected,
+[data-theme="dark"] .start-mode-btn--selected:enabled:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 36%, var(--color-bg-surface));
+  box-shadow: none;
+}
+
 /* ===== Region map picker (SVG + :has hover groups) ===== */
 .region-map-picker {
   width: 100%;
