@@ -7,7 +7,13 @@ const FLAG_WIDTHS = {
   card: 640,
 };
 
-export default function FlagPrompt({ iso2, className = "", size = "prompt", alt = "" }) {
+export default function FlagPrompt({
+  iso2,
+  className = "",
+  size = "prompt",
+  alt = "",
+  style,
+}) {
   const src = getFlagUrl(iso2, FLAG_WIDTHS[size] ?? FLAG_WIDTHS.prompt);
   if (!src) return null;
 
@@ -16,6 +22,7 @@ export default function FlagPrompt({ iso2, className = "", size = "prompt", alt 
       src={src}
       alt={alt}
       className={cn(flagPrompt({ card: size === "card" }), className)}
+      style={style}
       draggable={false}
     />
   );

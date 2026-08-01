@@ -164,3 +164,37 @@ test("animating labels stay visible", () => {
     true
   );
 });
+
+test("alwaysShow keeps flags visible even when they would otherwise hide", () => {
+  assert.equal(
+    isDiscoverLabelVisible({
+      labelWidth: 80,
+      labelHeight: 16,
+      countryBounds: bounds(0, 0, 20, 16),
+      anchor: { x: 10, y: 8 },
+      isSmallCountry: false,
+      countryId: "VAT",
+      hoveredCountryId: null,
+      isAnimating: false,
+      alwaysShow: true,
+    }),
+    true
+  );
+});
+
+test("labels without an on-screen anchor stay hidden", () => {
+  assert.equal(
+    isDiscoverLabelVisible({
+      labelWidth: 80,
+      labelHeight: 16,
+      countryBounds: bounds(0, 0, 20, 16),
+      anchor: null,
+      isSmallCountry: false,
+      countryId: "NOR",
+      hoveredCountryId: null,
+      isAnimating: false,
+      alwaysShow: true,
+    }),
+    false
+  );
+});

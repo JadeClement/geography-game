@@ -38,15 +38,15 @@ test("visible anchor averages geometry inside the viewport", () => {
   assert.ok(anchor.y > 40 && anchor.y < 140);
 });
 
-test("visible anchor falls back to clipped bounds when no vertices are visible", () => {
+test("visible anchor is null when no country geometry is on-screen", () => {
   const projectLngLat = () => ({ x: 500, y: 500 });
 
   const anchor = getCountryVisibleScreenAnchor(mockCountry, projectLngLat, {
     left: 0,
     top: 0,
-    right: 600,
-    bottom: 400,
+    right: 200,
+    bottom: 200,
   });
 
-  assert.deepEqual(anchor, { x: 500, y: 500 });
+  assert.equal(anchor, null);
 });

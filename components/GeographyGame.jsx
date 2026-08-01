@@ -2370,11 +2370,8 @@ export default function GeographyGame() {
   const projectDiscoverAnchor = useCallback((country, viewportRect) => {
     const api = mapProjectRef.current;
     if (!api || typeof api === "function") return null;
-    return (
-      api.projectDiscoverAnchor?.(country, viewportRect) ??
-      api.projectPoint?.(country) ??
-      null
-    );
+    // No centroid fallback — off-screen countries must not get a label.
+    return api.projectDiscoverAnchor?.(country, viewportRect) ?? null;
   }, []);
 
   const projectCountryBounds = useCallback((country) => {

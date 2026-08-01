@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import FlagPrompt from "@/components/FlagPrompt";
 import { cn } from "@/lib/cn";
 import { layoutDiscoverLabelsFromElements } from "@/lib/discoverLabelLayout";
+import { getDiscoverFlagSizeFactor } from "@/lib/discoverLabelScale";
 import { isDiscoverLabelVisible } from "@/lib/discoverLabelVisibility";
 import {
   discoverMapLabelFlagSettled,
@@ -36,18 +37,13 @@ function getMapCenterPoint(mapContainerRef) {
 function LabelContent({ label, compact = false, flying = false, scale = 1 }) {
   if (label.kind === "flag" && label.iso2) {
     const baseHeight = compact ? 20 : 32;
+    const height = baseHeight * (Number.isFinite(scale) && scale > 0 ? scale : 1);
     return (
       <FlagPrompt
         iso2={label.iso2}
         size="prompt"
-        className={
-          scale !== 1
-            ? "w-auto rounded-sm border-0 shadow-none"
-            : compact
-              ? "h-5 w-auto rounded-sm border-0 shadow-none"
-              : "h-8 w-auto"
-        }
-        style={scale !== 1 ? { height: baseHeight * scale } : undefined}
+        className="h-auto w-auto rounded-sm border-0 shadow-none"
+        style={{ height }}
       />
     );
   }
@@ -107,9 +103,8 @@ export default function DiscoverMapLabels({
       const country = countriesById[id];
       if (!country) continue;
 
-      const pos =
-        projectDiscoverAnchor?.(country, viewportRect) ??
-        projectCountry?.(country);
+      // Only place a label when the country itself is on-screen.
+      const pos = projectDiscoverAnchor?.(country, viewportRect);
       if (pos) next[id] = pos;
     }
     return next;
@@ -117,10 +112,33 @@ export default function DiscoverMapLabels({
     labelsById,
     countriesById,
     layoutRightInset,
-    projectCountry,
     projectDiscoverAnchor,
     mapViewRevision,
     mapContainerRef,
+  ]);
+
+  /** Per-country render scale (zoom × flag size factor for flags; zoom only for text). */
+  const labelScalesById = useMemo(() => {
+    const next = {};
+    for (const [id, label] of Object.entries(labelsById)) {
+      if (label.kind !== "flag") {
+        next[id] = labelScale;
+        continue;
+      }
+      const country = countriesById[id];
+      const countryBounds = country ? projectCountryBounds?.(country) ?? null : null;
+      const flagFactor = getDiscoverFlagSizeFactor(countryBounds, {
+        isSmall: Boolean(country?.isSmall),
+      });
+      next[id] = labelScale * flagFactor;
+    }
+    return next;
+  }, [
+    countriesById,
+    labelScale,
+    labelsById,
+    mapViewRevision,
+    projectCountryBounds,
   ]);
 
   const layoutKey = useMemo(
@@ -131,8 +149,9 @@ export default function DiscoverMapLabels({
         mapViewRevision,
         layoutRightInset,
         labelScale,
+        labelScalesById,
       }),
-    [labelsById, layoutRightInset, mapViewRevision, positions, labelScale]
+    [labelsById, layoutRightInset, mapViewRevision, positions, labelScale, labelScalesById]
   );
 
   const needsLayout = lastLayoutKeyRef.current !== layoutKey;
@@ -175,6 +194,7 @@ export default function DiscoverMapLabels({
         allCountryBounds,
         hoveredCountryId,
         isAnimating: animatingLabel?.countryId === id,
+        alwaysShow: label.kind === "flag",
       });
     }
 
@@ -411,7 +431,11 @@ export default function DiscoverMapLabels({
                   : { left: layout.left, top: layout.top }
               }
             >
-              <LabelContent label={label} compact scale={labelScale} />
+              <LabelContent
+                label={label}
+                compact
+                scale={labelScalesById[id] ?? labelScale}
+              />
             </div>
           );
         })}
