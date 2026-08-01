@@ -10,7 +10,8 @@
     "generate-globe-map": "node scripts/generate-globe-map.js",
     "generate-pronunciations": "node --env-file=.env scripts/generate-pronunciations.js",
     "generate-capital-pronunciations": "node --env-file=.env scripts/generate-capital-pronunciations.js",
-    "db:setup": "node --env-file=.env scripts/setup-db.js"
+    "db:setup": "node --env-file=.env scripts/setup-db.js",
+    "test:learn": "node --import ./scripts/register-alias.mjs --test scripts/test-learn-mode.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

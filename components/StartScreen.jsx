@@ -10,9 +10,10 @@ import SpaceBackground from "@/components/SpaceBackground";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { fetchWeakCountryStats } from "@/lib/countryStats";
 import { GAME_TYPES, LEARNING_SESSION_SIZES } from "@/lib/gameTypes";
-import { getLevelLabel, LEVEL_SECTIONS } from "@/lib/levels";
+import { LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
 import {
+  DEFAULT_LEARN_LEVEL,
   START_STEPS,
   buildStartScreenUrl,
   normalizeStartScreenRoute,
@@ -281,7 +282,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Learning session"
-          subtitle={`${getModeLabel(selectedMode)} · ${regionLabel} · ${getLevelLabel(selectedLevel)}`}
+          subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
         />
 
         {weakLoading && <p className={startSubtitle}>Checking your learning list…</p>}
@@ -344,7 +345,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Choose a level"
-          subtitle={`${isLearning ? "Learn · " : "Test · "}${getModeLabel(selectedMode)} · ${
+          subtitle={`Test · ${getModeLabel(selectedMode)} · ${
             REGIONS.find((region) => region.id === selectedRegion)?.label
           }`}
         />
@@ -364,27 +365,11 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
                     key={option.level}
                     type="button"
                     className={cn(
-                      choiceBtnLevel({
-                        selected: isLearning && selectedLevel === option.level,
-                        disabled: !gameReady && !isLearning,
-                      }),
+                      choiceBtnLevel({ disabled: !gameReady }),
                       startLevelBtn,
                     )}
-                    disabled={!isLearning && !gameReady}
-                    onClick={() => {
-                      if (isLearning) {
-                        setSelectedSessionSize(null);
-                        navigate({
-                          step: START_STEPS.LEARNING_SIZE,
-                          mode: selectedMode,
-                          region: selectedRegion,
-                          gameType: GAME_TYPES.LEARNING,
-                          level: option.level,
-                        });
-                        return;
-                      }
-                      handleTestStart(option.level);
-                    }}
+                    disabled={!gameReady}
+                    onClick={() => handleTestStart(option.level)}
                   >
                     <span className={choiceBtnLevelTitle}>{option.title}</span>
                     <span className={choiceBtnLevelDesc}>{option.description}</span>
@@ -401,18 +386,26 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   if (step === START_STEPS.CHOOSE_TYPE) {
     const regionLabel = REGIONS.find((region) => region.id === selectedRegion)?.label;
 
+    // Learn skips the level step — the mixed-question engine ignores the level,
+    // so we go straight to picking the session size with the canonical level.
+    const goToLearningSize = () => {
+      setSelectedSessionSize(null);
+      navigate({
+        step: START_STEPS.LEARNING_SIZE,
+        mode: selectedMode,
+        region: selectedRegion,
+        gameType: GAME_TYPES.LEARNING,
+        level: DEFAULT_LEARN_LEVEL,
+      });
+    };
+
     const handleLearnSelect = () => {
       if (!signedIn) {
         setAuthPendingLearn(true);
         setAuthOpen(true);
         return;
       }
-      navigate({
-        step: START_STEPS.LEVEL,
-        mode: selectedMode,
-        region: selectedRegion,
-        gameType: GAME_TYPES.LEARNING,
-      });
+      goToLearningSize();
     };
 
     const handleAuthClose = () => {
@@ -422,12 +415,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
 
     const handleAuthSuccess = () => {
       if (authPendingLearn && selectedMode && selectedRegion) {
-        navigate({
-          step: START_STEPS.LEVEL,
-          mode: selectedMode,
-          region: selectedRegion,
-          gameType: GAME_TYPES.LEARNING,
-        });
+        goToLearningSize();
       }
       setAuthPendingLearn(false);
     };

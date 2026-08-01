@@ -96,6 +96,25 @@ function configureMobileGlobeControls(map) {
   map.dragPan.enable();
 }
 
+function setMapNavigationEnabled(map, enabled) {
+  if (!map) return;
+  const handlers = [
+    "dragPan",
+    "scrollZoom",
+    "boxZoom",
+    "dragRotate",
+    "doubleClickZoom",
+    "touchZoomRotate",
+    "keyboard",
+  ];
+  for (const name of handlers) {
+    const handler = map[name];
+    if (!handler) continue;
+    if (enabled) handler.enable();
+    else handler.disable();
+  }
+}
+
 function getMapThemeColors(theme) {
   return MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
 }
@@ -206,12 +225,11 @@ function isCircleClickTarget(map, circleFeature) {
 }
 
 function getSmallCircleStrokeColorExpression(level, defaultStrokeColor, landColor) {
+  let base;
   if (!isProgressiveFillLevel(level)) {
-    return defaultStrokeColor;
-  }
-
-  if (level === GAME_LEVELS.FIND_FILL) {
-    return [
+    base = defaultStrokeColor;
+  } else if (level === GAME_LEVELS.FIND_FILL) {
+    base = [
       "case",
       ["==", ["feature-state", "flashWrong"], true],
       WRONG_COUNTRY_COLOR,
@@ -221,17 +239,27 @@ function getSmallCircleStrokeColorExpression(level, defaultStrokeColor, landColo
       ["coalesce", ["get", "assignedColor"], landColor],
       defaultStrokeColor,
     ];
+  } else {
+    base = [
+      "case",
+      ["==", ["feature-state", "wrong"], true],
+      WRONG_COUNTRY_COLOR,
+      ["==", ["feature-state", "filled"], true],
+      CORRECT_COUNTRY_COLOR,
+      ["==", ["feature-state", "target"], true],
+      TARGET_HIGHLIGHT_COLOR,
+      defaultStrokeColor,
+    ];
   }
 
+  // A "highlight" (Learn anchor / "which country is highlighted") flashes the
+  // circle's border red so a circled small country is easy to spot without
+  // filling the whole circle. The blink is driven by toggling the feature-state.
   return [
     "case",
-    ["==", ["feature-state", "wrong"], true],
+    ["==", ["feature-state", "highlight"], true],
     WRONG_COUNTRY_COLOR,
-    ["==", ["feature-state", "filled"], true],
-    CORRECT_COUNTRY_COLOR,
-    ["==", ["feature-state", "target"], true],
-    TARGET_HIGHLIGHT_COLOR,
-    defaultStrokeColor,
+    base,
   ];
 }
 
@@ -551,6 +579,10 @@ export default function MapboxMap({
   baseLandGeojson,
   smallCountriesGeojson,
   gameActive,
+  // When false, pan/zoom/rotate are locked so a Learn card sitting on the map
+  // can't be undermined by dragging the map underneath it (and so comparison
+  // questions can't be answered by peeking at shapes/sizes).
+  mapNavigationEnabled = true,
   level,
   wrongCountryIds,
   flashWrongCountryIds,
@@ -573,16 +605,19 @@ export default function MapboxMap({
   const fillFlashIntervalRef = useRef(null);
   const circleFlashIntervalRef = useRef(null);
   const targetFlashIntervalRef = useRef(null);
+  const highlightSmallCircleIdRef = useRef(null);
   const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
   const onCountryHoverRef = useRef(onCountryHover);
   const gameActiveRef = useRef(gameActive);
+  const mapNavigationEnabledRef = useRef(mapNavigationEnabled);
   const smallCountriesGeojsonRef = useRef(smallCountriesGeojson);
   const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
 
   onCountryClickRef.current = onCountryClick;
   onCountryHoverRef.current = onCountryHover;
   gameActiveRef.current = gameActive;
+  mapNavigationEnabledRef.current = mapNavigationEnabled;
   smallCountriesGeojsonRef.current = smallCountriesGeojson;
   forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
 
@@ -689,6 +724,8 @@ export default function MapboxMap({
         configureGlobeAtmosphere(map, theme);
         configureMobileGlobeControls(map);
       }
+      // Re-apply after mobile globe helpers (they re-enable pan/zoom).
+      setMapNavigationEnabled(map, mapNavigationEnabledRef.current);
       addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor);
       addBaseLandLayer(map, baseLandGeojson, mapColors, "country-fill");
 
@@ -763,7 +800,17 @@ export default function MapboxMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, mapView, theme, level]);
+    // NOTE: `mapView` is intentionally NOT a dependency. Camera/padding changes
+    // (e.g. reserving room for the Learn question card) must not destroy and
+    // rebuild the whole GL map — that wipes the country source/layers and the
+    // active highlight during the async style reload, leaving a blank world map.
+    // The dedicated effect below re-applies `mapView` live via `applyMapView`.
+  }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, theme, level]);
+
+  // Lock / unlock camera interaction without tearing down the map.
+  useEffect(() => {
+    setMapNavigationEnabled(mapRef.current, mapNavigationEnabled);
+  }, [mapNavigationEnabled, geojson, theme]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -997,6 +1044,18 @@ export default function MapboxMap({
       fillFlashIntervalRef.current = null;
     }
 
+    // Mirror the highlight onto the small-country circle marker (if the target
+    // is a small country) so a circled country is easy to spot — the tiny fill
+    // polygon alone is easy to miss. We only flash its border (red), not fill it.
+    const setSmallCircleHighlight = (id, on) => {
+      if (!id || !map.getSource("small-countries")) return;
+      map.setFeatureState({ source: "small-countries", id }, { highlight: on });
+    };
+    if (highlightSmallCircleIdRef.current !== highlightCountryId) {
+      setSmallCircleHighlight(highlightSmallCircleIdRef.current, false);
+      highlightSmallCircleIdRef.current = highlightCountryId ?? null;
+    }
+
     if (!highlightCountryId) {
       map.setFilter("country-highlight", ["==", ["get", "id"], ""]);
       return;
@@ -1009,6 +1068,7 @@ export default function MapboxMap({
     ]);
 
     let visible = true;
+    setSmallCircleHighlight(highlightCountryId, true);
     fillFlashIntervalRef.current = setInterval(() => {
       if (!mapRef.current?.getLayer("country-highlight")) return;
       visible = !visible;
@@ -1017,6 +1077,8 @@ export default function MapboxMap({
         "fill-opacity",
         visible ? 0.75 : 0.15
       );
+      // Flash the small-country circle border in sync (red ↔ normal stroke).
+      setSmallCircleHighlight(highlightCountryId, visible);
     }, 450);
 
     return () => {

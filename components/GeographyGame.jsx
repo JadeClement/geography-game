@@ -11,6 +11,7 @@ import DiscoverCompleteModal from "@/components/DiscoverCompleteModal";
 import DiscoverCountrySheet from "@/components/DiscoverCountrySheet";
 import DiscoverMapLabels from "@/components/DiscoverMapLabels";
 import GameCompleteModal from "@/components/GameCompleteModal";
+import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
@@ -46,6 +47,10 @@ import {
   syncPendingGuestGame,
 } from "@/lib/pendingGuestGame";
 import { buildLearningQueue } from "@/lib/learning";
+import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import { buildLearnStatPayload, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
+import { fetchSeenFacts } from "@/lib/learn/factsClient";
+import { buildLearnSessionSummary } from "@/lib/learn/sessionSummary";
 import { getGameTourId } from "@/lib/gameTutorial";
 import { getGameTutorialSteps } from "@/lib/gameTutorialSteps";
 import { useMobileViewport } from "@/lib/hooks/useMobileViewport";
@@ -207,6 +212,26 @@ export default function GeographyGame() {
   const [tutorialManualOpen, setTutorialManualOpen] = useState(false);
   const [tutorialStepId, setTutorialStepId] = useState(null);
   const [masteryLoadWarning, setMasteryLoadWarning] = useState(false);
+
+  // ── Learn-mode mixed-question engine (separate from the classic Find/Name loop).
+  // Only active for Learn sessions started from the wizard — NOT Go (find-only) or
+  // Test/Discover, which keep the classic round loop untouched.
+  const [learnQuestions, setLearnQuestions] = useState(null);
+  const [learnIndex, setLearnIndex] = useState(0);
+  const [learnSummary, setLearnSummary] = useState(null);
+  const learnQuestionsRef = useRef(null);
+  const learnIndexRef = useRef(0);
+  const learnAnswersRef = useRef([]);
+  const learnMasteryBeforeRef = useRef(new Map());
+  const learnMasteryAfterRef = useRef(new Map());
+  const learnSeenFactsRef = useRef({});
+  const learnMapEmitRef = useRef(null);
+  const learnQuestionStartRef = useRef(0);
+  const learnLockRef = useRef(false);
+  const learnAdvanceTimerRef = useRef(null);
+  const currentLearnQuestionRef = useRef(null);
+  const learnOverlayCardRef = useRef(null);
+  const [learnOverlayCardHeight, setLearnOverlayCardHeight] = useState(0);
 
   const mapContainerRef = useRef(null);
   const gamePromptAnchorRef = useRef(null);
@@ -408,6 +433,9 @@ export default function GeographyGame() {
       if (wrongFlashTimeoutRef.current) {
         clearTimeout(wrongFlashTimeoutRef.current);
       }
+      if (learnAdvanceTimerRef.current) {
+        clearTimeout(learnAdvanceTimerRef.current);
+      }
     };
   }, []);
 
@@ -415,6 +443,29 @@ export default function GeographyGame() {
     if (!session) return [];
     return filterCountriesByRegion(allCountries, session.region);
   }, [allCountries, session]);
+
+  const allCountriesById = useMemo(
+    () => new Map(allCountries.map((country) => [country.id, country])),
+    [allCountries]
+  );
+
+  // Country lookup for the Learn engine UI (flags, comparative stats) and summary.
+  const resolveLearnCountry = useCallback(
+    (countryId) => {
+      const country = allCountriesById.get(countryId);
+      if (!country) return {};
+      return {
+        name: country.name,
+        iso2: country.iso2,
+        population: country.population,
+        area: country.area,
+        neighborCount: Array.isArray(country.neighbors) ? country.neighbors.length : 0,
+        capital: country.capital,
+        facts: country.facts,
+      };
+    },
+    [allCountriesById]
+  );
 
   // Countries that crossed the graduation bar for the first time this round
   // (were not graduated before, are now), surfaced in the end-of-game modal.
@@ -491,6 +542,62 @@ export default function GeographyGame() {
     session?.level && isFindLevel(session.level) && !isDiscoverGame
   );
   const isNameGame = session?.level ? isNameLevel(session.level) : false;
+  // The mixed-question engine runs for wizard Learn sessions only (Go stays
+  // find-only, so it keeps the classic loop). `learnQuestions` is only populated
+  // by the engine start path, so this is false for every other game type.
+  const learnEngineActive =
+    isLearningGame && !isGoGame && Array.isArray(learnQuestions);
+  const currentLearnQuestion = learnEngineActive
+    ? (learnQuestions[learnIndex] ?? null)
+    : null;
+  const isLearnMapClickQuestion = currentLearnQuestion?.answerType === "map_click";
+  // Questions that reference the map ("find"/"which is highlighted") use the top
+  // layout so the map stays visible; everything else is a centered card.
+  const learnUsesMap = Boolean(currentLearnQuestion?.mapConfig);
+  // Questions that reveal (highlight) their anchor country pin a card to the top
+  // of the map. That card can sit on top of a country near the top of the region
+  // (hiding the very thing being asked about), so we frame the region BELOW the
+  // card by reserving its height as extra top padding on the map view.
+  const learnHighlightRevealsAnchor =
+    learnEngineActive && currentLearnQuestion?.mapConfig?.display === "highlight";
+  const mapViewForRender = useMemo(() => {
+    if (!mapView) return mapView;
+    if (!learnHighlightRevealsAnchor || learnOverlayCardHeight <= 0) return mapView;
+    const basePadding =
+      typeof mapView.padding === "number" ? mapView.padding : 48;
+    return {
+      ...mapView,
+      // Clear the top card (+ its gap) so the highlighted country never hides
+      // behind it, while keeping the region framed like the opening view.
+      padding: {
+        top: learnOverlayCardHeight + basePadding,
+        bottom: basePadding,
+        left: basePadding,
+        right: basePadding,
+      },
+    };
+  }, [mapView, learnHighlightRevealsAnchor, learnOverlayCardHeight]);
+
+  // Track the top question card's height so the map view above can reserve room
+  // for it. Only relevant while a highlight question is showing its card.
+  useEffect(() => {
+    if (!learnHighlightRevealsAnchor) {
+      setLearnOverlayCardHeight(0);
+      return undefined;
+    }
+    const card = learnOverlayCardRef.current;
+    if (!card || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () =>
+      setLearnOverlayCardHeight(Math.round(card.getBoundingClientRect().height));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [learnHighlightRevealsAnchor, currentLearnQuestion?.id]);
+  // Mirror the latest engine values into refs for synchronous reads in handlers.
+  learnQuestionsRef.current = learnQuestions;
+  learnIndexRef.current = learnIndex;
+  currentLearnQuestionRef.current = currentLearnQuestion;
   const tourId = useMemo(() => getGameTourId(session), [session]);
   const pronunciationAllowed =
     !tutorialOpen && (!tourId || hasCompletedGameTour(tourId));
@@ -578,6 +685,9 @@ export default function GeographyGame() {
     if (!gameActive || gameComplete || isDiscoverGame || !targetCountry?.id) {
       return;
     }
+    // The Learn engine drives its own prompts; auto-pronouncing the target would
+    // read out the answer for "name it" questions.
+    if (isLearningGame && !isGoGame) return;
     if (!pronunciationAllowed) {
       return;
     }
@@ -599,6 +709,8 @@ export default function GeographyGame() {
     gameActive,
     gameComplete,
     isDiscoverGame,
+    isGoGame,
+    isLearningGame,
     session?.level,
     session?.mode,
     targetCountry,
@@ -666,6 +778,7 @@ export default function GeographyGame() {
   const highlightTargetCountryId =
     session?.level === GAME_LEVELS.NAME_FILL &&
     !isFlagsMode &&
+    !learnEngineActive &&
     targetCountry &&
     !revealMode &&
     !gameComplete
@@ -1166,26 +1279,6 @@ export default function GeographyGame() {
     });
   }, [allCountries, signedIn, startGame]);
 
-  const buildLearningCountries = useCallback(
-    async ({ mode, level, region, learningSessionSize }) => {
-      const data = await fetchWeakCountryStats({ mode, level, region });
-      if ((data.weakCount ?? 0) === 0) return null;
-
-      const queueIds = buildLearningQueue(
-        data.stats,
-        learningSessionSize ?? data.weakCount
-      );
-      const regionPool = filterCountriesByRegion(allCountries, region);
-      const countries = queueIds
-        .map((id) => regionPool.find((country) => country.id === id))
-        .filter(Boolean);
-
-      if (countries.length === 0) return null;
-      return { countries, queueIds };
-    },
-    [allCountries]
-  );
-
   // World Test: pre-credit countries already mastered (graduated, with the level
   // cascade) in any region so they aren't re-quizzed.
   const buildWorldTestCountries = useCallback(
@@ -1209,6 +1302,343 @@ export default function GeographyGame() {
     [allCountries]
   );
 
+  // ── Learn mixed-question engine: build, start, answer, advance, finish ────────
+
+  // Fetch weak countries, sample a queue, and build the ordered mixed-question
+  // session. Returns null when there's nothing eligible to practice.
+  const buildLearnEngineData = useCallback(
+    async ({ mode, level, region, learningSessionSize }) => {
+      const data = await fetchWeakCountryStats({ mode, level, region });
+      if ((data.weakCount ?? 0) === 0) return null;
+
+      const statsById = new Map((data.stats ?? []).map((stat) => [stat.countryId, stat]));
+      const queueIds = buildLearningQueue(
+        data.stats,
+        learningSessionSize ?? data.weakCount
+      );
+      const regionPool = filterCountriesByRegion(allCountries, region);
+      const regionById = new Map(regionPool.map((country) => [country.id, country]));
+      const countries = queueIds.map((id) => regionById.get(id)).filter(Boolean);
+      if (countries.length === 0) return null;
+
+      const sampled = countries.map((country) => ({
+        countryId: country.id,
+        mastery: statsById.get(country.id)?.masteryScore ?? 0,
+      }));
+
+      const { questions, sessionMeta } = buildLearnSession({
+        countries: sampled,
+        category: mode,
+        allCountries,
+        masteryStats: statsById,
+        sessionSize: learningSessionSize,
+      });
+      if (!Array.isArray(questions) || questions.length === 0) return null;
+
+      return {
+        countries,
+        queueIds,
+        questions,
+        sessionMeta,
+        masteryBefore: new Map(sampled.map((entry) => [entry.countryId, entry.mastery])),
+      };
+    },
+    [allCountries]
+  );
+
+  const finishLearnGame = useCallback(() => {
+    stopGameTimer();
+    setGameActive(false);
+    setGameComplete(true);
+    finishGameBoard();
+    if (learnAdvanceTimerRef.current) {
+      clearTimeout(learnAdvanceTimerRef.current);
+      learnAdvanceTimerRef.current = null;
+    }
+
+    const build = () => {
+      setLearnSummary(
+        buildLearnSessionSummary({
+          answers: learnAnswersRef.current,
+          masteryBefore: learnMasteryBeforeRef.current,
+          masteryAfter: learnMasteryAfterRef.current,
+          resolveCountry: resolveLearnCountry,
+          category: sessionRef.current?.mode,
+          seenByCountry: learnSeenFactsRef.current,
+        })
+      );
+      buildMilestoneStats();
+    };
+
+    const pending = [...pendingStatPromisesRef.current];
+    if (pending.length === 0) {
+      build();
+      return;
+    }
+    Promise.allSettled(pending).then(() => {
+      pendingStatPromisesRef.current = [];
+      build();
+    });
+  }, [buildMilestoneStats, finishGameBoard, resolveLearnCountry, sessionRef, stopGameTimer]);
+
+  // Pick a post-answer fact, mark it seen, then advance (via the mobile fact sheet
+  // when present, otherwise a brief pause so the answer feedback is seen).
+  // Advances to the next question after a brief pause so the answer feedback is
+  // seen. (Between-question facts intentionally removed — facts stay in the Learn
+  // More panel and the end-of-session recap.)
+  const advanceLearnAfterAnswer = useCallback(() => {
+    const idx = learnIndexRef.current;
+    const questions = learnQuestionsRef.current ?? [];
+    const isLast = idx >= questions.length - 1;
+
+    learnAdvanceTimerRef.current = setTimeout(() => {
+      learnLockRef.current = false;
+      if (isLast) {
+        finishLearnGame();
+        return;
+      }
+      const nextIndex = idx + 1;
+      learnIndexRef.current = nextIndex;
+      setLearnIndex(nextIndex);
+    }, 650);
+  }, [finishLearnGame]);
+
+  // Unified answer handler for every Learn question type. Records the PRIMARY
+  // country only (the comparison country's mastery is never touched).
+  const handleLearnAnswer = useCallback(
+    (event) => {
+      if (learnLockRef.current) return;
+      const activeSession = sessionRef.current;
+      if (!activeSession) return;
+      learnLockRef.current = true;
+
+      beginRoundScoring();
+      if (event.correct) {
+        markRoundCorrect();
+        playCorrectSound();
+      } else {
+        markRoundIncorrect(
+          allCountriesById.get(event.countryId) ?? { id: event.countryId }
+        );
+        playIncorrectSound();
+      }
+
+      const { payload, meta } = buildLearnStatPayload(event, {
+        mode: activeSession.mode,
+        level: activeSession.level,
+      });
+      logLearnEmaUpdate(event, meta);
+      learnAnswersRef.current.push({
+        countryId: event.countryId,
+        questionType: event.questionType,
+      });
+
+      if (signedInRef.current) {
+        const promise = recordCountryStat(payload)
+          .then((res) => {
+            const stat = res?.stat;
+            if (!stat?.countryId) return;
+            learnMasteryAfterRef.current.set(stat.countryId, stat.masteryScore ?? 0);
+            if (!learnMasteryBeforeRef.current.has(stat.countryId)) {
+              learnMasteryBeforeRef.current.set(
+                stat.countryId,
+                stat.previousMasteryScore ?? 0
+              );
+            }
+            const prior = sessionStatRecordsRef.current.get(stat.countryId);
+            sessionStatRecordsRef.current.set(stat.countryId, {
+              beforeMastery: prior?.beforeMastery ?? stat.previousMasteryScore ?? 0,
+              beforeGraduated: prior?.beforeGraduated ?? stat.previousGraduated ?? false,
+              afterMastery: stat.masteryScore ?? 0,
+              afterGraduated: stat.graduated ?? false,
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to record learn stat:", error);
+          });
+        pendingStatPromisesRef.current.push(promise);
+      } else {
+        appendGuestRound(payload);
+      }
+
+      advanceLearnAfterAnswer();
+    },
+    [
+      advanceLearnAfterAnswer,
+      allCountriesById,
+      beginRoundScoring,
+      markRoundCorrect,
+      markRoundIncorrect,
+      sessionRef,
+      signedInRef,
+    ]
+  );
+
+  const handleLearnMapClick = useCallback(
+    (feature) => {
+      if (gamePausedRef.current) {
+        if (tutorialStepId === "map") return;
+        setShowResumeConfirm(true);
+        return;
+      }
+      if (!gameActiveRef.current || learnLockRef.current) return;
+
+      const question = currentLearnQuestionRef.current;
+      const emit = learnMapEmitRef.current;
+      if (!question || question.answerType !== "map_click" || typeof emit !== "function") {
+        return;
+      }
+
+      const clicked = countryFromFeature(feature, activeCountries);
+      if (!clicked) return;
+
+      const correctIds = Array.isArray(question.correctAnswer)
+        ? question.correctAnswer
+        : [question.correctAnswer];
+      const correct = correctIds.includes(clicked.id);
+
+      if (correct) {
+        addFilledCountry(clicked.id);
+        setFeedback({ text: "Correct!", type: "correct" });
+      } else {
+        triggerWrongFlash(clicked.id);
+        setFeedback({ text: "Not quite.", type: "wrong" });
+      }
+
+      emit({
+        correct,
+        responseTimeMs: Date.now() - learnQuestionStartRef.current,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: clicked.id,
+      });
+    },
+    [
+      activeCountries,
+      addFilledCountry,
+      gameActiveRef,
+      gamePausedRef,
+      setFeedback,
+      triggerWrongFlash,
+      tutorialStepId,
+    ]
+  );
+
+  const startLearnEngineGame = useCallback(
+    ({ mode, region, level, learningSessionSize, learn }) => {
+      clearPendingGuestGame();
+      setMasteryLoadWarning(false);
+
+      if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+      if (learnAdvanceTimerRef.current) {
+        clearTimeout(learnAdvanceTimerRef.current);
+        learnAdvanceTimerRef.current = null;
+      }
+      clearColorFlash();
+      clearWrongFlash();
+      resetIdleState();
+
+      sessionStatRecordsRef.current = new Map();
+      pendingStatPromisesRef.current = [];
+      preCreditedIdsRef.current = [];
+      setMilestoneStats(undefined);
+
+      learnLockRef.current = false;
+      learnAnswersRef.current = [];
+      learnMasteryBeforeRef.current = new Map(learn.masteryBefore);
+      learnMasteryAfterRef.current = new Map();
+      learnSeenFactsRef.current = {};
+      learnMapEmitRef.current = null;
+      learnIndexRef.current = 0;
+      learnQuestionsRef.current = learn.questions;
+      learnQuestionStartRef.current = Date.now();
+      setLearnSummary(null);
+      setLearnIndex(0);
+      setLearnQuestions(learn.questions);
+
+      startGameTimer();
+      resetQueue();
+      resetScoring();
+      beginRoundScoring();
+      startGameBoard([]);
+
+      setSession({
+        gameType: GAME_TYPES.LEARNING,
+        mode,
+        region,
+        level,
+        review: false,
+        go: false,
+        learningSessionSize,
+        totalRounds: learn.questions.length,
+        preCreditedCount: 0,
+        reviewCountryIds: null,
+        learningCountryIds: learn.queueIds,
+      });
+      setGameComplete(false);
+      setGamePaused(false);
+      setShowResumeConfirm(false);
+      setGameActive(true);
+      setLearnMorePanelOpen(false);
+
+      // Prefetch seen facts so "correct → show an unseen fact" works. Fails soft.
+      fetchSeenFacts(learn.queueIds).then((seen) => {
+        learnSeenFactsRef.current = seen ?? {};
+      });
+
+      router.push(buildPlayingUrl());
+      gameInHistoryRef.current = true;
+    },
+    [
+      beginRoundScoring,
+      clearColorFlash,
+      clearWrongFlash,
+      resetIdleState,
+      resetQueue,
+      resetScoring,
+      router,
+      startGameBoard,
+      startGameTimer,
+    ]
+  );
+
+  // Per-question board setup for the Learn engine: point the map at the current
+  // country, apply the anchor highlight (except the blank "find it" click, which
+  // must not reveal its target), and reset per-question timing.
+  useEffect(() => {
+    if (!learnEngineActive || !currentLearnQuestion) return;
+    const question = currentLearnQuestion;
+
+    beginRoundScoring();
+    learnLockRef.current = false;
+    learnQuestionStartRef.current = Date.now();
+    setFeedback({ text: "", type: "" });
+    setShowColorCountryIds([]);
+    setFlashSmallCountryId(null);
+    setRevealMode(false);
+
+    setTarget(allCountriesById.get(question.countryId) ?? null);
+
+    // Any question whose map config asks for a "highlight" display wants its
+    // anchor country shown (free recall, neighbor prompts, and the binary map
+    // recognition question — where the highlight IS the question). Only the
+    // "find it" blank-map click hides its target (display: "blank"), so it is
+    // already excluded here.
+    const revealsAnchor = question.mapConfig?.display === "highlight";
+    setHighlightCountryId(revealsAnchor ? question.countryId : null);
+  }, [
+    learnEngineActive,
+    currentLearnQuestion,
+    allCountriesById,
+    beginRoundScoring,
+    setFeedback,
+    setFlashSmallCountryId,
+    setHighlightCountryId,
+    setRevealMode,
+    setShowColorCountryIds,
+    setTarget,
+  ]);
+
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.go) {
@@ -1223,19 +1653,17 @@ export default function GeographyGame() {
 
       if (config.gameType === GAME_TYPES.LEARNING) {
         try {
-          const learning = await buildLearningCountries(config);
-          if (!learning) {
+          const learn = await buildLearnEngineData(config);
+          if (!learn) {
             return { ok: false, reason: "no-eligible" };
           }
 
-          startGame({
-            gameType: GAME_TYPES.LEARNING,
+          startLearnEngineGame({
             mode: config.mode,
             region: config.region,
             level: config.level,
-            countries: learning.countries,
-            learningCountryIds: learning.queueIds,
             learningSessionSize: config.learningSessionSize,
+            learn,
           });
           return { ok: true };
         } catch (error) {
@@ -1268,7 +1696,15 @@ export default function GeographyGame() {
       startGame(config);
       return { ok: true };
     },
-    [buildLearningCountries, buildWorldTestCountries, signedIn, startDiscoverGame, startGame, startGoSession]
+    [
+      buildLearnEngineData,
+      buildWorldTestCountries,
+      signedIn,
+      startDiscoverGame,
+      startGame,
+      startGoSession,
+      startLearnEngineGame,
+    ]
   );
 
   const exitToStartScreen = useCallback(
@@ -1282,12 +1718,22 @@ export default function GeographyGame() {
       }
       clearColorFlash();
       clearWrongFlash();
+      if (learnAdvanceTimerRef.current) {
+        clearTimeout(learnAdvanceTimerRef.current);
+        learnAdvanceTimerRef.current = null;
+      }
       resetGameTimer();
       setSession(null);
       setGameActive(false);
       setGameComplete(false);
       setMilestoneStats(undefined);
       setMasteryLoadWarning(false);
+      setLearnQuestions(null);
+      setLearnIndex(0);
+      setLearnSummary(null);
+      learnQuestionsRef.current = null;
+      learnIndexRef.current = 0;
+      learnLockRef.current = false;
       resetQueue();
       resetScoring();
       beginRoundScoring();
@@ -1386,26 +1832,24 @@ export default function GeographyGame() {
   }, []);
 
   const startLearningAgain = useCallback(async () => {
-    if (!session || !isLearningGame) return;
+    if (!session || !isLearningGame || isGoGame) return;
 
-    const learning = await buildLearningCountries({
+    const learn = await buildLearnEngineData({
       mode: session.mode,
       level: session.level,
       region: session.region,
       learningSessionSize: session.learningSessionSize,
     });
-    if (!learning) return;
+    if (!learn) return;
 
-    startGame({
-      gameType: GAME_TYPES.LEARNING,
+    startLearnEngineGame({
       mode: session.mode,
       region: session.region,
       level: session.level,
-      countries: learning.countries,
-      learningCountryIds: learning.queueIds,
       learningSessionSize: session.learningSessionSize,
+      learn,
     });
-  }, [buildLearningCountries, isLearningGame, session, startGame]);
+  }, [buildLearnEngineData, isGoGame, isLearningGame, session, startLearnEngineGame]);
 
   const handlePlayAgain = () => {
     if (!session) return;
@@ -1913,6 +2357,7 @@ export default function GeographyGame() {
 
   const showFlagPrompt =
     !isDiscoverGame &&
+    !learnEngineActive &&
     isFlagsMode &&
     targetCountry?.iso2 &&
     !gameComplete &&
@@ -1929,13 +2374,24 @@ export default function GeographyGame() {
   const mapInteractionEnabled =
     gameActive &&
     (!gamePaused || tutorialStepId === "map") &&
-    (isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
+    (learnEngineActive
+      ? isLearnMapClickQuestion
+      : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  const mapLevel = isDiscoverGame ? GAME_LEVELS.FIND_FILL : session?.level;
+  // Learn: any question that uses the map (mapConfig) may pan/zoom so the player
+  // can find the highlighted country. Non-map questions keep navigation locked
+  // (and get the blurred center overlay) so the map can't be used as a hint.
+  const mapNavigationEnabled =
+    !learnEngineActive || learnUsesMap || isDiscoverGame;
+
+  const mapLevel =
+    isDiscoverGame || learnEngineActive ? GAME_LEVELS.FIND_FILL : session?.level;
 
   const mapCountryClickHandler = isDiscoverGame
     ? handleDiscoverCountryClick
-    : handleCountryClick;
+    : learnEngineActive
+      ? handleLearnMapClick
+      : handleCountryClick;
 
   const promptWrong =
     feedback.type === "wrong" ||
@@ -2041,6 +2497,7 @@ export default function GeographyGame() {
 
   const showMobilePrompt =
     !gameComplete &&
+    !learnEngineActive &&
     (isDiscoverGame ||
       isNameGame ||
       (isFindFlagsGame && flagsClickHeader) ||
@@ -2105,7 +2562,7 @@ export default function GeographyGame() {
               </div>
             </div>
 
-            {!gameComplete && (
+            {!gameComplete && !learnEngineActive && (
               <div ref={assignGamePromptAnchorRef} className={gameHeaderCenter}>
                 {renderGamePrompt()}
               </div>
@@ -2256,6 +2713,7 @@ export default function GeographyGame() {
                   inactiveGeojson={inactiveGeojson}
                   smallCountriesGeojson={activeSmallCountriesGeojson}
                   gameActive={mapInteractionEnabled}
+                  mapNavigationEnabled={mapNavigationEnabled}
                   level={mapLevel}
                   wrongCountryIds={mapWrongCountryIds}
                   flashWrongCountryIds={flashWrongCountryIds}
@@ -2264,7 +2722,7 @@ export default function GeographyGame() {
                   highlightTargetCountryId={highlightTargetCountryId}
                   highlightCountryId={isDiscoverGame ? null : highlightCountryId}
                   flashSmallCountryId={flashSmallCountryId}
-                  mapView={mapView}
+                  mapView={mapViewForRender}
                   forceShowSmallCountryCircles={tutorialOpen}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
@@ -2310,6 +2768,28 @@ export default function GeographyGame() {
                   onClose={closeDiscoverCountrySheet}
                 />
               )}
+              {learnEngineActive && currentLearnQuestion && !gameComplete && (
+                <LearnRoundOverlay
+                  question={currentLearnQuestion}
+                  variant={learnUsesMap ? "top" : "center"}
+                  cardRef={learnOverlayCardRef}
+                  onAnswer={handleLearnAnswer}
+                  resolveCountry={resolveLearnCountry}
+                  speedBaselineMs={null}
+                  emaScore={
+                    learnMasteryAfterRef.current.get(
+                      currentLearnQuestion.countryId
+                    ) ??
+                    learnMasteryBeforeRef.current.get(
+                      currentLearnQuestion.countryId
+                    ) ??
+                    null
+                  }
+                  onMapClickReady={(emit) => {
+                    learnMapEmitRef.current = emit;
+                  }}
+                />
+              )}
               <div className={mapFeedbackAnchor}>
                 <MapFeedback text={feedback.text} type={feedback.type} />
               </div>
@@ -2350,6 +2830,7 @@ export default function GeographyGame() {
             isReview={session.review}
             isLearning={isLearningGame}
             isGo={isGoGame}
+            learnSummary={learnSummary}
             milestoneStats={milestoneStats}
             graduatedCountryNames={newlyGraduatedNames}
             guestSyncState={guestSyncState}

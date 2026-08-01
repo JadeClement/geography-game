@@ -63,6 +63,21 @@ CREATE TABLE IF NOT EXISTS country_attempts (
 CREATE INDEX IF NOT EXISTS country_attempts_user_lookup_idx
   ON country_attempts (user_id, country_id, mode, level, created_at DESC);
 
+-- Learn mode: which country facts a user has already been shown (post-answer
+-- fact modal / side panel). Fact identified by its index in the country's
+-- facts[] array in data/countries.json (order is stable).
+CREATE TABLE IF NOT EXISTS facts_seen (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  country_id TEXT NOT NULL,
+  fact_index INT NOT NULL,
+  seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, country_id, fact_index)
+);
+
+CREATE INDEX IF NOT EXISTS facts_seen_user_country_idx
+  ON facts_seen (user_id, country_id);
+
 CREATE TABLE IF NOT EXISTS practice_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

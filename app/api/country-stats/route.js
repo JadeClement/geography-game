@@ -96,7 +96,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { countryId, mode, level, outcome, responseTimeMs, gameType } = body;
+    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier } = body;
 
     if (
       !countryId ||
@@ -117,6 +117,24 @@ export async function POST(request) {
       return Response.json({ error: "Invalid response time." }, { status: 400 });
     }
 
+    // Learn-mode EMA weight. Optional; only Learn mode sends it. Test mode never
+    // does, so its updates are unaffected. Clamp to a sane range and require it to
+    // be a Learn-mode game type — Test/Review always use the neutral 1.0.
+    let resolvedMultiplier = 1;
+    if (learnModeMultiplier != null) {
+      if (
+        typeof learnModeMultiplier !== "number" ||
+        !Number.isFinite(learnModeMultiplier) ||
+        learnModeMultiplier < 0 ||
+        learnModeMultiplier > 1
+      ) {
+        return Response.json({ error: "Invalid EMA multiplier." }, { status: 400 });
+      }
+      if (gameType === "learning") {
+        resolvedMultiplier = learnModeMultiplier;
+      }
+    }
+
     const stat = await recordCountryPerformance({
       statId: randomUUID(),
       attemptId: randomUUID(),
@@ -127,6 +145,7 @@ export async function POST(request) {
       gameType,
       outcome,
       responseTimeMs: outcome === "needed_reveal" ? null : responseTimeMs,
+      learnModeMultiplier: resolvedMultiplier,
     });
 
     // Idempotent per day (upsert), so recording on every round is safe and

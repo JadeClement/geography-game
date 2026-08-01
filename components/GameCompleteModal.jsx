@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/AuthModal";
 import CelebrationOverlay from "@/components/CelebrationOverlay";
+import LearnSessionSummary from "@/components/learn/LearnSessionSummary";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { detectMilestone } from "@/lib/milestones";
 import { formatGameScore } from "@/lib/regions";
@@ -78,6 +79,7 @@ export default function GameCompleteModal({
   isLearning = false,
   isGo = false,
   milestoneStats,
+  learnSummary = null,
   graduatedCountryNames = [],
   guestSyncState = null,
   canReviewIncorrect = false,
@@ -395,6 +397,8 @@ export default function GameCompleteModal({
               🎓 {getMasteredAnnouncement()}
             </p>
           )}
+
+          {isLearning && learnSummary && <LearnSessionSummary summary={learnSummary} />}
 
           <div className={modalActions}>
             {!signedIn && (
