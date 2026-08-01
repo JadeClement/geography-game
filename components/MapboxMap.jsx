@@ -439,9 +439,36 @@ function addBaseLandLayer(map, baseLandGeojson, mapColors, beforeId) {
   }
 }
 
+
+function addInactiveCountryBorders(map, mapColors) {
+  if (map.getLayer("inactive-country-borders") || !map.getSource("inactive-countries")) {
+    return;
+  }
+
+  // Same crisp border as playable countries so overseas scraps in-region
+  // (e.g. French Guiana during South America) don't look cut out of the map.
+  const layer = {
+    id: "inactive-country-borders",
+    type: "line",
+    source: "inactive-countries",
+    paint: {
+      "line-color": mapColors.levelBorder,
+      "line-width": 0.5,
+      "line-opacity": 0.85,
+    },
+  };
+
+  if (map.getLayer("country-fill")) {
+    map.addLayer(layer, "country-fill");
+  } else {
+    map.addLayer(layer);
+  }
+}
+
 function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor) {
   if (map.getSource("inactive-countries")) {
     map.getSource("inactive-countries").setData(inactiveGeojson);
+    addInactiveCountryBorders(map, mapColors);
   } else {
     map.addSource("inactive-countries", {
       type: "geojson",
@@ -458,6 +485,8 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
         "fill-outline-color": mapColors.inactiveBorder,
       },
     });
+
+    addInactiveCountryBorders(map, mapColors);
   }
 
   if (map.getSource("countries")) {
@@ -875,6 +904,10 @@ export default function MapboxMap({
         "fill-outline-color",
         mapColors.inactiveBorder
       );
+    }
+
+    if (map.getLayer("inactive-country-borders")) {
+      map.setPaintProperty("inactive-country-borders", "line-color", mapColors.levelBorder);
     }
 
     if (map.getLayer("country-fill")) {
