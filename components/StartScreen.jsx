@@ -20,11 +20,16 @@ import {
   parseStartScreenSearchParams,
 } from "@/lib/startNavigation";
 import { cn } from "@/lib/cn";
+import { buildHomeGreeting } from "@/lib/homeGreeting";
 import {
   choiceBtnLevel,
   choiceBtnLevelDesc,
   choiceBtnLevelTitle,
   exploreBtn,
+  exploreBtnDesc,
+  gameTypeBtnDiscover,
+  gameTypeBtnLearn,
+  gameTypeBtnTest,
   goBtn,
   goBtnIcon,
   goBtnLabel,
@@ -36,6 +41,7 @@ import {
   startGlobeSpacer,
   startHeroTitleGroup,
   startHomeActions,
+  startHomeGreeting,
   startLevelList,
   startLevelBtn,
   startLevelSection,
@@ -86,6 +92,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   const [weakReloadKey, setWeakReloadKey] = useState(0);
   const [exploreMode, setExploreMode] = useState(null);
   const [exploreRegion, setExploreRegion] = useState(null);
+  const [homeGreeting, setHomeGreeting] = useState(null);
   const pendingExploreAdvanceRef = useRef(false);
 
   const route = normalizeStartScreenRoute(parseStartScreenSearchParams(searchParams));
@@ -94,6 +101,14 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
 
   const signedIn = status === "authenticated" && session?.user;
   const isLearning = selectedGameType === GAME_TYPES.LEARNING;
+
+  useEffect(() => {
+    if (!signedIn) {
+      setHomeGreeting(null);
+      return;
+    }
+    setHomeGreeting(buildHomeGreeting(session.user));
+  }, [signedIn, session?.user?.name, session?.user?.username]);
 
   const navigate = useCallback(
     (next, { replace = false } = {}) => {
@@ -431,7 +446,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         <div className={cn(startSection, startGameTypeList)}>
           <button
             type="button"
-            className={choiceBtnLevel({ disabled: !gameReady })}
+            className={choiceBtnLevel({ disabled: !gameReady, className: gameTypeBtnDiscover })}
             disabled={!gameReady}
             onClick={handleDiscoverStart}
           >
@@ -440,7 +455,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           </button>
           <button
             type="button"
-            className={choiceBtnLevel()}
+            className={choiceBtnLevel({ className: gameTypeBtnTest })}
             onClick={() => {
               navigate({
                 step: START_STEPS.LEVEL,
@@ -453,9 +468,13 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             <span className={choiceBtnLevelTitle}>Test</span>
             <span className={choiceBtnLevelDesc}>Full quiz — builds your learning list.</span>
           </button>
-          <button type="button" className={choiceBtnLevel()} onClick={handleLearnSelect}>
+          <button
+            type="button"
+            className={choiceBtnLevel({ className: gameTypeBtnLearn })}
+            onClick={handleLearnSelect}
+          >
             <span className={choiceBtnLevelTitle}>Learn</span>
-            <span className={choiceBtnLevelDesc}>Drill the ones you miss most.</span>
+            <span className={choiceBtnLevelDesc}>Build knowledge with varied questions.</span>
           </button>
         </div>
 
@@ -497,7 +516,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Explore"
-          subtitle="Pick what to practice and where."
+          subtitle="Choose what to practice and where."
         />
 
         <div className={startExploreSection}>
@@ -539,6 +558,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     <div className={cn(startScreen, startScreenWithGlobe)}>
       <SpaceBackground />
       <SpinningGlobe />
+      {homeGreeting && <p className={startHomeGreeting}>{homeGreeting}</p>}
       <div className={startScreenContent}>
         <div className={startHeroTitleGroup}>
           <h1 className={startTitleGlobe}>Worldly</h1>
@@ -560,7 +580,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
               </svg>
             </span>
             <span className={goBtnLabel}>{starting ? "Starting…" : "Go!"}</span>
-            <span className={goBtnSub}>Do 10 today.</span>
+            <span className={goBtnSub}>Learn 10 countries today.</span>
           </button>
 
           <button
@@ -569,7 +589,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             onClick={() => navigate({ step: START_STEPS.EXPLORE })}
           >
             <span className={choiceBtnLevelTitle}>Explore</span>
-            <span className={choiceBtnLevelDesc}>
+            <span className={exploreBtnDesc}>
               Choose countries, capitals, or flags by region.
             </span>
           </button>

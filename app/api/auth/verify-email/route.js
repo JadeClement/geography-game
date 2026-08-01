@@ -1,48 +1,15 @@
-import {
-  TOKEN_TYPES,
-  findAuthToken,
-  findValidAuthToken,
-  markAuthTokenUsed,
-  markEmailVerified,
-} from "@/lib/auth-db";
+import { verifyEmailWithToken } from "@/lib/verification";
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const token = body.token?.trim();
+    const result = await verifyEmailWithToken(body.token);
 
-    if (!token) {
-      return Response.json({ error: "Verification token is required." }, { status: 400 });
+    if (!result.ok) {
+      return Response.json({ error: result.error }, { status: 400 });
     }
 
-    const authToken = await findValidAuthToken({
-      rawToken: token,
-      type: TOKEN_TYPES.EMAIL_VERIFICATION,
-    });
-
-    if (!authToken) {
-      const usedToken = await findAuthToken({
-        rawToken: token,
-        type: TOKEN_TYPES.EMAIL_VERIFICATION,
-      });
-      if (usedToken?.emailVerifiedAt) {
-        return Response.json({ message: "Email is already verified." });
-      }
-      return Response.json(
-        { error: "This verification link is invalid or has expired." },
-        { status: 400 }
-      );
-    }
-
-    if (authToken.emailVerifiedAt) {
-      await markAuthTokenUsed(authToken.id);
-      return Response.json({ message: "Email is already verified." });
-    }
-
-    await markEmailVerified(authToken.userId);
-    await markAuthTokenUsed(authToken.id);
-
-    return Response.json({ message: "Email verified successfully." });
+    return Response.json({ message: result.message });
   } catch (error) {
     console.error("Email verification error:", error);
     return Response.json({ error: "Something went wrong." }, { status: 500 });

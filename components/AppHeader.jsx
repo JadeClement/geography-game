@@ -210,7 +210,7 @@ function ProfileDropdown({ signedIn, userName, username, onClose, onSignIn, onSi
       ) : (
         <button type="button" role="menuitem" className={dropdownItem} onClick={onSignIn}>
           <DropdownIcon>{menuIcons.signIn}</DropdownIcon>
-          Sign in
+          Sign in / Sign up
         </button>
       )}
     </div>

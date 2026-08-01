@@ -218,7 +218,11 @@ export default function CountryLearnMorePanel({
     </>
   );
 
-  const bodyContent = (
+  const bodyContent = !country ? (
+    <p className={countryReferenceEmpty}>
+      {isDiscover ? "Tap a country to learn more." : "No country selected."}
+    </p>
+  ) : (
     <>
       {referenceSection}
 

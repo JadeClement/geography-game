@@ -3,14 +3,29 @@
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { useTheme } from "@/components/ThemeProvider";
 import { ALL_MODE, TIER_COLORS } from "@/lib/masteryMap";
+import { THEMES } from "@/lib/theme";
 import { masteryMapCanvas } from "@/lib/ui";
 
-const OCEAN = "#070d1c";
-const BASE_LAND = "#1a2740";
-const BASE_BORDER = "#2b3c5c";
+const MASTERY_THEME_COLORS = {
+  [THEMES.LIGHT]: {
+    ocean: "#bae6fd",
+    baseLand: "#e2e8f0",
+    baseBorder: "#cbd5e1",
+  },
+  [THEMES.DARK]: {
+    ocean: "#070d1c",
+    baseLand: "#1a2740",
+    baseBorder: "#2b3c5c",
+  },
+};
 
-function configureStyle(map) {
+function getMasteryThemeColors(theme) {
+  return MASTERY_THEME_COLORS[theme] ?? MASTERY_THEME_COLORS[THEMES.DARK];
+}
+
+function configureStyle(map, colors) {
   const layers = map.getStyle()?.layers ?? [];
   for (const layer of layers) {
     const { id, type } = layer;
@@ -19,9 +34,9 @@ function configureStyle(map) {
     } else if (type === "line" && (id.includes("admin-1") || id.includes("admin-2"))) {
       map.setLayoutProperty(id, "visibility", "none");
     } else if (type === "background") {
-      map.setPaintProperty(id, "background-color", OCEAN);
+      map.setPaintProperty(id, "background-color", colors.ocean);
     } else if (type === "fill" && id.includes("water")) {
-      map.setPaintProperty(id, "fill-color", OCEAN);
+      map.setPaintProperty(id, "fill-color", colors.ocean);
     }
   }
 }
@@ -128,15 +143,18 @@ export default forwardRef(function MasteryMap(
   { countries, geojson, mode, accent, scoreByCountry, tierByCountry, onHover },
   ref
 ) {
+  const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const readyRef = useRef(false);
   const igniteRafRef = useRef(null);
   const onHoverRef = useRef(onHover);
   const propsRef = useRef({ mode, accent, scoreByCountry, tierByCountry });
+  const themeRef = useRef(theme);
 
   onHoverRef.current = onHover;
   propsRef.current = { mode, accent, scoreByCountry, tierByCountry };
+  themeRef.current = theme;
 
   const orderedIds = useRef([]);
   orderedIds.current = [...countries]
@@ -188,23 +206,29 @@ export default forwardRef(function MasteryMap(
       const ctx = out.getContext("2d");
       ctx.drawImage(src, 0, 0);
 
+      const isLight = themeRef.current === THEMES.LIGHT;
       const band = Math.round(h * 0.24);
       const grad = ctx.createLinearGradient(0, 0, 0, band);
-      grad.addColorStop(0, "rgba(3, 7, 18, 0.9)");
-      grad.addColorStop(1, "rgba(3, 7, 18, 0)");
+      if (isLight) {
+        grad.addColorStop(0, "rgba(238, 242, 248, 0.92)");
+        grad.addColorStop(1, "rgba(238, 242, 248, 0)");
+      } else {
+        grad.addColorStop(0, "rgba(3, 7, 18, 0.9)");
+        grad.addColorStop(1, "rgba(3, 7, 18, 0)");
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, band);
 
       const pad = Math.round(w * 0.04);
       ctx.textBaseline = "top";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = isLight ? "#0f172a" : "#ffffff";
       ctx.font = `800 ${Math.round(h * 0.052)}px system-ui, sans-serif`;
       ctx.fillText(title, pad, pad);
       ctx.fillStyle = brandAccent || "#fcd34d";
       ctx.font = `600 ${Math.round(h * 0.036)}px system-ui, sans-serif`;
       ctx.fillText(stat, pad, pad + Math.round(h * 0.064));
 
-      ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+      ctx.fillStyle = isLight ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.82)";
       ctx.font = `600 ${Math.round(h * 0.03)}px system-ui, sans-serif`;
       ctx.textAlign = "right";
       ctx.fillText("Worldly", w - pad, h - pad - Math.round(h * 0.034));
@@ -232,9 +256,15 @@ export default forwardRef(function MasteryMap(
 
     mapboxgl.accessToken = token;
 
+    const colors = getMasteryThemeColors(theme);
+    const mapStyle =
+      theme === THEMES.LIGHT
+        ? "mapbox://styles/mapbox/light-v11"
+        : "mapbox://styles/mapbox/dark-v11";
+
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: mapStyle,
       center: [12, 28],
       zoom: 1.1,
       projection: "naturalEarth",
@@ -259,7 +289,7 @@ export default forwardRef(function MasteryMap(
     };
 
     map.on("load", () => {
-      configureStyle(map);
+      configureStyle(map, colors);
 
       map.addSource("mastery", { type: "geojson", data: geojson, promoteId: "id" });
 
@@ -268,9 +298,9 @@ export default forwardRef(function MasteryMap(
         type: "fill",
         source: "mastery",
         paint: {
-          "fill-color": BASE_LAND,
+          "fill-color": colors.baseLand,
           "fill-opacity": 1,
-          "fill-outline-color": BASE_BORDER,
+          "fill-outline-color": colors.baseBorder,
         },
       });
 
@@ -301,7 +331,7 @@ export default forwardRef(function MasteryMap(
         type: "line",
         source: "mastery",
         paint: {
-          "line-color": BASE_BORDER,
+          "line-color": colors.baseBorder,
           "line-width": 0.4,
           "line-opacity": 0.5,
         },
@@ -333,7 +363,7 @@ export default forwardRef(function MasteryMap(
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geojson]);
+  }, [geojson, theme]);
 
   useEffect(() => {
     if (!readyRef.current) return;

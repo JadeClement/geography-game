@@ -64,8 +64,8 @@ export default function ForgotPasswordPage() {
         <section className={settingsSection}>
           <h2 className={settingsSectionTitle}>Reset your password</h2>
           <p className={settingsSectionDescription}>
-            Enter the email address for your account and we&apos;ll send you a link to
-            reset your password.
+            We&apos;ll send you a link to reset your password if this email has an
+            account with us.
           </p>
 
           <form className={authForm} onSubmit={handleSubmit}>

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import MasteryMap from "@/components/MasteryMap";
+import { useTheme } from "@/components/ThemeProvider";
 import { loadCountriesGeoJSON } from "@/lib/countries";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { GAME_MODES, getModeLabel } from "@/lib/regions";
@@ -21,6 +22,7 @@ import {
   MASTERY_MODES,
   TIER_COLORS,
 } from "@/lib/masteryMap";
+import { THEMES } from "@/lib/theme";
 import {
   masteryBack,
   masteryContent,
@@ -30,7 +32,6 @@ import {
   masteryLegendRow,
   masteryLegendScale,
   masteryLegendTitle,
-  masteryMapCanvas,
   masteryMapWrap,
   masteryMessage,
   masteryMessageError,
@@ -61,7 +62,10 @@ import {
 import { cn } from "@/lib/cn";
 
 const MODE_TABS = [...MASTERY_MODES, ALL_MODE];
-const BASE_DIM = "#1a2740";
+const BASE_DIM = {
+  [THEMES.LIGHT]: "#e2e8f0",
+  [THEMES.DARK]: "#1a2740",
+};
 
 function ProgressRing({ pct, accent }) {
   const radius = 52;
@@ -91,7 +95,9 @@ function ProgressRing({ pct, accent }) {
 
 export default function MasteryPage() {
   const { status } = useSession();
+  const { theme } = useTheme();
   const signedIn = status === "authenticated";
+  const baseDim = BASE_DIM[theme] ?? BASE_DIM[THEMES.DARK];
 
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -348,7 +354,7 @@ export default function MasteryPage() {
                     <span
                       className={masteryGradientBar}
                       style={{
-                        background: `linear-gradient(90deg, ${BASE_DIM}, ${visual.accent})`,
+                        background: `linear-gradient(90deg, ${baseDim}, ${visual.accent})`,
                       }}
                     />
                     <span className={masteryLegendScale}>

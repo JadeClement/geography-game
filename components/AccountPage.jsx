@@ -5,17 +5,17 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
+import AvatarCropModal from "@/components/AvatarCropModal";
 import UserAvatar from "@/components/UserAvatar";
 import Input from "@/components/ui/Input";
 import ValidationMessage from "@/components/ui/ValidationMessage";
-import { AVATAR_COLORS, hashAvatarColor, resizeImageFile } from "@/lib/avatars";
+import { AVATAR_COLORS, hashAvatarColor, loadImageFileForCrop } from "@/lib/avatars";
 import { loadCountriesGeoJSON } from "@/lib/countries";
 import { getFlagUrl } from "@/lib/flags";
 import { useUserProfile } from "@/lib/hooks/useUserProfile";
 import { cn } from "@/lib/cn";
 import {
   accountAvatarPreview,
-  accountAvatarTab,
   accountAvatarTabActive,
   accountAvatarTabs,
   accountColorGrid,
@@ -63,6 +63,8 @@ export default function AccountPage() {
   const [avatarMessage, setAvatarMessage] = useState("");
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [uploadPreview, setUploadPreview] = useState(null);
+  const [cropSource, setCropSource] = useState(null);
+  const [cropOpen, setCropOpen] = useState(false);
 
   const [flagCountries, setFlagCountries] = useState([]);
   const [flagQuery, setFlagQuery] = useState("");
@@ -221,6 +223,11 @@ export default function AccountPage() {
     }
   };
 
+  const openCropForSource = (source) => {
+    setCropSource(source);
+    setCropOpen(true);
+  };
+
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -229,13 +236,43 @@ export default function AccountPage() {
     setAvatarError("");
     setAvatarMessage("");
     try {
-      const dataUrl = await resizeImageFile(file);
-      setUploadPreview(dataUrl);
-      setDraftAvatar({ type: "image", color: null, flag: null, image: dataUrl });
+      const loaded = await loadImageFileForCrop(file);
       setAvatarTab("image");
+      openCropForSource(loaded);
     } catch (uploadError) {
       setAvatarError(uploadError.message || "Could not upload image.");
     }
+  };
+
+  const handleCropApply = (croppedDataUrl) => {
+    setUploadPreview(croppedDataUrl);
+    setDraftAvatar({ type: "image", color: null, flag: null, image: croppedDataUrl });
+    setAvatarTab("image");
+    setCropOpen(false);
+  };
+
+  const handleCropCancel = () => {
+    setCropOpen(false);
+  };
+
+  const handleAdjustCrop = () => {
+    if (cropSource?.src) {
+      openCropForSource(cropSource);
+      return;
+    }
+    if (!uploadPreview) return;
+    const image = new Image();
+    image.onload = () => {
+      openCropForSource({
+        src: uploadPreview,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    };
+    image.onerror = () => {
+      setAvatarError("Could not load image for cropping.");
+    };
+    image.src = uploadPreview;
   };
 
   return (
@@ -362,7 +399,7 @@ export default function AccountPage() {
                   size="md"
                 />
               ) : (
-                <p className={accountUploadHint}>JPEG, PNG, or WebP · max 512 KB</p>
+                <p className={accountUploadHint}>JPEG, PNG, or WebP · drag to position after upload</p>
               )}
               <input
                 ref={fileInputRef}
@@ -378,6 +415,11 @@ export default function AccountPage() {
               >
                 {uploadPreview ? "Choose a different photo" : "Choose photo"}
               </button>
+              {uploadPreview && (
+                <button type="button" className={accountUploadBtn} onClick={handleAdjustCrop}>
+                  Adjust position
+                </button>
+              )}
             </div>
           )}
 
@@ -431,6 +473,14 @@ export default function AccountPage() {
         )}
       </main>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AvatarCropModal
+        open={cropOpen}
+        imageSrc={cropSource?.src}
+        imageWidth={cropSource?.width}
+        imageHeight={cropSource?.height}
+        onCancel={handleCropCancel}
+        onApply={handleCropApply}
+      />
     </div>
   );
 }

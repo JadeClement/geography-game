@@ -465,30 +465,32 @@
 }
 
 .start-brand-subtitle {
+  color: #f8fafc;
   text-shadow:
-    0 2px 12px var(--color-bg),
-    0 0 28px var(--color-bg),
+    0 2px 12px rgba(2, 6, 23, 0.9),
+    0 0 28px rgba(2, 6, 23, 0.7),
     0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
-.start-screen--with-globe .start-brand-subtitle {
-  color: #f8fafc;
-}
-
 [data-theme="dark"] .start-brand-subtitle {
-  color: #f8fafc;
   text-shadow:
     0 2px 18px rgba(15, 23, 42, 0.98),
     0 0 36px rgba(15, 23, 42, 0.92),
     0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
-[data-theme="light"] .start-brand-subtitle {
-  color: #0f172a;
+.start-home-greeting {
   text-shadow:
-    0 1px 14px rgba(255, 255, 255, 0.98),
-    0 0 32px rgba(255, 255, 255, 0.92),
-    0 1px 3px rgba(255, 255, 255, 0.85);
+    0 2px 12px rgba(2, 6, 23, 0.9),
+    0 0 24px rgba(2, 6, 23, 0.7),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .start-home-greeting {
+  text-shadow:
+    0 2px 16px rgba(15, 23, 42, 0.95),
+    0 0 32px rgba(15, 23, 42, 0.85),
+    0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* ===== Region map picker (SVG + :has hover groups) ===== */

@@ -152,10 +152,10 @@ const MODE_WEIGHTS = [
 ];
 
 const LEVEL_WEIGHTS = [
-  { label: "Find it · Level 1", sub: "map fills in as you go", pct: 15, bar: "bg-teal-600", swatch: "bg-teal-600" },
-  { label: "Find it · Level 2", sub: "countries disappear", pct: 25, bar: "bg-teal-500", swatch: "bg-teal-500" },
-  { label: "Name it · Level 1", sub: "map fills in as you go", pct: 25, bar: "bg-emerald-600", swatch: "bg-emerald-600" },
-  { label: "Name it · Level 2", sub: "countries disappear", pct: 35, bar: "bg-emerald-500", swatch: "bg-emerald-500" },
+  { label: "Find it · Level 1", sub: "map populates as you go", pct: 15, bar: "bg-teal-600", swatch: "bg-teal-600" },
+  { label: "Find it · Level 2", sub: "map doesn't populate - countries disappear!", pct: 25, bar: "bg-teal-500", swatch: "bg-teal-500" },
+  { label: "Name it · Level 1", sub: "map populates as you go", pct: 25, bar: "bg-emerald-600", swatch: "bg-emerald-600" },
+  { label: "Name it · Level 2", sub: "map doesn't populate - countries disappear!", pct: 35, bar: "bg-emerald-500", swatch: "bg-emerald-500" },
 ];
 
 function WeightBreakdown({ items }) {
@@ -231,8 +231,8 @@ export default function HowItWorksPage() {
 
         <h1 className={infoTitle}>How scoring works</h1>
         <p className={infoIntro}>
-          Worldly quietly measures how well you actually know each place — not just
-          whether you got a lucky guess. Here&apos;s the whole system in plain language:
+          Worldly quietly measures your knowledge of each place, not just
+          whether you got a lucky guess. Keep reading to learn 
           how a single answer moves your score, how a country becomes &ldquo;mastered,&rdquo;
           how practice is chosen for you, and how it all rolls up into one headline number.
         </p>
@@ -249,8 +249,8 @@ export default function HowItWorksPage() {
           <p className={infoHeroBody}>
             {signedIn && worldlyPercent != null ? (
               <>
-                Right now you&apos;re at <strong>{worldlyPercent}%</strong> — one number that
-                answers &ldquo;how much of the world do I really know?&rdquo; It blends your
+                Right now you&apos;re at <strong>{worldlyPercent}%</strong> — this tells
+                you &ldquo;how much of the world do I really know?&rdquo; It blends your
                 mastery of countries, capitals, and flags across every region. Reaching{" "}
                 <strong>100%</strong> means you&apos;ve mastered every place, in every mode, at
                 every level. Read on to see exactly how it&apos;s built from the ground up.
@@ -334,7 +334,7 @@ export default function HowItWorksPage() {
           <p>
             An EMA leans on your <strong>recent</strong> performance while still remembering
             the past. Each correct answer nudges your score a fraction of the way toward a
-            perfect 100% — so early wins move the needle a lot, and once you&apos;re near the
+            perfect 100%, so early wins move the needle a lot, and once you&apos;re near the
             top, each answer refines it gently. Misses subtract a flat amount right away.
           </p>
 

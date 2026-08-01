@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import MapCountryInfoPanels from "@/components/MapCountryInfoPanels";
 import FlagPrompt from "@/components/FlagPrompt";
+import GameModeIntro from "@/components/GameModeIntro";
 import GameTutorial from "@/components/GameTutorial";
 import GameTutorialButton from "@/components/GameTutorialButton";
 import DiscoverCompleteModal from "@/components/DiscoverCompleteModal";
@@ -52,11 +53,12 @@ import { buildLearnStatPayload, logLearnEmaUpdate } from "@/lib/learn/emaIntegra
 import { fetchSeenFacts } from "@/lib/learn/factsClient";
 import { buildLearnSessionSummary } from "@/lib/learn/sessionSummary";
 import { getGameTourId } from "@/lib/gameTutorial";
+import { getGameModeIntro } from "@/lib/gameModeIntro";
 import { getGameTutorialSteps } from "@/lib/gameTutorialSteps";
 import { useMobileViewport } from "@/lib/hooks/useMobileViewport";
 import {
-  hasCompletedGameTour,
-  markGameTourCompleted,
+  hasCompletedGameTourLocally,
+  markGameTourCompletedLocally,
 } from "@/lib/onboardingPrefs";
 import { getReferencePanelDefaultOpen } from "@/lib/referencePanelPrefs";
 import {
@@ -111,6 +113,7 @@ import {
   gamePromptMobileInput,
   gameMeta,
   gameMetaTag,
+  gameMetaTagButton,
   gameProgress,
   gameProgressFill,
   gameShell,
@@ -201,6 +204,7 @@ export default function GeographyGame() {
   const [answerText, setAnswerText] = useState("");
   const [spellingSuggestionText, setSpellingSuggestionText] = useState(null);
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
+  const [leaveConfirmUrl, setLeaveConfirmUrl] = useState(null);
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [learnMorePanelOpen, setLearnMorePanelOpen] = useState(false);
   const [discoverCountrySheetOpen, setDiscoverCountrySheetOpen] = useState(false);
@@ -211,6 +215,12 @@ export default function GeographyGame() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tutorialManualOpen, setTutorialManualOpen] = useState(false);
   const [tutorialStepId, setTutorialStepId] = useState(null);
+  const [modeIntroOpen, setModeIntroOpen] = useState(false);
+  const [tourCompleted, setTourCompleted] = useState(false);
+  const [tourStatusReady, setTourStatusReady] = useState(false);
+  // Stays true from game start until the mode intro / first-run tour is dismissed,
+  // so the first country is not announced during the open-race before the modal mounts.
+  const [onboardingGateOpen, setOnboardingGateOpen] = useState(false);
   const [masteryLoadWarning, setMasteryLoadWarning] = useState(false);
 
   // ── Learn-mode mixed-question engine (separate from the classic Find/Name loop).
@@ -239,7 +249,7 @@ export default function GeographyGame() {
   const gameControlsRef = useRef(null);
   const gameHeaderStatsRef = useRef(null);
   const pacificControlsRef = useRef(null);
-  const tutorialAutoShownRef = useRef(null);
+  const pendingOnboardingPromptRef = useRef(false);
   const discoverHeaderAnchorRef = useRef(null);
   const discoverMobileAnchorRef = useRef(null);
   const learnMorePanelRef = useRef(null);
@@ -600,7 +610,18 @@ export default function GeographyGame() {
   currentLearnQuestionRef.current = currentLearnQuestion;
   const tourId = useMemo(() => getGameTourId(session), [session]);
   const pronunciationAllowed =
-    !tutorialOpen && (!tourId || hasCompletedGameTour(tourId));
+    !tutorialOpen && !modeIntroOpen && !onboardingGateOpen && tourCompleted;
+  const modeIntro = useMemo(
+    () =>
+      getGameModeIntro({
+        isMobile,
+        isDiscover: isDiscoverGame,
+        isNameGame,
+        isLearning: isLearningGame,
+        mode: session?.mode,
+      }),
+    [isMobile, isDiscoverGame, isNameGame, isLearningGame, session?.mode]
+  );
   const tutorialSteps = useMemo(
     () =>
       getGameTutorialSteps(tourId, {
@@ -639,8 +660,16 @@ export default function GeographyGame() {
     []
   );
 
+  const persistTourCompleted = useCallback(() => {
+    markGameTourCompletedLocally();
+    setTourCompleted(true);
+    if (!signedInRef.current) return;
+    fetch("/api/users/game-tour", { method: "POST" }).catch(() => {});
+  }, []);
+
   const openGameTutorial = useCallback(
     ({ manual = false } = {}) => {
+      setModeIntroOpen(false);
       setTutorialManualOpen(manual);
       setTutorialOpen(true);
       setGamePaused(true);
@@ -655,29 +684,114 @@ export default function GeographyGame() {
       setTutorialStepId(null);
       const wasManual = tutorialManualOpen;
       setTutorialManualOpen(false);
+      setOnboardingGateOpen(false);
       setGamePaused(false);
       resumeGameTimer();
-      if (tourId && (completed || (!wasManual && skipped))) {
-        markGameTourCompleted(tourId);
+      if (completed || (!wasManual && skipped)) {
+        persistTourCompleted();
       }
     },
-    [resumeGameTimer, tourId, tutorialManualOpen]
+    [persistTourCompleted, resumeGameTimer, tutorialManualOpen]
   );
+
+  const openModeIntro = useCallback(() => {
+    setModeIntroOpen(true);
+    setGamePaused(true);
+    pauseGameTimer();
+  }, [pauseGameTimer]);
+
+  const closeModeIntro = useCallback(() => {
+    setModeIntroOpen(false);
+    setOnboardingGateOpen(false);
+    setGamePaused(false);
+    resumeGameTimer();
+  }, [resumeGameTimer]);
+
+  // Resolve once-per-user tour status: localStorage + signed-in account.
+  useEffect(() => {
+    if (authStatus === "loading") return;
+
+    const localDone = hasCompletedGameTourLocally();
+
+    if (!signedIn) {
+      setTourCompleted(localDone);
+      setTourStatusReady(true);
+      return undefined;
+    }
+
+    if (localDone) {
+      setTourCompleted(true);
+      setTourStatusReady(true);
+      // Sync guest completion up to the account if needed.
+      fetch("/api/users/game-tour", { method: "POST" }).catch(() => {});
+      return undefined;
+    }
+
+    let cancelled = false;
+    setTourStatusReady(false);
+    fetch("/api/users/game-tour")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.completed) {
+          markGameTourCompletedLocally();
+          setTourCompleted(true);
+        } else {
+          setTourCompleted(false);
+        }
+        setTourStatusReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTourCompleted(false);
+          setTourStatusReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authStatus, signedIn]);
 
   useEffect(() => {
     if (!session) {
-      tutorialAutoShownRef.current = null;
+      pendingOnboardingPromptRef.current = false;
+      setOnboardingGateOpen(false);
     }
   }, [session]);
 
+  // First game ever → full tour. Later games → short mode intro every start.
   useEffect(() => {
-    if (!session || !gameActive || gameComplete || tutorialOpen) return;
-    if (!tourId || hasCompletedGameTour(tourId)) return;
-    if (tutorialAutoShownRef.current === tourId) return;
+    if (!pendingOnboardingPromptRef.current) return;
+    if (!session || !gameActive || gameComplete) return;
+    if (tutorialOpen || modeIntroOpen) return;
+    if (!tourStatusReady) return;
 
-    tutorialAutoShownRef.current = tourId;
-    openGameTutorial({ manual: false });
-  }, [session, gameActive, gameComplete, tourId, tutorialOpen, openGameTutorial]);
+    if (!tourId) {
+      pendingOnboardingPromptRef.current = false;
+      setOnboardingGateOpen(false);
+      return;
+    }
+
+    pendingOnboardingPromptRef.current = false;
+
+    if (!tourCompleted) {
+      openGameTutorial({ manual: false });
+    } else {
+      openModeIntro();
+    }
+  }, [
+    session,
+    gameActive,
+    gameComplete,
+    tourId,
+    tourStatusReady,
+    tourCompleted,
+    tutorialOpen,
+    modeIntroOpen,
+    openGameTutorial,
+    openModeIntro,
+  ]);
 
   const findRoundPronouncedTargetRef = useRef(null);
 
@@ -1126,6 +1240,8 @@ export default function GeographyGame() {
       }
 
       setGameActive(true);
+      pendingOnboardingPromptRef.current = true;
+      setOnboardingGateOpen(true);
 
       const first = advanceQueue();
       wrongAttemptsRef.current = 0;
@@ -1198,6 +1314,8 @@ export default function GeographyGame() {
       setGamePaused(false);
       setShowResumeConfirm(false);
       setGameActive(true);
+      pendingOnboardingPromptRef.current = true;
+      setOnboardingGateOpen(true);
       setTarget(null);
       setHighlightCountryId(null);
       setFlashSmallCountryId(null);
@@ -1579,6 +1697,8 @@ export default function GeographyGame() {
       setGamePaused(false);
       setShowResumeConfirm(false);
       setGameActive(true);
+      pendingOnboardingPromptRef.current = true;
+      setOnboardingGateOpen(true);
       setLearnMorePanelOpen(false);
 
       // Prefetch seen facts so "correct → show an unseen fact" works. Fails soft.
@@ -1711,6 +1831,7 @@ export default function GeographyGame() {
     (url = "/") => {
       resetIdleState();
       setShowMenuConfirm(false);
+      setLeaveConfirmUrl(null);
       setShowResumeConfirm(false);
       setGamePaused(false);
       if (nextRoundTimeoutRef.current) {
@@ -1762,12 +1883,66 @@ export default function GeographyGame() {
     exitToStartScreen("/");
   };
 
+  const handleConfirmLeave = () => {
+    exitToStartScreen(leaveConfirmUrl || "/");
+  };
+
   const handleMenuClick = () => {
     if (!gameComplete) {
+      setLeaveConfirmUrl(null);
       setShowMenuConfirm(true);
       return;
     }
     handleBackToMenu();
+  };
+
+  const dismissMenuConfirm = () => {
+    setShowMenuConfirm(false);
+    setLeaveConfirmUrl(null);
+  };
+
+  const requestLeaveTo = (url) => {
+    if (!session) return;
+    if (gameComplete) {
+      exitToStartScreen(url);
+      return;
+    }
+    setLeaveConfirmUrl(url);
+    setShowMenuConfirm(true);
+  };
+
+  const handleMetaModeClick = () => {
+    requestLeaveTo(buildStartScreenUrl({ step: START_STEPS.EXPLORE }));
+  };
+
+  const handleMetaRegionClick = () => {
+    requestLeaveTo(
+      buildStartScreenUrl({
+        step: isGoGame ? START_STEPS.GO_REGION : START_STEPS.EXPLORE,
+      })
+    );
+  };
+
+  const handleMetaLevelClick = () => {
+    if (!session?.mode || !session?.region || isGoGame) return;
+    if (isDiscoverGame || isLearningGame) {
+      requestLeaveTo(
+        buildStartScreenUrl({
+          step: START_STEPS.CHOOSE_TYPE,
+          mode: session.mode,
+          region: session.region,
+        })
+      );
+      return;
+    }
+    requestLeaveTo(
+      buildStartScreenUrl({
+        step: START_STEPS.LEVEL,
+        mode: session.mode,
+        region: session.region,
+        gameType: session.gameType ?? GAME_TYPES.TEST,
+      })
+    );
   };
 
   const handleHeaderHome = () => {
@@ -2546,12 +2721,42 @@ export default function GeographyGame() {
           <header className={gameHeader}>
             <div className={gameHeaderLeft}>
               <div className={gameMeta}>
-                <span className={gameMetaTag}>{modeLabel}</span>
-                <span className={gameMetaTag}>{regionLabel}</span>
+                <button
+                  type="button"
+                  className={gameMetaTagButton}
+                  onClick={handleMetaModeClick}
+                  aria-label={`Change mode (currently ${modeLabel})`}
+                >
+                  {modeLabel}
+                </button>
+                <button
+                  type="button"
+                  className={gameMetaTagButton}
+                  onClick={handleMetaRegionClick}
+                  aria-label={`Change region (currently ${regionLabel})`}
+                >
+                  {regionLabel}
+                </button>
                 {isDiscoverGame ? (
-                  <span className={gameMetaTag}>{getGameTypeLabel(GAME_TYPES.DISCOVER)}</span>
+                  <button
+                    type="button"
+                    className={gameMetaTagButton}
+                    onClick={handleMetaLevelClick}
+                    aria-label="Change game type (currently Discover)"
+                  >
+                    {getGameTypeLabel(GAME_TYPES.DISCOVER)}
+                  </button>
                 ) : (
-                  levelLabel && <span className={gameMetaTag}>{levelLabel}</span>
+                  levelLabel && (
+                    <button
+                      type="button"
+                      className={gameMetaTagButton}
+                      onClick={handleMetaLevelClick}
+                      aria-label={`Change level (currently ${levelLabel})`}
+                    >
+                      {levelLabel}
+                    </button>
+                  )
                 )}
                 {session.review && (
                   <span className={cn(gameMetaTag, "max-sm:hidden")}>Review</span>
@@ -2730,7 +2935,11 @@ export default function GeographyGame() {
                   onMapViewChange={isDiscoverGame ? handleMapViewChange : undefined}
                 />
               )}
-              {gamePaused && !gameComplete && !isDiscoverGame && !tutorialOpen && (
+              {gamePaused &&
+                !gameComplete &&
+                !isDiscoverGame &&
+                !tutorialOpen &&
+                !modeIntroOpen && (
                 <button
                   type="button"
                   className={mapPauseOverlay}
@@ -2747,7 +2956,7 @@ export default function GeographyGame() {
                   />
                 </div>
               )}
-              {targetCountry && showLearnMorePanel && (
+              {showLearnMorePanel && (
                 <MapCountryInfoPanels
                   panelRef={learnMorePanelRef}
                   country={targetCountry}
@@ -2808,7 +3017,7 @@ export default function GeographyGame() {
                   mapViewRevision={mapViewRevision}
                   hoveredCountryId={discoverHoveredCountryId}
                   learnMorePanelRef={learnMorePanelRef}
-                  learnMorePanelActive={Boolean(targetCountry && showLearnMorePanel)}
+                  learnMorePanelActive={Boolean(showLearnMorePanel)}
                   onLabelLanded={handleDiscoverLabelLanded}
                 />
               )}
@@ -2840,6 +3049,12 @@ export default function GeographyGame() {
             onBackToMenu={handleBackToMenu}
           />
           <IdlePromptModal open={idlePromptOpen} onContinue={handleIdleContinue} />
+          <GameModeIntro
+            open={modeIntroOpen}
+            title={modeIntro.title}
+            paragraphs={modeIntro.paragraphs}
+            onClose={closeModeIntro}
+          />
           <GameTutorial
             open={tutorialOpen}
             steps={tutorialSteps}
@@ -2891,12 +3106,14 @@ export default function GeographyGame() {
                   Leave this game?
                 </h2>
                 <p className={modalSubtitle}>
-                  {isDiscoverGame
-                    ? "Jump into a Find it · Level 1 quiz, keep exploring, or return to the menu."
-                    : "Are you sure you want to go back to menu? Your progress in this game will be lost."}
+                  {leaveConfirmUrl
+                    ? "Are you sure you want to leave this game? Your progress in this game will be lost."
+                    : isDiscoverGame
+                      ? "Jump into a Find it · Level 1 quiz, keep exploring, or return to the menu."
+                      : "Are you sure you want to go back to menu? Your progress in this game will be lost."}
                 </p>
                 <div className={modalActions}>
-                  {isDiscoverGame && (
+                  {isDiscoverGame && !leaveConfirmUrl && (
                     <button
                       type="button"
                       className={primaryBtn}
@@ -2907,15 +3124,17 @@ export default function GeographyGame() {
                   )}
                   <button
                     type="button"
-                    className={isDiscoverGame ? secondaryBtn : primaryBtn}
-                    onClick={handleBackToMenu}
+                    className={
+                      isDiscoverGame && !leaveConfirmUrl ? secondaryBtn : primaryBtn
+                    }
+                    onClick={handleConfirmLeave}
                   >
-                    Yes, go to menu
+                    {leaveConfirmUrl ? "Yes, go back" : "Yes, go to menu"}
                   </button>
                   <button
                     type="button"
                     className={secondaryBtn}
-                    onClick={() => setShowMenuConfirm(false)}
+                    onClick={dismissMenuConfirm}
                   >
                     Keep playing
                   </button>
