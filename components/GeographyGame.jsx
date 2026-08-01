@@ -11,9 +11,11 @@ import GameTutorialButton from "@/components/GameTutorialButton";
 import DiscoverCompleteModal from "@/components/DiscoverCompleteModal";
 import DiscoverCountrySheet from "@/components/DiscoverCountrySheet";
 import DiscoverMapLabels from "@/components/DiscoverMapLabels";
+import DiscoverTerritoryModal from "@/components/DiscoverTerritoryModal";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import IdlePromptModal from "@/components/IdlePromptModal";
+import { matchDiscoverTerritoryNote } from "@/lib/discoverTerritories";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
@@ -208,6 +210,7 @@ export default function GeographyGame() {
   const [flagsClickHeader, setFlagsClickHeader] = useState(null);
   const [learnMorePanelOpen, setLearnMorePanelOpen] = useState(false);
   const [discoverCountrySheetOpen, setDiscoverCountrySheetOpen] = useState(false);
+  const [discoverTerritoryNote, setDiscoverTerritoryNote] = useState(null);
   const [discoverLabelsById, setDiscoverLabelsById] = useState({});
   const [discoverAnimatingLabel, setDiscoverAnimatingLabel] = useState(null);
   const [discoverHoveredCountryId, setDiscoverHoveredCountryId] = useState(null);
@@ -258,10 +261,15 @@ export default function GeographyGame() {
   const closeInfoPanels = useCallback(() => {
     setLearnMorePanelOpen(false);
     setDiscoverCountrySheetOpen(false);
+    setDiscoverTerritoryNote(null);
   }, []);
 
   const closeDiscoverCountrySheet = useCallback(() => {
     setDiscoverCountrySheetOpen(false);
+  }, []);
+
+  const closeDiscoverTerritoryNote = useCallback(() => {
+    setDiscoverTerritoryNote(null);
   }, []);
 
   const toggleLearnMorePanel = useCallback(() => {
@@ -1322,6 +1330,7 @@ export default function GeographyGame() {
       setFlagsClickHeader(null);
       setLearnMorePanelOpen(true);
       setDiscoverCountrySheetOpen(false);
+      setDiscoverTerritoryNote(null);
       setFeedback({ text: "", type: "" });
       discoverCompleteShownRef.current = false;
       setDiscoverCompleteModalOpen(false);
@@ -2278,7 +2287,7 @@ export default function GeographyGame() {
   );
 
   const handleDiscoverCountryClick = useCallback(
-    (feature) => {
+    (feature, context = {}) => {
       if (gamePausedRef.current) {
         if (tutorialStepId === "map") return;
         setShowResumeConfirm(true);
@@ -2286,6 +2295,21 @@ export default function GeographyGame() {
       }
 
       if (!gameActiveRef.current) return;
+
+      const countryId = feature?.properties?.id ?? feature?.id ?? null;
+      const territoryNote = matchDiscoverTerritoryNote({
+        countryId,
+        lngLat: context.lngLat,
+        regionId: session?.region,
+      });
+      if (territoryNote) {
+        setDiscoverTerritoryNote(territoryNote);
+        setDiscoverCountrySheetOpen(false);
+        return;
+      }
+
+      // Ignore other out-of-region land clicks.
+      if (context.inactive) return;
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
@@ -2334,6 +2358,7 @@ export default function GeographyGame() {
       gamePausedRef,
       pronunciationAllowed,
       session?.mode,
+      session?.region,
       setFeedback,
       setFlashSmallCountryId,
       setHighlightCountryId,
@@ -2926,6 +2951,7 @@ export default function GeographyGame() {
                   flashSmallCountryId={flashSmallCountryId}
                   mapView={mapViewForRender}
                   forceShowSmallCountryCircles={tutorialOpen}
+                  allowInactiveCountryClicks={isDiscoverGame}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={isDiscoverGame ? registerMapProject : undefined}
@@ -3046,6 +3072,11 @@ export default function GeographyGame() {
             onBackToMenu={handleBackToMenu}
           />
           <IdlePromptModal open={idlePromptOpen} onContinue={handleIdleContinue} />
+          <DiscoverTerritoryModal
+            open={Boolean(discoverTerritoryNote)}
+            note={discoverTerritoryNote}
+            onClose={closeDiscoverTerritoryNote}
+          />
           <GameModeIntro
             open={modeIntroOpen}
             title={modeIntro.title}

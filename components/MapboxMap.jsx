@@ -439,7 +439,6 @@ function addBaseLandLayer(map, baseLandGeojson, mapColors, beforeId) {
   }
 }
 
-
 function addInactiveCountryBorders(map, mapColors) {
   if (map.getLayer("inactive-country-borders") || !map.getSource("inactive-countries")) {
     return;
@@ -622,6 +621,8 @@ export default function MapboxMap({
   flashSmallCountryId,
   mapView,
   forceShowSmallCountryCircles = false,
+  /** Discover: allow clicks on out-of-region land (e.g. French Guiana in South America). */
+  allowInactiveCountryClicks = false,
   onCountryClick,
   onCountryHover,
   onRegisterMapProject,
@@ -642,6 +643,7 @@ export default function MapboxMap({
   const mapNavigationEnabledRef = useRef(mapNavigationEnabled);
   const smallCountriesGeojsonRef = useRef(smallCountriesGeojson);
   const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
+  const allowInactiveCountryClicksRef = useRef(allowInactiveCountryClicks);
 
   onCountryClickRef.current = onCountryClick;
   onCountryHoverRef.current = onCountryHover;
@@ -649,6 +651,7 @@ export default function MapboxMap({
   mapNavigationEnabledRef.current = mapNavigationEnabled;
   smallCountriesGeojsonRef.current = smallCountriesGeojson;
   forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
+  allowInactiveCountryClicksRef.current = allowInactiveCountryClicks;
 
   useEffect(() => {
     if (!containerRef.current || !geojson) return;
@@ -686,17 +689,25 @@ export default function MapboxMap({
     const handleClick = (event) => {
       if (!gameActiveRef.current) return;
 
-      const layers = map.getLayer("small-country-circles")
-        ? ["country-fill", "small-country-circles"]
-        : ["country-fill"];
+      const layers = [];
+      if (map.getLayer("country-fill")) layers.push("country-fill");
+      if (map.getLayer("small-country-circles")) layers.push("small-country-circles");
+      if (
+        allowInactiveCountryClicksRef.current &&
+        map.getLayer("inactive-country-fill")
+      ) {
+        layers.push("inactive-country-fill");
+      }
+      if (layers.length === 0) return;
 
       const features = map.queryRenderedFeatures(event.point, { layers });
       if (features.length === 0) return;
 
       const feature = pickClickedFeature(map, features);
       const countryId = feature.properties?.id ?? feature.id;
+      const isInactive = feature.layer?.id === "inactive-country-fill";
 
-      if (getCountryClickExpandEnabled() && countryId) {
+      if (!isInactive && getCountryClickExpandEnabled() && countryId) {
         if (expandCleanupRef.current) {
           expandCleanupRef.current();
           expandCleanupRef.current = null;
@@ -709,7 +720,13 @@ export default function MapboxMap({
         });
       }
 
-      onCountryClickRef.current(feature);
+      onCountryClickRef.current(feature, {
+        lngLat: event.lngLat
+          ? { lng: event.lngLat.lng, lat: event.lngLat.lat }
+          : null,
+        layerId: feature.layer?.id ?? null,
+        inactive: isInactive,
+      });
     };
 
     const setCirclePointerCursor = (event) => {
@@ -772,6 +789,15 @@ export default function MapboxMap({
       map.on("mouseleave", "country-fill", clearPointerCursor);
       map.on("mouseenter", "small-country-circles", setCirclePointerCursor);
       map.on("mouseleave", "small-country-circles", clearPointerCursor);
+      if (map.getLayer("inactive-country-fill")) {
+        const setInactivePointerCursor = () => {
+          if (allowInactiveCountryClicksRef.current) {
+            map.getCanvas().style.cursor = "pointer";
+          }
+        };
+        map.on("mouseenter", "inactive-country-fill", setInactivePointerCursor);
+        map.on("mouseleave", "inactive-country-fill", clearPointerCursor);
+      }
 
       if (mapView) {
         applyMapView(map, mapView, {
