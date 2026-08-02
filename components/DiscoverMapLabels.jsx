@@ -34,6 +34,71 @@ function getMapCenterPoint(mapContainerRef) {
   };
 }
 
+function getViewportRect(container, layoutRightInset) {
+  if (!container) return null;
+  return {
+    left: MAP_EDGE_PADDING,
+    top: MAP_EDGE_PADDING,
+    right: container.clientWidth - layoutRightInset - MAP_EDGE_PADDING,
+    bottom: container.clientHeight - MAP_EDGE_PADDING,
+  };
+}
+
+function computePositions({
+  container,
+  labelsById,
+  countriesById,
+  projectDiscoverAnchor,
+  layoutRightInset,
+}) {
+  if (!container) return {};
+
+  const viewportRect = getViewportRect(container, layoutRightInset);
+  const next = {};
+  for (const [id] of Object.entries(labelsById)) {
+    const country = countriesById[id];
+    if (!country) continue;
+
+    // Only place a label when the country itself is on-screen.
+    const pos = projectDiscoverAnchor?.(country, viewportRect);
+    if (pos) next[id] = pos;
+  }
+  return next;
+}
+
+/** Keep collision offsets; slide placed labels with their anchors during pan. */
+function shiftLayoutsToAnchors(prevLayouts, positions) {
+  const next = {};
+  for (const [id, layout] of Object.entries(prevLayouts)) {
+    const anchor = positions[id];
+    if (!anchor || !layout?.anchor) continue;
+
+    const dx = anchor.x - layout.anchor.x;
+    const dy = anchor.y - layout.anchor.y;
+    if (dx === 0 && dy === 0) {
+      next[id] = layout;
+      continue;
+    }
+
+    next[id] = {
+      ...layout,
+      left: layout.left + dx,
+      top: layout.top + dy,
+      anchor,
+      rect: {
+        left: layout.rect.left + dx,
+        top: layout.rect.top + dy,
+        right: layout.rect.right + dx,
+        bottom: layout.rect.bottom + dy,
+      },
+      leader: layout.leader
+        ? { x: layout.leader.x + dx, y: layout.leader.y + dy }
+        : null,
+    };
+  }
+  return next;
+}
+
 function LabelContent({ label, compact = false, flying = false, scale = 1 }) {
   if (label.kind === "flag" && label.iso2) {
     const baseHeight = compact ? 20 : 32;
@@ -71,6 +136,7 @@ export default function DiscoverMapLabels({
   projectCountryBounds,
   getDiscoverLabelScale,
   mapViewRevision,
+  mapMoveHandlerRef,
   hoveredCountryId,
   learnMorePanelRef,
   learnMorePanelActive = false,
@@ -78,44 +144,47 @@ export default function DiscoverMapLabels({
 }) {
   const [labelLayouts, setLabelLayouts] = useState({});
   const [layoutRightInset, setLayoutRightInset] = useState(0);
+  const [moveRevision, setMoveRevision] = useState(0);
   const labelRefs = useRef({});
   const lastLayoutKeyRef = useRef(null);
   const animElRef = useRef(null);
   const animationRef = useRef(null);
 
+  useEffect(() => {
+    if (!mapMoveHandlerRef) return undefined;
+    const bump = () => setMoveRevision((revision) => revision + 1);
+    mapMoveHandlerRef.current = bump;
+    return () => {
+      if (mapMoveHandlerRef.current === bump) {
+        mapMoveHandlerRef.current = null;
+      }
+    };
+  }, [mapMoveHandlerRef]);
+
   const labelScale = useMemo(() => {
     return getDiscoverLabelScale?.() ?? 1;
   }, [getDiscoverLabelScale, mapViewRevision]);
 
-  const positions = useMemo(() => {
-    const container = mapContainerRef.current;
-    if (!container) return {};
-
-    const viewportRect = {
-      left: MAP_EDGE_PADDING,
-      top: MAP_EDGE_PADDING,
-      right: container.clientWidth - layoutRightInset - MAP_EDGE_PADDING,
-      bottom: container.clientHeight - MAP_EDGE_PADDING,
-    };
-
-    const next = {};
-    for (const [id] of Object.entries(labelsById)) {
-      const country = countriesById[id];
-      if (!country) continue;
-
-      // Only place a label when the country itself is on-screen.
-      const pos = projectDiscoverAnchor?.(country, viewportRect);
-      if (pos) next[id] = pos;
-    }
-    return next;
-  }, [
-    labelsById,
-    countriesById,
-    layoutRightInset,
-    projectDiscoverAnchor,
-    mapViewRevision,
-    mapContainerRef,
-  ]);
+  // Reproject on settled view changes and on every pan frame (local state only).
+  const positions = useMemo(
+    () =>
+      computePositions({
+        container: mapContainerRef.current,
+        labelsById,
+        countriesById,
+        projectDiscoverAnchor,
+        layoutRightInset,
+      }),
+    [
+      labelsById,
+      countriesById,
+      layoutRightInset,
+      projectDiscoverAnchor,
+      mapViewRevision,
+      moveRevision,
+      mapContainerRef,
+    ]
+  );
 
   /** Per-country render scale (zoom × flag size factor for flags; zoom only for text). */
   const labelScalesById = useMemo(() => {
@@ -141,20 +210,27 @@ export default function DiscoverMapLabels({
     projectCountryBounds,
   ]);
 
+  // Full collision layout when the view settles or the label set/scale changes —
+  // not on every pan frame (that froze overlays on the mobile globe).
   const layoutKey = useMemo(
     () =>
       JSON.stringify({
         ids: Object.keys(labelsById),
-        positions,
         mapViewRevision,
         layoutRightInset,
         labelScale,
         labelScalesById,
       }),
-    [labelsById, layoutRightInset, mapViewRevision, positions, labelScale, labelScalesById]
+    [labelsById, layoutRightInset, mapViewRevision, labelScale, labelScalesById]
   );
 
   const needsLayout = lastLayoutKeyRef.current !== layoutKey;
+
+  // During pan: slide existing layouts with their anchors (no collision solve).
+  useLayoutEffect(() => {
+    if (needsLayout) return;
+    setLabelLayouts((prev) => shiftLayoutsToAnchors(prev, positions));
+  }, [positions, needsLayout]);
 
   const labelVisibility = useMemo(() => {
     const visibility = {};
@@ -242,6 +318,8 @@ export default function DiscoverMapLabels({
       return;
     }
 
+    if (!needsLayout) return;
+
     const layouts = layoutDiscoverLabelsFromElements({
       labelsById,
       positions,
@@ -260,6 +338,7 @@ export default function DiscoverMapLabels({
     layoutKey,
     layoutRightInset,
     mapContainerRef,
+    needsLayout,
     positions,
     projectCountryBounds,
   ]);
@@ -273,14 +352,7 @@ export default function DiscoverMapLabels({
 
     const center = getMapCenterPoint(mapContainerRef);
     const container = mapContainerRef.current;
-    const viewportRect = container
-      ? {
-          left: MAP_EDGE_PADDING,
-          top: MAP_EDGE_PADDING,
-          right: container.clientWidth - layoutRightInset - MAP_EDGE_PADDING,
-          bottom: container.clientHeight - MAP_EDGE_PADDING,
-        }
-      : null;
+    const viewportRect = getViewportRect(container, layoutRightInset);
     const target =
       (viewportRect && projectDiscoverAnchor?.(country, viewportRect)) ??
       projectCountry?.(country);

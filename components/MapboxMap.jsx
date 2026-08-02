@@ -29,6 +29,7 @@ import {
   playMapCountryClickExpand,
 } from "@/lib/mapCountryClickExpand";
 import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
+import { isLngLatBehindGlobe } from "@/lib/mapboxGlobe";
 import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
@@ -627,6 +628,7 @@ export default function MapboxMap({
   onCountryHover,
   onRegisterMapProject,
   onMapViewChange,
+  onMapMove,
 }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
@@ -1211,6 +1213,10 @@ export default function MapboxMap({
       if (!map.getSource("countries")) return;
 
       const projectToOverlay = (lng, lat) => {
+        // Globe projects far-side coords into the canvas; reject them so labels
+        // disappear when a country rotates behind the horizon.
+        if (isLngLatBehindGlobe(map, lng, lat)) return null;
+
         const point = map.project([lng, lat]);
         const overlayRoot = container.parentElement;
         if (!overlayRoot) return { x: point.x, y: point.y };
@@ -1245,15 +1251,21 @@ export default function MapboxMap({
       });
     };
 
-    const handleViewChange = () => {
+    // Continuous pan/zoom: cheap label follow (no parent React tree update).
+    const handleMove = () => {
+      onMapMove?.();
+    };
+    // Settled view: full label collision layout + scale refresh.
+    const handleViewSettled = () => {
       onMapViewChange?.();
     };
 
     const setup = () => {
       register();
-      map.on("move", handleViewChange);
-      map.on("zoom", handleViewChange);
-      map.on("resize", handleViewChange);
+      map.on("move", handleMove);
+      map.on("moveend", handleViewSettled);
+      map.on("zoomend", handleViewSettled);
+      map.on("resize", handleViewSettled);
     };
 
     if (map.isStyleLoaded()) {
@@ -1264,12 +1276,13 @@ export default function MapboxMap({
 
     return () => {
       map.off("load", setup);
-      map.off("move", handleViewChange);
-      map.off("zoom", handleViewChange);
-      map.off("resize", handleViewChange);
+      map.off("move", handleMove);
+      map.off("moveend", handleViewSettled);
+      map.off("zoomend", handleViewSettled);
+      map.off("resize", handleViewSettled);
       onRegisterMapProject(null);
     };
-  }, [geojson, onRegisterMapProject, onMapViewChange]);
+  }, [geojson, onRegisterMapProject, onMapViewChange, onMapMove]);
 
   return <div ref={containerRef} className={mapContainer} />;
 }

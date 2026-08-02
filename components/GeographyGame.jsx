@@ -2397,6 +2397,12 @@ export default function GeographyGame() {
     setMapViewRevision((revision) => revision + 1);
   }, []);
 
+  // Discover labels subscribe here so pan frames don't re-render GeographyGame.
+  const discoverMapMoveHandlerRef = useRef(null);
+  const handleMapMove = useCallback(() => {
+    discoverMapMoveHandlerRef.current?.();
+  }, []);
+
   const handleDiscoverCountryHover = useCallback((countryId) => {
     setDiscoverHoveredCountryId(countryId);
   }, []);
@@ -2952,6 +2958,7 @@ export default function GeographyGame() {
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={isDiscoverGame ? registerMapProject : undefined}
                   onMapViewChange={isDiscoverGame ? handleMapViewChange : undefined}
+                  onMapMove={isDiscoverGame ? handleMapMove : undefined}
                   mapControlsRef={pacificControlsRef}
                   forceShowSmallCountryCircles={tutorialOpen}
                 />
@@ -2977,6 +2984,7 @@ export default function GeographyGame() {
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={isDiscoverGame ? registerMapProject : undefined}
                   onMapViewChange={isDiscoverGame ? handleMapViewChange : undefined}
+                  onMapMove={isDiscoverGame ? handleMapMove : undefined}
                 />
               )}
               {gamePaused &&
@@ -3059,6 +3067,7 @@ export default function GeographyGame() {
                   projectCountryBounds={projectCountryBounds}
                   getDiscoverLabelScale={getDiscoverLabelScale}
                   mapViewRevision={mapViewRevision}
+                  mapMoveHandlerRef={discoverMapMoveHandlerRef}
                   hoveredCountryId={discoverHoveredCountryId}
                   learnMorePanelRef={learnMorePanelRef}
                   learnMorePanelActive={Boolean(showLearnMorePanel)}

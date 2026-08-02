@@ -154,6 +154,7 @@ export default function PacificMap({
   onCountryHover,
   onRegisterMapProject,
   onMapViewChange,
+  onMapMove,
   mapControlsRef,
   forceShowSmallCountryCircles = false,
 }) {
@@ -306,8 +307,9 @@ export default function PacificMap({
   }, [handleWheel]);
 
   useEffect(() => {
+    onMapMove?.();
     onMapViewChange?.();
-  }, [viewBox, onMapViewChange]);
+  }, [viewBox, onMapMove, onMapViewChange]);
 
   useEffect(() => {
     if (!onRegisterMapProject) return undefined;
