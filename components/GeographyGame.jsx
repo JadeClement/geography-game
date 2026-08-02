@@ -106,9 +106,15 @@ import {
   gameHeader,
   gameHeaderActions,
   gameHeaderCenter,
+  gameHeaderCenterDiscoverMobile,
+  gameHeaderDiscoverMobile,
+  gameHeaderDiscoverPrompt,
   gameHeaderLeft,
-  gameHeaderMobileFeedback,
-  gameHeaderRight,
+  gameHeaderLeftDiscoverMobile,
+  gameHeaderMobileDefault,
+  gameHeaderRightDiscoverMobile,
+  gameHeaderRightMobilePlay,
+  gameHeaderTimerMobile,
   gameHeaderStats,
   gamePromptMobileFloat,
   gamePromptMobileCard,
@@ -122,6 +128,7 @@ import {
   gameTimer,
   mapPauseOverlay,
   mapFeedbackAnchor,
+  mapOverlayStack,
   mapStage,
   modalActions,
   modalCard,
@@ -129,6 +136,7 @@ import {
   modalSubtitle,
   modalTitle,
   primaryBtn,
+  prompt,
   promptFeedback,
   promptWithPronunciation,
   scoreboard,
@@ -2163,7 +2171,9 @@ export default function GeographyGame() {
       }
 
       const revealMessage = isNameGame
-        ? `The answer was ${session?.mode === GAME_MODES.CAPITALS ? target.capital : target.name}. Press Enter to continue.`
+        ? session?.mode === GAME_MODES.CAPITALS
+          ? `${target.capital} is the capital of ${target.name}. Press Enter to continue.`
+          : `That's ${target.name}. Press Enter to continue.`
         : "Oops! Please click the flashing red country.";
 
       const showReveal = () => {
@@ -2622,15 +2632,6 @@ export default function GeographyGame() {
     feedback.type === "reveal" ||
     feedback.type === "got-it";
 
-  const mobileRoundFeedback =
-    feedback.type === "correct" || feedback.type === "got-it"
-      ? { label: "Correct", tone: "success" }
-      : feedback.type === "wrong"
-        ? { label: "Try again", tone: "error" }
-        : feedback.type === "reveal"
-          ? { label: "Incorrect", tone: "error" }
-          : null;
-
   const showTargetPronunciation =
     targetCountry?.id &&
     ((session?.mode === GAME_MODES.COUNTRIES && promptText === targetCountry.name) ||
@@ -2643,11 +2644,18 @@ export default function GeographyGame() {
       ? PRONUNCIATION_KINDS.CAPITAL
       : PRONUNCIATION_KINDS.COUNTRY;
 
-  const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => (
+  const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => {
+    if (isDiscoverGame) {
+      return (
+        <div className={cn(className ?? prompt, promptWrong && "text-error")}>
+          {getDiscoverInstructionText(session?.mode)}
+        </div>
+      );
+    }
+
+    return (
     <div className={promptFeedback({ wrong: promptWrong, className })}>
-      {isDiscoverGame ? (
-        getDiscoverInstructionText(session?.mode)
-      ) : isNameGame ? (
+      {isNameGame ? (
         <div className={answerPrompt}>
           <input
             ref={answerInputRef}
@@ -2717,13 +2725,14 @@ export default function GeographyGame() {
         promptText
       )}
     </div>
-  );
+    );
+  };
 
   const showMobilePrompt =
     !gameComplete &&
     !learnEngineActive &&
-    (isDiscoverGame ||
-      isNameGame ||
+    !isDiscoverGame &&
+    (isNameGame ||
       (isFindFlagsGame && flagsClickHeader) ||
       showFlagPrompt ||
       Boolean(promptText));
@@ -2767,9 +2776,25 @@ export default function GeographyGame() {
               </button>
             </div>
           )}
-          <header className={gameHeader}>
-            <div className={gameHeaderLeft}>
-              <div className={gameMeta}>
+          <header
+            className={cn(
+              gameHeader,
+              isDiscoverGame ? gameHeaderDiscoverMobile : gameHeaderMobileDefault
+            )}
+          >
+            <div
+              className={
+                isDiscoverGame ? gameHeaderLeftDiscoverMobile : gameHeaderLeft
+              }
+            >
+              {isDiscoverGame && (
+                <div className="md:hidden">
+                  <GameTutorialButton
+                    onClick={() => openGameTutorial({ manual: true })}
+                  />
+                </div>
+              )}
+              <div className={cn(gameMeta, isDiscoverGame && "max-md:hidden")}>
                 <button
                   type="button"
                   className={gameMetaTagButton}
@@ -2817,22 +2842,34 @@ export default function GeographyGame() {
             </div>
 
             {!gameComplete && !learnEngineActive && (
-              <div ref={assignGamePromptAnchorRef} className={gameHeaderCenter}>
-                {renderGamePrompt()}
+              <div
+                ref={assignGamePromptAnchorRef}
+                className={
+                  isDiscoverGame
+                    ? gameHeaderCenterDiscoverMobile
+                    : gameHeaderCenter
+                }
+              >
+                {renderGamePrompt(
+                  isDiscoverGame ? gameHeaderDiscoverPrompt : undefined
+                )}
               </div>
             )}
 
             <div
-              className={cn(
-                gameHeaderRight,
-                mobileRoundFeedback ? "max-md:justify-normal" : "max-md:justify-between",
-              )}
+              className={
+                isDiscoverGame
+                  ? gameHeaderRightDiscoverMobile
+                  : gameHeaderRightMobilePlay
+              }
             >
               {!gameComplete && (
-                <div className={gameHeaderActions}>
+                <div className={cn(gameHeaderActions, "max-md:justify-self-start")}>
                   {!isDiscoverGame && (
                     <>
-                      <span className={gameTimer}>{formatElapsedTime(elapsedMs)}</span>
+                      <span className={cn(gameTimer, "max-md:hidden")}>
+                        {formatElapsedTime(elapsedMs)}
+                      </span>
                       <div
                         className={cn(gameProgress, "max-md:hidden")}
                         role="progressbar"
@@ -2849,7 +2886,11 @@ export default function GeographyGame() {
                     </>
                   )}
                   <div className={gameControls} ref={gameControlsRef}>
-                    <GameTutorialButton onClick={() => openGameTutorial({ manual: true })} />
+                    <span className={cn(isDiscoverGame && "max-md:hidden")}>
+                      <GameTutorialButton
+                        onClick={() => openGameTutorial({ manual: true })}
+                      />
+                    </span>
                     <SoundVolumeButton />
                     {!isDiscoverGame && (
                       <button
@@ -2884,17 +2925,16 @@ export default function GeographyGame() {
                   </div>
                 </div>
               )}
-              {!gameComplete && mobileRoundFeedback && (
-                <div
-                  className={gameHeaderMobileFeedback({ tone: mobileRoundFeedback.tone })}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {mobileRoundFeedback.label}
-                </div>
+              {!isDiscoverGame && !gameComplete && (
+                <span className={gameHeaderTimerMobile} aria-live="off">
+                  {formatElapsedTime(elapsedMs)}
+                </span>
               )}
               {!isDiscoverGame && (
-                <div className={gameHeaderStats} ref={gameHeaderStatsRef}>
+                <div
+                  className={cn(gameHeaderStats, "max-md:justify-self-end")}
+                  ref={gameHeaderStatsRef}
+                >
                   <div className={scoreboard}>
                     <span className={scoreCorrect}>
                       <span className="max-md:hidden">correct: </span>
@@ -2932,14 +2972,19 @@ export default function GeographyGame() {
           </header>
           {(isOceaniaRegion || hasToken) && !gameComplete && (
             <div className={mapStage} ref={mapContainerRef}>
-              {showMobilePrompt && (
-                <div ref={assignMobilePromptRef} className={gamePromptMobileFloat}>
-                  {renderGamePrompt(gamePromptMobileCard, {
-                    showFlagInPrompt: true,
-                    compactInput: true,
-                  })}
+              <div className={mapOverlayStack}>
+                {showMobilePrompt && (
+                  <div ref={assignMobilePromptRef} className={gamePromptMobileFloat}>
+                    {renderGamePrompt(gamePromptMobileCard, {
+                      showFlagInPrompt: true,
+                      compactInput: true,
+                    })}
+                  </div>
+                )}
+                <div className={mapFeedbackAnchor}>
+                  <MapFeedback text={feedback.text} type={feedback.type} />
                 </div>
-              )}
+              </div>
               {isOceaniaRegion ? (
                 <PacificMap
                   activeCountries={activeCountries}
@@ -3051,9 +3096,6 @@ export default function GeographyGame() {
                   }}
                 />
               )}
-              <div className={mapFeedbackAnchor}>
-                <MapFeedback text={feedback.text} type={feedback.type} />
-              </div>
               {isDiscoverGame && (
                 <DiscoverMapLabels
                   mapContainerRef={mapContainerRef}
