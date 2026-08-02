@@ -404,14 +404,14 @@
   margin-inline: auto;
 }
 
-/* Title sits after the globe in the DOM and overlays the stage top. */
+/* Title overlays the globe stage, centered horizontally and vertically. */
 .start-hero-title-group {
   position: absolute;
   left: 50%;
-  top: 6%;
+  top: 50%;
   z-index: 2;
   width: min(100vw - 2rem, 42rem);
-  transform: translate(-50%, 0);
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
@@ -700,7 +700,6 @@
   }
 
   .start-hero-title-group {
-    top: 4%;
     width: min(100vw - 1.5rem, 24rem);
   }
 
@@ -715,7 +714,6 @@
   }
 
   .start-hero-title-group {
-    top: 2%;
     width: min(100vw - 1rem, 20rem);
   }
 
@@ -747,9 +745,6 @@
     width: min(42vw, 16rem);
   }
 
-  .start-hero-title-group {
-    top: 0;
-  }
 }
 
 @media (max-width: 64rem) {
