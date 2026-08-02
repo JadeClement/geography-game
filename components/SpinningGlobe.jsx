@@ -96,6 +96,12 @@ export default function SpinningGlobe() {
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
+    Object.assign(renderer.domElement.style, {
+      position: "absolute",
+      inset: "0",
+      zIndex: "0",
+      pointerEvents: "none",
+    });
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);

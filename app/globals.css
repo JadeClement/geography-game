@@ -389,20 +389,41 @@
     linear-gradient(180deg, #0f172a 0%, #1e1b4b 45%, #0f172a 100%);
 }
 
+/* ===== Home hero stage (globe + brand title) ===== */
+.start-hero-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.start-hero-stage {
+  position: relative;
+  z-index: 0;
+  width: min(72vw, 28rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+
+/* Title sits after the globe in the DOM and overlays the stage top. */
+.start-hero-title-group {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  z-index: 2;
+  width: min(100vw - 2rem, 42rem);
+  transform: translate(-50%, 0);
+  pointer-events: none;
+}
+
 /* ===== Spinning globe ===== */
 .spinning-globe {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(144vw, 36rem);
-  height: min(144vw, 36rem);
-  transform: translate(-50%, -50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 0;
-}
-
-.start-screen--with-globe .spinning-globe {
-  top: 42%;
+  transform: translateZ(0);
 }
 
 .spinning-globe__glow {
@@ -420,14 +441,19 @@
 }
 
 .spinning-globe__viewport {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
+  transform: translateZ(0);
 }
 
 .spinning-globe__viewport canvas {
   display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   width: 100% !important;
   height: 100% !important;
 }
@@ -669,18 +695,13 @@
 }
 
 @media (max-width: 48rem) {
-  .spinning-globe {
-    width: min(88vw, 20rem);
-    height: min(88vw, 20rem);
+  .start-hero-stage {
+    width: min(78vw, 20rem);
   }
 
-  .start-screen--with-globe .spinning-globe {
-    top: clamp(5rem, 18vw, 6.5rem);
-    transform: translate(-50%, 0);
-  }
-
-  .start-globe-spacer {
-    min-height: min(48vw, 10.5rem);
+  .start-hero-title-group {
+    top: 4%;
+    width: min(100vw - 1.5rem, 24rem);
   }
 
   .start-home-actions {
@@ -689,18 +710,13 @@
 }
 
 @media (max-width: 30rem) {
-  .spinning-globe {
+  .start-hero-stage {
     width: min(82vw, 15.5rem);
-    height: min(82vw, 15.5rem);
   }
 
-  .start-screen--with-globe .spinning-globe {
-    top: clamp(4.5rem, 15vw, 5.75rem);
-    transform: translate(-50%, 0);
-  }
-
-  .start-globe-spacer {
-    min-height: min(52vw, 11.5rem);
+  .start-hero-title-group {
+    top: 2%;
+    width: min(100vw - 1rem, 20rem);
   }
 
   .start-home-actions {
@@ -713,17 +729,8 @@
 }
 
 @media (max-width: 30rem) and (max-height: 45rem) {
-  .spinning-globe {
+  .start-hero-stage {
     width: min(76vw, 14rem);
-    height: min(76vw, 14rem);
-  }
-
-  .start-screen--with-globe .spinning-globe {
-    top: clamp(4.25rem, 14vw, 5.25rem);
-  }
-
-  .start-globe-spacer {
-    min-height: min(46vw, 9.5rem);
   }
 
   .start-home-actions {
@@ -736,10 +743,12 @@
 }
 
 @media (max-height: 34rem) {
-  .start-screen--with-globe .spinning-globe {
-    top: 50%;
-    width: min(100vw, 22rem);
-    height: min(100vw, 22rem);
+  .start-hero-stage {
+    width: min(42vw, 16rem);
+  }
+
+  .start-hero-title-group {
+    top: 0;
   }
 }
 

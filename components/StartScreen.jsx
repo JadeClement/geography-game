@@ -38,7 +38,6 @@ import {
   secondaryBtn,
   startBrandSubtitle,
   startGameTypeList,
-  startGlobeSpacer,
   startHeroTitleGroup,
   startHomeActions,
   startHomeGreeting,
@@ -557,15 +556,17 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   return (
     <div className={cn(startScreen, startScreenWithGlobe)}>
       <SpaceBackground />
-      <SpinningGlobe />
       {homeGreeting && <p className={startHomeGreeting}>{homeGreeting}</p>}
       <div className={startScreenContent}>
-        <div className={startHeroTitleGroup}>
-          <h1 className={startTitleGlobe}>Worldly</h1>
-          <p className={cn(startSubtitle, startBrandSubtitle)}>learning geography</p>
+        <div className="start-hero-wrap">
+          <div className="start-hero-stage">
+            <SpinningGlobe />
+          </div>
+          <div className={startHeroTitleGroup}>
+            <h1 className={startTitleGlobe}>Worldly</h1>
+            <p className={cn(startSubtitle, startBrandSubtitle)}>learning geography</p>
+          </div>
         </div>
-
-        <div className={startGlobeSpacer} aria-hidden="true" />
 
         <div className={startHomeActions}>
           <button
