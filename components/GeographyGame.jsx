@@ -199,6 +199,11 @@ export default function GeographyGame() {
   const { data: authSession, status: authStatus } = useSession();
   const isMobile = useMobileViewport();
   const [allCountries, setAllCountries] = useState([]);
+  const [displayMapCountries, setDisplayMapCountries] = useState([]);
+  const [territoryGeojson, setTerritoryGeojson] = useState({
+    type: "FeatureCollection",
+    features: [],
+  });
   const [loadError, setLoadError] = useState(null);
   const [session, setSession] = useState(null);
   const [gameActive, setGameActive] = useState(false);
@@ -430,7 +435,13 @@ export default function GeographyGame() {
 
   useEffect(() => {
     loadCountriesGeoJSON()
-      .then(({ countries }) => setAllCountries(countries))
+      .then(({ countries, displayMapCountries: mapOnly, territoryGeojson: territories }) => {
+        setAllCountries(countries);
+        setDisplayMapCountries(mapOnly ?? []);
+        setTerritoryGeojson(
+          territories ?? { type: "FeatureCollection", features: [] }
+        );
+      })
       .catch((error) => setLoadError(error.message || "Failed to load country data."));
   }, []);
 
@@ -461,6 +472,11 @@ export default function GeographyGame() {
     if (!session) return [];
     return filterCountriesByRegion(allCountries, session.region);
   }, [allCountries, session]);
+
+  const regionMapCountries = useMemo(
+    () => [...allCountries, ...displayMapCountries],
+    [allCountries, displayMapCountries]
+  );
 
   const allCountriesById = useMemo(
     () => new Map(allCountries.map((country) => [country.id, country])),
@@ -527,10 +543,15 @@ export default function GeographyGame() {
     return enrichGeojsonWithColors(base, countryColorMap);
   }, [activeCountries, countryColorMap]);
 
-  const inactiveGeojson = useMemo(
-    () => buildInactiveGeojson(allCountries, session?.region),
-    [allCountries, session?.region]
-  );
+  const inactiveGeojson = useMemo(() => {
+    const inactive = buildInactiveGeojson(allCountries, session?.region);
+    const territoryFeatures = territoryGeojson?.features ?? [];
+    if (territoryFeatures.length === 0) return inactive;
+    return {
+      type: "FeatureCollection",
+      features: [...inactive.features, ...territoryFeatures],
+    };
+  }, [allCountries, session?.region, territoryGeojson]);
 
   const mapWrongCountryIds = useMemo(() => {
     if (roundWrongCountryIds.length === 0) return wrongCountryIds;
@@ -2714,7 +2735,7 @@ export default function GeographyGame() {
           <StartScreen
             onStart={handleSessionStart}
             gameReady={ready}
-            countries={allCountries}
+            countries={regionMapCountries}
           />
         )
       ) : (

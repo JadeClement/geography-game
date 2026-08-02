@@ -2690,7 +2690,25 @@
       ],
       "neighbors": [],
       "enabled": false,
-      "region": "northAmerica"
+      "region": "northAmerica",
+      "facts": [
+        {
+          "category": "geography",
+          "text": "The world's largest island, covered mostly by a vast ice sheet."
+        },
+        {
+          "category": "politics",
+          "text": "An autonomous territory within the Kingdom of Denmark."
+        },
+        {
+          "category": "society",
+          "text": "Most people live along the ice-free southwest coast."
+        },
+        {
+          "category": "history",
+          "text": "Norse settlers arrived around the 10th century; Inuit peoples have lived here for millennia."
+        }
+      ]
     },
     {
       "iso3": "GRD",

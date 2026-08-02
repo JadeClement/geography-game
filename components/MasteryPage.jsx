@@ -124,9 +124,13 @@ export default function MasteryPage() {
       .then(([geo, masteryData]) => {
         if (cancelled) return;
         const mastery = masteryData.mastery ?? {};
+        const territoryFeatures = geo.territoryGeojson?.features ?? [];
         setData({
           countries: geo.countries,
-          geojson: geo.geojson,
+          geojson: {
+            ...geo.geojson,
+            features: [...geo.geojson.features, ...territoryFeatures],
+          },
           maps: {
             [GAME_MODES.COUNTRIES]: buildModeMasteryMap(mastery.countries ?? []),
             [GAME_MODES.CAPITALS]: buildModeMasteryMap(mastery.capitals ?? []),
