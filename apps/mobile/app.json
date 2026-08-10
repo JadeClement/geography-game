@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Worldly",
+    "slug": "worldly-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "worldly",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B1A2C",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#0B1A2C"
+    },
+    "ios": {
+      "bundleIdentifier": "app.beworldly.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Sign in faster with Face ID"
+      }
+    },
+    "android": {
+      "package": "app.beworldly.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1A2C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-secure-store",
+      "expo-local-authentication",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

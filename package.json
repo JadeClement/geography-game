@@ -1,35 +1,22 @@
 {
-  "name": "geography-game",
+  "name": "worldly",
   "private": true,
-  "version": "1.0.0",
+  "packageManager": "npm@11.5.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "generate-countries": "node scripts/generate-countries.js",
-    "generate-globe-map": "node scripts/generate-globe-map.js",
-    "generate-pronunciations": "node --env-file=.env scripts/generate-pronunciations.js",
-    "generate-capital-pronunciations": "node --env-file=.env scripts/generate-capital-pronunciations.js",
-    "db:setup": "node --env-file=.env scripts/setup-db.js",
-    "test:learn": "node --import ./scripts/register-alias.mjs --test scripts/test-learn-mode.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "clsx": "^2.1.1",
-    "mapbox-gl": "^3.9.4",
-    "next": "^15.1.0",
-    "next-auth": "^5.0.0-beta.31",
-    "pg": "^8.16.0",
-    "polygon-clipping": "^0.15.7",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "resend": "^6.14.0",
-    "tailwind-merge": "^3.6.0",
-    "three": "^0.184.0"
+    "dev": "turbo run dev --parallel",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:mobile": "turbo run dev --filter=mobile",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=web",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:setup": "node --env-file=.env apps/web/scripts/setup-db.js"
   },
   "devDependencies": {
-    "@aws-sdk/client-polly": "^3.848.0",
-    "@tailwindcss/postcss": "^4.3.1",
-    "tailwindcss": "^4.3.1"
+    "turbo": "^2.0.0"
   }
 }

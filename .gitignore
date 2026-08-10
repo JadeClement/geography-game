@@ -3,3 +3,14 @@ node_modules
 dist
 .env
 .DS_Store
+
+# Turbo
+.turbo/
+
+# Package workspaces
+apps/*/node_modules/
+packages/*/node_modules/
+
+# Expo
+apps/mobile/.expo/
+apps/mobile/.env.local

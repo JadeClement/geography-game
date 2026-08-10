@@ -1,0 +1,38 @@
+{
+  "name": "@worldly/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./mastery": "./mastery.js",
+    "./worldlyScore": "./worldlyScore.js",
+    "./learning": "./learning.js",
+    "./capitals": "./capitals.js",
+    "./spelling": "./spelling.js",
+    "./validation": "./validation.js",
+    "./usernames": "./usernames.js",
+    "./comparison-clusters": "./comparison-clusters.js",
+    "./countryFacts": "./countryFacts.js",
+    "./flags": "./flags.js",
+    "./time": "./time.js",
+    "./nameUtils": "./nameUtils.js",
+    "./gameTypes": "./gameTypes.js",
+    "./levels": "./levels.js",
+    "./regions": "./regions.js",
+    "./countryColors": "./countryColors.js",
+    "./learn/questionTypes": "./learn/questionTypes.js",
+    "./learn/questionGenerator": "./learn/questionGenerator.js",
+    "./learn/sessionSequencer": "./learn/sessionSequencer.js",
+    "./learn/emaIntegration": "./learn/emaIntegration.js",
+    "./learn/factSelection": "./learn/factSelection.js",
+    "./learn/sessionSummary": "./learn/sessionSummary.js",
+    "./learn/continueNotes": "./learn/continueNotes.js",
+    "./learn/wrongReveal": "./learn/wrongReveal.js",
+    "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js"
+  },
+  "dependencies": {
+    "@worldly/constants": "*"
+  }
+}
