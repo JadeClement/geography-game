@@ -1,0 +1,7 @@
+# Shared npm-workspaces monorepo: install from repo root so @worldly/*
+# packages resolve. Do NOT set Railway "Root Directory" to apps/web.
+[build]
+buildCommand = "npm run build -w web"
+
+[deploy]
+startCommand = "npm run start -w web"
