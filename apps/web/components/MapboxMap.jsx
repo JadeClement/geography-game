@@ -131,16 +131,15 @@ function highlightKindFromTone(tone) {
 }
 
 function getLevelFillColorExpression(level, landColor) {
-  // Learn subject highlight on the MAIN fill (not the overlay layer) so language
-  // prompts cannot lose their yellow to camera/effect races.
+  // Solid Learn tones on the MAIN fill so prompts can't lose color to camera/
+  // effect races. Error/red (kind 2) is intentionally omitted — Find It reveal
+  // flashes via the country-highlight overlay; a solid red base hid that pulse.
   const highlightBranches = [
-    ["==", ["feature-state", "highlightKind"], 2],
-    WRONG_COUNTRY_COLOR,
     ["==", ["feature-state", "highlightKind"], 3],
     SUBJECT_COUNTRY_COLOR,
     ["==", ["feature-state", "highlightKind"], 4],
     CORRECT_COUNTRY_COLOR,
-    [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
+    ["==", ["feature-state", "highlightKind"], 1],
     TARGET_HIGHLIGHT_COLOR,
   ];
 

@@ -1,7 +1,12 @@
-import { mapFeedback, mapFeedbackIcon, mapFeedbackText } from "@/lib/ui";
+import {
+  mapFeedback,
+  mapFeedbackDetail,
+  mapFeedbackIcon,
+  mapFeedbackText,
+} from "@/lib/ui";
 
 function FeedbackIcon({ type }) {
-  if (type === "correct" || type === "got-it") {
+  if (type === "correct" || type === "second-try" || type === "got-it") {
     return (
       <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
@@ -32,6 +37,21 @@ function FeedbackIcon({ type }) {
     );
   }
 
+  if (type === "incorrect" || type === "reveal") {
+    return (
+      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
+        <path
+          d="M9 9l6 6M15 9l-6 6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
@@ -47,20 +67,24 @@ function FeedbackIcon({ type }) {
   );
 }
 
-export default function MapFeedback({ text, type }) {
+export default function MapFeedback({ text, type, detail }) {
   if (!text) return null;
 
-  const isAssertive = type === "wrong" || type === "reveal";
+  const isAssertive =
+    type === "wrong" || type === "reveal" || type === "incorrect";
 
   return (
     <div
-      className={mapFeedback({ type })}
+      className={mapFeedback({ type, stacked: Boolean(detail) })}
       role="status"
       aria-live={isAssertive ? "assertive" : "polite"}
-      key={`${type}-${text}`}
+      key={`${type}-${text}-${detail ?? ""}`}
     >
       <FeedbackIcon type={type} />
-      <span className={mapFeedbackText}>{text}</span>
+      <span className={mapFeedbackText}>
+        {text}
+        {detail ? <span className={mapFeedbackDetail}>{detail}</span> : null}
+      </span>
     </div>
   );
 }

@@ -2648,7 +2648,11 @@ export default function GeographyGame() {
           : ROUND_OUTCOMES.SECOND_TRY_CORRECT;
       recordRoundOutcome(outcome);
 
-      setFeedback({ text: "Correct!", type: "correct" });
+      if (attemptsBeforeCorrect === 0) {
+        setFeedback({ text: "Correct", type: "correct" });
+      } else {
+        setFeedback({ text: "Correct second try", type: "second-try" });
+      }
       markRoundCorrect();
       playCorrectSound();
 
@@ -2701,11 +2705,11 @@ export default function GeographyGame() {
         recordRoundOutcome(ROUND_OUTCOMES.NEEDED_REVEAL);
       }
 
-      const revealMessage = isNameGame
+      const revealDetail = isNameGame
         ? session?.mode === GAME_MODES.CAPITALS
           ? `${target.capital} is the capital of ${target.name}. Press Enter to continue.`
           : `That's ${target.name}. Press Enter to continue.`
-        : "Oops! Please click the flashing red country.";
+        : "Please click the flashing red country.";
 
       const showReveal = () => {
         setRevealMode(true);
@@ -2732,8 +2736,9 @@ export default function GeographyGame() {
         }
 
         setFeedback({
-          text: revealMessage,
-          type: isNameGame ? "got-it" : "reveal",
+          text: "Incorrect",
+          detail: revealDetail,
+          type: "incorrect",
         });
       };
 
@@ -3230,8 +3235,10 @@ export default function GeographyGame() {
   const flagPromptAlt =
     revealMode ||
     feedback.type === "correct" ||
+    feedback.type === "second-try" ||
     feedback.type === "got-it" ||
-    feedback.type === "reveal"
+    feedback.type === "reveal" ||
+    feedback.type === "incorrect"
       ? targetCountry?.name ?? ""
       : "Flag — identify this country";
 
@@ -3266,6 +3273,7 @@ export default function GeographyGame() {
   const promptWrong =
     feedback.type === "wrong" ||
     feedback.type === "reveal" ||
+    feedback.type === "incorrect" ||
     feedback.type === "got-it";
 
   const showTargetPronunciation =
@@ -3618,7 +3626,11 @@ export default function GeographyGame() {
                   </div>
                 )}
                 <div className={mapFeedbackAnchor}>
-                  <MapFeedback text={feedback.text} type={feedback.type} />
+                  <MapFeedback
+                    text={feedback.text}
+                    type={feedback.type}
+                    detail={feedback.detail}
+                  />
                 </div>
               </div>
               {isOceaniaRegion ? (

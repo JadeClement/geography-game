@@ -901,19 +901,26 @@ export const spellingSuggestionLink = cn(
 
 export const mapFeedbackAnchor = "pointer-events-none flex justify-center";
 
-export function mapFeedback({ type, className } = {}) {
+export function mapFeedback({ type, className, stacked = false } = {}) {
   const base = cn(
-    "pointer-events-none flex max-w-[min(92vw,34rem)] items-center gap-2.5 rounded-full",
-    "py-[0.7rem] pl-4 pr-[1.35rem] text-[1.05rem] font-semibold leading-tight tracking-wide backdrop-blur-[14px]",
+    "pointer-events-none flex max-w-[min(92vw,34rem)] gap-2.5",
+    stacked
+      ? "items-start rounded-2xl py-3 pl-4 pr-[1.35rem]"
+      : "items-center rounded-full py-[0.7rem] pl-4 pr-[1.35rem]",
+    "text-[1.05rem] font-semibold leading-tight tracking-wide backdrop-blur-[14px]",
     "animate-[map-feedback-in_0.18s_cubic-bezier(0.22,1,0.36,1)_both]",
     className
   );
   const variants = {
     correct:
       "border border-green-300/45 bg-gradient-to-br from-green-800/92 to-green-700/88 text-emerald-50 shadow-[0_10px_40px_rgba(34,197,94,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
+    "second-try":
+      "border border-orange-300/45 bg-gradient-to-br from-orange-800/92 to-amber-700/88 text-orange-50 shadow-[0_10px_40px_rgba(249,115,22,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
     wrong:
       "border border-amber-300/45 bg-gradient-to-br from-amber-900/92 to-orange-800/88 text-amber-50 shadow-[0_10px_40px_rgba(245,158,11,0.22),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
     reveal:
+      "border border-red-300/50 bg-gradient-to-br from-red-900/94 to-red-800/90 text-red-50 shadow-[0_10px_40px_rgba(239,68,68,0.3),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
+    incorrect:
       "border border-red-300/50 bg-gradient-to-br from-red-900/94 to-red-800/90 text-red-50 shadow-[0_10px_40px_rgba(239,68,68,0.3),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
     "got-it":
       "border border-slate-400/45 bg-gradient-to-br from-slate-700/92 to-slate-600/88 text-slate-100 shadow-[0_10px_40px_rgba(15,23,42,0.35),0_0_0_1px_rgba(255,255,255,0.06)_inset]",
@@ -924,6 +931,9 @@ export function mapFeedback({ type, className } = {}) {
 export const mapFeedbackIcon = "h-6 w-6 shrink-0";
 
 export const mapFeedbackText = "min-w-0 pr-0.5";
+
+export const mapFeedbackDetail =
+  "mt-0.5 block text-[0.82rem] font-medium leading-snug opacity-90";
 
 export function flagPrompt({ card = false, className } = {}) {
   return cn(

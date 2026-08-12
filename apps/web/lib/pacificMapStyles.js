@@ -42,9 +42,16 @@ export function getPacificCountryFill({
     return null;
   }
 
+  // Error/red flashes on the overlay path — painting it on the base fill hides
+  // the pulse (Find It L1 reveal looked solid red).
+  const solidHighlight =
+    isHighlighted && highlightTone !== "error"
+      ? highlightFillColor(highlightTone)
+      : null;
+
   if (level === GAME_LEVELS.FIND_FILL) {
     if (isWrong || isFlashWrong) return WRONG_COUNTRY_COLOR;
-    if (isHighlighted) return highlightFillColor(highlightTone);
+    if (solidHighlight) return solidHighlight;
     if (isFilled) return assignedColor ?? activeLandColor;
     if (showColor) return assignedColor ?? activeLandColor;
     return activeLandColor;
@@ -52,14 +59,14 @@ export function getPacificCountryFill({
 
   if (level === GAME_LEVELS.NAME_FILL) {
     if (isWrong) return WRONG_COUNTRY_COLOR;
-    if (isHighlighted) return highlightFillColor(highlightTone);
+    if (solidHighlight) return solidHighlight;
     if (isFilled) return CORRECT_COUNTRY_COLOR;
     if (isTarget) return targetFlashOn ? TARGET_HIGHLIGHT_COLOR : activeLandColor;
     return activeLandColor;
   }
 
   if (isWrong || isFlashWrong) return WRONG_COUNTRY_COLOR;
-  if (isHighlighted) return highlightFillColor(highlightTone);
+  if (solidHighlight) return solidHighlight;
   if (showColor) return assignedColor ?? activeLandColor;
   return activeLandColor;
 }
