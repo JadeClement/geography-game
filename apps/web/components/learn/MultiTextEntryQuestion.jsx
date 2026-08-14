@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { normalizeName } from "@/lib/constants";
 import { learnPrompt, learnPromptSubtext, learnQuestion, learnTextForm, learnTextInput } from "@/lib/learnUi";
 import { primaryBtn } from "@/lib/ui";
 
 const FEEDBACK_DELAY_MS = 900;
 
 function normalizeText(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
+  return normalizeName(String(value ?? ""));
 }
 
 /**

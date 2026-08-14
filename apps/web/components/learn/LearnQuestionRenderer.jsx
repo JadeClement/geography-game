@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { normalizeName } from "@/lib/constants";
 import { isFastResponse } from "@/lib/mastery";
 import {
   learnPrompt,
@@ -21,20 +22,16 @@ import YesNoQuestion from "./YesNoQuestion";
 import BinaryChoiceQuestion from "./BinaryChoiceQuestion";
 import MultiTextEntryQuestion from "./MultiTextEntryQuestion";
 
-function normalizeText(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
-}
-
 function defaultMatch(input, correctAnswer) {
-  const normalized = normalizeText(input);
+  const normalized = normalizeName(String(input ?? ""));
   if (!normalized) return false;
   const acceptable = Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer];
-  return acceptable.some((candidate) => normalizeText(candidate) === normalized);
+  return acceptable.some(
+    (candidate) =>
+      candidate != null &&
+      candidate !== "" &&
+      normalizeName(String(candidate)) === normalized
+  );
 }
 
 function formatCorrectAnswerLabel(correctAnswer) {
@@ -71,9 +68,9 @@ function ContinueArrowButton({ onClick, className }) {
 }
 
 /**
- * Self-contained text entry (Tier 1 free recall). The integrated app can pass a
- * richer `matchAnswer` (the existing accent-tolerant/suggestion matcher); by
- * default we normalize + compare against the acceptable answer(s).
+ * Self-contained text entry (Tier 1 free recall). Uses `normalizeName` so typed
+ * shortcuts (Serbia, Macedonia, Sao Tome) match the canonical country name.
+ * The host can still pass a richer `matchAnswer`.
  *
  * Highlight-map free recall ("What country is highlighted?"): after submit the
  * typed answer turns green/red and Submit becomes the continue arrow in place.
