@@ -792,6 +792,36 @@ export async function recordFactSeen(userId, countryId, factIndex) {
 }
 
 /**
+ * Wipe all practice / mastery / score history for a user.
+ * Keeps the account itself (profile, friends, auth).
+ */
+export async function deleteUserPracticeData(userId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured.");
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM country_attempts WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM country_stats WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM game_scores WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM facts_seen WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM practice_sessions WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM learn_challenge WHERE user_id = $1`, [userId]);
+    await client.query("COMMIT");
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // ignore rollback failure
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * @returns {{ workingTier: number, momentum: number, recentOutcomes: object[] }}
  */
 export async function getLearnChallenge(userId, { mode, region }) {

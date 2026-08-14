@@ -1,8 +1,10 @@
 import { auth } from "@/auth";
 import { getStreakForUser, recordPracticeSession } from "@/lib/db";
+import { getMobileSession } from "@/lib/mobile-auth";
+import { checkAndNotifyStreakMilestone } from "@/lib/push-notifications";
 
-export async function GET() {
-  const session = await auth();
+export async function GET(request) {
+  const session = (await auth()) || (await getMobileSession(request));
   if (!session?.user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -19,15 +21,32 @@ export async function GET() {
   }
 }
 
-export async function POST() {
-  const session = await auth();
+export async function POST(request) {
+  const session = (await auth()) || (await getMobileSession(request));
   if (!session?.user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { recorded } = await recordPracticeSession(session.user.id);
-    const streak = await getStreakForUser(session.user.id);
+    const userId = session.user.id;
+    const before = await getStreakForUser(userId);
+    const { recorded } = await recordPracticeSession(userId);
+    const streak = await getStreakForUser(userId);
+
+    setTimeout(() => {
+      (async () => {
+        try {
+          await checkAndNotifyStreakMilestone(
+            userId,
+            streak.currentStreak,
+            before.currentStreak
+          );
+        } catch (err) {
+          console.error("[push] streak milestone failed:", err);
+        }
+      })();
+    }, 0);
+
     return Response.json({ recorded, ...streak });
   } catch (error) {
     console.error("Streak record error:", error);

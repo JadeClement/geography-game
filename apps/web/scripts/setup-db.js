@@ -204,6 +204,12 @@ CREATE TABLE IF NOT EXISTS push_tokens (
 CREATE INDEX IF NOT EXISTS push_tokens_user_idx
   ON push_tokens (user_id);
 
+ALTER TABLE push_tokens
+  ADD COLUMN IF NOT EXISTS last_overtake_notified_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_notified_streak INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_notified_worldly REAL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS streak_reminder_sent_at TIMESTAMPTZ;
+
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS question_tier TEXT;
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS predicted_success REAL;
 

@@ -1,10 +1,14 @@
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
-import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession } from "@/lib/db";
+import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession, getStreakForUser } from "@/lib/db";
 import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
 import { GAME_MODES } from "@/lib/regions";
 import { getMobileSession } from "@/lib/mobile-auth";
+import {
+  checkAndNotifyFriendOvertake,
+  computeWorldlyScoreForUser,
+} from "@/lib/push-notifications";
 import countriesManifest from "@/data/countries.json";
 
 const VALID_OUTCOMES = new Set([
@@ -162,6 +166,19 @@ export async function POST(request) {
     // Idempotent per day (upsert), so recording on every round is safe and
     // keeps the user's daily practice streak up to date.
     await recordPracticeSession(userId);
+
+    // Fire-and-forget friend overtake push — never delay the API response.
+    setTimeout(() => {
+      (async () => {
+        try {
+          const { currentStreak } = await getStreakForUser(userId);
+          const worldlyScore = await computeWorldlyScoreForUser(userId);
+          await checkAndNotifyFriendOvertake(userId, currentStreak, worldlyScore);
+        } catch (err) {
+          console.error("[push] overtake check failed:", err);
+        }
+      })();
+    }, 0);
 
     return Response.json({ stat });
   } catch (error) {
