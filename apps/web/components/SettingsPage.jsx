@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -18,6 +19,12 @@ import {
 import { previewCorrectSound } from "@/lib/sounds";
 import { cn } from "@/lib/cn";
 import {
+  dangerBtn,
+  modalActions,
+  modalCard,
+  modalOverlay,
+  modalSubtitle,
+  modalTitle,
   referenceDefaultSetting,
   secondaryBtn,
   settingsBack,
@@ -36,8 +43,14 @@ import {
 } from "@/lib/ui";
 
 export default function SettingsPage() {
+  const { status } = useSession();
+  const signedIn = status === "authenticated";
   const [referenceDefaultOpen, setReferenceDefaultOpen] = useState(false);
   const [countryClickExpand, setCountryClickExpand] = useState(true);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
   const { volume, setVolume } = useSoundPrefs();
   const { voiceId, voices, setVoiceId } = usePronunciationPrefs();
   const volumePercent = Math.round(volume * 100);
@@ -58,6 +71,31 @@ export default function SettingsPage() {
 
   const handlePronunciationPreview = () => {
     previewCountryPronunciation("USA", { voiceId, volume });
+  };
+
+  const handleResetClick = () => {
+    setResetError("");
+    setResetMessage("");
+    setResetConfirmOpen(true);
+  };
+
+  const handleConfirmReset = async () => {
+    setResetting(true);
+    setResetError("");
+    setResetMessage("");
+    try {
+      const response = await fetch("/api/users/practice", { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Could not reset practice data.");
+      }
+      setResetConfirmOpen(false);
+      setResetMessage("All practice data has been deleted.");
+    } catch (error) {
+      setResetError(error.message || "Could not reset practice data.");
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -170,7 +208,69 @@ export default function SettingsPage() {
             <span>Reference panel on by default</span>
           </label>
         </section>
+
+        {signedIn && (
+          <section className={settingsSection}>
+            <h2 className={settingsSectionTitle}>Reset practice</h2>
+            <p className={settingsSectionDescription}>
+              Permanently delete your mastery, scores, streaks, and practice history. Your account
+              stays intact.
+            </p>
+            <button type="button" className={dangerBtn} onClick={handleResetClick}>
+              Reset all practice data
+            </button>
+            {resetMessage && (
+              <p className="mt-3 text-[0.9rem] font-medium text-text-secondary">{resetMessage}</p>
+            )}
+            {resetError && !resetConfirmOpen && (
+              <p className="mt-3 text-[0.9rem] font-medium text-error">{resetError}</p>
+            )}
+          </section>
+        )}
       </main>
+
+      {resetConfirmOpen && (
+        <div className={modalOverlay}>
+          <div
+            className={modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-practice-title"
+          >
+            <h2 id="reset-practice-title" className={modalTitle}>
+              Reset all practice data?
+            </h2>
+            <p className={modalSubtitle}>
+              Are you sure you want to do this? This permanently deletes your mastery, scores,
+              streaks, and practice history. This cannot be undone.
+            </p>
+            {resetError && (
+              <p className="mb-4 text-[0.9rem] font-medium text-error">{resetError}</p>
+            )}
+            <div className={modalActions}>
+              <button
+                type="button"
+                className={dangerBtn}
+                disabled={resetting}
+                onClick={handleConfirmReset}
+              >
+                {resetting ? "Deleting…" : "Yes, delete everything"}
+              </button>
+              <button
+                type="button"
+                className={secondaryBtn}
+                disabled={resetting}
+                onClick={() => {
+                  setResetConfirmOpen(false);
+                  setResetError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
