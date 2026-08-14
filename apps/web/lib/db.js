@@ -621,6 +621,8 @@ export async function recordCountryPerformance({
   outcome,
   responseTimeMs = null,
   learnModeMultiplier = 1,
+  questionTier = null,
+  predictedSuccess = null,
 }) {
   // Whitelist the outcome before using it as a column name, since it is
   // interpolated into the SQL below rather than passed as a bound parameter.
@@ -668,9 +670,10 @@ export async function recordCountryPerformance({
 
     await client.query(
       `INSERT INTO country_attempts (
-         id, user_id, country_id, mode, level, game_type, outcome, response_time_ms
+         id, user_id, country_id, mode, level, game_type, outcome, response_time_ms,
+         question_tier, predicted_success
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         attemptId,
         userId,
@@ -680,6 +683,10 @@ export async function recordCountryPerformance({
         gameType,
         outcome,
         trackResponseTime ? responseTimeMs : null,
+        questionTier,
+        predictedSuccess != null && Number.isFinite(predictedSuccess)
+          ? predictedSuccess
+          : null,
       ]
     );
 
@@ -782,4 +789,76 @@ export async function recordFactSeen(userId, countryId, factIndex) {
      ON CONFLICT (user_id, country_id, fact_index) DO NOTHING`,
     [randomUUID(), userId, countryId, factIndex]
   );
+}
+
+/**
+ * @returns {{ workingTier: number, momentum: number, recentOutcomes: object[] }}
+ */
+export async function getLearnChallenge(userId, { mode, region }) {
+  const result = await query(
+    `SELECT working_tier AS "workingTier",
+            momentum,
+            recent_outcomes AS "recentOutcomes",
+            updated_at AS "updatedAt"
+     FROM learn_challenge
+     WHERE user_id = $1 AND mode = $2 AND region = $3`,
+    [userId, mode, region]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return {
+      workingTier: 4,
+      momentum: 0,
+      recentOutcomes: [],
+      updatedAt: null,
+    };
+  }
+  return {
+    workingTier: Number(row.workingTier) || 4,
+    momentum: Number(row.momentum) || 0,
+    recentOutcomes: Array.isArray(row.recentOutcomes) ? row.recentOutcomes : [],
+    updatedAt: row.updatedAt ?? null,
+  };
+}
+
+/**
+ * Upsert adaptive Learn challenge for a user × mode × region.
+ */
+export async function upsertLearnChallenge(
+  userId,
+  { mode, region, workingTier, momentum, recentOutcomes }
+) {
+  const outcomesJson = JSON.stringify(
+    Array.isArray(recentOutcomes) ? recentOutcomes : []
+  );
+  const result = await query(
+    `INSERT INTO learn_challenge (
+       user_id, mode, region, working_tier, momentum, recent_outcomes, updated_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, NOW())
+     ON CONFLICT (user_id, mode, region) DO UPDATE SET
+       working_tier = EXCLUDED.working_tier,
+       momentum = EXCLUDED.momentum,
+       recent_outcomes = EXCLUDED.recent_outcomes,
+       updated_at = NOW()
+     RETURNING working_tier AS "workingTier",
+               momentum,
+               recent_outcomes AS "recentOutcomes",
+               updated_at AS "updatedAt"`,
+    [
+      userId,
+      mode,
+      region,
+      workingTier,
+      momentum,
+      outcomesJson,
+    ]
+  );
+  const row = result.rows[0];
+  return {
+    workingTier: Number(row.workingTier) || 4,
+    momentum: Number(row.momentum) || 0,
+    recentOutcomes: Array.isArray(row.recentOutcomes) ? row.recentOutcomes : [],
+    updatedAt: row.updatedAt ?? null,
+  };
 }

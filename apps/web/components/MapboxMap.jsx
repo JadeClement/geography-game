@@ -437,6 +437,12 @@ function applyMapView(map, mapView, { onSettled } = {}) {
   const runFit = () => {
     if (map.__mapViewApplyToken !== token || !map.getStyle()) return;
 
+    // Cancel in-flight pan/zoom from a prior Learn teach step so fitBounds
+    // isn't fighting an easeTo and leaving the camera mid-close-up.
+    if (typeof map.stop === "function") {
+      map.stop();
+    }
+
     map.resize();
 
     // fitBounds/jumpTo can leave sticky global padding that compounds on the
@@ -1356,14 +1362,21 @@ export default function MapboxMap({
     // Mirror the highlight onto the small-country circle marker (if the target
     // is a small country) so a circled country is easy to spot — fill + stroke,
     // not just a thin rim that disappears between flash frames.
+    // Always read mapRef: cleanup/interval can run after the map is torn down
+    // (e.g. Learn mid-session question rebuild), when the closed-over `map` is stale.
     const setSmallCircleHighlight = (id, on, pulse = 1) => {
-      if (!id || !map.getSource("small-countries")) return;
-      map.setFeatureState(
-        { source: "small-countries", id },
-        on
-          ? { highlight: true, highlightPulse: pulse }
-          : { highlight: false, highlightPulse: 0 }
-      );
+      const activeMap = mapRef.current;
+      if (!id || !activeMap?.getSource?.("small-countries")) return;
+      try {
+        activeMap.setFeatureState(
+          { source: "small-countries", id },
+          on
+            ? { highlight: true, highlightPulse: pulse }
+            : { highlight: false, highlightPulse: 0 }
+        );
+      } catch {
+        // Map removed mid-update — ignore.
+      }
     };
     const isSmallCountryHighlight = Boolean(
       highlightCountryId &&
@@ -1374,38 +1387,54 @@ export default function MapboxMap({
     // Larger pulsing ring (same layer as wrong-answer flash) so tiny landmasses
     // stay obvious at regional language-question zoom.
     const paintSmallHighlightRing = (visible) => {
+      const activeMap = mapRef.current;
       if (
-        !map.getLayer("small-country-flash") ||
+        !activeMap?.getLayer?.("small-country-flash") ||
         !isSmallCountryHighlight ||
         flashSmallCountryId
       ) {
         return;
       }
-      map.setFilter("small-country-flash", [
-        "==",
-        ["get", "id"],
-        highlightCountryId,
-      ]);
-      map.setPaintProperty("small-country-flash", "circle-color", highlightColor);
-      map.setPaintProperty(
-        "small-country-flash",
-        "circle-stroke-color",
-        highlightColor
-      );
-      map.setPaintProperty(
-        "small-country-flash",
-        "circle-opacity",
-        visible ? 0.42 : 0.1
-      );
-      map.setPaintProperty(
-        "small-country-flash",
-        "circle-stroke-opacity",
-        visible ? 1 : 0.35
-      );
+      try {
+        activeMap.setFilter("small-country-flash", [
+          "==",
+          ["get", "id"],
+          highlightCountryId,
+        ]);
+        activeMap.setPaintProperty(
+          "small-country-flash",
+          "circle-color",
+          highlightColor
+        );
+        activeMap.setPaintProperty(
+          "small-country-flash",
+          "circle-stroke-color",
+          highlightColor
+        );
+        activeMap.setPaintProperty(
+          "small-country-flash",
+          "circle-opacity",
+          visible ? 0.42 : 0.1
+        );
+        activeMap.setPaintProperty(
+          "small-country-flash",
+          "circle-stroke-opacity",
+          visible ? 1 : 0.35
+        );
+      } catch {
+        // Map removed mid-update — ignore.
+      }
     };
     const clearSmallHighlightRing = () => {
-      if (flashSmallCountryId || !map.getLayer("small-country-flash")) return;
-      map.setFilter("small-country-flash", ["==", ["get", "id"], ""]);
+      const activeMap = mapRef.current;
+      if (flashSmallCountryId || !activeMap?.getLayer?.("small-country-flash")) {
+        return;
+      }
+      try {
+        activeMap.setFilter("small-country-flash", ["==", ["get", "id"], ""]);
+      } catch {
+        // Map removed mid-update — ignore.
+      }
     };
     if (highlightSmallCircleIdRef.current !== highlightCountryId) {
       setSmallCircleHighlight(highlightSmallCircleIdRef.current, false);
@@ -1528,13 +1557,18 @@ export default function MapboxMap({
 
     let visible = true;
     fillFlashIntervalRef.current = setInterval(() => {
-      if (!mapRef.current?.getLayer("country-highlight")) return;
+      const activeMap = mapRef.current;
+      if (!activeMap?.getLayer?.("country-highlight")) return;
       visible = !visible;
-      map.setPaintProperty(
-        "country-highlight",
-        "fill-opacity",
-        visible ? 0.75 : 0.15
-      );
+      try {
+        activeMap.setPaintProperty(
+          "country-highlight",
+          "fill-opacity",
+          visible ? 0.75 : 0.15
+        );
+      } catch {
+        return;
+      }
       // Keep highlight=true and pulse opacity — toggling highlight off made
       // tiny circled countries (e.g. Brunei) look unhighlighted (white ring).
       setSmallCircleHighlight(highlightCountryId, true, visible ? 1 : 0.3);

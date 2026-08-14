@@ -45,6 +45,14 @@ function getViewportRect(container, layoutRightInset) {
   };
 }
 
+function clampToViewport(point, viewportRect) {
+  if (!point || !viewportRect) return point;
+  return {
+    x: Math.min(viewportRect.right, Math.max(viewportRect.left, point.x)),
+    y: Math.min(viewportRect.bottom, Math.max(viewportRect.top, point.y)),
+  };
+}
+
 function computePositions({
   container,
   labelsById,
@@ -63,26 +71,31 @@ function computePositions({
     if (!country) continue;
 
     // Only place a label when the country itself is on-screen.
+    // Uses mainland-aware sampling (drops Guiana/Canaries/Azores) — same path
+    // for Discover and Learn neighbor teach titles.
     const pos = projectDiscoverAnchor?.(country, viewportRect);
     if (pos) {
       next[id] = pos;
       continue;
     }
     // Learn teach steps (borders / area compare) set alwaysShow — fall back to
-    // the centroid (then bounds center) so a briefly off-screen peer still gets
-    // its title.
+    // the metropolitan centroid (then compact bounds center), clamped into the
+    // viewport so an off-screen Paris/Madrid still pins to the near map edge.
     if (label?.alwaysShow) {
       const fallback = projectCountry?.(country);
       if (fallback) {
-        next[id] = fallback;
+        next[id] = clampToViewport(fallback, viewportRect);
         continue;
       }
       const bounds = projectCountryBounds?.(country);
       if (bounds) {
-        next[id] = {
-          x: (bounds.left + bounds.right) / 2,
-          y: (bounds.top + bounds.bottom) / 2,
-        };
+        next[id] = clampToViewport(
+          {
+            x: (bounds.left + bounds.right) / 2,
+            y: (bounds.top + bounds.bottom) / 2,
+          },
+          viewportRect
+        );
       }
     }
   }

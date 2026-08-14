@@ -25,6 +25,8 @@
     "./learn/questionTypes": "./learn/questionTypes.js",
     "./learn/questionGenerator": "./learn/questionGenerator.js",
     "./learn/sessionSequencer": "./learn/sessionSequencer.js",
+    "./learn/challengeLevel": "./learn/challengeLevel.js",
+    "./learn/predictedSuccess": "./learn/predictedSuccess.js",
     "./learn/emaIntegration": "./learn/emaIntegration.js",
     "./learn/factSelection": "./learn/factSelection.js",
     "./learn/sessionSummary": "./learn/sessionSummary.js",

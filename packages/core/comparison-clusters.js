@@ -167,3 +167,16 @@ export function getPopulationPeers(countryId) {
 export function getAreaPeers(countryId) {
   return AREA_CLUSTERS.get(countryId) ?? [];
 }
+
+/**
+ * Larger/smaller ratio of two positive metric values (always >= 1).
+ * Used by predictedSuccess for comparative instance difficulty.
+ */
+export function metricRatio(a, b) {
+  if (typeof a !== "number" || typeof b !== "number" || a <= 0 || b <= 0) {
+    return null;
+  }
+  return ratioOf(a, b);
+}
+
+export const COMPARE_RATIO_BAND = { min: MIN_RATIO, max: MAX_RATIO };

@@ -28,6 +28,8 @@ import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeN
 import {
   fetchMasteryStats,
   fetchWeakCountryStats,
+  fetchLearnChallenge,
+  saveLearnChallenge,
   recordCountryStat,
   ROUND_OUTCOMES,
 } from "@/lib/countryStats";
@@ -52,7 +54,13 @@ import {
   syncPendingGuestGame,
 } from "@/lib/pendingGuestGame";
 import { buildLearningQueue, buildFullRegionLearningQueue } from "@/lib/learning";
-import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import { buildLearnSession, rebuildQuestionsForCountries } from "@/lib/learn/sessionSequencer";
+import {
+  createDefaultChallenge,
+  normalizeChallenge,
+  updateChallengeLevel,
+  challengeOutcomeFromAnswer,
+} from "@/lib/learn/challengeLevel";
 import { buildLearnStatPayload, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
 import { fetchSeenFacts } from "@/lib/learn/factsClient";
 import { buildLearnSessionSummary } from "@/lib/learn/sessionSummary";
@@ -203,6 +211,19 @@ function getMasteredCountryIds(masteryRows, level) {
   return mastered;
 }
 
+/** Test/Learn map toast titles: Correct (green), Correct second try (orange), Incorrect (red). */
+function outcomeFeedback({ correct, secondTry = false, detail = null }) {
+  if (correct) {
+    const feedback = secondTry
+      ? { text: "Correct second try", type: "second-try" }
+      : { text: "Correct", type: "correct" };
+    return detail ? { ...feedback, detail } : feedback;
+  }
+  return detail
+    ? { text: "Incorrect", type: "incorrect", detail }
+    : { text: "Incorrect", type: "incorrect" };
+}
+
 export default function GeographyGame() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -276,6 +297,11 @@ export default function GeographyGame() {
   const [learnAwaitingRetry, setLearnAwaitingRetry] = useState(false);
   const [learnRetryMessage, setLearnRetryMessage] = useState(null);
   const learnMapMissedRef = useRef(false);
+  const learnChallengeRef = useRef(createDefaultChallenge());
+  const learnSampledRef = useRef([]);
+  const learnMasteryStatsRef = useRef(new Map());
+  const learnCategoryRef = useRef("countries");
+  const learnRegionRef = useRef(null);
 
   const mapContainerRef = useRef(null);
   const gamePromptAnchorRef = useRef(null);
@@ -641,10 +667,13 @@ export default function GeographyGame() {
     learnAreaCompareRevealActive && currentLearnQuestion?.type === "area_compare"
       ? (currentLearnQuestion.prompt?.trim() || null)
       : null;
+  // MC highlight wrongs drop the card for a map teach step. Free-recall text
+  // entry keeps the card so the typed answer can turn green/red in place.
   const learnHighlightMapContinue =
     learnAwaitingContinue &&
     currentLearnQuestion?.mapConfig?.display === "highlight" &&
-    !currentLearnQuestion?.mapConfig?.keepOverlay;
+    !currentLearnQuestion?.mapConfig?.keepOverlay &&
+    currentLearnQuestion?.answerType !== "text_entry";
   const learnHighlightTopPrompt = learnHighlightMapContinue
     ? (currentLearnQuestion?.prompt?.trim() || null)
     : null;
@@ -660,21 +689,22 @@ export default function GeographyGame() {
     learnNeighborRevealActive ||
     learnAreaCompareRevealActive ||
     learnLandlockedRevealActive;
-  // Questions that reveal (highlight) their anchor country pin a card to the top
-  // of the map. That card can sit on top of a country near the top of the region
-  // (hiding the very thing being asked about), so we frame the region BELOW the
-  // card by reserving its height as extra top padding on the map view.
-  // Map-only continue steps have no top card — skip the reserved padding there,
-  // except area-compare / highlight which keep the question one-liner at the top.
+  // Highlight prompts paint their subject yellow on the region backdrop. The
+  // question card is top-pinned (see LearnRoundOverlay) so the full region stays
+  // in view — we intentionally do NOT zoom to the subject or use asymmetric
+  // fitBounds padding (that cropped Europe down to the Mediterranean).
   const learnHighlightRevealsAnchor =
     learnEngineActive &&
     currentLearnQuestion?.mapConfig?.display === "highlight" &&
     !learnMapOnlyContinue;
+  // Highlight-wrong reveal: keep the subject yellow (prompt) and paint only the
+  // guess red via wrongCountryIds — two reds made correct vs guess ambiguous.
   const learnHighlightTone = learnAreaCompareRevealActive
     ? "correct"
     : learnNeighborRevealActive
       ? "success"
-      : learnLandlockedRevealActive ||
+      : learnHighlightWrongReveal ||
+          learnLandlockedRevealActive ||
           learnHighlightRevealsAnchor ||
           learnHighlightMapContinue
         ? "prompt"
@@ -699,10 +729,16 @@ export default function GeographyGame() {
   })();
 
   const mapViewForRender = useMemo(() => {
-    // Bust referential equality when the Learn question changes so Mapbox always
-    // re-applies the camera (same region view after a pan would otherwise no-op).
+    // Bust referential equality when the Learn question / camera mode changes so
+    // Mapbox always re-applies the camera (same region bounds after a neighbor
+    // close-up would otherwise no-op if we only keyed by question id).
+    const learnCameraMode = learnAreaCompareRevealActive
+      ? "area"
+      : learnNeighborRevealActive
+        ? "neighbors"
+        : "region";
     const learnQuestionKey = learnEngineActive
-      ? (currentLearnQuestion?.id ?? learnIndex)
+      ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
       : null;
     const withLearnKey = (view) =>
       view && learnQuestionKey != null
@@ -739,11 +775,8 @@ export default function GeographyGame() {
       const view = focusCluster(currentLearnQuestion.countryId);
       if (view) return withLearnKey(view);
     }
-    // Language spoken + "which country is highlighted": freeze on the region view
-    // (yellow paints in place; no camera move / leftover zoom from prior questions).
-    // Everything else in Learn (borders MC, capitals, landlocked, yes/no) also
-    // stays on the session region — re-fit every question so a prior neighbor
-    // close-up doesn't stick. Navigation lock: see mapNavigationEnabled.
+    // Highlight / language / choice questions: full session region only — zoom
+    // all the way out from any prior teach close-up (e.g. Balkans → all Europe).
     if (learnEngineActive) {
       return withLearnKey(mapView);
     }
@@ -1581,8 +1614,10 @@ export default function GeographyGame() {
 
   // ── Learn mixed-question engine: build, start, answer, advance, finish ────────
 
-  // Fetch mastery (soft), then build a mixed-question session over EVERY country
-  // in the region — no weak-only "learning list" and no session-size cap.
+  // Fetch mastery (soft) + challenge level, then build a mixed-question session
+  // over EVERY country in the region — no weak-only "learning list" and no
+  // session-size cap. Challenge (mode×region) drives question tiers; mastery
+  // only weights country order and soft-bumps predictedSuccess.
   const buildLearnEngineData = useCallback(
     async ({ mode, level, region }) => {
       const regionPool = filterCountriesByRegion(allCountries, region);
@@ -1602,6 +1637,14 @@ export default function GeographyGame() {
         }
       } catch (error) {
         console.error("Learn: failed to load mastery for weighting", error);
+      }
+
+      let challenge = createDefaultChallenge();
+      try {
+        const data = await fetchLearnChallenge({ mode, region });
+        challenge = normalizeChallenge(data.challenge);
+      } catch (error) {
+        console.error("Learn: failed to load challenge level", error);
       }
 
       const queueIds = buildFullRegionLearningQueue(
@@ -1630,6 +1673,7 @@ export default function GeographyGame() {
         allCountries,
         masteryStats: statsById,
         sessionSize: "all",
+        challenge,
       });
       if (!Array.isArray(questions) || questions.length === 0) return null;
 
@@ -1638,6 +1682,9 @@ export default function GeographyGame() {
         queueIds,
         questions,
         sessionMeta,
+        sampled,
+        masteryStats: statsById,
+        challenge,
         masteryBefore: new Map(sampled.map((entry) => [entry.countryId, entry.mastery])),
       };
     },
@@ -1713,11 +1760,15 @@ export default function GeographyGame() {
 
   /** Paint the subject + all land neighbors on the map (post-answer teach step). */
   const showLearnNeighborMapReveal = useCallback(
-    (neighborReveal, { selectedValue = null, feedbackType = "wrong", message = "" } = {}) => {
+    (
+      neighborReveal,
+      { selectedValue = null, feedbackType = "wrong", message = "", secondTry = false } = {}
+    ) => {
       const { mainId, neighborIds } = neighborReveal;
       const visibleNeighborIds = neighborIds.filter((id) =>
         activeCountries.some((country) => country.id === id)
       );
+      const neighborIdSet = new Set(neighborIds);
       const labels = {};
       const mainCountry = allCountriesById.get(mainId);
       if (
@@ -1744,15 +1795,32 @@ export default function GeographyGame() {
         }
       }
 
-      // Wrong guesses: paint the named country red if it isn't already a neighbor.
+      // Wrong path: red for distractors + bordering countries the learner missed
+      // (multi-select / recall-all pass an array of picks).
+      const foundNeighborIds = new Set();
+      const missedNeighborIds = new Set();
       if (feedbackType === "wrong" && selectedValue != null) {
-        const guessed = resolveGuessedCountryInRegion(selectedValue, {
-          allCountriesById,
-          activeCountries,
-          excludeIds: [mainId, ...neighborIds],
-        });
-        if (guessed) {
-          clearWrongFlash();
+        const selections = Array.isArray(selectedValue)
+          ? selectedValue
+          : [selectedValue];
+
+        clearWrongFlash();
+
+        for (const value of selections) {
+          if (typeof value === "string" && neighborIdSet.has(value)) {
+            foundNeighborIds.add(value);
+            continue;
+          }
+          const guessed = resolveGuessedCountryInRegion(value, {
+            allCountriesById,
+            activeCountries,
+            excludeIds: [mainId],
+          });
+          if (!guessed) continue;
+          if (neighborIdSet.has(guessed.id)) {
+            foundNeighborIds.add(guessed.id);
+            continue;
+          }
           addRoundWrongCountry(guessed.id);
           labels[guessed.id] = {
             kind: "text",
@@ -1761,19 +1829,38 @@ export default function GeographyGame() {
             alwaysShow: true,
           };
         }
+
+        if (Array.isArray(selectedValue)) {
+          for (const id of visibleNeighborIds) {
+            if (!foundNeighborIds.has(id)) {
+              missedNeighborIds.add(id);
+              addRoundWrongCountry(id);
+            }
+          }
+        }
       }
 
       setHighlightCountryId(mainId);
       // Learn maps as FIND_FILL: `filled` is what actually paints assigned colors.
       // `showColor` covers flash levels / Pacific stroke; both clear on Continue.
-      setFilledCountryIds(visibleNeighborIds);
-      setShowColorCountryIds(visibleNeighborIds);
+      // Missed neighbors stay out of the green fill — they're painted red via wrong.
+      const greenNeighborIds = visibleNeighborIds.filter(
+        (id) => !missedNeighborIds.has(id)
+      );
+      setFilledCountryIds(greenNeighborIds);
+      setShowColorCountryIds(greenNeighborIds);
       setLearnFeedbackLabelsById(labels);
       setLearnNeighborMapVisible(true);
       setLearnAreaCompareReveal(null);
       setLearnLandlockedReveal(null);
       setLearnHighlightWrongReveal(null);
-      setFeedback({ text: message, type: feedbackType });
+      setFeedback(
+        outcomeFeedback({
+          correct: feedbackType === "correct",
+          secondTry: feedbackType === "correct" && secondTry,
+          detail: message || null,
+        })
+      );
     },
     [
       activeCountries,
@@ -1870,8 +1957,14 @@ export default function GeographyGame() {
       const question = currentLearnQuestionRef.current;
       if (!question || question.mapConfig?.display !== "highlight") return;
 
+      // Highlight free-recall paints the typed answer green/red in the form —
+      // skip the floating toast so the card stays compact.
+      const inlineTextFeedback = question.answerType === "text_entry";
+
       if (event.correct) {
-        setFeedback({ text: "Correct!", type: "correct" });
+        if (!inlineTextFeedback) {
+          setFeedback(outcomeFeedback({ correct: true }));
+        }
         return;
       }
 
@@ -1893,8 +1986,9 @@ export default function GeographyGame() {
         addRoundWrongCountry(wrongId);
       }
 
-      // Name lives on the map label — keep the toast clear of "That's X."
-      setFeedback({ text: "", type: "wrong" });
+      if (!inlineTextFeedback) {
+        setFeedback(outcomeFeedback({ correct: false }));
+      }
 
       // Title both countries on the map so the miss is easy to compare.
       setLearnHighlightWrongReveal({
@@ -1943,7 +2037,67 @@ export default function GeographyGame() {
         questionType: event.questionType,
       });
 
+      // Adaptive challenge: update mode×region pacing, then rebuild not-yet-shown
+      // questions so a hot T4 streak can harden mid-session.
+      const prevChallenge = normalizeChallenge(learnChallengeRef.current);
+      const outcomeRecord = challengeOutcomeFromAnswer({
+        tier: event.tier,
+        outcome: meta.outcome,
+        correct: event.correct,
+        revealUsed: event.revealUsed,
+        fast: event.fast,
+        predictedSuccess: event.predictedSuccess,
+      });
+      const nextChallenge = updateChallengeLevel(prevChallenge, outcomeRecord);
+      learnChallengeRef.current = nextChallenge;
+
+      if (nextChallenge.workingTier !== prevChallenge.workingTier) {
+        const idx = learnIndexRef.current;
+        const currentQuestions = learnQuestionsRef.current ?? [];
+        const remainingEntries = currentQuestions.slice(idx + 1).map((q) => {
+          const sampled = (learnSampledRef.current ?? []).find(
+            (entry) => entry.countryId === q.countryId
+          );
+          return {
+            countryId: q.countryId,
+            mastery: sampled?.mastery ?? 0,
+          };
+        });
+        if (remainingEntries.length > 0) {
+          const rebuilt = rebuildQuestionsForCountries({
+            countries: remainingEntries,
+            category: learnCategoryRef.current ?? activeSession.mode,
+            allCountries,
+            masteryStats: learnMasteryStatsRef.current,
+            challenge: nextChallenge,
+          });
+          const nextQuestions = [
+            ...currentQuestions.slice(0, idx + 1),
+            ...rebuilt,
+          ];
+          learnQuestionsRef.current = nextQuestions;
+          setLearnQuestions(nextQuestions);
+          setSession((prev) =>
+            prev ? { ...prev, totalRounds: nextQuestions.length } : prev
+          );
+        }
+      }
+
       if (signedInRef.current) {
+        const challengePromise = saveLearnChallenge({
+          mode: activeSession.mode,
+          region: activeSession.region,
+          outcome: meta.outcome,
+          tier: event.tier,
+          correct: event.correct,
+          revealUsed: event.revealUsed,
+          fast: event.fast,
+          predictedSuccess: event.predictedSuccess,
+        }).catch((error) => {
+          console.error("Failed to save learn challenge:", error);
+        });
+        pendingStatPromisesRef.current.push(challengePromise);
+
         const promise = recordCountryStat(payload)
           .then((res) => {
             const stat = res?.stat;
@@ -1972,6 +2126,7 @@ export default function GeographyGame() {
       }
 
       const question = currentLearnQuestionRef.current;
+      const secondTry = Boolean(event.priorMiss);
       if (event.correct) {
         // Neighbor questions: always show every land border on the map.
         if (isNeighborLearnQuestion(question)) {
@@ -1984,9 +2139,10 @@ export default function GeographyGame() {
               selectedValue: event.selectedValue,
               feedbackType: "correct",
               message: reveal.message,
+              secondTry,
             });
           } else {
-            setFeedback({ text: "Correct!", type: "correct" });
+            setFeedback(outcomeFeedback({ correct: true, secondTry }));
           }
           return;
         }
@@ -1995,16 +2151,24 @@ export default function GeographyGame() {
           learnAwaitingContinueRef.current = true;
           setLearnAwaitingContinue(true);
           setLearnContinueMessage(null);
-          setFeedback({ text: "Correct!", type: "correct" });
+          setFeedback(outcomeFeedback({ correct: true, secondTry }));
+          return;
+        }
+        // Highlight free-recall: typed answer turns green in-form; wait for the
+        // Submit→arrow continue (no auto-advance toast under the card).
+        if (
+          question?.mapConfig?.display === "highlight" &&
+          question?.answerType === "text_entry"
+        ) {
+          learnAwaitingContinueRef.current = true;
+          setLearnAwaitingContinue(true);
+          setLearnContinueMessage(null);
+          setFeedback({ text: "", type: "" });
           return;
         }
         // Correct path keeps a brief pause so option/map feedback is seen.
-        const delayMs =
-          question?.mapConfig?.display === "highlight" &&
-          question?.answerType === "text_entry"
-            ? 1600
-            : 650;
-        advanceLearnAfterAnswer(delayMs);
+        setFeedback(outcomeFeedback({ correct: true, secondTry }));
+        advanceLearnAfterAnswer(650);
         return;
       }
 
@@ -2066,7 +2230,7 @@ export default function GeographyGame() {
         setLearnAreaCompareReveal({ largerId, smallerId });
         setLearnLandlockedReveal(null);
         setLearnHighlightWrongReveal(null);
-        setFeedback({ text: "", type: "" });
+        setFeedback(outcomeFeedback({ correct: false }));
       } else if (reveal.landlockedReveal) {
         const { countryId, isLandlocked } = reveal.landlockedReveal;
         const country = allCountriesById.get(countryId);
@@ -2090,13 +2254,15 @@ export default function GeographyGame() {
         setLearnAreaCompareReveal(null);
         setLearnLandlockedReveal({ countryId, isLandlocked });
         setLearnHighlightWrongReveal(null);
+        // Amber landlocked banner already states the answer — skip redundant Incorrect toast.
         setFeedback({ text: "", type: "" });
       } else if (
         question?.mapConfig?.display === "highlight" &&
-        !question?.mapConfig?.keepOverlay
+        question?.answerType === "text_entry"
       ) {
-        // Map-only continue: keep the correct country yellow, paint the guess
-        // red (if resolvable in-region), and title both on the map (no toast).
+        // Keep the question card: typed answer turns red in-form and Submit
+        // becomes the continue arrow. Keep the correct country yellow; paint
+        // the guess red.
         const guessed = resolveGuessedCountryInRegion(event.selectedValue, {
           allCountriesById,
           activeCountries,
@@ -2116,20 +2282,45 @@ export default function GeographyGame() {
         setLearnAreaCompareReveal(null);
         setLearnLandlockedReveal(null);
         setFeedback({ text: "", type: "" });
+      } else if (
+        question?.mapConfig?.display === "highlight" &&
+        !question?.mapConfig?.keepOverlay
+      ) {
+        // Map-only continue: keep the correct country yellow, paint the guess
+        // red (if resolvable in-region), and title both on the map.
+        const guessed = resolveGuessedCountryInRegion(event.selectedValue, {
+          allCountriesById,
+          activeCountries,
+          excludeIds: question.countryId ? [question.countryId] : [],
+        });
+        if (guessed) {
+          clearWrongFlash();
+          addRoundWrongCountry(guessed.id);
+        }
+        setHighlightCountryId(question.countryId);
+        setLearnHighlightWrongReveal({
+          correctId: question.countryId,
+          guessedId: guessed?.id ?? null,
+        });
+        setLearnFeedbackLabelsById({});
+        setLearnNeighborMapVisible(false);
+        setLearnAreaCompareReveal(null);
+        setLearnLandlockedReveal(null);
+        setFeedback(outcomeFeedback({ correct: false }));
       } else {
-        // Card overlay already shows continueMessage — don't also toast on the
-        // map (it sits behind the blur and looks like leftover UI).
+        // Card keep the teach copy in continueMessage; toast is just the title.
         setLearnNeighborMapVisible(false);
         setLearnAreaCompareReveal(null);
         setLearnLandlockedReveal(null);
         setLearnHighlightWrongReveal(null);
-        setFeedback({ text: "", type: "" });
+        setFeedback(outcomeFeedback({ correct: false }));
       }
     },
     [
       activeCountries,
       addRoundWrongCountry,
       advanceLearnAfterAnswer,
+      allCountries,
       allCountriesById,
       beginRoundScoring,
       clearWrongFlash,
@@ -2169,7 +2360,12 @@ export default function GeographyGame() {
 
       if (correct) {
         addFilledCountry(clicked.id);
-        setFeedback({ text: "Correct!", type: "correct" });
+        setFeedback(
+          outcomeFeedback({
+            correct: true,
+            secondTry: learnMapMissedRef.current,
+          })
+        );
         emit({
           correct: true,
           responseTimeMs: Date.now() - learnQuestionStartRef.current,
@@ -2189,7 +2385,7 @@ export default function GeographyGame() {
       playIncorrectSound();
       setLearnRetryMessage(`Oops, that is ${clicked.name}.`);
       setLearnAwaitingRetry(true);
-      setFeedback({ text: "", type: "" });
+      setFeedback({ text: "Try again.", type: "wrong" });
     },
     [
       activeCountries,
@@ -2230,6 +2426,13 @@ export default function GeographyGame() {
       learnIndexRef.current = 0;
       learnQuestionsRef.current = learn.questions;
       learnQuestionStartRef.current = Date.now();
+      learnChallengeRef.current = normalizeChallenge(
+        learn.challenge ?? createDefaultChallenge()
+      );
+      learnSampledRef.current = learn.sampled ?? [];
+      learnMasteryStatsRef.current = learn.masteryStats ?? new Map();
+      learnCategoryRef.current = mode;
+      learnRegionRef.current = region;
       setLearnSummary(null);
       setLearnIndex(0);
       setLearnQuestions(learn.questions);
@@ -2649,9 +2852,9 @@ export default function GeographyGame() {
       recordRoundOutcome(outcome);
 
       if (attemptsBeforeCorrect === 0) {
-        setFeedback({ text: "Correct", type: "correct" });
+        setFeedback(outcomeFeedback({ correct: true }));
       } else {
-        setFeedback({ text: "Correct second try", type: "second-try" });
+        setFeedback(outcomeFeedback({ correct: true, secondTry: true }));
       }
       markRoundCorrect();
       playCorrectSound();
@@ -2735,11 +2938,12 @@ export default function GeographyGame() {
           setFlashSmallCountryId(null);
         }
 
-        setFeedback({
-          text: "Incorrect",
-          detail: revealDetail,
-          type: "incorrect",
-        });
+        setFeedback(
+          outcomeFeedback({
+            correct: false,
+            detail: revealDetail,
+          })
+        );
       };
 
       if (session?.level === GAME_LEVELS.NAME_FLASH && session?.mode !== GAME_MODES.FLAGS) {
@@ -3027,13 +3231,19 @@ export default function GeographyGame() {
     allCountriesById,
     activeCountries,
   ]);
+  // Exclude missed / distractor reds so the teach override can't re-green them.
+  const learnNeighborGreenIds = useMemo(() => {
+    if (!learnNeighborRevealActive) return [];
+    const wrongSet = new Set(mapWrongCountryIds);
+    return learnNeighborPaintIds.filter((id) => !wrongSet.has(id));
+  }, [learnNeighborRevealActive, learnNeighborPaintIds, mapWrongCountryIds]);
   const mapFilledCountryIds = learnNeighborRevealActive
-    ? learnNeighborPaintIds
+    ? learnNeighborGreenIds
     : filledCountryIds;
   // Learn only uses showColor for the neighbor-teach step. Gate it on that flag so
   // a stale id list can't leave the "Y" country painted after Continue.
   const mapShowColorCountryIds = learnNeighborRevealActive
-    ? learnNeighborPaintIds
+    ? learnNeighborGreenIds
     : learnEngineActive
       ? []
       : showColorCountryIds;
@@ -3249,17 +3459,13 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  // Learn: only map-click / neighbor / area-compare teach steps may pan/zoom.
-  // Language + "which country is highlighted" stay frozen on the region backdrop
-  // (same as landlocked / center-card questions).
-  const learnHighlightMapFrozen =
-    currentLearnQuestion?.mapConfig?.display === "highlight";
+  // Learn: map-click / neighbor / area-compare / highlight prompts may pan/zoom
+  // so the learner can inspect the region (e.g. "what country is highlighted").
+  // Landlocked teach stays locked — the answer is yes/no, not map reading.
   const mapNavigationEnabled =
     !learnEngineActive ||
     isDiscoverGame ||
-    (learnUsesMap &&
-      !learnLandlockedRevealActive &&
-      !learnHighlightMapFrozen);
+    (learnUsesMap && !learnLandlockedRevealActive);
 
   const mapLevel =
     isDiscoverGame || learnEngineActive ? GAME_LEVELS.FIND_FILL : session?.level;
@@ -3625,13 +3831,42 @@ export default function GeographyGame() {
                     })}
                   </div>
                 )}
-                <div className={mapFeedbackAnchor}>
-                  <MapFeedback
-                    text={feedback.text}
-                    type={feedback.type}
-                    detail={feedback.detail}
-                  />
-                </div>
+                {/* Learn card hosts its own toast under the question; map-stack
+                    toast covers test mode + map-only learn continue steps. */}
+                {(!learnEngineActive || learnMapOnlyContinue) && (
+                  <div className={mapFeedbackAnchor}>
+                    <MapFeedback
+                      text={feedback.text}
+                      type={feedback.type}
+                      detail={feedback.detail}
+                    />
+                  </div>
+                )}
+                {/* Desktop: Continue sits directly under the feedback banner on
+                    neighbor teach steps so it isn't lost at the bottom of a tall
+                    map. Landlocked uses its own top column (below). Mobile keeps
+                    the bottom Continue chrome. */}
+                {learnEngineActive &&
+                  learnMapOnlyContinue &&
+                  !gameComplete &&
+                  !learnLandlockedTopMessage &&
+                  !learnMapContinueTopPrompt && (
+                    <div className="pointer-events-none hidden w-full flex-col items-center gap-3 md:flex">
+                      {currentLearnQuestion?.continueNote && (
+                        <p className="pointer-events-none m-0 max-w-md rounded-xl border border-border bg-surface/95 px-4 py-3 text-center text-sm leading-snug text-text-muted shadow-xl backdrop-blur">
+                          {currentLearnQuestion.continueNote}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className={cn(primaryBtn, "pointer-events-auto max-w-xs shadow-xl")}
+                        onClick={handleLearnContinue}
+                        autoFocus
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  )}
               </div>
               {isOceaniaRegion ? (
                 <PacificMap
@@ -3727,7 +3962,9 @@ export default function GeographyGame() {
               {learnEngineActive &&
                 currentLearnQuestion &&
                 !gameComplete &&
-                !learnMapOnlyContinue && (
+                !learnMapOnlyContinue &&
+                !modeIntroOpen &&
+                !tutorialOpen && (
                 <LearnRoundOverlay
                   question={currentLearnQuestion}
                   variant={learnUsesMap ? "top" : "center"}
@@ -3742,6 +3979,9 @@ export default function GeographyGame() {
                   awaitingRetry={learnAwaitingRetry}
                   retryMessage={learnRetryMessage}
                   onTryAgain={handleLearnTryAgain}
+                  feedbackText={feedback.text || null}
+                  feedbackType={feedback.type || null}
+                  feedbackDetail={feedback.detail || null}
                   emaScore={
                     learnMasteryAfterRef.current.get(
                       currentLearnQuestion.countryId
@@ -3759,34 +3999,88 @@ export default function GeographyGame() {
               {learnEngineActive && learnMapOnlyContinue && !gameComplete && (
                 <>
                   {learnLandlockedTopMessage && (
-                    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-3 pt-3">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col items-center gap-3 px-3 pt-3">
                       <p className="m-0 max-w-md rounded-xl border border-amber-300/45 bg-gradient-to-br from-amber-900/95 to-orange-800/90 px-4 py-3 text-center text-sm font-semibold leading-snug text-amber-50 shadow-[0_10px_40px_rgba(245,158,11,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur">
                         {learnLandlockedTopMessage}
                       </p>
+                      {/* Desktop: Continue directly under the landlocked banner. */}
+                      <div className="hidden w-full flex-col items-center gap-3 md:flex">
+                        {currentLearnQuestion?.continueNote && (
+                          <p className="pointer-events-none m-0 max-w-md rounded-xl border border-border bg-surface/95 px-4 py-3 text-center text-sm leading-snug text-text-muted shadow-xl backdrop-blur">
+                            {currentLearnQuestion.continueNote}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          className={cn(primaryBtn, "pointer-events-auto max-w-xs shadow-xl")}
+                          onClick={handleLearnContinue}
+                          autoFocus
+                        >
+                          Continue
+                        </button>
+                      </div>
                     </div>
                   )}
                   {learnMapContinueTopPrompt && (
                     <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-3 pt-3">
-                      <p className="m-0 max-w-md rounded-xl border border-border bg-surface/95 px-4 py-3 text-center text-base font-semibold leading-snug text-text shadow-xl backdrop-blur">
-                        {learnMapContinueTopPrompt}
-                      </p>
+                      <div className="flex max-w-lg items-center gap-2.5 rounded-xl border border-border bg-surface/95 py-2 pl-4 pr-2 shadow-xl backdrop-blur">
+                        <p className="m-0 min-w-0 flex-1 text-center text-base font-semibold leading-snug text-text">
+                          {learnMapContinueTopPrompt}
+                        </p>
+                        <button
+                          type="button"
+                          className={cn(
+                            "pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 text-white",
+                            "cursor-pointer bg-[image:var(--accent-gradient)] shadow-[var(--shadow-accent)]",
+                            "transition-[transform,box-shadow,background] duration-150 ease-out",
+                            "enabled:hover:-translate-y-px enabled:hover:bg-[image:var(--accent-gradient-hover)]",
+                            "enabled:active:translate-y-0",
+                            focusRing
+                          )}
+                          onClick={handleLearnContinue}
+                          aria-label="Continue"
+                          autoFocus
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M5 12h12M13 6l6 6-6 6"
+                              stroke="currentColor"
+                              strokeWidth="2.25"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   )}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col items-center gap-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6">
-                    {currentLearnQuestion?.continueNote && (
-                      <p className="pointer-events-none m-0 max-w-md rounded-xl border border-border bg-surface/95 px-4 py-3 text-center text-sm leading-snug text-text-muted shadow-xl backdrop-blur">
-                        {currentLearnQuestion.continueNote}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      className={cn(primaryBtn, "pointer-events-auto max-w-xs shadow-xl")}
-                      onClick={handleLearnContinue}
-                      autoFocus
-                    >
-                      Continue
-                    </button>
-                  </div>
+                  {/* Mobile bottom Continue (desktop uses the top placements above). */}
+                  {(currentLearnQuestion?.continueNote ||
+                    !learnMapContinueTopPrompt) && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col items-center gap-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 md:hidden">
+                      {currentLearnQuestion?.continueNote && (
+                        <p className="pointer-events-none m-0 max-w-md rounded-xl border border-border bg-surface/95 px-4 py-3 text-center text-sm leading-snug text-text-muted shadow-xl backdrop-blur">
+                          {currentLearnQuestion.continueNote}
+                        </p>
+                      )}
+                      {!learnMapContinueTopPrompt && (
+                        <button
+                          type="button"
+                          className={cn(primaryBtn, "pointer-events-auto max-w-xs shadow-xl")}
+                          onClick={handleLearnContinue}
+                          autoFocus
+                        >
+                          Continue
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
               {(isDiscoverGame || hasLearnMapLabels) && (

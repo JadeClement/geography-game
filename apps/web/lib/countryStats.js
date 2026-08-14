@@ -73,3 +73,40 @@ export async function fetchWeakCountryStats({ mode, level, region }) {
 
   return data;
 }
+
+export async function fetchLearnChallenge({ mode, region }) {
+  const params = new URLSearchParams({ mode, region });
+  const response = await fetch(`/api/learn-challenge?${params}`);
+
+  if (response.status === 401) {
+    return {
+      challenge: { workingTier: 4, momentum: 0, recentOutcomes: [] },
+      unauthorized: true,
+    };
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    // Soft-fail: Learn can still run with default challenge.
+    return {
+      challenge: data.challenge ?? { workingTier: 4, momentum: 0, recentOutcomes: [] },
+      error: data.error,
+    };
+  }
+
+  return data;
+}
+
+export async function saveLearnChallenge(body) {
+  const response = await fetch("/api/learn-challenge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to save learn challenge.");
+  }
+  return data;
+}

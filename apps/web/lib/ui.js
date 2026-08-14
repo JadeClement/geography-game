@@ -21,6 +21,15 @@ export const secondaryBtn = cn(
   focusRing
 );
 
+export const dangerBtn = cn(
+  "inline-flex w-full items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--color-error)_45%,var(--color-border-subtle))] bg-transparent px-4 py-3",
+  "text-[0.95rem] font-semibold text-error cursor-pointer no-underline",
+  "transition-[transform,background,border-color] duration-150 ease-out",
+  "enabled:hover:bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] enabled:active:translate-y-0",
+  "disabled:cursor-not-allowed disabled:opacity-60",
+  focusRing
+);
+
 export function choiceBtn({ selected = false, disabled = false, className } = {}) {
   return cn(
     "cursor-pointer rounded-md border border-border bg-surface px-5 py-3.5 text-base font-semibold text-text shadow-sm",
@@ -903,10 +912,10 @@ export const mapFeedbackAnchor = "pointer-events-none flex justify-center";
 
 export function mapFeedback({ type, className, stacked = false } = {}) {
   const base = cn(
-    "pointer-events-none flex max-w-[min(92vw,34rem)] gap-2.5",
+    "pointer-events-none flex max-w-[min(92vw,34rem)]",
     stacked
-      ? "items-start rounded-2xl py-3 pl-4 pr-[1.35rem]"
-      : "items-center rounded-full py-[0.7rem] pl-4 pr-[1.35rem]",
+      ? "relative items-center justify-center rounded-2xl px-12 py-3 text-center"
+      : "items-center gap-2.5 rounded-full py-[0.7rem] pl-4 pr-[1.35rem]",
     "text-[1.05rem] font-semibold leading-tight tracking-wide backdrop-blur-[14px]",
     "animate-[map-feedback-in_0.18s_cubic-bezier(0.22,1,0.36,1)_both]",
     className
@@ -930,7 +939,12 @@ export function mapFeedback({ type, className, stacked = false } = {}) {
 
 export const mapFeedbackIcon = "h-6 w-6 shrink-0";
 
+export const mapFeedbackIconStacked =
+  "absolute left-4 top-1/2 h-6 w-6 shrink-0 -translate-y-1/2";
+
 export const mapFeedbackText = "min-w-0 pr-0.5";
+
+export const mapFeedbackTextStacked = "min-w-0 text-center";
 
 export const mapFeedbackDetail =
   "mt-0.5 block text-[0.82rem] font-medium leading-snug opacity-90";

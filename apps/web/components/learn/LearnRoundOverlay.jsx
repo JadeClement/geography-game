@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { primaryBtn } from "@/lib/ui";
+import MapFeedback from "@/components/MapFeedback";
 import LearnQuestionRenderer from "./LearnQuestionRenderer";
 
 /**
@@ -22,6 +23,8 @@ import LearnQuestionRenderer from "./LearnQuestionRenderer";
  *
  * Map-click soft misses use `awaitingRetry` + `onTryAgain` instead — show which
  * country was clicked and let the learner try again without scoring yet.
+ *
+ * Outcome toasts (Correct / Incorrect) render beneath the question card.
  */
 export default function LearnRoundOverlay({
   question,
@@ -35,13 +38,26 @@ export default function LearnRoundOverlay({
   awaitingRetry = false,
   retryMessage = null,
   onTryAgain,
+  feedbackText = null,
+  feedbackType = null,
+  feedbackDetail = null,
   ...rendererProps
 }) {
   if (!question) return null;
 
-  const isTop = variant === "top";
-  const showFooter = awaitingContinue || awaitingRetry;
+  // Highlight prompts must stay top-pinned even if the host passes "center" —
+  // a middle card covers the yellow country and fights the region backdrop.
+  const forceTop = question.mapConfig?.display === "highlight";
+  const isTop = forceTop || variant === "top";
   const heavierMapBlur = question.type === "landlocked_check";
+  const highlightMapPrompt = question.mapConfig?.display === "highlight";
+  const showOutcomeFeedback = Boolean(feedbackText);
+  // Highlight free-recall keeps Continue as an in-form arrow (replaces Submit).
+  const inlineContinue =
+    question.answerType === "text_entry" &&
+    question.mapConfig?.display === "highlight";
+  const showFooter =
+    (awaitingContinue || awaitingRetry) && !(inlineContinue && awaitingContinue);
 
   return (
     <div
@@ -58,42 +74,65 @@ export default function LearnRoundOverlay({
       )}
     >
       <div
-        ref={cardRef}
         className={cn(
-          "pointer-events-auto relative w-full rounded-xl border border-border bg-surface shadow-xl",
-          isTop
-            ? "max-w-md bg-surface/95 p-3 backdrop-blur"
-            : "max-h-full max-w-lg overflow-y-auto p-5"
+          "flex w-full flex-col items-center gap-2",
+          isTop ? "max-w-md" : "max-h-full max-w-lg"
         )}
       >
-        {/* TEST-ONLY: current country's EMA mastery score */}
-        {emaScore != null && (
-          <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-pill bg-meta px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-text-muted">
-            EMA {Number(emaScore).toFixed(2)}
-          </div>
-        )}
-        <LearnQuestionRenderer question={question} {...rendererProps} />
-        {showFooter && (
-          <div className="mt-4 flex flex-col items-center gap-3 border-t border-border-subtle pt-4">
-            {(awaitingRetry ? retryMessage : continueMessage) && (
-              <p className="m-0 text-center text-sm font-semibold leading-snug text-text">
-                {awaitingRetry ? retryMessage : continueMessage}
-              </p>
-            )}
-            {awaitingContinue && question.continueNote && (
-              <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
-                {question.continueNote}
-              </p>
-            )}
-            {awaitingRetry ? (
-              <button type="button" className={primaryBtn} onClick={onTryAgain} autoFocus>
-                Try again
-              </button>
-            ) : (
-              <button type="button" className={primaryBtn} onClick={onContinue} autoFocus>
-                {continueLabel}
-              </button>
-            )}
+        <div
+          ref={cardRef}
+          className={cn(
+            "pointer-events-auto relative w-full rounded-xl border border-border bg-surface shadow-xl",
+            isTop
+              ? cn(
+                  "bg-surface/95 backdrop-blur",
+                  highlightMapPrompt ? "p-2.5" : "p-3"
+                )
+              : "max-h-full overflow-y-auto p-5"
+          )}
+        >
+          {/* TEST-ONLY: current country's EMA mastery score */}
+          {emaScore != null && (
+            <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-pill bg-meta px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-text-muted">
+              EMA {Number(emaScore).toFixed(2)}
+            </div>
+          )}
+          <LearnQuestionRenderer
+            question={question}
+            onContinue={onContinue}
+            {...rendererProps}
+          />
+          {showFooter && (
+            <div className="mt-4 flex flex-col items-center gap-3 border-t border-border-subtle pt-4">
+              {(awaitingRetry ? retryMessage : continueMessage) && (
+                <p className="m-0 text-center text-sm font-semibold leading-snug text-text">
+                  {awaitingRetry ? retryMessage : continueMessage}
+                </p>
+              )}
+              {awaitingContinue && question.continueNote && (
+                <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
+                  {question.continueNote}
+                </p>
+              )}
+              {awaitingRetry ? (
+                <button type="button" className={primaryBtn} onClick={onTryAgain} autoFocus>
+                  Try again
+                </button>
+              ) : (
+                <button type="button" className={primaryBtn} onClick={onContinue} autoFocus>
+                  {continueLabel}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        {showOutcomeFeedback && (
+          <div className="pointer-events-none flex w-full justify-center">
+            <MapFeedback
+              text={feedbackText}
+              type={feedbackType}
+              detail={feedbackDetail}
+            />
           </div>
         )}
       </div>

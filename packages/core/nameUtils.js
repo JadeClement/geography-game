@@ -42,6 +42,8 @@ export { stripDiacritics };
 /** Normalized typed shortcuts after diacritic stripping (e.g. "sao tome" → full name). */
 const NORMALIZED_ANSWER_ALIASES = {
   "sao tome": "sao tome and principe",
+  serbia: "republic of serbia",
+  macedonia: "north macedonia",
 };
 
 export function normalizeName(name) {

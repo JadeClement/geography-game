@@ -2,13 +2,17 @@ import {
   mapFeedback,
   mapFeedbackDetail,
   mapFeedbackIcon,
+  mapFeedbackIconStacked,
   mapFeedbackText,
+  mapFeedbackTextStacked,
 } from "@/lib/ui";
 
-function FeedbackIcon({ type }) {
+function FeedbackIcon({ type, stacked = false }) {
+  const className = stacked ? mapFeedbackIconStacked : mapFeedbackIcon;
+
   if (type === "correct" || type === "second-try" || type === "got-it") {
     return (
-      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
         <path
           d="M8 12.5l2.5 2.5 5.5-6"
@@ -24,7 +28,7 @@ function FeedbackIcon({ type }) {
 
   if (type === "wrong") {
     return (
-      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
         <path
           d="M12 8v5M12 16h.01"
@@ -39,7 +43,7 @@ function FeedbackIcon({ type }) {
 
   if (type === "incorrect" || type === "reveal") {
     return (
-      <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
         <path
           d="M9 9l6 6M15 9l-6 6"
@@ -53,7 +57,7 @@ function FeedbackIcon({ type }) {
   }
 
   return (
-    <svg className={mapFeedbackIcon} viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
       <circle cx="12" cy="12" r="3.5" fill="currentColor" />
       <path
@@ -72,16 +76,17 @@ export default function MapFeedback({ text, type, detail }) {
 
   const isAssertive =
     type === "wrong" || type === "reveal" || type === "incorrect";
+  const stacked = Boolean(detail);
 
   return (
     <div
-      className={mapFeedback({ type, stacked: Boolean(detail) })}
+      className={mapFeedback({ type, stacked })}
       role="status"
       aria-live={isAssertive ? "assertive" : "polite"}
       key={`${type}-${text}-${detail ?? ""}`}
     >
-      <FeedbackIcon type={type} />
-      <span className={mapFeedbackText}>
+      <FeedbackIcon type={type} stacked={stacked} />
+      <span className={stacked ? mapFeedbackTextStacked : mapFeedbackText}>
         {text}
         {detail ? <span className={mapFeedbackDetail}>{detail}</span> : null}
       </span>

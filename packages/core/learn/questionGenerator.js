@@ -41,6 +41,7 @@ import {
   getAreaPeers,
   getPopulationPeers,
   isBlockedPair,
+  metricRatio,
 } from "../comparison-clusters.js";
 const MAX_CHOICE_OPTIONS = 4; // 1 correct + up to 3 distractors
 // Full neighbor set + a few non-border distractors ("select all that apply").
@@ -178,7 +179,13 @@ export function generateFreeNameEntry(country) {
     prompt: "What country is highlighted?",
     answerType: "text_entry",
     correctAnswer: country.name,
-    mapConfig: { display: "highlight", highlightIds: [cid(country)] },
+    mapConfig: {
+      display: "highlight",
+      highlightIds: [cid(country)],
+      // Keep the question card after submit so the typed answer can turn
+      // green/red and Submit can become the continue arrow in place.
+      keepOverlay: true,
+    },
   });
 }
 
@@ -394,6 +401,7 @@ function generateNumericCompare(type, country, allCountries, { peers, field, pro
 
   const winnerId = value > opponent[field] ? cid(country) : cid(opponent);
   const options = shuffle([countryOption(country), countryOption(opponent)]);
+  const compareRatio = metricRatio(value, opponent[field]);
 
   return baseQuestion(type, country, {
     prompt,
@@ -401,6 +409,7 @@ function generateNumericCompare(type, country, allCountries, { peers, field, pro
     correctAnswer: winnerId,
     options,
     comparisonCountryId: cid(opponent),
+    compareRatio,
   });
 }
 

@@ -4,6 +4,7 @@ import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession
 import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
 import { GAME_MODES } from "@/lib/regions";
+import { getMobileSession } from "@/lib/mobile-auth";
 import countriesManifest from "@/data/countries.json";
 
 const VALID_OUTCOMES = new Set([
@@ -30,7 +31,7 @@ function getRegionCountryIds(regionId) {
 }
 
 export async function GET(request) {
-  const session = await auth();
+  const session = (await auth()) || (await getMobileSession(request));
   if (!session?.user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -89,14 +90,14 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await auth();
+  const session = (await auth()) || (await getMobileSession(request));
   if (!session?.user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const body = await request.json();
-    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier } = body;
+    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier, questionTier, predictedSuccess } = body;
 
     if (
       !countryId ||
@@ -135,10 +136,12 @@ export async function POST(request) {
       }
     }
 
+    const userId = session.user.id;
+
     const stat = await recordCountryPerformance({
       statId: randomUUID(),
       attemptId: randomUUID(),
-      userId: session.user.id,
+      userId,
       countryId,
       mode,
       level,
@@ -146,11 +149,19 @@ export async function POST(request) {
       outcome,
       responseTimeMs: outcome === "needed_reveal" ? null : responseTimeMs,
       learnModeMultiplier: resolvedMultiplier,
+      questionTier:
+        typeof questionTier === "string" && questionTier.startsWith("tier_")
+          ? questionTier
+          : null,
+      predictedSuccess:
+        typeof predictedSuccess === "number" && Number.isFinite(predictedSuccess)
+          ? Math.min(1, Math.max(0, predictedSuccess))
+          : null,
     });
 
     // Idempotent per day (upsert), so recording on every round is safe and
     // keeps the user's daily practice streak up to date.
-    await recordPracticeSession(session.user.id);
+    await recordPracticeSession(userId);
 
     return Response.json({ stat });
   } catch (error) {

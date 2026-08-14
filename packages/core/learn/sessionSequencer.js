@@ -1,45 +1,37 @@
 /**
  * Learn mode session sequencer.
  *
- * Wraps the existing weak-country sampling (lib/learning.buildLearningQueue) and
- * turns a sampled country pool into a fully-specified, ordered question queue for
- * the mixed-question Learn engine. It does NOT re-sample countries — that stays
- * with the existing logic; this only decides, per country, WHICH question type to
- * ask and in WHAT order.
+ * Turns a sampled country pool into an ordered question queue for the mixed
+ * Learn engine. Format difficulty is driven by challenge level (mode × region),
+ * not per-country mastery bands. predictedSuccess scores candidates so sessions
+ * stay near the flow target; tiers still only affect EMA multipliers downstream.
  *
  * Sequencing rules (applied in priority order 1→5):
- *  1. Type selection per country — eligible types via getEligibleQuestionTypes,
- *     weighted toward higher tiers (primary tier 70% when the band has two tiers).
- *     Generator null → try next eligible type → finally an always-buildable
+ *  1. Type selection per country — eligible types via challenge working tier
+ *     (± adjacent), scored by predictedSuccess (skip trivial, prefer flow).
+ *     Generator null → try next candidate → finally an always-buildable
  *     Find/Name fallback. A country is never dropped.
  *  2. Variety — never 3+ consecutive questions of the same type.
  *  3. Opening — the first question is Tier 3/4 (warm-up), never cold free recall.
  *  4. Tier representation — 10+ question sessions include ≥2 tiers; if every
- *     sampled country is single-tier (e.g. all mastered/Tier 1), inject 2 Tier 3
- *     comparative "bonus" questions from the most-tested region.
+ *     sampled country is single-tier, inject 2 Tier 3 comparative bonuses.
  *  5. Comparative placement — no two Tier 3/4 questions back to back.
- *
- * Priority: the spec orders the rules 1→5, so on conflict Rule 2 (variety) beats
- * Rule 3 (opening) beats Rule 5 (spacing). The ordering pass reflects this.
- * Rule 4's suggested "positions 3 and 7" is superseded by the higher-priority
- * opening/spacing rules once the bonus comparatives are injected.
- *
- * Best-effort caveats (inherent to the type catalog + mastery ladder, not bugs):
- * - When a (mastery band × category) yields only comparative/association tiers
- *   (e.g. any category at mastery 0–0.30 → Tier 4 only), every question is a
- *   comparative, so Rule 5's "no two comparatives adjacent" cannot hold.
- * - When a band exposes a single question type for a category (notably `capitals`
- *   at mastery ≥ 0.90 → only capital_free_recall, or `flags` at 0.70–0.90 → a
- *   single flag type), Rule 2's "no 3-in-a-row" cannot hold. Mixed-mastery
- *   sessions (the norm for weak-country Learn pools) have ample type variety and
- *   satisfy all rules. Adding more capital/flag question types would remove the
- *   caveat entirely.
  */
 
+import { LEARN_CHALLENGE, QUESTION_TIERS } from "@worldly/constants";
 import {
-  QUESTION_TIERS,
-  getEligibleQuestionTypes,
+  getEligibleQuestionTypesForChallenge,
 } from "./questionTypes.js";
+import {
+  createDefaultChallenge,
+  normalizeChallenge,
+  orderedTiersForChallenge,
+} from "./challengeLevel.js";
+import {
+  predictedSuccess,
+  pickByPredictedSuccess,
+  isTrivialPrediction,
+} from "./predictedSuccess.js";
 import { applyContinueNote } from "./continueNotes.js";
 import {
   generateQuestion,
@@ -48,7 +40,7 @@ import {
   generateAreaCompare,
 } from "./questionGenerator.js";
 
-const PRIMARY_TIER_WEIGHT = 0.7; // weight of the band's top tier when 2+ tiers
+const PRIMARY_TIER_WEIGHT = LEARN_CHALLENGE.PRIMARY_TIER_WEIGHT;
 const MAX_CONSECUTIVE_SAME_TYPE = 2;
 const MIN_SESSION_FOR_TIER_RULES = 10;
 const BONUS_COMPARATIVE_COUNT = 2;
@@ -75,10 +67,6 @@ function isComparativeTier(tier) {
   return tier === QUESTION_TIERS.TIER_3 || tier === QUESTION_TIERS.TIER_4;
 }
 
-// ── Rule 1: per-country type selection ────────────────────────────────────────
-
-// Group eligible types by tier, preserving tier priority order (as returned by
-// getEligibleQuestionTypes: the band's primary tier first).
 function groupTypesByTier(eligibleTypes) {
   const order = [];
   const byTier = new Map();
@@ -92,8 +80,6 @@ function groupTypesByTier(eligibleTypes) {
   return { order, byTier };
 }
 
-// Weighted random tier: top tier gets PRIMARY_TIER_WEIGHT, remaining tiers split
-// the rest evenly. Single-tier bands always return that tier.
 function pickWeightedTier(orderedTiers) {
   if (orderedTiers.length <= 1) return orderedTiers[0] ?? null;
 
@@ -107,21 +93,6 @@ function pickWeightedTier(orderedTiers) {
     if (roll <= 0) return orderedTiers[i];
   }
   return orderedTiers[orderedTiers.length - 1];
-}
-
-// Ordered list of candidate type ids: the chosen tier's types first (shuffled),
-// then the remaining tiers in priority order (shuffled within each tier).
-function buildCandidateOrder(eligibleTypes) {
-  const { order, byTier } = groupTypesByTier(eligibleTypes);
-  if (order.length === 0) return [];
-
-  const chosenTier = pickWeightedTier(order);
-  const candidates = [...shuffle(byTier.get(chosenTier) ?? [])];
-  for (const tier of order) {
-    if (tier === chosenTier) continue;
-    candidates.push(...shuffle(byTier.get(tier) ?? []));
-  }
-  return candidates;
 }
 
 // An always-buildable question so a country is never dropped when every eligible
@@ -170,27 +141,137 @@ function buildFallbackQuestion(record, category) {
   });
 }
 
-function selectQuestionForCountry(mastery, category, record, allCountries, masteryStats) {
-  const eligible = getEligibleQuestionTypes(mastery, category);
-  let candidates = buildCandidateOrder(eligible);
+function attachPredictedSuccess(question, workingTier, country, countryMastery) {
+  if (!question) return null;
+  const score = predictedSuccess({
+    workingTier,
+    question,
+    country,
+    peerMeta: { compareRatio: question.compareRatio ?? null },
+    countryMastery,
+  });
+  return { ...question, predictedSuccess: score };
+}
 
-  // Prefer Brazil's special "who doesn't border Brazil?" when eligible.
-  if (cid(record) === "BRA") {
-    const specialIdx = candidates.findIndex((type) => type.id === "brazil_non_neighbors");
-    if (specialIdx > 0 && Math.random() < 0.85) {
-      const [special] = candidates.splice(specialIdx, 1);
-      candidates = [special, ...candidates];
+/**
+ * Select one question for a country using challenge level + predictedSuccess.
+ *
+ * Tier is chosen from the challenge ladder first (≈70% working tier), then
+ * instance-level predictedSuccess picks among generated questions in that tier
+ * (with fallback to other eligible tiers if nothing builds / all trivial).
+ */
+export function selectQuestionForCountry({
+  workingTier,
+  category,
+  record,
+  allCountries,
+  masteryStats,
+  mastery = 0,
+}) {
+  const wt =
+    Number(workingTier) || LEARN_CHALLENGE.DEFAULT_WORKING_TIER;
+  const eligible = getEligibleQuestionTypesForChallenge(wt, category);
+  const { order, byTier } = groupTypesByTier(eligible);
+
+  // Prefer challenge ordering when present.
+  const preferred = orderedTiersForChallenge(wt).filter((tier) => byTier.has(tier));
+  const tierOrder = [
+    ...preferred,
+    ...order.filter((tier) => !preferred.includes(tier)),
+  ];
+
+  if (cid(record) === "BRA" && byTier.has(QUESTION_TIERS.TIER_3)) {
+    // Bias Brazil toward its special comparative when Tier 3 is in play.
+    if (Math.random() < 0.85) {
+      const braTypes = byTier.get(QUESTION_TIERS.TIER_3) ?? [];
+      const special = braTypes.find((type) => type.id === "brazil_non_neighbors");
+      if (special) {
+        const raw = generateQuestion(
+          special.id,
+          record,
+          allCountries,
+          masteryStats
+        );
+        if (raw) {
+          return attachPredictedSuccess(raw, wt, record, mastery);
+        }
+      }
     }
   }
 
-  for (const type of candidates) {
-    const question = generateQuestion(type.id, record, allCountries, masteryStats);
-    if (question) return question;
-  }
-  return buildFallbackQuestion(record, category);
+  const tryTier = (tiers) => {
+    let fallback = null;
+    for (const tier of tiers) {
+      const scored = [];
+      for (const type of shuffle(byTier.get(tier) ?? [])) {
+        const raw = generateQuestion(type.id, record, allCountries, masteryStats);
+        if (!raw) continue;
+        const question = attachPredictedSuccess(raw, wt, record, mastery);
+        scored.push({ question, predictedSuccess: question.predictedSuccess });
+      }
+      if (scored.length === 0) continue;
+
+      const nonTrivial = scored.filter(
+        (entry) => !isTrivialPrediction(entry.predictedSuccess, wt)
+      );
+      if (nonTrivial.length > 0) {
+        return pickByPredictedSuccess(nonTrivial, wt);
+      }
+      // Entire tier was trivial — remember a fallback and try a harder/other tier.
+      if (!fallback) fallback = pickByPredictedSuccess(scored, wt);
+    }
+    return fallback;
+  };
+
+  // Primary: weighted single-tier attempt, then remaining tiers as fallback.
+  const primaryTier = pickWeightedTier(tierOrder);
+  const primaryFirst = primaryTier
+    ? [primaryTier, ...tierOrder.filter((tier) => tier !== primaryTier)]
+    : tierOrder;
+
+  const picked = tryTier(primaryFirst);
+  if (picked) return picked;
+
+  return attachPredictedSuccess(
+    buildFallbackQuestion(record, category),
+    wt,
+    record,
+    mastery
+  );
 }
 
-// ── Rule 4: bonus comparative injection ───────────────────────────────────────
+/**
+ * Rebuild questions for a country list with the current challenge (used for
+ * mid-session adaptation after challengeLevel updates).
+ */
+export function rebuildQuestionsForCountries({
+  countries,
+  category,
+  allCountries,
+  masteryStats,
+  challenge,
+}) {
+  const state = normalizeChallenge(challenge);
+  const index = indexCountries(allCountries);
+  const questions = [];
+  for (const entry of countries ?? []) {
+    const countryId = entry.countryId ?? entry.id;
+    const mastery = entry.mastery ?? 0;
+    const record = index.get(countryId);
+    if (!record) continue;
+    questions.push(
+      selectQuestionForCountry({
+        workingTier: state.workingTier,
+        category,
+        record,
+        allCountries,
+        masteryStats,
+        mastery,
+      })
+    );
+  }
+  return questions;
+}
 
 function mostTestedRegion(sampled, index) {
   const counts = new Map();
@@ -210,7 +291,16 @@ function mostTestedRegion(sampled, index) {
   return best;
 }
 
-function buildBonusComparatives(region, index, usedIds, allCountries, masteryStats, count) {
+function buildBonusQuestions(
+  region,
+  index,
+  usedIds,
+  allCountries,
+  masteryStats,
+  count,
+  workingTier,
+  existingTiers
+) {
   const candidates = shuffle(
     [...index.values()].filter(
       (record) =>
@@ -220,30 +310,36 @@ function buildBonusComparatives(region, index, usedIds, allCountries, masterySta
     )
   );
 
+  // Prefer a tier that is not already represented so Rule 4 can fire.
+  const wantComparative = !existingTiers.has(QUESTION_TIERS.TIER_3);
+  const wantAssociation = !existingTiers.has(QUESTION_TIERS.TIER_4);
+
   const bonus = [];
   for (const record of candidates) {
     if (bonus.length >= count) break;
-    const question =
-      generatePopulationCompare(record, allCountries, masteryStats) ??
-      generateAreaCompare(record, allCountries, masteryStats);
-    if (question) {
-      bonus.push(question);
+    let raw = null;
+    if (wantComparative) {
+      raw =
+        generatePopulationCompare(record, allCountries, masteryStats) ??
+        generateAreaCompare(record, allCountries, masteryStats);
+    } else if (wantAssociation) {
+      raw =
+        generateQuestion("landlocked_check", record, allCountries, masteryStats) ??
+        generateQuestion("binary_map_choice", record, allCountries, masteryStats) ??
+        generateQuestion("language_family", record, allCountries, masteryStats);
+    } else {
+      raw =
+        generatePopulationCompare(record, allCountries, masteryStats) ??
+        generateAreaCompare(record, allCountries, masteryStats);
+    }
+    if (raw) {
+      bonus.push(attachPredictedSuccess(raw, workingTier, record, 0));
       usedIds.add(cid(record));
     }
   }
   return bonus;
 }
 
-// ── Rules 2, 3, 5: ordering ───────────────────────────────────────────────────
-
-// Single greedy pass that orders the queue honoring the rules by priority:
-//   Rule 2 (highest of the three): never place a 3rd consecutive identical type
-//     — enforced as a hard constraint whenever the type mix allows it.
-//   Rule 3: open with a comparative (Tier 3/4) when any exist.
-//   Rule 5: avoid placing two comparatives back to back.
-// At each step it picks, among the types that would not create a 3-run, the one
-// with the best preference score (opening/spacing), breaking ties toward the
-// largest remaining bucket so no single type is left to pile up at the end.
 function arrangeQuestions(questions) {
   const buckets = new Map();
   for (const question of shuffle(questions)) {
@@ -257,13 +353,11 @@ function arrangeQuestions(questions) {
 
   const classRemaining = (comparative) =>
     [...buckets.keys()].reduce(
-      (sum, type) => sum + (typeIsComparative(type) === comparative ? remaining(type) : 0),
+      (sum, type) =>
+        sum + (typeIsComparative(type) === comparative ? remaining(type) : 0),
       0
     );
 
-  // Among a set of candidate types, take the one with the largest remaining
-  // bucket (with jitter) — this keeps per-type counts even, which is what gives
-  // Rule 2 (no 3-in-a-row) headroom.
   const pickLargest = (types) => {
     let best = null;
     let bestScore = -Infinity;
@@ -278,15 +372,15 @@ function arrangeQuestions(questions) {
   };
 
   const result = [];
-  let prev1 = null; // type placed at i-1
-  let prev2 = null; // type placed at i-2
+  let prev1 = null;
+  let prev2 = null;
 
   while (result.length < questions.length) {
     const liveTypes = [...buckets.keys()].filter((type) => remaining(type) > 0);
 
-    // Rule 2 (hard): exclude any type that would form a 3-run, unless it's all
-    // that's left.
-    let allowed = liveTypes.filter((type) => !(type === prev1 && type === prev2));
+    let allowed = liveTypes.filter(
+      (type) => !(type === prev1 && type === prev2)
+    );
     if (allowed.length === 0) allowed = liveTypes;
 
     const compTypes = allowed.filter((type) => typeIsComparative(type));
@@ -295,8 +389,6 @@ function arrangeQuestions(questions) {
 
     let chosenType;
     if (result.length === 0) {
-      // Rule 3: warm up — open with a comparative when possible, else any
-      // non-Tier-1 recognition question; never open cold with Tier 1 free recall.
       if (compTypes.length > 0) {
         chosenType = pickLargest(compTypes);
       } else {
@@ -306,17 +398,16 @@ function arrangeQuestions(questions) {
         chosenType = pickLargest(nonT1.length > 0 ? nonT1 : allowed);
       }
     } else if (prevIsComparative) {
-      // Rule 5: never place a comparative right after a comparative while a
-      // spacer (non-comparative) is available.
-      chosenType = pickLargest(nonCompTypes.length > 0 ? nonCompTypes : compTypes);
+      chosenType = pickLargest(
+        nonCompTypes.length > 0 ? nonCompTypes : compTypes
+      );
     } else {
-      // Previous was a spacer: place a comparative once comparatives are at least
-      // as plentiful as the remaining spacers, so they don't strand at the tail
-      // and force adjacencies later. Otherwise keep laying down spacers.
       if (compTypes.length > 0 && classRemaining(true) >= classRemaining(false)) {
         chosenType = pickLargest(compTypes);
       } else {
-        chosenType = pickLargest(nonCompTypes.length > 0 ? nonCompTypes : allowed);
+        chosenType = pickLargest(
+          nonCompTypes.length > 0 ? nonCompTypes : allowed
+        );
       }
     }
 
@@ -328,9 +419,7 @@ function arrangeQuestions(questions) {
   return result;
 }
 
-// ── meta ───────────────────────────────────────────────────────────────────────
-
-function buildSessionMeta(questions, sampled) {
+function buildSessionMeta(questions, sampled, challenge) {
   const tierBreakdown = {};
   const typeBreakdown = {};
   for (const question of questions) {
@@ -346,19 +435,24 @@ function buildSessionMeta(questions, sampled) {
       ? masteries.reduce((sum, value) => sum + value, 0) / masteries.length
       : 0;
 
-  return { tierBreakdown, typeBreakdown, avgMastery };
+  const state = normalizeChallenge(challenge);
+  return {
+    tierBreakdown,
+    typeBreakdown,
+    avgMastery,
+    workingTier: state.workingTier,
+    momentum: state.momentum,
+  };
 }
-
-// ── entry point ──────────────────────────────────────────────────────────────
 
 /**
  * @param {object} params
- * @param {Array<{ countryId: string, mastery: number }>} params.countries - already sampled pool
+ * @param {Array<{ countryId: string, mastery: number }>} params.countries
  * @param {"countries"|"capitals"|"flags"} params.category
- * @param {Array|Map|object} params.allCountries - full country data lookup
- * @param {*} [params.masteryStats] - per-country mastery, forwarded to generators
+ * @param {Array|Map|object} params.allCountries
+ * @param {*} [params.masteryStats]
  * @param {number|"all"} [params.sessionSize]
- * @returns {{ questions: object[], sessionMeta: { tierBreakdown: object, typeBreakdown: object, avgMastery: number } }}
+ * @param {object} [params.challenge] - { workingTier, momentum, recentOutcomes }
  */
 export function buildLearnSession({
   countries,
@@ -366,44 +460,56 @@ export function buildLearnSession({
   allCountries,
   masteryStats,
   sessionSize,
+  challenge,
 }) {
   const index = indexCountries(allCountries);
   const sampled = Array.isArray(countries) ? countries : [];
+  const state = normalizeChallenge(challenge ?? createDefaultChallenge());
 
-  // Rule 1: one question per sampled country (never dropped).
   const questions = [];
   for (const { countryId, mastery } of sampled) {
     const record = index.get(countryId);
-    if (!record) continue; // no data for this id — nothing to build
+    if (!record) continue;
     questions.push(
-      selectQuestionForCountry(mastery ?? 0, category, record, allCountries, masteryStats)
+      selectQuestionForCountry({
+        workingTier: state.workingTier,
+        category,
+        record,
+        allCountries,
+        masteryStats,
+        mastery: mastery ?? 0,
+      })
     );
   }
 
-  // Rule 4: guarantee ≥2 tiers for 10+ question sessions.
   const distinctTiers = new Set(questions.map((q) => q.tier));
   if (questions.length >= MIN_SESSION_FOR_TIER_RULES && distinctTiers.size < 2) {
     const region = mostTestedRegion(sampled, index);
     if (region) {
       const usedIds = new Set(questions.map((q) => q.countryId));
       questions.push(
-        ...buildBonusComparatives(
+        ...buildBonusQuestions(
           region,
           index,
           usedIds,
           allCountries,
           masteryStats,
-          BONUS_COMPARATIVE_COUNT
+          BONUS_COMPARATIVE_COUNT,
+          state.workingTier,
+          distinctTiers
         )
       );
     }
   }
 
-  // Rules 2 + 3 + 5: order the assembled queue in a single priority-aware pass.
   const ordered = arrangeQuestions(questions);
 
   return {
     questions: ordered,
-    sessionMeta: buildSessionMeta(ordered, sampled),
+    sessionMeta: buildSessionMeta(ordered, sampled, state),
+    challenge: state,
   };
 }
+
+// Silence unused in case bundlers flag the variety constant (kept for docs parity).
+void MAX_CONSECUTIVE_SAME_TYPE;

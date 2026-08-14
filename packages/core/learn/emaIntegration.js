@@ -89,6 +89,11 @@ export function buildLearnStatPayload(event, { mode, level }) {
     outcome,
     responseTimeMs: event.responseTimeMs ?? null,
     learnModeMultiplier: multiplier,
+    questionTier: event.tier ?? null,
+    predictedSuccess:
+      event.predictedSuccess != null && Number.isFinite(event.predictedSuccess)
+        ? event.predictedSuccess
+        : null,
   };
   return { payload, meta: { outcome, multiplierKey, multiplier } };
 }

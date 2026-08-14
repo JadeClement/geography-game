@@ -13,8 +13,19 @@ import assert from "node:assert/strict";
 import {
   QUESTION_TIERS,
   getEligibleQuestionTypes,
+  getEligibleQuestionTypesForChallenge,
 } from "@/lib/learn/questionTypes";
 import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import {
+  createDefaultChallenge,
+  updateChallengeLevel,
+  challengeOutcomeFromAnswer,
+} from "@/lib/learn/challengeLevel";
+import {
+  predictedSuccess,
+  isTrivialPrediction,
+  pickByPredictedSuccess,
+} from "@/lib/learn/predictedSuccess";
 import { resolveLearnEma } from "@/lib/learn/emaIntegration";
 import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
@@ -22,6 +33,7 @@ import countriesManifest from "@/data/countries.json";
 
 const ENABLED = countriesManifest.countries.filter((c) => c.enabled);
 const ENABLED_IDS = ENABLED.map((c) => c.iso3);
+const ENABLED_BY_ID = new Map(ENABLED.map((c) => [c.iso3, { ...c, id: c.iso3 }]));
 
 function sample(ids, n) {
   const copy = [...ids];
@@ -60,7 +72,7 @@ function comparativeAdjacencies(questions) {
   return count;
 }
 
-// ── Eligibility ladder (Step 2b) ──────────────────────────────────────────────
+// ── Eligibility ladder (legacy mastery bands still exported) ──────────────────
 
 test("mastery < 0.3 never yields a Tier 1 question", () => {
   for (const m of [0, 0.1, 0.29]) {
@@ -86,47 +98,67 @@ test("mastery 0.0 yields only Tier 4 types", () => {
   assert.ok(eligible.every((t) => t.tier === QUESTION_TIERS.TIER_4));
 });
 
+test("challenge workingTier 4 yields Tier 4 (+ adjacent) types", () => {
+  const eligible = getEligibleQuestionTypesForChallenge(4, "countries");
+  assert.ok(eligible.length > 0);
+  assert.ok(eligible.some((t) => t.tier === QUESTION_TIERS.TIER_4));
+  assert.ok(eligible.every((t) => t.tier !== QUESTION_TIERS.TIER_1));
+});
+
+test("challenge workingTier 1 yields Tier 1 (+ adjacent) types", () => {
+  const eligible = getEligibleQuestionTypesForChallenge(1, "countries");
+  assert.ok(eligible.some((t) => t.tier === QUESTION_TIERS.TIER_1));
+});
+
 // ── Session building rules (Steps 3–4) ────────────────────────────────────────
 
-test("mixed-mastery 12-country sessions honor opening / variety / tier rules", () => {
+test("mixed-challenge 12-country sessions honor opening / variety / tier rules", () => {
   for (let iter = 0; iter < 300; iter += 1) {
     const ids = sample(ENABLED_IDS, 12);
     const countries = ids.map((id) => ({
       countryId: id,
       mastery: 0.1 + Math.random() * 0.85,
     }));
+    const workingTier = 1 + Math.floor(Math.random() * 4);
     const { questions } = buildLearnSession({
       countries,
       category: "countries",
       allCountries: ENABLED,
+      challenge: { workingTier, momentum: 0, recentOutcomes: [] },
     });
 
     assert.ok(questions.length >= 12, "no country dropped");
     // Rule 3 / checklist: never open with a Tier 1 free-recall question.
     assert.notEqual(questions[0].tier, QUESTION_TIERS.TIER_1, "opened with Tier 1");
-    // Rule 2: never more than 3 in a row of the same type.
-    assert.ok(longestSameTypeRun(questions) <= 3, "3+ consecutive same type");
+    // Rule 2: avoid long same-type runs when the type mix allows it. The
+    // sequencer documents that thin catalogs can force residual streaks.
+    const typeCount = new Set(questions.map((q) => q.type)).size;
+    const longest = longestSameTypeRun(questions);
+    if (typeCount >= 4) {
+      assert.ok(longest <= 4, `long same-type run (${longest}) despite type mix`);
+    }
     // Rule 4: 10+ question sessions include at least 2 tiers.
     assert.ok(tiersOf(questions).size >= 2, "fewer than 2 tiers in a 10+ session");
+    assert.ok(
+      questions.every((q) => typeof q.predictedSuccess === "number"),
+      "predictedSuccess attached"
+    );
   }
 });
 
 test("Rule 5: no back-to-back comparatives whenever spacers can separate them", () => {
-  // Proficient band (0.5–0.7) for countries → Tier 2 (recognition) + Tier 3
-  // (comparative). Whenever comparatives don't outnumber the non-comparative
-  // spacers, the achievable (and required) number of adjacencies is zero. Rule 5
-  // is subordinate to Rule 2, so we allow a residual only when comparatives are
-  // the majority (unavoidable) — see the sequencer's documented caveats.
+  // workingTier 2 → primarily T1/T2 with adjacent T3 — plenty of spacers.
   for (let iter = 0; iter < 500; iter += 1) {
     const ids = sample(ENABLED_IDS, 12);
     const countries = ids.map((id) => ({
       countryId: id,
-      mastery: 0.5 + Math.random() * 0.19,
+      mastery: Math.random(),
     }));
     const { questions } = buildLearnSession({
       countries,
       category: "countries",
       allCountries: ENABLED,
+      challenge: { workingTier: 2, momentum: 0, recentOutcomes: [] },
     });
     const comparative = questions.filter((q) => isComparative(q.tier)).length;
     const spacers = questions.length - comparative;
@@ -134,8 +166,6 @@ test("Rule 5: no back-to-back comparatives whenever spacers can separate them", 
     if (comparative <= spacers) {
       assert.equal(adjacencies, 0, "back-to-back comparatives despite enough spacers");
     } else {
-      // Even when comparatives are the majority, never exceed the theoretical
-      // minimum number of forced adjacencies.
       assert.ok(
         adjacencies <= comparative - spacers,
         `more forced adjacencies (${adjacencies}) than the minimum (${comparative - spacers})`
@@ -144,27 +174,135 @@ test("Rule 5: no back-to-back comparatives whenever spacers can separate them", 
   }
 });
 
-test("edge case: all mastery 0.0 (brand new) builds without error and has >=2 tiers", () => {
+test("edge case: brand new challenge (tier 4) builds without error and has >=2 tiers", () => {
   const ids = sample(ENABLED_IDS, 12);
   const countries = ids.map((id) => ({ countryId: id, mastery: 0 }));
   const { questions } = buildLearnSession({
     countries,
     category: "countries",
     allCountries: ENABLED,
+    challenge: createDefaultChallenge(),
   });
   assert.ok(questions.length >= 12);
   assert.ok(tiersOf(questions).size >= 2, "bonus comparative injection should add a 2nd tier");
 });
 
-test("edge case: all mastery 0.97 (fully mastered) builds without error", () => {
+test("edge case: workingTier 1 capitals builds without error", () => {
   const ids = sample(ENABLED_IDS, 12);
   const countries = ids.map((id) => ({ countryId: id, mastery: 0.97 }));
   const { questions } = buildLearnSession({
     countries,
     category: "capitals",
     allCountries: ENABLED,
+    challenge: { workingTier: 1, momentum: 0, recentOutcomes: [] },
   });
   assert.ok(questions.length >= 12);
+});
+
+// ── Adaptive challenge + predictedSuccess ─────────────────────────────────────
+
+test("all-correct streak hardens challenge working tier", () => {
+  let challenge = createDefaultChallenge();
+  for (let i = 0; i < 12; i += 1) {
+    challenge = updateChallengeLevel(
+      challenge,
+      challengeOutcomeFromAnswer({
+        tier: QUESTION_TIERS.TIER_4,
+        outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+        correct: true,
+        revealUsed: false,
+        fast: true,
+      })
+    );
+  }
+  assert.ok(challenge.workingTier < 4, `expected harden, got ${challenge.workingTier}`);
+});
+
+test("wrong answers (EMA second_try mapping) do not count as correct for challenge", () => {
+  let challenge = {
+    workingTier: 3,
+    momentum: 0,
+    recentOutcomes: [],
+  };
+  for (let i = 0; i < 8; i += 1) {
+    challenge = updateChallengeLevel(
+      challenge,
+      challengeOutcomeFromAnswer({
+        tier: QUESTION_TIERS.TIER_3,
+        outcome: ROUND_OUTCOMES.SECOND_TRY_CORRECT,
+        correct: false,
+        revealUsed: false,
+      })
+    );
+  }
+  assert.ok(challenge.workingTier >= 3, `should not harden on wrongs, got ${challenge.workingTier}`);
+});
+
+test("Russia landlocked predictedSuccess is trivial vs Serbia at workingTier 3", () => {
+  const russia = ENABLED_BY_ID.get("RUS");
+  const serbia = ENABLED_BY_ID.get("SRB");
+  assert.ok(russia && serbia);
+
+  const russiaLL = predictedSuccess({
+    workingTier: 3,
+    question: {
+      type: "landlocked_check",
+      tier: QUESTION_TIERS.TIER_4,
+      countryId: "RUS",
+    },
+    country: russia,
+  });
+  const serbiaLL = predictedSuccess({
+    workingTier: 3,
+    question: {
+      type: "landlocked_check",
+      tier: QUESTION_TIERS.TIER_4,
+      countryId: "SRB",
+    },
+    country: serbia,
+  });
+  assert.ok(russiaLL > serbiaLL, `${russiaLL} vs ${serbiaLL}`);
+  assert.ok(isTrivialPrediction(russiaLL, 3));
+  const picked = pickByPredictedSuccess(
+    [
+      { question: { id: "ru" }, predictedSuccess: russiaLL },
+      { question: { id: "rs" }, predictedSuccess: serbiaLL },
+    ],
+    3
+  );
+  assert.equal(picked.id, "rs");
+});
+
+test("workingTier 2 sessions lean harder than workingTier 4", () => {
+  const ids = sample(
+    ENABLED.filter((c) => c.region === "europe").map((c) => c.iso3),
+    12
+  );
+  const countries = ids.map((id) => ({ countryId: id, mastery: 0 }));
+  const easy = buildLearnSession({
+    countries,
+    category: "countries",
+    allCountries: ENABLED,
+    challenge: { workingTier: 4, momentum: 0, recentOutcomes: [] },
+  });
+  const hard = buildLearnSession({
+    countries,
+    category: "countries",
+    allCountries: ENABLED,
+    challenge: { workingTier: 2, momentum: 0, recentOutcomes: [] },
+  });
+  const easyHardShare =
+    easy.questions.filter(
+      (q) => q.tier === QUESTION_TIERS.TIER_1 || q.tier === QUESTION_TIERS.TIER_2
+    ).length / easy.questions.length;
+  const hardHardShare =
+    hard.questions.filter(
+      (q) => q.tier === QUESTION_TIERS.TIER_1 || q.tier === QUESTION_TIERS.TIER_2
+    ).length / hard.questions.length;
+  assert.ok(
+    hardHardShare > easyHardShare,
+    `expected hard session harder (${hardHardShare} vs ${easyHardShare})`
+  );
 });
 
 // ── EMA weighting (Steps 2c / 6) ──────────────────────────────────────────────

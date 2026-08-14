@@ -57,11 +57,25 @@ CREATE TABLE IF NOT EXISTS country_attempts (
   game_type TEXT NOT NULL,
   outcome TEXT NOT NULL,
   response_time_ms INT,
+  question_tier TEXT,
+  predicted_success REAL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS country_attempts_user_lookup_idx
   ON country_attempts (user_id, country_id, mode, level, created_at DESC);
+
+-- Learn adaptive challenge level per user × mode × region.
+CREATE TABLE IF NOT EXISTS learn_challenge (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mode TEXT NOT NULL,
+  region TEXT NOT NULL,
+  working_tier SMALLINT NOT NULL DEFAULT 4,
+  momentum SMALLINT NOT NULL DEFAULT 0,
+  recent_outcomes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, mode, region)
+);
 
 -- Learn mode: which country facts a user has already been shown (post-answer
 -- fact modal / side panel). Fact identified by its index in the country's
@@ -189,6 +203,20 @@ CREATE TABLE IF NOT EXISTS push_tokens (
 );
 CREATE INDEX IF NOT EXISTS push_tokens_user_idx
   ON push_tokens (user_id);
+
+ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS question_tier TEXT;
+ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS predicted_success REAL;
+
+CREATE TABLE IF NOT EXISTS learn_challenge (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mode TEXT NOT NULL,
+  region TEXT NOT NULL,
+  working_tier SMALLINT NOT NULL DEFAULT 4,
+  momentum SMALLINT NOT NULL DEFAULT 0,
+  recent_outcomes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, mode, region)
+);
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted

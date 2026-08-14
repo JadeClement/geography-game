@@ -33,6 +33,7 @@ const SMALL_COUNTRY_OVERRIDES = new Set([
   "COM", // Comoros
   "MDV", // Maldives
   "STP", // Sao Tome and Principe
+  "CPV", // Cape Verde — archipelago bbox (~6.4°) exceeds the small threshold, but land is invisible at Africa zoom
   "MHL", // Marshall Islands
   "PLW", // Palau
   "BRB", // Barbados
@@ -85,8 +86,14 @@ const METROPOLITAN_MEASURE_BBOX_PAD_DEG = 4;
  * Drop tiny island polygons when anchoring labels on countries with a dominant
  * mainland (Portugal+Azores, Spain+Canaries, France+DOM-TOM, etc.).
  * Keep any polygon at least this fraction of the largest polygon's area.
+ *
+ * French Guiana is ~11% of metropolitan France — above a 10% cutoff — so the
+ * threshold sits above that. Overseas scraps still get an extra distance filter
+ * for METROPOLITAN_MEASURE_BBOX_OVERRIDES countries.
  */
-const MAINLAND_POLYGON_AREA_FRACTION = 0.1;
+const MAINLAND_POLYGON_AREA_FRACTION = 0.15;
+/** Max degrees from the metropolitan centroid for FRA/ESP/PRT/NLD mainland parts. */
+const METROPOLITAN_POLYGON_MAX_DISTANCE_DEG = 12;
 
 function walkCoords(coords, visit) {
   if (typeof coords[0] === "number") {
@@ -232,12 +239,30 @@ function polygonExteriorArea(polygon) {
   return ringArea(polygon?.[0]);
 }
 
+function polygonCentroidLngLat(polygon) {
+  const ring = polygon?.[0];
+  if (!Array.isArray(ring) || ring.length === 0) return null;
+
+  let sumLng = 0;
+  let sumLat = 0;
+  let count = 0;
+  for (const point of ring) {
+    if (!Array.isArray(point) || point.length < 2) continue;
+    sumLng += point[0];
+    sumLat += point[1];
+    count += 1;
+  }
+  if (count === 0) return null;
+  return [sumLng / count, sumLat / count];
+}
+
 /**
  * Prefer the dominant mainland for label anchors. Small overseas islands that are
  * still in view (Azores, Canaries, DOM-TOM) would otherwise pull the average
- * out into the ocean.
+ * out into the ocean. For FRA/ESP/PRT/NLD, also drop large-but-distant overseas
+ * land (French Guiana) that survives the area filter.
  */
-export function getMainlandPolygons(geometry) {
+export function getMainlandPolygons(geometry, iso3) {
   if (!geometry) return [];
 
   if (geometry.type === "Polygon") {
@@ -261,8 +286,28 @@ export function getMainlandPolygons(geometry) {
   if (maxArea <= 0) return polygons;
 
   const threshold = maxArea * MAINLAND_POLYGON_AREA_FRACTION;
-  const mainland = polygons.filter((_, index) => areas[index] >= threshold);
-  return mainland.length > 0 ? mainland : polygons;
+  let mainland = polygons.filter((_, index) => areas[index] >= threshold);
+  if (mainland.length === 0) mainland = polygons;
+
+  const metropolitanCentroid =
+    iso3 && METROPOLITAN_MEASURE_BBOX_OVERRIDES.has(iso3)
+      ? CENTROID_OVERRIDES[iso3]
+      : null;
+  if (metropolitanCentroid) {
+    const [baseLng, baseLat] = metropolitanCentroid;
+    const metro = mainland.filter((polygon) => {
+      const centroid = polygonCentroidLngLat(polygon);
+      if (!centroid) return false;
+      const [lng, lat] = centroid;
+      return (
+        Math.hypot(lng - baseLng, lat - baseLat) <=
+        METROPOLITAN_POLYGON_MAX_DISTANCE_DEG
+      );
+    });
+    if (metro.length > 0) mainland = metro;
+  }
+
+  return mainland;
 }
 
 function countPolygonsVertices(polygons) {
@@ -301,7 +346,10 @@ function averagePoints(points) {
 export function getCountryVisibleScreenAnchor(country, projectLngLat, viewportRect) {
   if (!country?.feature?.geometry || !viewportRect) return null;
 
-  const mainlandPolygons = getMainlandPolygons(country.feature.geometry);
+  const mainlandPolygons = getMainlandPolygons(
+    country.feature.geometry,
+    country.id
+  );
   const vertexCount = countPolygonsVertices(mainlandPolygons);
   if (vertexCount === 0) return null;
 
@@ -522,39 +570,157 @@ function sumCountryAreasKm2(countries) {
 }
 
 /**
+ * Urals (~60°E) — east limit for European Russia when Learn frames Russia alone
+ * or as a neighbor of European countries. Avoids fitting to the Pacific coast.
+ */
+export const RUS_EUROPE_MAX_LNG = 60;
+
+/**
+ * How far past the other countries in a cluster we still include Russian land.
+ * Keeps Asian border clusters (e.g. Mongolia) framed on the relevant slice of
+ * Russia instead of always clamping to the Urals.
+ */
+const RUS_FOCUS_COMPANION_LNG_PAD_DEG = 30;
+
+/**
+ * Geographic bbox for a country, preferring metropolitan/mainland polygons so
+ * overseas scraps (French Guiana, Réunion, Canaries, Caribbean NL, …) do not
+ * pull Learn focus cameras across oceans.
+ * Returns [minLng, minLat, maxLng, maxLat] or null.
+ */
+export function getCountryGeographicBbox(country) {
+  if (!country) return null;
+
+  if (country.feature?.geometry) {
+    const mainland = getMainlandPolygons(country.feature.geometry, country.id);
+    if (mainland.length > 0) {
+      const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const polygon of mainland) {
+        walkCoords(polygon, (x, y) => {
+          bbox[0] = Math.min(bbox[0], x);
+          bbox[1] = Math.min(bbox[1], y);
+          bbox[2] = Math.max(bbox[2], x);
+          bbox[3] = Math.max(bbox[3], y);
+        });
+      }
+      if (Number.isFinite(bbox[0])) return bbox;
+    }
+
+    const full = getBbox(country.feature);
+    if (Number.isFinite(full[0])) return full;
+  }
+
+  const [lng, lat] = country.centroid ?? [];
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+  return [lng, lat, lng, lat];
+}
+
+/**
+ * Clip Russia's vast E–W span so Learn focus cameras stay on the relevant slice.
+ * With European neighbors: stop near the Urals (or slightly past the cluster).
+ * With Asian neighbors: keep a padded longitude window around that cluster.
+ * Rebuilds the bbox from geometry inside the window so Caucasus/Siberia latitudes
+ * do not inflate the frame when those lands sit outside the lng clip.
+ */
+export function clipRussiaFocusBbox(rusBbox, companionBbox, rusCountry = null) {
+  let clipMinLng = -Infinity;
+  let clipMaxLng = RUS_EUROPE_MAX_LNG;
+
+  if (companionBbox && Number.isFinite(companionBbox[0])) {
+    const [cMinLng, , cMaxLng] = companionBbox;
+    clipMinLng = cMinLng - RUS_FOCUS_COMPANION_LNG_PAD_DEG;
+    clipMaxLng = cMaxLng + RUS_FOCUS_COMPANION_LNG_PAD_DEG;
+  }
+
+  if (rusCountry?.feature?.geometry) {
+    const mainland = getMainlandPolygons(rusCountry.feature.geometry, "RUS");
+    const polygons =
+      mainland.length > 0
+        ? mainland
+        : rusCountry.feature.geometry.type === "Polygon"
+          ? [rusCountry.feature.geometry.coordinates]
+          : rusCountry.feature.geometry.coordinates ?? [];
+
+    const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const polygon of polygons) {
+      walkCoords(polygon, (x, y) => {
+        if (x < clipMinLng || x > clipMaxLng) return;
+        bbox[0] = Math.min(bbox[0], x);
+        bbox[1] = Math.min(bbox[1], y);
+        bbox[2] = Math.max(bbox[2], x);
+        bbox[3] = Math.max(bbox[3], y);
+      });
+    }
+    if (Number.isFinite(bbox[0]) && bbox[2] > bbox[0] && bbox[3] > bbox[1]) {
+      return bbox;
+    }
+  }
+
+  if (!rusBbox) return null;
+  let [minLng, minLat, maxLng, maxLat] = rusBbox;
+  minLng = Math.max(minLng, clipMinLng);
+  maxLng = Math.min(maxLng, clipMaxLng);
+
+  if (!(maxLng > minLng) || !(maxLat > minLat)) {
+    // Degenerate after clip — Moscow-centered European Russia fallback.
+    return [37.6 - 12, 50, Math.min(RUS_EUROPE_MAX_LNG, 37.6 + 22), 70];
+  }
+
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+function mergeBboxInto(target, bbox) {
+  if (!bbox) return target;
+  const [a, b, c, d] = bbox;
+  if (!Number.isFinite(a)) return target;
+  return [
+    Math.min(target[0], a),
+    Math.min(target[1], b),
+    Math.max(target[2], c),
+    Math.max(target[3], d),
+  ];
+}
+
+/**
  * Tight geographic bounds from country geometries (centroid fallback).
+ * Uses mainland-aware per-country bboxes so distant overseas territories do not
+ * force a near-global fitBounds (e.g. Luxembourg neighbors including France).
+ * Russia is clipped to the Urals / a companion-relative longitude window.
  * Returns Mapbox fitBounds corners: [[minLng, minLat], [maxLng, maxLat]].
  */
 export function getGeographicBoundsFromCountries(countries) {
   if (!countries?.length) return null;
 
-  let minLng = Infinity;
-  let minLat = Infinity;
-  let maxLng = -Infinity;
-  let maxLat = -Infinity;
-
+  const russia = [];
+  const others = [];
   for (const country of countries) {
-    if (country.feature) {
-      const [a, b, c, d] = getBbox(country.feature);
-      if (Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d)) {
-        minLng = Math.min(minLng, a);
-        minLat = Math.min(minLat, b);
-        maxLng = Math.max(maxLng, c);
-        maxLat = Math.max(maxLat, d);
-        continue;
-      }
-    }
-    const [lng, lat] = country.centroid ?? [];
-    if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-    minLng = Math.min(minLng, lng);
-    minLat = Math.min(minLat, lat);
-    maxLng = Math.max(maxLng, lng);
-    maxLat = Math.max(maxLat, lat);
+    if (country?.id === "RUS") russia.push(country);
+    else others.push(country);
   }
 
+  let companionBbox = [Infinity, Infinity, -Infinity, -Infinity];
+  let hasCompanion = false;
+  for (const country of others) {
+    const bbox = getCountryGeographicBbox(country);
+    if (!bbox) continue;
+    companionBbox = mergeBboxInto(companionBbox, bbox);
+    hasCompanion = true;
+  }
+
+  let merged = hasCompanion
+    ? companionBbox
+    : [Infinity, Infinity, -Infinity, -Infinity];
+
+  for (const country of russia) {
+    const raw = getCountryGeographicBbox(country);
+    const clipped = clipRussiaFocusBbox(raw, hasCompanion ? companionBbox : null, country);
+    merged = mergeBboxInto(merged, clipped);
+  }
+
+  let [minLng, minLat, maxLng, maxLat] = merged;
   if (!Number.isFinite(minLng)) return null;
 
-  // Antimeridian / world-spanning junk (e.g. Russia bbox) — fall back to centroids.
+  // Antimeridian / world-spanning junk — fall back to centroids.
   if (maxLng - minLng > 180 || maxLat - minLat > 120) {
     minLng = Infinity;
     minLat = Infinity;
@@ -632,8 +798,15 @@ export function getLearnFocusMapView(
 
   const landArea = sumCountryAreasKm2(countries);
   const tightArea = approximateBboxAreaKm2(tight);
+  // Countries clipped in-frame (Russia east of the Urals, France overseas, …)
+  // still contribute their full official area — that would re-expand the camera
+  // across the continent. Cap land to the framed footprint.
+  const effectiveLand =
+    landArea > 0 && tightArea > 0 ? Math.min(landArea, tightArea) : landArea;
   const targetArea =
-    landArea > 0 ? landArea * areaMultiplier : tightArea * areaMultiplier;
+    effectiveLand > 0
+      ? effectiveLand * areaMultiplier
+      : tightArea * areaMultiplier;
 
   const bounds = expandBoundsToAreaKm2(tight, targetArea);
 

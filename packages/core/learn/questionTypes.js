@@ -5,6 +5,7 @@ import {
   QUESTION_TYPES,
   MASTERY_BANDS,
 } from "@worldly/constants";
+import { orderedTiersForChallenge } from "./challengeLevel.js";
 
 export {
   QUESTION_TIERS,
@@ -78,6 +79,25 @@ export function getEligibleQuestionTypes(mastery, category) {
   const wideningTiers = [
     ...band.tiers,
     ...TIER_FALLBACK_ORDER.filter((tier) => !band.tiers.includes(tier)),
+  ];
+  return typesForTiers(wideningTiers, category);
+}
+
+/**
+ * Challenge-driven eligibility: working tier + adjacent (not mastery bands).
+ * Widens through the full tier ladder if the category has no types in-band.
+ *
+ * @param {number} workingTier - 4 easiest … 1 hardest
+ * @param {"countries"|"capitals"|"flags"} category
+ */
+export function getEligibleQuestionTypesForChallenge(workingTier, category) {
+  const ordered = orderedTiersForChallenge(workingTier);
+  const strict = typesForTiers(ordered, category);
+  if (strict.length > 0) return strict;
+
+  const wideningTiers = [
+    ...ordered,
+    ...TIER_FALLBACK_ORDER.filter((tier) => !ordered.includes(tier)),
   ];
   return typesForTiers(wideningTiers, category);
 }

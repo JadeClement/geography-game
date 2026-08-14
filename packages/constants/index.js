@@ -300,6 +300,51 @@ export const LEARN_SESSION_WEIGHTS = {
   PRIMARY_TIER_WEIGHT: 0.7,
 };
 
+/**
+ * Adaptive Learn difficulty (challenge level + predictedSuccess).
+ * workingTier: 4 = easiest formats … 1 = hardest (free recall).
+ */
+export const LEARN_CHALLENGE = {
+  DEFAULT_WORKING_TIER: 4,
+  MIN_WORKING_TIER: 1,
+  MAX_WORKING_TIER: 4,
+  DEFAULT_MOMENTUM: 0,
+  MIN_MOMENTUM: -2,
+  MAX_MOMENTUM: 2,
+  /** Rolling window of recent Learn outcomes per mode×region. */
+  OUTCOME_WINDOW: 10,
+  /** Accuracy above this (at/above working tier) builds harden momentum. */
+  HARDEN_ACCURACY: 0.85,
+  /** Accuracy below this eases challenge. */
+  EASE_ACCURACY: 0.55,
+  /** Momentum needed to bump workingTier harder/easier. */
+  MOMENTUM_BUMP: 2,
+  /** Share of questions drawn from the working tier (rest = adjacent). */
+  PRIMARY_TIER_WEIGHT: 0.7,
+};
+
+/**
+ * predictedSuccess (aka P(correct)) selection policy — keep learners in flow.
+ */
+export const LEARN_PREDICTED_SUCCESS = {
+  FLOW_MIN: 0.65,
+  FLOW_MAX: 0.8,
+  FLOW_TARGET: 0.72,
+  /** Skip questions this easy once challenge has left the absolute beginner zone. */
+  TRIVIAL_THRESHOLD: 0.92,
+  /** workingTier at which trivial rejection starts (4 = only reject after ramp). */
+  TRIVIAL_REJECT_AT_WORKING_TIER: 3,
+  /** Soft additive bump from country mastery (does not gate tiers). */
+  MASTERY_BUMP_MAX: 0.08,
+  /** Base success priors by question tier (before instance / challenge shifts). */
+  TIER_BASE: {
+    tier_1: 0.45,
+    tier_2: 0.58,
+    tier_3: 0.7,
+    tier_4: 0.82,
+  },
+};
+
 // ── Timing / geo / colors ────────────────────────────────────────────────────
 
 export const MAX_ATTEMPTS = 2;

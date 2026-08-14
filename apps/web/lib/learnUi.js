@@ -129,7 +129,41 @@ export const learnClueText = "mt-1 text-center text-sm text-text-muted";
 
 export const learnTextForm = "flex w-full flex-col items-center gap-3";
 export const learnTextInput =
-  "w-full max-w-sm rounded-sm border border-border-subtle bg-input px-3 py-2.5 text-center text-base text-text shadow-sm outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-text-muted focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)]";
+  "w-full max-w-sm rounded-sm border border-border-subtle bg-input px-3 py-2.5 text-center text-base text-text shadow-sm outline-none transition-[border-color,box-shadow,color] duration-150 placeholder:text-text-muted focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)]";
+
+/** Post-submit tint for free-recall answers (green correct / red wrong). */
+export function learnTextInputOutcome(outcome) {
+  if (outcome === "correct") {
+    return cn(
+      "border-success text-success font-semibold",
+      SUCCESS_BG,
+      "focus:border-success focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-success)_25%,transparent)]"
+    );
+  }
+  if (outcome === "wrong") {
+    return cn(
+      "border-error text-error font-semibold",
+      ERROR_BG,
+      "focus:border-error focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-error)_25%,transparent)]"
+    );
+  }
+  return null;
+}
+
+/** Green reveal box under a wrong free-recall answer. */
+export const learnTextCorrectReveal = cn(
+  "w-full max-w-sm rounded-sm border border-success px-3 py-2.5 text-center text-base font-semibold text-success shadow-sm",
+  SUCCESS_BG
+);
+
+export const learnContinueArrowBtn = cn(
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 text-white",
+  "cursor-pointer bg-[image:var(--accent-gradient)] shadow-[var(--shadow-accent)]",
+  "transition-[transform,box-shadow,background] duration-150 ease-out",
+  "enabled:hover:-translate-y-px enabled:hover:bg-[image:var(--accent-gradient-hover)]",
+  "enabled:active:translate-y-0",
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+);
 
 // ── mobile fact bottom sheet ──────────────────────────────────────────────────
 
