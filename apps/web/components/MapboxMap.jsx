@@ -461,7 +461,19 @@ function applyMapView(map, mapView, { onSettled } = {}) {
         retainPadding: false,
       });
     } else {
-      map.fitBounds(mapView.bounds, {
+      const [[west, south], [east, north]] = mapView.bounds ?? [];
+      const safeBounds =
+        Number.isFinite(west) &&
+        Number.isFinite(south) &&
+        Number.isFinite(east) &&
+        Number.isFinite(north)
+          ? [
+              [west, Math.max(-90, Math.min(90, south))],
+              [east, Math.max(-90, Math.min(90, north))],
+            ]
+          : null;
+      if (!safeBounds) return;
+      map.fitBounds(safeBounds, {
         padding: mapView.padding ?? 48,
         duration: 0,
         maxZoom: mapView.maxZoom ?? 5,

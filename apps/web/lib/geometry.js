@@ -559,6 +559,32 @@ function approximateBboxAreaKm2(bounds) {
   return widthKm * heightKm;
 }
 
+/** Mapbox fitBounds requires latitudes in [-90, 90]. */
+function clampLat(lat) {
+  if (!Number.isFinite(lat)) return 0;
+  return Math.max(-90, Math.min(90, lat));
+}
+
+/**
+ * Clamp fitBounds corners so Mapbox never sees an out-of-range latitude.
+ * Keeps a tiny non-zero lat span if clamping would collapse the box.
+ */
+export function clampFitBoundsLatitudes(bounds) {
+  if (!bounds) return bounds;
+  let [[minLng, minLat], [maxLng, maxLat]] = bounds;
+  minLat = clampLat(minLat);
+  maxLat = clampLat(maxLat);
+  if (!(maxLat > minLat)) {
+    const mid = clampLat((minLat + maxLat) / 2 || 0);
+    minLat = Math.max(-90, mid - 0.05);
+    maxLat = Math.min(90, mid + 0.05);
+  }
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ];
+}
+
 function sumCountryAreasKm2(countries) {
   let sum = 0;
   for (const country of countries) {
@@ -749,21 +775,23 @@ export function getGeographicBoundsFromCountries(countries) {
     maxLat += pad;
   }
 
-  return [
+  return clampFitBoundsLatitudes([
     [minLng, minLat],
     [maxLng, maxLat],
-  ];
+  ]);
 }
 
 /**
  * Expand bounds about their center until approximate geographic area ≥ targetKm2.
  * Never shrinks below the tight bounds (all countries must stay visible).
+ * Latitudes are clamped to [-90, 90] so fitBounds never throws on polar overshoot
+ * when a large areaMultiplier expands a tall northern/southern frame.
  */
 export function expandBoundsToAreaKm2(bounds, targetKm2) {
   const [[minLng, minLat], [maxLng, maxLat]] = bounds;
   const current = approximateBboxAreaKm2(bounds);
   if (!(targetKm2 > 0) || current >= targetKm2) {
-    return bounds;
+    return clampFitBoundsLatitudes(bounds);
   }
 
   const scale = Math.sqrt(targetKm2 / current);
@@ -772,10 +800,10 @@ export function expandBoundsToAreaKm2(bounds, targetKm2) {
   const halfLng = ((maxLng - minLng) / 2) * scale;
   const halfLat = ((maxLat - minLat) / 2) * scale;
 
-  return [
+  return clampFitBoundsLatitudes([
     [midLng - halfLng, midLat - halfLat],
     [midLng + halfLng, midLat + halfLat],
-  ];
+  ]);
 }
 
 /**
