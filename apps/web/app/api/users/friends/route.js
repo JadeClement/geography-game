@@ -57,7 +57,7 @@ export async function POST(request) {
 
     if (result.reason === "incoming_request") {
       return Response.json(
-        { error: "This user already sent you a friend request. Accept it on your scoreboard." },
+        { error: "This user already sent you a friend request. Accept it under Friends." },
         { status: 409 }
       );
     }

@@ -540,9 +540,10 @@ export default function ScoreboardPage() {
           ← Back to game
         </Link>
 
-        <h1 className={scoreboardTitle}>Scoreboard</h1>
+        <h1 className={scoreboardTitle}>Friends</h1>
         <p className={scoreboardSubtitle}>
-          See how you stack up against your friends. Send requests to grow your leaderboard.
+          See how you stack up against your friends. Accept requests and add people to grow
+          your leaderboard.
         </p>
 
         {status === "loading" && <p className={scoreboardMessage}>Loading…</p>}

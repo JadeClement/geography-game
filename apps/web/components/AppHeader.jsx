@@ -58,17 +58,19 @@ const menuIcons = {
   scoreboard: (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M8 21h8M12 17v4M7 4h10l1 7H6l1-7Z"
+        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
       <path
-        d="M7 11v6M12 11v6M17 11v6"
+        d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   ),
@@ -183,7 +185,7 @@ function ProfileDropdown({ signedIn, userName, username, onClose, onSignIn, onSi
             onClick={onClose}
           >
             <DropdownIcon>{menuIcons.scoreboard}</DropdownIcon>
-            Scoreboard
+            Friends
           </Link>
           <Link href="/mastery" role="menuitem" className={dropdownItem} onClick={onClose}>
             <DropdownIcon>{menuIcons.mastery}</DropdownIcon>

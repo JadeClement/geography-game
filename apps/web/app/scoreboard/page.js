@@ -1,7 +1,7 @@
 import ScoreboardPage from "@/components/ScoreboardPage";
 
 export const metadata = {
-  title: "Scoreboard · Worldly",
+  title: "Friends · Worldly",
 };
 
 export default function Scoreboard() {

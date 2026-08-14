@@ -140,7 +140,7 @@ export default function AuthModal({
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
-                helpText="3–20 letters, numbers, or underscores. Shown on the scoreboard."
+                helpText="3–20 letters, numbers, or underscores. Shown to your friends."
                 required
               />
             </>

@@ -439,7 +439,7 @@ export default function AccountPage() {
         <section className={settingsSection}>
           <h2 className={settingsSectionTitle}>Username</h2>
           <p className={settingsSectionDescription}>
-            Your public handle on the scoreboard. Usernames are unique and can be changed
+            Your public handle among friends. Usernames are unique and can be changed
             anytime.
           </p>
           <form className="flex flex-col gap-3" onSubmit={handleUsernameSave}>
