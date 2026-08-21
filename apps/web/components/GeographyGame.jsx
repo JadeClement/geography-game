@@ -15,7 +15,7 @@ import DiscoverTerritoryModal from "@/components/DiscoverTerritoryModal";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import IdlePromptModal from "@/components/IdlePromptModal";
-import { buildLearnWrongReveal, isNeighborLearnQuestion, isMapBorderSpoilingQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
+import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import { matchDiscoverTerritoryNote } from "@/lib/discoverTerritories";
 import MapFeedback from "@/components/MapFeedback";
@@ -689,12 +689,6 @@ export default function GeographyGame() {
     learnNeighborRevealActive ||
     learnAreaCompareRevealActive ||
     learnLandlockedRevealActive;
-  // Neighbor / landlocked cards: keep the landmass, hide country borders so
-  // the answer isn't readable off the map. Restore borders on the teach step.
-  const hideCountryOutlines =
-    learnEngineActive &&
-    isMapBorderSpoilingQuestion(currentLearnQuestion) &&
-    !learnMapOnlyContinue;
   // Highlight prompts paint their subject yellow on the region backdrop. The
   // question card is top-pinned (see LearnRoundOverlay) so the full region stays
   // in view — we intentionally do NOT zoom to the subject or use asymmetric
@@ -3896,7 +3890,6 @@ export default function GeographyGame() {
                   onMapMove={needsMapProjection ? handleMapMove : undefined}
                   mapControlsRef={pacificControlsRef}
                   forceShowSmallCountryCircles={tutorialOpen}
-                  hideCountryOutlines={hideCountryOutlines}
                 />
               ) : (
                 <MapboxMap
@@ -3917,7 +3910,6 @@ export default function GeographyGame() {
                   mapView={mapViewForRender}
                   forceShowSmallCountryCircles={tutorialOpen}
                   allowInactiveCountryClicks={isDiscoverGame}
-                  hideCountryOutlines={hideCountryOutlines}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={needsMapProjection ? registerMapProject : undefined}

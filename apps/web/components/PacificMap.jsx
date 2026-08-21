@@ -162,7 +162,6 @@ export default function PacificMap({
   onMapMove,
   mapControlsRef,
   forceShowSmallCountryCircles = false,
-  hideCountryOutlines = false,
 }) {
   const { theme } = useTheme();
   const colors = MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
@@ -543,33 +542,12 @@ export default function PacificMap({
           fill={colors.ocean}
         />
 
-        {hideCountryOutlines && (
-          <g
-            className="pacific-map-continent-outline"
-            fill="none"
-            stroke={colors.levelBorder}
-            strokeWidth="2"
-            strokeLinejoin="round"
-          >
-            {inactivePaths.map((country) => (
-              <path key={`outline-inactive-${country.id}`} d={country.path} />
-            ))}
-            {activePaths.map((country) => (
-              <path key={`outline-active-${country.id}`} d={country.path} />
-            ))}
-          </g>
-        )}
-
-        <g
-          className="pacific-map-inactive"
-          stroke={hideCountryOutlines ? "none" : colors.inactiveBorder}
-          strokeWidth="0.6"
-        >
+        <g className="pacific-map-inactive" stroke={colors.inactiveBorder} strokeWidth="0.6">
           {inactivePaths.map((country) => (
             <path
               key={`inactive-${country.id}`}
               d={country.path}
-              fill={hideCountryOutlines ? landColor : colors.inactiveLand}
+              fill={colors.inactiveLand}
               fillRule="evenodd"
               aria-hidden="true"
             />
@@ -578,12 +556,12 @@ export default function PacificMap({
 
         <g
           className="pacific-map-active"
-          stroke={hideCountryOutlines ? "none" : colors.levelBorder}
+          stroke={colors.levelBorder}
           strokeWidth="0.75"
           strokeLinejoin="round"
         >
           {activePaths.map((country) => {
-            if (showCountryCircle(country) && !hideCountryOutlines) {
+            if (showCountryCircle(country)) {
               return null;
             }
 
@@ -625,7 +603,7 @@ export default function PacificMap({
 
         <g className="pacific-map-circles">
           {activePaths.map((country) => {
-            if (hideCountryOutlines || !showCountryCircle(country)) {
+            if (!showCountryCircle(country)) {
               return null;
             }
 
