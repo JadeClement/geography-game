@@ -15,6 +15,7 @@ import {
 } from "@/lib/countryColors";
 import {
   CIRCLE_CLICK_RADIUS_PX,
+  CIRCLE_STROKE_WIDTH,
   getCountryScreenBounds,
   getCountryVisibleScreenAnchor,
   MIN_CLICK_TARGET_PX,
@@ -239,7 +240,7 @@ function applySmallCountryCirclePaintMode(
     ["feature-state", "radius"],
     0,
   ]);
-  map.setPaintProperty("small-country-circles", "circle-stroke-width", 2);
+  map.setPaintProperty("small-country-circles", "circle-stroke-width", CIRCLE_STROKE_WIDTH);
   map.setPaintProperty(
     "small-country-circles",
     "circle-stroke-color",
@@ -366,7 +367,7 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
           0,
         ],
         "circle-stroke-color": getSmallCircleStrokeColorExpression(level, strokeColor, landColor),
-        "circle-stroke-width": 2,
+        "circle-stroke-width": CIRCLE_STROKE_WIDTH,
         "circle-stroke-opacity": [
           "case",
           ["==", ["feature-state", "highlight"], true],

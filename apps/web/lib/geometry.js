@@ -8,6 +8,9 @@ export const MIN_CLICK_TARGET_PX = 40;
 /** Circle stroke radius when visible on screen. */
 export const CIRCLE_CLICK_RADIUS_PX = 8;
 
+/** Stroke width for small-country marker rings. */
+export const CIRCLE_STROKE_WIDTH = 1;
+
 /** Larger markers while the game tutorial is open. */
 export const TUTORIAL_CIRCLE_RADIUS_PX = 9;
 

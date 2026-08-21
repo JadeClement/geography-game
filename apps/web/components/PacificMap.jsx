@@ -26,6 +26,7 @@ import {
 } from "@/lib/globeProjection";
 import {
   CIRCLE_CLICK_RADIUS_PX,
+  CIRCLE_STROKE_WIDTH,
   getBboxScreenSizePx,
   getCountryMeasureBbox,
   getCountryVisibleScreenAnchor,
@@ -681,7 +682,7 @@ export default function PacificMap({
               : stroke;
             const circleStrokeWidth = forceShowSmallCountryCircles
               ? TUTORIAL_CIRCLE_STROKE_WIDTH
-              : 2;
+              : CIRCLE_STROKE_WIDTH;
 
             return (
               <g key={`circle-${country.id}`} transform={`translate(${cx}, ${cy})`}>
