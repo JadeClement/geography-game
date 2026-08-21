@@ -216,9 +216,15 @@ function updateSmallCountryCircles(map, smallCountriesGeojson, { forceShow = fal
 
 function applySmallCountryCirclePaintMode(
   map,
-  { forceShow, level, strokeColor, landColor }
+  { forceShow, level, strokeColor, landColor, hideCountryOutlines = false }
 ) {
   if (!map.getLayer("small-country-circles")) return;
+
+  if (hideCountryOutlines) {
+    map.setPaintProperty("small-country-circles", "circle-stroke-opacity", 0);
+    map.setPaintProperty("small-country-circles", "circle-opacity", 0);
+    return;
+  }
 
   if (forceShow) {
     map.setPaintProperty("small-country-circles", "circle-radius", TUTORIAL_CIRCLE_RADIUS_PX);
@@ -610,10 +616,57 @@ function addInactiveCountryBorders(map, mapColors) {
   }
 }
 
+/**
+ * Coastline drawn UNDER country fills. Internal borders get covered by
+ * neighboring fills; only the ocean-facing edge remains as a continent outline.
+ */
+function addContinentOutlineLayers(map, mapColors) {
+  const paint = {
+    "line-color": mapColors.levelBorder,
+    "line-width": 2,
+    "line-opacity": 0,
+    "line-join": "round",
+  };
+  const beforeFill = map.getLayer("inactive-country-fill")
+    ? "inactive-country-fill"
+    : map.getLayer("country-fill")
+      ? "country-fill"
+      : null;
+
+  if (!map.getLayer("inactive-continent-outline") && map.getSource("inactive-countries")) {
+    const layer = {
+      id: "inactive-continent-outline",
+      type: "line",
+      source: "inactive-countries",
+      paint: { ...paint },
+    };
+    if (beforeFill) {
+      map.addLayer(layer, beforeFill);
+    } else {
+      map.addLayer(layer);
+    }
+  }
+
+  if (!map.getLayer("continent-outline") && map.getSource("countries")) {
+    const layer = {
+      id: "continent-outline",
+      type: "line",
+      source: "countries",
+      paint: { ...paint },
+    };
+    if (beforeFill) {
+      map.addLayer(layer, beforeFill);
+    } else {
+      map.addLayer(layer);
+    }
+  }
+}
+
 function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor) {
   if (map.getSource("inactive-countries")) {
     map.getSource("inactive-countries").setData(inactiveGeojson);
     addInactiveCountryBorders(map, mapColors);
+    addContinentOutlineLayers(map, mapColors);
   } else {
     map.addSource("inactive-countries", {
       type: "geojson",
@@ -639,6 +692,7 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
     if (map.getLayer("country-fill")) {
       map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level, landColor));
     }
+    addContinentOutlineLayers(map, mapColors);
     return;
   }
 
@@ -690,6 +744,89 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
       "line-color": mapColors.levelBorder,
       "line-width": 0.5,
     },
+  });
+
+  addContinentOutlineLayers(map, mapColors);
+}
+
+const TRANSPARENT = "rgba(0,0,0,0)";
+
+/**
+ * Neighbor / landlocked Learn prompts keep the landmass silhouette but hide
+ * country borders so the answer isn't readable off the map.
+ */
+function applyCountryOutlineVisibility(
+  map,
+  showOutlines,
+  { mapColors, landColor, level, forceShowSmallCountryCircles }
+) {
+  if (!map) return;
+
+  if (map.getLayer("country-borders")) {
+    map.setPaintProperty("country-borders", "line-opacity", showOutlines ? 1 : 0);
+  }
+  if (map.getLayer("inactive-country-borders")) {
+    map.setPaintProperty(
+      "inactive-country-borders",
+      "line-opacity",
+      showOutlines ? 0.85 : 0
+    );
+  }
+  if (map.getLayer("continent-outline")) {
+    map.setPaintProperty("continent-outline", "line-opacity", showOutlines ? 0 : 1);
+    map.setPaintProperty("continent-outline", "line-color", mapColors.levelBorder);
+  }
+  if (map.getLayer("inactive-continent-outline")) {
+    map.setPaintProperty(
+      "inactive-continent-outline",
+      "line-opacity",
+      showOutlines ? 0 : 1
+    );
+    map.setPaintProperty(
+      "inactive-continent-outline",
+      "line-color",
+      mapColors.levelBorder
+    );
+  }
+  if (map.getLayer("country-fill")) {
+    map.setPaintProperty(
+      "country-fill",
+      "fill-outline-color",
+      showOutlines ? mapColors.levelBorder : TRANSPARENT
+    );
+    map.setPaintProperty("country-fill", "fill-opacity", showOutlines ? 0.92 : 1);
+  }
+  if (map.getLayer("inactive-country-fill")) {
+    map.setPaintProperty(
+      "inactive-country-fill",
+      "fill-outline-color",
+      showOutlines ? mapColors.inactiveBorder : TRANSPARENT
+    );
+    map.setPaintProperty(
+      "inactive-country-fill",
+      "fill-color",
+      showOutlines ? mapColors.inactiveLand : landColor
+    );
+  }
+
+  const styleLayers = map.getStyle()?.layers ?? [];
+  for (const layer of styleLayers) {
+    if (layer.type === "line" && layer.id.includes("admin-0")) {
+      map.setLayoutProperty(
+        layer.id,
+        "visibility",
+        showOutlines ? "visible" : "none"
+      );
+    }
+  }
+
+  if (!map.getLayer("small-country-circles")) return;
+  applySmallCountryCirclePaintMode(map, {
+    forceShow: forceShowSmallCountryCircles,
+    level,
+    strokeColor: mapColors.smallCountryStroke,
+    landColor,
+    hideCountryOutlines: !showOutlines,
   });
 }
 
@@ -784,6 +921,8 @@ export default function MapboxMap({
   forceShowSmallCountryCircles = false,
   /** Discover: allow clicks on out-of-region land (e.g. French Guiana in South America). */
   allowInactiveCountryClicks = false,
+  /** Learn neighbor/landlocked prompts: landmass only, no country borders. */
+  hideCountryOutlines = false,
   onCountryClick,
   onCountryHover,
   onRegisterMapProject,
@@ -815,6 +954,7 @@ export default function MapboxMap({
   const geojsonRef = useRef(geojson);
   const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
   const allowInactiveCountryClicksRef = useRef(allowInactiveCountryClicks);
+  const hideCountryOutlinesRef = useRef(hideCountryOutlines);
 
   onCountryClickRef.current = onCountryClick;
   onCountryHoverRef.current = onCountryHover;
@@ -824,6 +964,7 @@ export default function MapboxMap({
   geojsonRef.current = geojson;
   forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
   allowInactiveCountryClicksRef.current = allowInactiveCountryClicks;
+  hideCountryOutlinesRef.current = hideCountryOutlines;
   highlightCountryIdRef.current = highlightCountryId;
   highlightToneRef.current = highlightTone;
   boardPaintRef.current = {
@@ -929,6 +1070,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideCountryOutlines: hideCountryOutlinesRef.current,
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCirclesRef.current,
@@ -967,6 +1109,13 @@ export default function MapboxMap({
       }
 
       addCountryClickExpandLayers(map);
+
+      applyCountryOutlineVisibility(map, !hideCountryOutlinesRef.current, {
+        mapColors,
+        landColor,
+        level,
+        forceShowSmallCountryCircles: forceShowSmallCountryCirclesRef.current,
+      });
 
       map.on("zoom", handleViewChangeForCircles);
       map.on("moveend", handleViewChangeForCircles);
@@ -1016,9 +1165,16 @@ export default function MapboxMap({
           level,
           strokeColor: getMapThemeColors(theme).smallCountryStroke,
           landColor: getActiveLandColor(theme),
+          hideCountryOutlines: hideCountryOutlinesRef.current,
         });
         updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current, {
           forceShow: forceShowSmallCountryCirclesRef.current,
+        });
+        applyCountryOutlineVisibility(mapRef.current, !hideCountryOutlinesRef.current, {
+          mapColors: getMapThemeColors(theme),
+          landColor: getActiveLandColor(theme),
+          level,
+          forceShowSmallCountryCircles: forceShowSmallCountryCirclesRef.current,
         });
       });
     };
@@ -1146,6 +1302,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideCountryOutlines: hideCountryOutlinesRef.current,
       });
     }
 
@@ -1165,11 +1322,29 @@ export default function MapboxMap({
       level,
       strokeColor: mapColors.smallCountryStroke,
       landColor,
+      hideCountryOutlines: hideCountryOutlinesRef.current,
     });
     updateSmallCountryCircles(map, smallCountriesGeojson, {
       forceShow: forceShowSmallCountryCircles,
     });
+    applyCountryOutlineVisibility(map, !hideCountryOutlinesRef.current, {
+      mapColors,
+      landColor,
+      level,
+      forceShowSmallCountryCircles,
+    });
   }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, theme, level, forceShowSmallCountryCircles]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded() || !map.getSource("countries")) return;
+    applyCountryOutlineVisibility(map, !hideCountryOutlines, {
+      mapColors: getMapThemeColors(theme),
+      landColor: getActiveLandColor(theme),
+      level,
+      forceShowSmallCountryCircles,
+    });
+  }, [hideCountryOutlines, theme, level, forceShowSmallCountryCircles, geojson]);
 
   // Camera-only updates: never setData here — GeoJSON setData clears feature-state
   // and was wiping the yellow small-country highlight on language-question pans.
@@ -1226,6 +1401,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideCountryOutlines: hideCountryOutlinesRef.current,
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCircles,

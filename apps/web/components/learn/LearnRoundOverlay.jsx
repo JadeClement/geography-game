@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { primaryBtn } from "@/lib/ui";
+import { isMapBorderSpoilingQuestion } from "@/lib/learn/wrongReveal";
 import MapFeedback from "@/components/MapFeedback";
 import LearnQuestionRenderer from "./LearnQuestionRenderer";
 
@@ -49,7 +50,10 @@ export default function LearnRoundOverlay({
   // a middle card covers the yellow country and fights the region backdrop.
   const forceTop = question.mapConfig?.display === "highlight";
   const isTop = forceTop || variant === "top";
-  const heavierMapBlur = question.type === "landlocked_check";
+  // Neighbor / landlocked prompts hide country borders on the map itself
+  // (continent silhouette stays). No extra overlay blur — that just smears
+  // the landmass we want the learner to still see.
+  const mapBorderSpoiling = isMapBorderSpoilingQuestion(question);
   const highlightMapPrompt = question.mapConfig?.display === "highlight";
   const showOutcomeFeedback = Boolean(feedbackText);
   // Highlight free-recall keeps Continue as an in-form arrow (replaces Submit).
@@ -68,8 +72,8 @@ export default function LearnRoundOverlay({
         // map behind can't be dragged, while remaining visually visible.
         isTop
           ? "pointer-events-none items-start justify-center pt-3"
-          : heavierMapBlur
-            ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
+          : mapBorderSpoiling
+            ? "pointer-events-auto items-center justify-center bg-surface/20 py-4"
             : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
       )}
     >

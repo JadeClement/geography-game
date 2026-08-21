@@ -14,6 +14,17 @@ export function isNeighborLearnQuestion(question) {
   return Boolean(question?.type && NEIGHBOR_QUESTION_TYPES.has(question.type));
 }
 
+/** Neighbor / landlocked prompts are spoiled by readable country borders. */
+const MAP_BORDER_SPOILING_TYPES = new Set([
+  ...NEIGHBOR_QUESTION_TYPES,
+  "landlocked_check",
+  "brazil_non_neighbors",
+]);
+
+export function isMapBorderSpoilingQuestion(question) {
+  return Boolean(question?.type && MAP_BORDER_SPOILING_TYPES.has(question.type));
+}
+
 function formatNameList(names) {
   if (names.length === 0) return "";
   if (names.length === 1) return names[0];
