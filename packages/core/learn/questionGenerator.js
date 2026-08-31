@@ -274,7 +274,6 @@ export function generateShapeNameEntry(country) {
   if (!isShapeEligible(country)) return null;
   return baseQuestion(QUESTION_TYPES.SHAPE_NAME_ENTRY, country, {
     prompt: "What country is this shape?",
-    promptSubtext: "Type its name.",
     answerType: "text_entry",
     correctAnswer: country.name,
     // No map — neighbors / relative size would give the shape away.
