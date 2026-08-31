@@ -15,6 +15,34 @@ import { tierNumberFromString } from "./challengeLevel.js";
 const MIN_COMPARE_RATIO = 1.5;
 const MAX_COMPARE_RATIO = 4;
 
+/** Outlines most learners recognize even in isolation. */
+const DISTINCTIVE_SHAPES = new Set([
+  "ITA",
+  "CHL",
+  "IND",
+  "FRA",
+  "GBR",
+  "ESP",
+  "PRT",
+  "GRC",
+  "NOR",
+  "SWE",
+  "FIN",
+  "IRL",
+  "UKR",
+  "THA",
+  "VNM",
+  "JPN",
+  "NZL",
+  "MEX",
+  "BRA",
+  "SOM",
+  "USA",
+  "RUS",
+  "AUS",
+  "CHN",
+]);
+
 /** Very famous countries get a small association-question ease boost. */
 const HOUSEHOLD_NAMES = new Set([
   "USA",
@@ -331,13 +359,23 @@ export function predictedSuccess({
     score += fameBoost * 0.9;
   }
 
+  if (type === "shape_identification") {
+    // Famous outlines (Italy, Chile, India) are easy; obscure ones are not.
+    score += fameBoost * 0.85;
+    if (DISTINCTIVE_SHAPES.has(countryId)) score += 0.08;
+  }
+
   if (
     type === "blank_map_click" ||
     type === "free_name_entry" ||
+    type === "shape_name_entry" ||
     type === "capital_free_recall"
   ) {
     // Free recall: fame helps a bit; still hard vs working tier.
     score += fameBoost * 0.35;
+    if (type === "shape_name_entry" && DISTINCTIVE_SHAPES.has(countryId)) {
+      score += 0.06;
+    }
   }
 
   const mastery = Math.min(1, Math.max(0, Number(countryMastery) || 0));

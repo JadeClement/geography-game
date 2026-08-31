@@ -5,8 +5,8 @@
  * - One generator per question type (Step 2b). Each takes
  *   (country, allCountries, masteryStats) and returns a fully-specified question
  *   object (shape below) or `null` when it can't be built for this country
- *   (e.g. a landlocked check for an island). The sequencer treats null as "try a
- *   different type" and never drops the country.
+ *   (e.g. a landlocked check for an island, or a shape question for a speck).
+ *   The sequencer treats null as "try a different type" and never drops the country.
  * - Country records are read from data/countries.json shape (iso3/name/capital/
  *   population/area/landlocked/languages (most common first)/neighbors[iso3]/region). `id` is
  *   accepted as an alias for `iso3` so runtime map-country objects also work.
@@ -48,6 +48,8 @@ const MAX_CHOICE_OPTIONS = 4; // 1 correct + up to 3 distractors
 const SELECT_ALL_MIN_CORRECT = 2;
 const SELECT_ALL_DISTRACTORS = 3;
 const CLUE_ELIGIBLE_TIERS = new Set([QUESTION_TIERS.TIER_1, QUESTION_TIERS.TIER_2]);
+// Specks and city-states don't make a readable isolated silhouette.
+const MIN_SHAPE_AREA_KM2 = 1000;
 
 // ── low-level helpers ──────────────────────────────────────────────────────────
 
@@ -128,6 +130,12 @@ function countryOption(record) {
 
 function isClueEligible(tier) {
   return CLUE_ELIGIBLE_TIERS.has(tier);
+}
+
+function isShapeEligible(country) {
+  const area = country?.area;
+  if (typeof area === "number" && area < MIN_SHAPE_AREA_KM2) return false;
+  return Boolean(cid(country));
 }
 
 function baseQuestion(type, country, extra) {
@@ -259,6 +267,40 @@ export function generateBinaryMapChoice(country, allCountries) {
       highlightIds: [cid(country)],
       choiceIds: options.map((option) => option.value),
     },
+  });
+}
+
+export function generateShapeNameEntry(country) {
+  if (!isShapeEligible(country)) return null;
+  return baseQuestion(QUESTION_TYPES.SHAPE_NAME_ENTRY, country, {
+    prompt: "What country is this shape?",
+    promptSubtext: "Type its name.",
+    answerType: "text_entry",
+    correctAnswer: country.name,
+    // No map — neighbors / relative size would give the shape away.
+  });
+}
+
+export function generateShapeIdentification(country, allCountries) {
+  if (!isShapeEligible(country)) return null;
+
+  const index = toCountryIndex(allCountries);
+  const pool = shuffle(
+    sameRegionPool(country, index).filter(isShapeEligible)
+  ).slice(0, MAX_CHOICE_OPTIONS - 1);
+  if (pool.length === 0) return null;
+
+  const options = shuffle([
+    countryOption(country),
+    ...pool.map(countryOption),
+  ]);
+
+  return baseQuestion(QUESTION_TYPES.SHAPE_IDENTIFICATION, country, {
+    prompt: `Which shape is ${country.name}?`,
+    promptSubtext: "Pick the matching outline.",
+    answerType: "multiple_choice",
+    correctAnswer: cid(country),
+    options,
   });
 }
 
@@ -593,10 +635,12 @@ export function generateLanguageFamily(country, allCountries) {
 export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.BLANK_MAP_CLICK.id]: generateBlankMapClick,
   [QUESTION_TYPES.FREE_NAME_ENTRY.id]: generateFreeNameEntry,
+  [QUESTION_TYPES.SHAPE_NAME_ENTRY.id]: generateShapeNameEntry,
   [QUESTION_TYPES.CAPITAL_FREE_RECALL.id]: generateCapitalFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_FREE_RECALL.id]: generateNeighborFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_RECALL_ALL.id]: generateNeighborRecallAll,
   [QUESTION_TYPES.BINARY_MAP_CHOICE.id]: generateBinaryMapChoice,
+  [QUESTION_TYPES.SHAPE_IDENTIFICATION.id]: generateShapeIdentification,
   [QUESTION_TYPES.FLAG_IDENTIFICATION.id]: generateFlagIdentification,
   [QUESTION_TYPES.CAPITAL_MATCHING.id]: generateCapitalMatching,
   [QUESTION_TYPES.NEIGHBOR_CONFIRM.id]: generateNeighborConfirm,

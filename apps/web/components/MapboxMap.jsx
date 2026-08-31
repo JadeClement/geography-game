@@ -462,24 +462,34 @@ function applyMapView(map, mapView, { onSettled } = {}) {
         retainPadding: false,
       });
     } else {
-      const [[west, south], [east, north]] = mapView.bounds ?? [];
-      const safeBounds =
-        Number.isFinite(west) &&
-        Number.isFinite(south) &&
-        Number.isFinite(east) &&
-        Number.isFinite(north)
-          ? [
-              [west, Math.max(-90, Math.min(90, south))],
-              [east, Math.max(-90, Math.min(90, north))],
-            ]
-          : null;
-      if (!safeBounds) return;
-      map.fitBounds(safeBounds, {
-        padding: mapView.padding ?? 48,
-        duration: 0,
-        maxZoom: mapView.maxZoom ?? 5,
-        retainPadding: false,
-      });
+      const bounds = mapView.bounds;
+      const west = bounds?.[0]?.[0];
+      const south = bounds?.[0]?.[1];
+      const east = bounds?.[1]?.[0];
+      const north = bounds?.[1]?.[1];
+      if (
+        !Number.isFinite(west) ||
+        !Number.isFinite(south) ||
+        !Number.isFinite(east) ||
+        !Number.isFinite(north)
+      ) {
+        return;
+      }
+      const safeBounds = [
+        [west, Math.max(-90, Math.min(90, south))],
+        [east, Math.max(-90, Math.min(90, north))],
+      ];
+      try {
+        map.fitBounds(safeBounds, {
+          padding: mapView.padding ?? 48,
+          duration: 0,
+          maxZoom: mapView.maxZoom ?? 5,
+          retainPadding: false,
+        });
+      } catch (error) {
+        console.warn("Mapbox fitBounds failed:", error);
+        return;
+      }
     }
 
     if (onSettled) {

@@ -166,6 +166,11 @@ export const QUESTION_TYPES = {
     id: "capital_free_recall",
     categories: ["capitals"],
   },
+  SHAPE_NAME_ENTRY: {
+    tier: QUESTION_TIERS.TIER_1,
+    id: "shape_name_entry",
+    categories: ["countries"],
+  },
   NEIGHBOR_RECALL_ALL: {
     tier: QUESTION_TIERS.TIER_1,
     id: "neighbor_recall_all",
@@ -177,6 +182,11 @@ export const QUESTION_TYPES = {
     id: "neighbor_free_recall",
     categories: ["countries"],
     requires: ["neighbors"],
+  },
+  SHAPE_IDENTIFICATION: {
+    tier: QUESTION_TIERS.TIER_2,
+    id: "shape_identification",
+    categories: ["countries"],
   },
   FLAG_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_2,
@@ -251,9 +261,11 @@ export const MASTERY_BANDS = [
 export const TYPE_DISPLAY_NAMES = {
   blank_map_click: "Blank map",
   free_name_entry: "Name entry",
+  shape_name_entry: "Shape name",
   capital_free_recall: "Capital recall",
   neighbor_recall_all: "All neighbors",
   neighbor_free_recall: "Neighbor recall",
+  shape_identification: "Shape ID",
   flag_identification: "Flag ID",
   capital_matching: "Capital match",
   neighbor_confirm: "Neighbor yes/no",
@@ -272,11 +284,13 @@ export const TYPE_GROUPS = {
   [QUESTION_TIERS.TIER_1]: [
     "blank_map_click",
     "free_name_entry",
+    "shape_name_entry",
     "capital_free_recall",
     "neighbor_recall_all",
   ],
   [QUESTION_TIERS.TIER_2]: [
     "neighbor_free_recall",
+    "shape_identification",
     "flag_identification",
     "capital_matching",
     "neighbor_confirm",

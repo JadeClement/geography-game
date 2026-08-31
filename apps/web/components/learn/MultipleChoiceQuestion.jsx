@@ -10,14 +10,53 @@ import {
   learnFlagChoiceButton,
   learnFlagChoiceGrid,
   learnFlagChoiceImg,
+  learnShapeChoiceButton,
+  learnShapeChoiceGrid,
+  learnShapeChoiceSvg,
   learnPrompt,
   learnPromptMedia,
   learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
 import ClueButton from "./ClueButton";
+import CountrySilhouette from "./CountrySilhouette";
 
 const FEEDBACK_DELAY_MS = 800;
+
+function ShapeOutcomeMark({ state }) {
+  if (state !== "correct" && state !== "wrong") return null;
+  const isCorrect = state === "correct";
+  return (
+    <span
+      className={cn(
+        "absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-white",
+        isCorrect ? "bg-success" : "bg-error"
+      )}
+      aria-hidden="true"
+    >
+      {isCorrect ? (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+          <path
+            d="M6.5 12.5l3.5 3.5 7.5-8"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+          <path
+            d="M7 7l10 10M17 7 7 17"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
 
 /**
  * Multiple choice question (Tier 2 recognition + Tier 4 association).
@@ -50,6 +89,7 @@ export default function MultipleChoiceQuestion({
   }, [question?.id]);
 
   const isFlagGrid = question?.type === "flag_identification";
+  const isShapeGrid = question?.type === "shape_identification";
   const showsCountryOptions = question?.type === "neighbor_identification";
   const locked = selectedValue != null;
 
@@ -62,10 +102,10 @@ export default function MultipleChoiceQuestion({
 
   // When the map already highlights the country, skip the prompt flag.
   const promptIso2 = useMemo(() => {
-    if (isFlagGrid) return null;
+    if (isFlagGrid || isShapeGrid) return null;
     if (question?.mapConfig?.display === "highlight") return null;
     return resolveCountry?.(question?.countryId)?.iso2 ?? null;
-  }, [isFlagGrid, resolveCountry, question?.countryId, question?.mapConfig?.display]);
+  }, [isFlagGrid, isShapeGrid, resolveCountry, question?.countryId, question?.mapConfig?.display]);
 
   const handleSelect = (value) => {
     if (locked) return;
@@ -131,6 +171,47 @@ export default function MultipleChoiceQuestion({
                   )}
                 >
                   {resolveCountry?.(option.countryId)?.name ?? option.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : isShapeGrid ? (
+        <div className={learnShapeChoiceGrid}>
+          {options.map((option) => {
+            const state = optionState(option);
+            const tone =
+              state === "correct"
+                ? "correct"
+                : state === "wrong"
+                  ? "wrong"
+                  : state === "muted"
+                    ? "muted"
+                    : "idle";
+            const meta = resolveCountry?.(option.countryId) ?? {};
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={learnShapeChoiceButton({ state, locked })}
+                onClick={() => handleSelect(option.value)}
+                disabled={locked}
+                aria-label={locked ? option.label : "Country shape"}
+              >
+                <ShapeOutcomeMark state={state} />
+                <CountrySilhouette
+                  feature={meta.feature}
+                  countryId={option.countryId}
+                  tone={tone}
+                  className={learnShapeChoiceSvg}
+                />
+                <span
+                  className={cn(
+                    "text-center text-sm font-semibold leading-tight",
+                    locked ? "text-text" : "invisible"
+                  )}
+                >
+                  {meta.name ?? option.label}
                 </span>
               </button>
             );

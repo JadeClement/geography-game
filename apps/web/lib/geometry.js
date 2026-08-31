@@ -599,17 +599,21 @@ function sumCountryAreasKm2(countries) {
 }
 
 /**
- * Urals (~60°E) — east limit for European Russia when Learn frames Russia alone
- * or as a neighbor of European countries. Avoids fitting to the Pacific coast.
+ * Urals (~60°E) — hard east ceiling for European Russia when Learn frames Russia
+ * alone or as a neighbor of European countries. Avoids fitting to Siberia /
+ * the Pacific. This is a cap, not a target: Baltic border clusters should stay
+ * near the shared border, not stretch all the way to the Urals.
  */
 export const RUS_EUROPE_MAX_LNG = 60;
 
 /**
  * How far past the other countries in a cluster we still include Russian land.
- * Keeps Asian border clusters (e.g. Mongolia) framed on the relevant slice of
- * Russia instead of always clamping to the Urals.
+ * Tight enough that Latvia/Finland stay framed on the shared border (and the
+ * Caucasus cannot pull a Baltic camera south), wide enough that Asian clusters
+ * (e.g. Mongolia) still show a meaningful slice of Russia.
  */
-const RUS_FOCUS_COMPANION_LNG_PAD_DEG = 30;
+const RUS_FOCUS_COMPANION_LNG_PAD_DEG = 12;
+const RUS_FOCUS_COMPANION_LAT_PAD_DEG = 6;
 
 /**
  * Geographic bbox for a country, preferring metropolitan/mainland polygons so
@@ -645,20 +649,33 @@ export function getCountryGeographicBbox(country) {
 }
 
 /**
- * Clip Russia's vast E–W span so Learn focus cameras stay on the relevant slice.
- * With European neighbors: stop near the Urals (or slightly past the cluster).
- * With Asian neighbors: keep a padded longitude window around that cluster.
- * Rebuilds the bbox from geometry inside the window so Caucasus/Siberia latitudes
- * do not inflate the frame when those lands sit outside the lng clip.
+ * Clip Russia's vast span so Learn focus cameras stay on the relevant slice.
+ * With European neighbors: a padded window around that cluster, capped at the
+ * Urals — not a fit of all European Russia down to the Caucasus.
+ * With Asian neighbors: keep a padded lng/lat window around that cluster.
+ * Rebuilds the bbox from geometry inside the window so Caucasus/Siberia do not
+ * inflate the frame when those lands sit outside the clip.
  */
 export function clipRussiaFocusBbox(rusBbox, companionBbox, rusCountry = null) {
   let clipMinLng = -Infinity;
   let clipMaxLng = RUS_EUROPE_MAX_LNG;
+  let clipMinLat = -Infinity;
+  let clipMaxLat = Infinity;
 
   if (companionBbox && Number.isFinite(companionBbox[0])) {
-    const [cMinLng, , cMaxLng] = companionBbox;
+    const [cMinLng, cMinLat, cMaxLng, cMaxLat] = companionBbox;
     clipMinLng = cMinLng - RUS_FOCUS_COMPANION_LNG_PAD_DEG;
     clipMaxLng = cMaxLng + RUS_FOCUS_COMPANION_LNG_PAD_DEG;
+    clipMinLat = Number.isFinite(cMinLat)
+      ? cMinLat - RUS_FOCUS_COMPANION_LAT_PAD_DEG
+      : -Infinity;
+    clipMaxLat = Number.isFinite(cMaxLat)
+      ? cMaxLat + RUS_FOCUS_COMPANION_LAT_PAD_DEG
+      : Infinity;
+    // European clusters: 60°E is a ceiling, not a destination.
+    if (Number.isFinite(cMaxLng) && cMaxLng <= RUS_EUROPE_MAX_LNG) {
+      clipMaxLng = Math.min(clipMaxLng, RUS_EUROPE_MAX_LNG);
+    }
   }
 
   if (rusCountry?.feature?.geometry) {
@@ -674,6 +691,7 @@ export function clipRussiaFocusBbox(rusBbox, companionBbox, rusCountry = null) {
     for (const polygon of polygons) {
       walkCoords(polygon, (x, y) => {
         if (x < clipMinLng || x > clipMaxLng) return;
+        if (y < clipMinLat || y > clipMaxLat) return;
         bbox[0] = Math.min(bbox[0], x);
         bbox[1] = Math.min(bbox[1], y);
         bbox[2] = Math.max(bbox[2], x);
@@ -689,6 +707,8 @@ export function clipRussiaFocusBbox(rusBbox, companionBbox, rusCountry = null) {
   let [minLng, minLat, maxLng, maxLat] = rusBbox;
   minLng = Math.max(minLng, clipMinLng);
   maxLng = Math.min(maxLng, clipMaxLng);
+  minLat = Math.max(minLat, clipMinLat);
+  maxLat = Math.min(maxLat, clipMaxLat);
 
   if (!(maxLng > minLng) || !(maxLat > minLat)) {
     // Degenerate after clip — Moscow-centered European Russia fallback.
@@ -787,8 +807,8 @@ export function getGeographicBoundsFromCountries(countries) {
 /**
  * Expand bounds about their center until approximate geographic area ≥ targetKm2.
  * Never shrinks below the tight bounds (all countries must stay visible).
- * Latitudes are clamped to [-90, 90] so fitBounds never throws on polar overshoot
- * when a large areaMultiplier expands a tall northern/southern frame.
+ * Latitude expansion is capped so we never create a pole-to-pole frame that
+ * leaves Mapbox stuck on a near-global zoom after Learn teach steps.
  */
 export function expandBoundsToAreaKm2(bounds, targetKm2) {
   const [[minLng, minLat], [maxLng, maxLat]] = bounds;
@@ -800,8 +820,18 @@ export function expandBoundsToAreaKm2(bounds, targetKm2) {
   const scale = Math.sqrt(targetKm2 / current);
   const midLng = (minLng + maxLng) / 2;
   const midLat = (minLat + maxLat) / 2;
-  const halfLng = ((maxLng - minLng) / 2) * scale;
-  const halfLat = ((maxLat - minLat) / 2) * scale;
+  let halfLng = ((maxLng - minLng) / 2) * scale;
+  let halfLat = ((maxLat - minLat) / 2) * scale;
+
+  // Keep expanded latitudes inside a safe band. If the target area still isn't
+  // met, grow longitude instead of blowing past the poles.
+  const maxHalfLat = Math.max(0.05, Math.min(midLat + 85, 85 - midLat));
+  if (halfLat > maxHalfLat) {
+    const latScale = maxHalfLat / halfLat;
+    halfLat = maxHalfLat;
+    // Compensate area on the longitude axis (area ∝ width × height).
+    halfLng = halfLng / Math.max(latScale, 0.05);
+  }
 
   return clampFitBoundsLatitudes([
     [midLng - halfLng, midLat - halfLat],

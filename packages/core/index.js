@@ -14,6 +14,7 @@ export * from "./gameTypes.js";
 export * from "./levels.js";
 export * from "./regions.js";
 export * from "./countryColors.js";
+export * from "./geo/silhouette.js";
 export * from "./learn/questionTypes.js";
 export * from "./learn/questionGenerator.js";
 export * from "./learn/sessionSequencer.js";

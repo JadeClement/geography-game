@@ -23,6 +23,7 @@
     "./regions": "./regions.js",
     "./countryColors": "./countryColors.js",
     "./learn/questionTypes": "./learn/questionTypes.js",
+    "./geo/silhouette": "./geo/silhouette.js",
     "./learn/questionGenerator": "./learn/questionGenerator.js",
     "./learn/sessionSequencer": "./learn/sessionSequencer.js",
     "./learn/challengeLevel": "./learn/challengeLevel.js",

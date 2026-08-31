@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { primaryBtn } from "@/lib/ui";
+import { isShapeLearnQuestion } from "@/lib/learn/wrongReveal";
 import MapFeedback from "@/components/MapFeedback";
 import LearnQuestionRenderer from "./LearnQuestionRenderer";
 
@@ -26,6 +27,7 @@ import LearnQuestionRenderer from "./LearnQuestionRenderer";
  *
  * Outcome toasts (Correct / Incorrect) render beneath the question card.
  */
+
 export default function LearnRoundOverlay({
   question,
   variant = "center",
@@ -50,9 +52,13 @@ export default function LearnRoundOverlay({
   const forceTop = question.mapConfig?.display === "highlight";
   const isTop = forceTop || variant === "top";
   const heavierMapBlur = question.type === "landlocked_check";
+  const shapeQuestion = isShapeLearnQuestion(question);
   const highlightMapPrompt = question.mapConfig?.display === "highlight";
-  const showOutcomeFeedback = Boolean(feedbackText);
-  // Highlight free-recall keeps Continue as an in-form arrow (replaces Submit).
+  // Shape cards already mark correct/wrong in-place (check / X), so skip the
+  // bottom Correct/Incorrect pill that would duplicate that feedback.
+  const showOutcomeFeedback = Boolean(feedbackText) && !shapeQuestion;
+  // Highlight free-recall: Continue lives in-form (arrow). Correct answers
+  // auto-advance unless a teaching note sets awaitingContinue.
   const inlineContinue =
     question.answerType === "text_entry" &&
     question.mapConfig?.display === "highlight";
@@ -68,15 +74,23 @@ export default function LearnRoundOverlay({
         // map behind can't be dragged, while remaining visually visible.
         isTop
           ? "pointer-events-none items-start justify-center pt-3"
-          : heavierMapBlur
-            ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
-            : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
+          : shapeQuestion
+            ? "pointer-events-auto items-center justify-center bg-background/85 py-4 backdrop-blur-xl"
+            : heavierMapBlur
+              ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
+              : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
       )}
     >
       <div
         className={cn(
           "relative flex w-full flex-col items-center",
-          isTop ? "max-w-md" : "max-h-full max-w-lg"
+          isTop
+            ? "max-w-md"
+            : question.type === "shape_name_entry"
+              ? "max-h-full max-w-3xl"
+              : shapeQuestion
+                ? "max-h-full max-w-2xl"
+                : "max-h-full max-w-lg"
         )}
       >
         <div
@@ -100,6 +114,7 @@ export default function LearnRoundOverlay({
           <LearnQuestionRenderer
             question={question}
             onContinue={onContinue}
+            awaitingContinue={awaitingContinue}
             {...rendererProps}
           />
           {showFooter && (

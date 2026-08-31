@@ -293,7 +293,7 @@ export default function GeographyGame() {
   const [learnLandlockedReveal, setLearnLandlockedReveal] = useState(null);
   // Highlight wrongs ("which country is highlighted"): correct + guessed titles.
   const [learnHighlightWrongReveal, setLearnHighlightWrongReveal] = useState(null);
-  // Soft miss on map-click: name the clicked country, then Try again (no score yet).
+  // Soft miss on map-click: toast names the clicked country; map stays clickable.
   const [learnAwaitingRetry, setLearnAwaitingRetry] = useState(false);
   const [learnRetryMessage, setLearnRetryMessage] = useState(null);
   const learnMapMissedRef = useRef(false);
@@ -551,6 +551,7 @@ export default function GeographyGame() {
         neighborCount: Array.isArray(country.neighbors) ? country.neighbors.length : 0,
         capital: country.capital,
         facts: country.facts,
+        feature: country.feature ?? null,
       };
     },
     [allCountriesById]
@@ -732,11 +733,15 @@ export default function GeographyGame() {
     // Bust referential equality when the Learn question / camera mode changes so
     // Mapbox always re-applies the camera (same region bounds after a neighbor
     // close-up would otherwise no-op if we only keyed by question id).
+    const isHighlightPrompt =
+      currentLearnQuestion?.mapConfig?.display === "highlight";
     const learnCameraMode = learnAreaCompareRevealActive
       ? "area"
       : learnNeighborRevealActive
         ? "neighbors"
-        : "region";
+        : isHighlightPrompt
+          ? "highlight-region"
+          : "region";
     const learnQuestionKey = learnEngineActive
       ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
       : null;
@@ -777,7 +782,22 @@ export default function GeographyGame() {
     }
     // Highlight / language / choice questions: full session region only — zoom
     // all the way out from any prior teach close-up (e.g. Balkans → all Europe).
+    // Highlight gets its own camera mode key so we always re-fit even when the
+    // previous question was already on the region backdrop.
     if (learnEngineActive) {
+      if (!mapView) return null;
+      if (isHighlightPrompt) {
+        return withLearnKey({
+          ...mapView,
+          // Slightly roomier padding so the top card doesn't hide northern land,
+          // without the old asymmetric pad that cropped Europe to the Med.
+          padding:
+            typeof mapView.padding === "number"
+              ? Math.max(mapView.padding, 56)
+              : 56,
+          maxZoom: Math.min(mapView.maxZoom ?? 5, 4.5),
+        });
+      }
       return withLearnKey(mapView);
     }
     return mapView;
@@ -2148,24 +2168,29 @@ export default function GeographyGame() {
           }
           return;
         }
+        // Highlight free-recall without a teaching note: green flash, then
+        // auto-advance (no arrow). Enclave notes (VAT/SMR) still pause with the
+        // continue arrow so the note can be read.
+        if (
+          question?.mapConfig?.display === "highlight" &&
+          question?.answerType === "text_entry" &&
+          !question?.continueNote
+        ) {
+          setFeedback({ text: "", type: "" });
+          advanceLearnAfterAnswer(CORRECT_ROUND_DELAY_MS);
+          return;
+        }
         // Teaching notes pause for Continue on correct answers too.
         if (question?.continueNote) {
           learnAwaitingContinueRef.current = true;
           setLearnAwaitingContinue(true);
           setLearnContinueMessage(null);
-          setFeedback(outcomeFeedback({ correct: true, secondTry }));
-          return;
-        }
-        // Highlight free-recall: typed answer turns green in-form; wait for the
-        // Submit→arrow continue (no auto-advance toast under the card).
-        if (
-          question?.mapConfig?.display === "highlight" &&
-          question?.answerType === "text_entry"
-        ) {
-          learnAwaitingContinueRef.current = true;
-          setLearnAwaitingContinue(true);
-          setLearnContinueMessage(null);
-          setFeedback({ text: "", type: "" });
+          setFeedback(
+            question?.mapConfig?.display === "highlight" &&
+              question?.answerType === "text_entry"
+              ? { text: "", type: "" }
+              : outcomeFeedback({ correct: true, secondTry })
+          );
           return;
         }
         // Correct path keeps a brief pause so option/map feedback is seen.
@@ -2381,15 +2406,18 @@ export default function GeographyGame() {
         return;
       }
 
-      // Soft miss: name the clicked country and offer Try again (no score yet).
-      // Keep the miss painted red until this question ends.
-      learnLockRef.current = true;
+      // Soft miss: name the clicked country in the toast and let them click
+      // again immediately (no Try-again button / lock).
       learnMapMissedRef.current = true;
       addRoundWrongCountry(clicked.id);
       playIncorrectSound();
-      setLearnRetryMessage(`Oops, that is ${clicked.name}.`);
-      setLearnAwaitingRetry(true);
-      setFeedback({ text: "Try again.", type: "wrong" });
+      setLearnAwaitingRetry(false);
+      setLearnRetryMessage(null);
+      setFeedback({
+        text: "Try again.",
+        type: "wrong",
+        detail: `That is ${clicked.name}.`,
+      });
     },
     [
       activeCountries,
@@ -3463,13 +3491,16 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  // Learn: map-click / neighbor / area-compare / highlight prompts may pan/zoom
-  // so the learner can inspect the region (e.g. "what country is highlighted").
-  // Landlocked teach stays locked — the answer is yes/no, not map reading.
+  // Learn: map-click / neighbor / area-compare may pan/zoom. Highlight prompts
+  // stay locked on the full region backdrop (yellow paints in place).
+  const learnHighlightMapFrozen =
+    currentLearnQuestion?.mapConfig?.display === "highlight";
   const mapNavigationEnabled =
     !learnEngineActive ||
     isDiscoverGame ||
-    (learnUsesMap && !learnLandlockedRevealActive);
+    (learnUsesMap &&
+      !learnLandlockedRevealActive &&
+      !learnHighlightMapFrozen);
 
   const mapLevel =
     isDiscoverGame || learnEngineActive ? GAME_LEVELS.FIND_FILL : session?.level;

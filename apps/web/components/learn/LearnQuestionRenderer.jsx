@@ -13,9 +13,11 @@ import {
   learnTextInputOutcome,
   learnTextCorrectReveal,
   learnContinueArrowBtn,
+  learnShapePromptSvg,
 } from "@/lib/learnUi";
 import { primaryBtn } from "@/lib/ui";
 import ClueButton from "./ClueButton";
+import CountrySilhouette from "./CountrySilhouette";
 import MultipleChoiceQuestion from "./MultipleChoiceQuestion";
 import MultiSelectQuestion from "./MultiSelectQuestion";
 import YesNoQuestion from "./YesNoQuestion";
@@ -72,9 +74,9 @@ function ContinueArrowButton({ onClick, className }) {
  * shortcuts (Serbia, Macedonia, Sao Tome) match the canonical country name.
  * The host can still pass a richer `matchAnswer`.
  *
- * Highlight-map free recall ("What country is highlighted?"): after submit the
- * typed answer turns green/red and Submit becomes the continue arrow in place.
- * On a miss, a green box under the input shows the correct answer.
+ * Highlight-map free recall ("What country is highlighted?"): correct answers
+ * turn green and auto-advance unless a teaching note requires Continue; misses
+ * turn red, show the correct answer in a green box, and use the continue arrow.
  */
 function TextEntryQuestion({
   question,
@@ -83,6 +85,8 @@ function TextEntryQuestion({
   matchAnswer,
   clues,
   onContinue,
+  awaitingContinue = false,
+  resolveCountry,
 }) {
   const [value, setValue] = useState("");
   const [revealUsed, setRevealUsed] = useState(false);
@@ -92,7 +96,19 @@ function TextEntryQuestion({
   // Keep the card short when the map is the answer surface so the full region
   // stays visible under a top-pinned prompt.
   const compact = question?.mapConfig?.display === "highlight";
+  const isShapePrompt = question?.type === "shape_name_entry";
+  const shapeMeta = isShapePrompt
+    ? resolveCountry?.(question?.countryId) ?? {}
+    : null;
   const correctLabel = formatCorrectAnswerLabel(question?.correctAnswer);
+  const showContinueArrow =
+    submitted &&
+    onContinue &&
+    (outcome === "wrong" || (outcome === "correct" && awaitingContinue));
+  const continueNote =
+    outcome === "correct" && awaitingContinue && question?.continueNote
+      ? question.continueNote
+      : null;
 
   useEffect(() => {
     setValue("");
@@ -123,6 +139,22 @@ function TextEntryQuestion({
 
   return (
     <div className={cn(learnQuestion, compact && "gap-2")}>
+      {isShapePrompt ? (
+        <CountrySilhouette
+          feature={shapeMeta?.feature}
+          countryId={question?.countryId}
+          fit="aspect"
+          tone={
+            outcome === "correct"
+              ? "correct"
+              : outcome === "wrong"
+                ? "wrong"
+                : "idle"
+          }
+          className={learnShapePromptSvg}
+          label={outcome ? question?.correctAnswer : "Country outline"}
+        />
+      ) : null}
       <p className={cn(learnPrompt, compact && "text-base max-md:text-sm")}>
         {question?.prompt}
       </p>
@@ -134,47 +166,57 @@ function TextEntryQuestion({
         onSubmit={submit}
       >
         {compact ? (
-          <div className="flex w-full items-stretch gap-2">
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <input
-                className={cn(
-                  learnTextInput,
-                  "w-full max-w-none py-1.5 text-sm",
-                  learnTextInputOutcome(outcome)
-                )}
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-                placeholder="Type your answer…"
-                autoComplete="off"
-                autoCapitalize="words"
-                autoFocus={!submitted}
-                disabled={submitted}
-                aria-label={question?.prompt}
-              />
-              {outcome === "wrong" && correctLabel ? (
-                <div
-                  className={cn(learnTextCorrectReveal, "max-w-none py-1.5 text-sm")}
-                  role="status"
+          <>
+            <div className="flex w-full items-stretch gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <input
+                  className={cn(
+                    learnTextInput,
+                    "w-full max-w-none py-1.5 text-sm",
+                    learnTextInputOutcome(outcome)
+                  )}
+                  value={value}
+                  onChange={(event) => setValue(event.target.value)}
+                  placeholder="Type your answer…"
+                  autoComplete="off"
+                  autoCapitalize="words"
+                  autoFocus={!submitted}
+                  disabled={submitted}
+                  aria-label={question?.prompt}
+                />
+                {outcome === "wrong" && correctLabel ? (
+                  <div
+                    className={cn(learnTextCorrectReveal, "max-w-none py-1.5 text-sm")}
+                    role="status"
+                  >
+                    {correctLabel}
+                  </div>
+                ) : null}
+              </div>
+              {!submitted ? (
+                <button
+                  type="submit"
+                  className={cn(
+                    primaryBtn,
+                    "h-[2.25rem] w-auto shrink-0 self-start px-3 py-1.5 text-sm"
+                  )}
+                  disabled={!value.trim()}
                 >
-                  {correctLabel}
-                </div>
+                  Submit
+                </button>
+              ) : showContinueArrow ? (
+                <ContinueArrowButton
+                  onClick={onContinue}
+                  className="h-[2.25rem] shrink-0 self-start"
+                />
               ) : null}
             </div>
-            {submitted && onContinue ? (
-              <ContinueArrowButton
-                onClick={onContinue}
-                className="h-[2.25rem] shrink-0 self-start"
-              />
-            ) : (
-              <button
-                type="submit"
-                className={cn(primaryBtn, "h-[2.25rem] w-auto shrink-0 self-start px-3 py-1.5 text-sm")}
-                disabled={submitted || !value.trim()}
-              >
-                Submit
-              </button>
-            )}
-          </div>
+            {continueNote ? (
+              <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
+                {continueNote}
+              </p>
+            ) : null}
+          </>
         ) : (
           <>
             <input
@@ -255,6 +297,7 @@ export default function LearnQuestionRenderer({
   matchAnswer,
   onMapClickReady,
   onContinue,
+  awaitingContinue = false,
 }) {
   const emit = useCallback(
     (partial = {}) => {
@@ -351,6 +394,8 @@ export default function LearnQuestionRenderer({
           matchAnswer={matchAnswer}
           clues={clues}
           onContinue={onContinue}
+          awaitingContinue={awaitingContinue}
+          resolveCountry={resolveCountry}
         />
       );
     case "multi_text_entry":

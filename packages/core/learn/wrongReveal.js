@@ -14,6 +14,15 @@ export function isNeighborLearnQuestion(question) {
   return Boolean(question?.type && NEIGHBOR_QUESTION_TYPES.has(question.type));
 }
 
+const SHAPE_QUESTION_TYPES = new Set([
+  "shape_identification",
+  "shape_name_entry",
+]);
+
+export function isShapeLearnQuestion(question) {
+  return Boolean(question?.type && SHAPE_QUESTION_TYPES.has(question.type));
+}
+
 function formatNameList(names) {
   if (names.length === 0) return "";
   if (names.length === 1) return names[0];

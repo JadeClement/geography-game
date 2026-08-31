@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import {
   getCountryVisibleScreenAnchor,
   getGeographicBoundsFromCountries,
+  getLearnFocusMapView,
   getMainlandPolygons,
   RUS_EUROPE_MAX_LNG,
 } from "../lib/geometry.js";
@@ -169,6 +170,40 @@ test("Russia focus bounds stop near the Urals for European neighbors", () => {
   ]);
   assert.ok(withFinland);
   const [[, ], [maxLng]] = withFinland;
-  assert.ok(maxLng < 80, `Finland+Russia should not reach Siberia, got maxLng=${maxLng}`);
-  assert.ok(maxLng > 40, "should still include a meaningful slice of Russia east of Finland");
+  assert.ok(maxLng < 50, `Finland+Russia should stay near the border, got maxLng=${maxLng}`);
+  assert.ok(maxLng > 32, "should still include a meaningful slice of Russia east of Finland");
+});
+
+test("Latvia neighbor teach does not fit all of European Russia", () => {
+  const byName = (name) =>
+    geojson.features.find((feature) => feature.properties?.name === name);
+  const rusFeature = byName("Russia");
+  const lvaFeature = byName("Latvia");
+  const estFeature = byName("Estonia");
+  const ltuFeature = byName("Lithuania");
+  const blrFeature = byName("Belarus");
+  assert.ok(rusFeature && lvaFeature && estFeature && ltuFeature && blrFeature);
+
+  const cluster = [
+    { id: "LVA", feature: lvaFeature, area: 64559 },
+    { id: "EST", feature: estFeature, area: 45227 },
+    { id: "LTU", feature: ltuFeature, area: 65300 },
+    { id: "BLR", feature: blrFeature, area: 207600 },
+    { id: "RUS", feature: rusFeature, centroid: [37.6, 55.75], area: 17098242 },
+  ];
+
+  const tight = getGeographicBoundsFromCountries(cluster);
+  assert.ok(tight);
+  const [[minLng, minLat], [maxLng, maxLat]] = tight;
+  assert.ok(maxLng < 50, `Latvia cluster must not reach the Urals, got maxLng=${maxLng}`);
+  assert.ok(minLat > 45, `Caucasus must not pull the Baltic frame south, got minLat=${minLat}`);
+  assert.ok(maxLng - minLng < 35, `lng span should stay regional, got ${maxLng - minLng}`);
+  assert.ok(maxLat - minLat < 25, `lat span should stay regional, got ${maxLat - minLat}`);
+
+  const view = getLearnFocusMapView(cluster, { regionId: "europe" });
+  assert.ok(view?.bounds);
+  const [[, south], [east, north]] = view.bounds;
+  assert.ok(east < 60, `expanded camera must stay west of the Urals, got east=${east}`);
+  assert.ok(south > 35, `expanded camera must not drop to North Africa, got south=${south}`);
+  assert.ok(north < 85, `expanded camera must not go pole-to-pole, got north=${north}`);
 });

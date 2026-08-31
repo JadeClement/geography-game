@@ -30,7 +30,9 @@ import { resolveLearnEma } from "@/lib/learn/emaIntegration";
 import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
+import { generateQuestion } from "@/lib/learn/questionGenerator";
 import { buildLearnWrongReveal } from "@/lib/learn/wrongReveal";
+import { geometryToFittedPath } from "@worldly/core/geo/silhouette";
 
 const ENABLED = countriesManifest.countries.filter((c) => c.enabled);
 const ENABLED_IDS = ENABLED.map((c) => c.iso3);
@@ -374,6 +376,61 @@ test("resolveLearnEma maps events to the correct multiplier key", () => {
     resolveLearnEma({ tier: "tier_4", correct: false }).multiplierKey,
     "tier_4_wrong"
   );
+});
+
+test("shape identification asks which of four outlines is the named country", () => {
+  const italy = ENABLED_BY_ID.get("ITA");
+  const question = generateQuestion("shape_identification", italy, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "shape_identification");
+  assert.equal(question.answerType, "multiple_choice");
+  assert.equal(question.correctAnswer, "ITA");
+  assert.match(question.prompt, /Italy/);
+  assert.equal(question.options.length, 4);
+  assert.ok(question.options.every((option) => option.countryId));
+  assert.ok(question.options.some((option) => option.countryId === "ITA"));
+  assert.ok(
+    question.options.every((option) => ENABLED_BY_ID.get(option.countryId)?.region === "europe")
+  );
+});
+
+test("shape name entry shows an isolated outline and asks for the country name", () => {
+  const chile = ENABLED_BY_ID.get("CHL");
+  const question = generateQuestion("shape_name_entry", chile, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "shape_name_entry");
+  assert.equal(question.answerType, "text_entry");
+  assert.equal(question.correctAnswer, "Chile");
+  assert.equal(question.mapConfig, null);
+});
+
+test("tiny countries do not get shape questions", () => {
+  const nauru = ENABLED_BY_ID.get("NRU");
+  assert.equal(generateQuestion("shape_identification", nauru, ENABLED), null);
+  assert.equal(generateQuestion("shape_name_entry", nauru, ENABLED), null);
+});
+
+test("geometryToFittedPath letterboxes a tall polygon into a square viewBox", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 0], [2, 0], [2, 10], [0, 10], [0, 0]]],
+  };
+  const fitted = geometryToFittedPath(geometry);
+  assert.ok(fitted);
+  assert.equal(fitted.viewBox, "0 0 400 400");
+  assert.ok(fitted.d.startsWith("M"));
+  assert.ok(fitted.d.includes("Z"));
+});
+
+test("geometryToFittedPath aspect fit keeps a wide country's proportions", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 0], [10, 0], [10, 2], [0, 2], [0, 0]]],
+  };
+  const fitted = geometryToFittedPath(geometry, { fit: "aspect" });
+  assert.ok(fitted);
+  const [, , w, h] = fitted.viewBox.split(" ").map(Number);
+  assert.ok(w > h, "wide country should have a wider-than-tall viewBox");
 });
 
 test("wrong flag pick relies on option labels instead of That's-copy", () => {

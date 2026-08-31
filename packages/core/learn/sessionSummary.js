@@ -16,10 +16,12 @@ import { selectLearnFact } from "./factSelection.js";
 export const LEARN_TYPE_LABELS = {
   blank_map_click: ["map click", "map clicks"],
   free_name_entry: ["name entry", "name entries"],
+  shape_name_entry: ["shape name", "shape names"],
   capital_free_recall: ["capital recall", "capital recalls"],
   neighbor_free_recall: ["neighbor recall", "neighbor recalls"],
   neighbor_recall_all: ["all-borders recall", "all-borders recalls"],
   binary_map_choice: ["map choice", "map choices"],
+  shape_identification: ["shape ID", "shape IDs"],
   flag_identification: ["flag ID", "flag IDs"],
   capital_matching: ["capital match", "capital matches"],
   neighbor_confirm: ["border check", "border checks"],

@@ -74,6 +74,26 @@ export function learnFlagChoiceButton({ state = "idle", locked = false } = {}) {
 
 export const learnFlagChoiceImg = "h-14 w-full rounded-[4px] object-cover ring-1 ring-black/10";
 
+// Shape-only option grid (silhouettes, unlabeled until after answer).
+export const learnShapeChoiceGrid = "grid grid-cols-2 gap-3";
+
+export function learnShapeChoiceButton({ state = "idle", locked = false } = {}) {
+  return cn(
+    "relative flex min-h-[8.5rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-md border p-3 shadow-sm",
+    "transition-[border-color,background,box-shadow,transform] duration-150 ease-out",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+    state === "idle" &&
+      "border-border bg-inset enabled:hover:-translate-y-0.5 enabled:hover:border-border-subtle enabled:hover:bg-surface-hover enabled:hover:shadow-md",
+    state === "correct" && cn("border-success shadow-md", SUCCESS_BG),
+    state === "wrong" && cn("border-error", ERROR_BG),
+    state === "muted" && "border-border bg-inset opacity-55",
+    locked && "cursor-default"
+  );
+}
+
+export const learnShapeChoiceSvg = "h-28 w-full";
+export const learnShapePromptSvg = "w-full";
+
 // ── yes / no ─────────────────────────────────────────────────────────────────
 
 export const learnYesNoRow = "grid grid-cols-2 gap-3";
