@@ -16,7 +16,8 @@ import LearnQuestionRenderer from "./LearnQuestionRenderer";
  * - "center": a centered card for pure choice / comparison questions. The map
  *   stays visible behind the card, but this overlay captures pointer events so
  *   the user can't pan/zoom/click the map (navigation is also locked on the
- *   map itself for non-click Learn questions).
+ *   map itself for those non-map Learn questions). Highlight prompts use the
+ *   top layout so pan/zoom still reach the map.
  *
  * After a wrong answer the host can pass `awaitingContinue` + `onContinue` so
  * the learner reviews feedback before advancing. Map-focused wrongs (highlight /
@@ -58,11 +59,10 @@ export default function LearnRoundOverlay({
   // Shape cards already mark correct/wrong in-place (check / X), so skip the
   // bottom Correct/Incorrect pill that would duplicate that feedback.
   const showOutcomeFeedback = Boolean(feedbackText) && !shapeQuestion;
-  // Highlight free-recall: Continue lives in-form (arrow). Correct answers
-  // auto-advance unless a teaching note sets awaitingContinue.
-  const inlineContinue =
-    question.answerType === "text_entry" &&
-    question.mapConfig?.display === "highlight";
+  // Text-entry: Continue replaces Submit in-form (arrow on highlight prompts,
+  // full-width button on centered cards). Correct answers auto-advance unless
+  // a teaching note sets awaitingContinue.
+  const inlineContinue = question.answerType === "text_entry";
   const showFooter =
     (awaitingContinue || awaitingRetry) && !(inlineContinue && awaitingContinue);
 

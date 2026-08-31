@@ -32,6 +32,11 @@ import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
 import { buildLearnWrongReveal } from "@/lib/learn/wrongReveal";
+import {
+  resolveGuessedCountry,
+  resolveGuessedCountryInRegion,
+  resolveShapeNameCompare,
+} from "@/lib/learn/resolveGuessedCountry";
 import { geometryToFittedPath } from "@worldly/core/geo/silhouette";
 
 const ENABLED = countriesManifest.countries.filter((c) => c.enabled);
@@ -528,4 +533,53 @@ test("enclave fun fact only appears on landlocked questions", () => {
   const capital = generateQuestion("capital_free_recall", smr, ENABLED_BY_ID);
   assert.match(landlocked?.continueNote ?? "", /enclave/);
   assert.equal(capital?.continueNote, undefined);
+});
+
+test("resolveGuessedCountry matches a typed name anywhere in the world", () => {
+  const italy = resolveGuessedCountry("Italy", { allCountriesById: ENABLED_BY_ID });
+  assert.equal(italy?.id, "ITA");
+  assert.equal(italy?.name, "Italy");
+  const byIso = resolveGuessedCountry("CHL", { allCountriesById: ENABLED_BY_ID });
+  assert.equal(byIso?.id, "CHL");
+  assert.equal(resolveGuessedCountry("fjksl", { allCountriesById: ENABLED_BY_ID }), null);
+});
+
+test("resolveGuessedCountryInRegion ignores out-of-region name matches", () => {
+  const southAmerica = ENABLED.filter((c) => c.region === "southAmerica").map(
+    (c) => ({ ...c, id: c.iso3 })
+  );
+  const italy = resolveGuessedCountryInRegion("Italy", {
+    allCountriesById: ENABLED_BY_ID,
+    activeCountries: southAmerica,
+  });
+  assert.equal(italy, null);
+  const chile = resolveGuessedCountryInRegion("Chile", {
+    allCountriesById: ENABLED_BY_ID,
+    activeCountries: southAmerica,
+  });
+  assert.equal(chile?.id, "CHL");
+});
+
+test("shape name miss compares against the guessed country's outline", () => {
+  const chile = ENABLED_BY_ID.get("CHL");
+  const question = generateQuestion("shape_name_entry", chile, ENABLED);
+  const guessed = resolveShapeNameCompare("Italy", {
+    questionCountryId: question.countryId,
+    allCountriesById: ENABLED_BY_ID,
+  });
+  assert.equal(guessed?.id, "ITA");
+  assert.equal(
+    resolveShapeNameCompare("Chile", {
+      questionCountryId: question.countryId,
+      allCountriesById: ENABLED_BY_ID,
+    }),
+    null
+  );
+  assert.equal(
+    resolveShapeNameCompare("asdfgh", {
+      questionCountryId: question.countryId,
+      allCountriesById: ENABLED_BY_ID,
+    }),
+    null
+  );
 });

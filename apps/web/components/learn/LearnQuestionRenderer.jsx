@@ -14,6 +14,12 @@ import {
   learnTextCorrectReveal,
   learnContinueArrowBtn,
   learnShapePromptSvg,
+  learnShapeCompareRow,
+  learnShapeCompareCell,
+  learnShapeCompareSvg,
+  learnShapeCompareKicker,
+  learnShapeCompareCaptionCorrect,
+  learnShapeCompareCaptionWrong,
 } from "@/lib/learnUi";
 import { primaryBtn } from "@/lib/ui";
 import ClueButton from "./ClueButton";
@@ -87,11 +93,13 @@ function TextEntryQuestion({
   onContinue,
   awaitingContinue = false,
   resolveCountry,
+  lookupCountryByName,
 }) {
   const [value, setValue] = useState("");
   const [revealUsed, setRevealUsed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [outcome, setOutcome] = useState(null); // "correct" | "wrong" | null
+  const [guessedShape, setGuessedShape] = useState(null);
   const startedAtRef = useRef(Date.now());
   // Keep the card short when the map is the answer surface so the full region
   // stays visible under a top-pinned prompt.
@@ -101,12 +109,15 @@ function TextEntryQuestion({
     ? resolveCountry?.(question?.countryId) ?? {}
     : null;
   const correctLabel = formatCorrectAnswerLabel(question?.correctAnswer);
-  const showContinueArrow =
+  // After submit, Continue takes Submit's place (arrow beside a compact
+  // highlight prompt; full-width button on centered cards) so the footer
+  // doesn't stack a second CTA under a grayed-out Submit.
+  const showInlineContinue =
     submitted &&
     onContinue &&
     (outcome === "wrong" || (outcome === "correct" && awaitingContinue));
   const continueNote =
-    outcome === "correct" && awaitingContinue && question?.continueNote
+    showInlineContinue && question?.continueNote
       ? question.continueNote
       : null;
 
@@ -115,6 +126,7 @@ function TextEntryQuestion({
     setRevealUsed(false);
     setSubmitted(false);
     setOutcome(null);
+    setGuessedShape(null);
     startedAtRef.current = Date.now();
   }, [question?.id]);
 
@@ -127,6 +139,16 @@ function TextEntryQuestion({
       : defaultMatch(value, question.correctAnswer);
     setSubmitted(true);
     setOutcome(correct ? "correct" : "wrong");
+    if (!correct && isShapePrompt) {
+      const guessed = lookupCountryByName?.(value) ?? null;
+      setGuessedShape(
+        guessed?.id && guessed.id !== question?.countryId && guessed.feature
+          ? guessed
+          : null
+      );
+    } else {
+      setGuessedShape(null);
+    }
     onSelectFeedback?.({ correct, selectedValue: value });
     onEmit({
       correct,
@@ -139,7 +161,36 @@ function TextEntryQuestion({
 
   return (
     <div className={cn(learnQuestion, compact && "gap-2")}>
-      {isShapePrompt ? (
+      {isShapePrompt && guessedShape ? (
+        <div className={learnShapeCompareRow}>
+          <div className={learnShapeCompareCell}>
+            <p className={learnShapeCompareKicker}>This shape</p>
+            <CountrySilhouette
+              feature={shapeMeta?.feature}
+              countryId={question?.countryId}
+              fit="aspect"
+              tone="correct"
+              className={learnShapeCompareSvg}
+              label={shapeMeta?.name ?? correctLabel ?? "Correct country"}
+            />
+            <p className={learnShapeCompareCaptionCorrect}>
+              {shapeMeta?.name ?? correctLabel}
+            </p>
+          </div>
+          <div className={learnShapeCompareCell}>
+            <p className={learnShapeCompareKicker}>You said</p>
+            <CountrySilhouette
+              feature={guessedShape.feature}
+              countryId={guessedShape.id}
+              fit="aspect"
+              tone="wrong"
+              className={learnShapeCompareSvg}
+              label={guessedShape.name}
+            />
+            <p className={learnShapeCompareCaptionWrong}>{guessedShape.name}</p>
+          </div>
+        </div>
+      ) : isShapePrompt ? (
         <CountrySilhouette
           feature={shapeMeta?.feature}
           countryId={question?.countryId}
@@ -184,7 +235,7 @@ function TextEntryQuestion({
                   disabled={submitted}
                   aria-label={question?.prompt}
                 />
-                {outcome === "wrong" && correctLabel ? (
+                {outcome === "wrong" && correctLabel && !guessedShape ? (
                   <div
                     className={cn(learnTextCorrectReveal, "max-w-none py-1.5 text-sm")}
                     role="status"
@@ -204,7 +255,7 @@ function TextEntryQuestion({
                 >
                   Submit
                 </button>
-              ) : showContinueArrow ? (
+              ) : showInlineContinue ? (
                 <ContinueArrowButton
                   onClick={onContinue}
                   className="h-[2.25rem] shrink-0 self-start"
@@ -230,18 +281,34 @@ function TextEntryQuestion({
               disabled={submitted}
               aria-label={question?.prompt}
             />
-            {outcome === "wrong" && correctLabel ? (
+            {outcome === "wrong" && correctLabel && !guessedShape ? (
               <div className={learnTextCorrectReveal} role="status">
                 {correctLabel}
               </div>
             ) : null}
-            <button
-              type="submit"
-              className={primaryBtn}
-              disabled={submitted || !value.trim()}
-            >
-              Submit
-            </button>
+            {continueNote ? (
+              <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
+                {continueNote}
+              </p>
+            ) : null}
+            {!submitted ? (
+              <button
+                type="submit"
+                className={primaryBtn}
+                disabled={!value.trim()}
+              >
+                Submit
+              </button>
+            ) : showInlineContinue ? (
+              <button
+                type="button"
+                className={primaryBtn}
+                onClick={onContinue}
+                autoFocus
+              >
+                Continue
+              </button>
+            ) : null}
           </>
         )}
       </form>
@@ -283,6 +350,7 @@ function MapClickPrompt({ question, emit, onMapClickReady, clues }) {
  * - question: the question object from the generator/sequencer
  * - onAnswer: receives the normalized event
  * - resolveCountry?: (countryId) => { name, iso2, population, area, neighborCount }
+ * - lookupCountryByName?: (typedName) => { id, name, feature } — shape-name miss compare
  * - speedBaselineMs?: number — the user's personal speed baseline (for `fast`)
  * - clues?: string[] — Tier 1/2 clue ladder text
  * - matchAnswer?, onMapClickReady? — integration seams (see subcomponents)
@@ -298,6 +366,7 @@ export default function LearnQuestionRenderer({
   onMapClickReady,
   onContinue,
   awaitingContinue = false,
+  lookupCountryByName,
 }) {
   const emit = useCallback(
     (partial = {}) => {
@@ -396,6 +465,7 @@ export default function LearnQuestionRenderer({
           onContinue={onContinue}
           awaitingContinue={awaitingContinue}
           resolveCountry={resolveCountry}
+          lookupCountryByName={lookupCountryByName}
         />
       );
     case "multi_text_entry":

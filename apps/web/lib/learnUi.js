@@ -94,6 +94,17 @@ export function learnShapeChoiceButton({ state = "idle", locked = false } = {}) 
 export const learnShapeChoiceSvg = "h-full min-h-0 w-full min-w-0";
 export const learnShapePromptSvg = "mx-auto h-[min(12rem,30vh)] w-full max-w-xs";
 
+// Side-by-side outlines after a wrong "what country is this shape?" guess.
+export const learnShapeCompareRow = "grid w-full grid-cols-2 items-end gap-3";
+export const learnShapeCompareCell = "flex min-w-0 flex-col items-center gap-1.5";
+export const learnShapeCompareSvg = "h-[min(9rem,22vh)] w-full";
+export const learnShapeCompareKicker =
+  "m-0 text-center text-[11px] font-semibold uppercase tracking-wide text-text-muted";
+export const learnShapeCompareCaptionCorrect =
+  "m-0 text-center text-sm font-semibold leading-tight text-success";
+export const learnShapeCompareCaptionWrong =
+  "m-0 text-center text-sm font-semibold leading-tight text-error";
+
 // ── yes / no ─────────────────────────────────────────────────────────────────
 
 export const learnYesNoRow = "grid grid-cols-2 gap-3";

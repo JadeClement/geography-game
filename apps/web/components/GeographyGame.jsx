@@ -16,7 +16,7 @@ import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
-import { resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
+import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import { matchDiscoverTerritoryNote } from "@/lib/discoverTerritories";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
@@ -557,6 +557,20 @@ export default function GeographyGame() {
     [allCountriesById]
   );
 
+  const lookupLearnCountryByName = useCallback(
+    (rawName) => {
+      const guessed = resolveGuessedCountry(rawName, { allCountriesById });
+      if (!guessed) return null;
+      const meta = resolveLearnCountry(guessed.id);
+      return {
+        id: guessed.id,
+        name: meta.name || guessed.name,
+        feature: meta.feature ?? null,
+      };
+    },
+    [allCountriesById, resolveLearnCountry]
+  );
+
   // Countries that crossed the graduation bar for the first time this round
   // (were not graduated before, are now), surfaced in the end-of-game modal.
   const newlyGraduatedNames = useMemo(() => {
@@ -798,6 +812,18 @@ export default function GeographyGame() {
           maxZoom: Math.min(mapView.maxZoom ?? 5, 4.5),
         });
       }
+      // Centered cards (shape, neighbors, …) sit over the region. Pull in a
+      // little so land fills the backdrop instead of a small globe in space.
+      if (!isLearnMapClickQuestion && !learnMapOnlyContinue) {
+        return withLearnKey({
+          ...mapView,
+          padding:
+            typeof mapView.padding === "number"
+              ? Math.min(mapView.padding, 16)
+              : 16,
+          zoomDelta: (Number(mapView.zoomDelta) || 0) + 0.6,
+        });
+      }
       return withLearnKey(mapView);
     }
     return mapView;
@@ -811,6 +837,7 @@ export default function GeographyGame() {
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
     learnMapContinueTopPrompt,
+    isLearnMapClickQuestion,
     allCountriesById,
     session?.region,
   ]);
@@ -3491,16 +3518,13 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  // Learn: map-click / neighbor / area-compare may pan/zoom. Highlight prompts
-  // stay locked on the full region backdrop (yellow paints in place).
-  const learnHighlightMapFrozen =
-    currentLearnQuestion?.mapConfig?.display === "highlight";
+  // Learn: map-click, neighbor/area teach steps, and highlight prompts may
+  // pan/zoom so small yellow countries stay inspectable. Centered-card
+  // questions stay locked so comparison answers can't be peeked from shapes.
   const mapNavigationEnabled =
     !learnEngineActive ||
     isDiscoverGame ||
-    (learnUsesMap &&
-      !learnLandlockedRevealActive &&
-      !learnHighlightMapFrozen);
+    (learnUsesMap && !learnLandlockedRevealActive);
 
   const mapLevel =
     isDiscoverGame || learnEngineActive ? GAME_LEVELS.FIND_FILL : session?.level;
@@ -4006,6 +4030,7 @@ export default function GeographyGame() {
                   onAnswer={handleLearnAnswer}
                   onSelectFeedback={handleLearnSelectFeedback}
                   resolveCountry={resolveLearnCountry}
+                  lookupCountryByName={lookupLearnCountryByName}
                   speedBaselineMs={null}
                   awaitingContinue={learnAwaitingContinue}
                   continueMessage={learnContinueMessage}
