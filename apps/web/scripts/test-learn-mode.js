@@ -30,6 +30,7 @@ import { resolveLearnEma } from "@/lib/learn/emaIntegration";
 import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
+import { buildLearnWrongReveal } from "@/lib/learn/wrongReveal";
 
 const ENABLED = countriesManifest.countries.filter((c) => c.enabled);
 const ENABLED_IDS = ENABLED.map((c) => c.iso3);
@@ -373,4 +374,23 @@ test("resolveLearnEma maps events to the correct multiplier key", () => {
     resolveLearnEma({ tier: "tier_4", correct: false }).multiplierKey,
     "tier_4_wrong"
   );
+});
+
+test("wrong flag pick names the selected country, not the prompt country", () => {
+  const jordan = ENABLED_BY_ID.get("JOR");
+  const azerbaijan = ENABLED_BY_ID.get("AZE");
+  const question = {
+    type: "flag_identification",
+    countryId: "JOR",
+    correctAnswer: "JOR",
+    options: [
+      { value: "JOR", label: "Jordan", countryId: "JOR" },
+      { value: "AZE", label: "Azerbaijan", countryId: "AZE" },
+    ],
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "AZE",
+  });
+  assert.equal(reveal.message, "That's Azerbaijan.");
+  assert.ok(jordan && azerbaijan);
 });

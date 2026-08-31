@@ -2130,7 +2130,9 @@ export default function GeographyGame() {
       if (event.correct) {
         // Neighbor questions: always show every land border on the map.
         if (isNeighborLearnQuestion(question)) {
-          const reveal = buildLearnWrongReveal(question, allCountriesById);
+          const reveal = buildLearnWrongReveal(question, allCountriesById, {
+            selectedValue: event.selectedValue,
+          });
           learnAwaitingContinueRef.current = true;
           setLearnAwaitingContinue(true);
           setLearnContinueMessage(null);
@@ -2172,9 +2174,11 @@ export default function GeographyGame() {
         return;
       }
 
-      // Wrong answers pause for an explicit Continue — show the correct answer
-      // (and paint bordering countries on the map when relevant).
-      const reveal = buildLearnWrongReveal(question, allCountriesById);
+      // Wrong answers pause for an explicit Continue — teach copy names the
+      // selection (and paint bordering countries on the map when relevant).
+      const reveal = buildLearnWrongReveal(question, allCountriesById, {
+        selectedValue: event.selectedValue,
+      });
       learnAwaitingContinueRef.current = true;
       setLearnAwaitingContinue(true);
       setLearnContinueMessage(reveal.message);

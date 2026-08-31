@@ -42,6 +42,29 @@ function resolveCorrectLabel(question, allCountriesById) {
   return null;
 }
 
+/** Country name for a tapped multiple-choice value (iso3, option value, or label). */
+function resolveSelectedChoiceLabel(question, allCountriesById, selectedValue) {
+  if (typeof selectedValue !== "string" || !selectedValue.trim()) return null;
+  const byId = allCountriesById?.get(selectedValue);
+  if (byId?.name) return byId.name;
+
+  const option = (question?.options ?? []).find(
+    (entry) => entry?.value === selectedValue || entry?.countryId === selectedValue
+  );
+  if (!option) return null;
+  if (option.countryId && allCountriesById?.get(option.countryId)?.name) {
+    return allCountriesById.get(option.countryId).name;
+  }
+  return typeof option.label === "string" && option.label.trim()
+    ? option.label
+    : null;
+}
+
+const UNLABELED_COUNTRY_CHOICE_TYPES = new Set([
+  "flag_identification",
+  "shape_identification",
+]);
+
 /**
  * Neighbor IDs for the question's primary country (iso3), excluding the primary itself.
  */
@@ -56,7 +79,11 @@ export function getNeighborIdsForQuestion(question, allCountriesById) {
 /**
  * Build the continue-screen copy (and whether to paint borders on the map).
  */
-export function buildLearnWrongReveal(question, allCountriesById) {
+export function buildLearnWrongReveal(
+  question,
+  allCountriesById,
+  { selectedValue } = {}
+) {
   if (!question) {
     return {
       message: "Not quite.",
@@ -163,6 +190,24 @@ export function buildLearnWrongReveal(question, allCountriesById) {
       areaCompareReveal: null,
       landlockedReveal: null,
     };
+  }
+
+  // Unlabeled flags/shapes: the prompt already names the target and the grid
+  // paints the correct tile green. Name the country they actually tapped.
+  if (UNLABELED_COUNTRY_CHOICE_TYPES.has(question.type)) {
+    const selectedLabel = resolveSelectedChoiceLabel(
+      question,
+      allCountriesById,
+      selectedValue
+    );
+    if (selectedLabel) {
+      return {
+        message: `That's ${selectedLabel}.`,
+        neighborReveal: null,
+        areaCompareReveal: null,
+        landlockedReveal: null,
+      };
+    }
   }
 
   const correctLabel = resolveCorrectLabel(question, allCountriesById);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
 import { getFlagUrl } from "@/lib/flags";
 import {
   learnChoiceFlag,
@@ -123,6 +124,14 @@ export default function MultipleChoiceQuestion({
                 ) : (
                   <span className="text-sm text-text-muted">{option.label}</span>
                 )}
+                <span
+                  className={cn(
+                    "text-center text-sm font-semibold leading-tight",
+                    locked ? "text-text" : "invisible"
+                  )}
+                >
+                  {resolveCountry?.(option.countryId)?.name ?? option.label}
+                </span>
               </button>
             );
           })}
