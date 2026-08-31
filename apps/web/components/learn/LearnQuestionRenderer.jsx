@@ -178,7 +178,7 @@ function TextEntryQuestion({
             </p>
           </div>
           <div className={learnShapeCompareCell}>
-            <p className={learnShapeCompareKicker}>You said</p>
+            <p className={learnShapeCompareKicker}>Your answer</p>
             <CountrySilhouette
               feature={guessedShape.feature}
               countryId={guessedShape.id}

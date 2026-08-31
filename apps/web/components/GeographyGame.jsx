@@ -224,6 +224,12 @@ function outcomeFeedback({ correct, secondTry = false, detail = null }) {
     : { text: "Incorrect", type: "incorrect" };
 }
 
+const WRONG_CONTINENT_FEEDBACK = {
+  text: "Oops that's not the right continent!",
+  type: "wrong",
+};
+const WRONG_CONTINENT_FEEDBACK_MS = 2500;
+
 export default function GeographyGame() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -440,6 +446,7 @@ export default function GeographyGame() {
   const nextRoundTimeoutRef = useRef(null);
   const colorFlashTimeoutRef = useRef(null);
   const wrongFlashTimeoutRef = useRef(null);
+  const continentFeedbackTimeoutRef = useRef(null);
   const answerInputRef = useRef(null);
   const handleBackToMenuRef = useRef(() => {});
   const gameInHistoryRef = useRef(false);
@@ -516,6 +523,9 @@ export default function GeographyGame() {
       }
       if (wrongFlashTimeoutRef.current) {
         clearTimeout(wrongFlashTimeoutRef.current);
+      }
+      if (continentFeedbackTimeoutRef.current) {
+        clearTimeout(continentFeedbackTimeoutRef.current);
       }
       if (learnAdvanceTimerRef.current) {
         clearTimeout(learnAdvanceTimerRef.current);
@@ -1313,6 +1323,23 @@ export default function GeographyGame() {
       wrongFlashTimeoutRef.current = null;
     }
   }, []);
+
+  const clearContinentFeedbackTimer = useCallback(() => {
+    if (continentFeedbackTimeoutRef.current) {
+      clearTimeout(continentFeedbackTimeoutRef.current);
+      continentFeedbackTimeoutRef.current = null;
+    }
+  }, []);
+
+  const showWrongContinentFeedback = useCallback(() => {
+    playIncorrectSound();
+    clearContinentFeedbackTimer();
+    setFeedback(WRONG_CONTINENT_FEEDBACK);
+    continentFeedbackTimeoutRef.current = setTimeout(() => {
+      continentFeedbackTimeoutRef.current = null;
+      setFeedback({ text: "", type: "" });
+    }, WRONG_CONTINENT_FEEDBACK_MS);
+  }, [clearContinentFeedbackTimer, setFeedback]);
 
   const triggerWrongFlash = useCallback(
     (countryId) => {
@@ -2392,7 +2419,7 @@ export default function GeographyGame() {
   );
 
   const handleLearnMapClick = useCallback(
-    (feature) => {
+    (feature, context = {}) => {
       if (gamePausedRef.current) {
         if (tutorialStepId === "map") return;
         setShowResumeConfirm(true);
@@ -2405,6 +2432,13 @@ export default function GeographyGame() {
       if (!question || question.answerType !== "map_click" || typeof emit !== "function") {
         return;
       }
+
+      if (context.inactive) {
+        showWrongContinentFeedback();
+        return;
+      }
+
+      clearContinentFeedbackTimer();
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
@@ -2450,9 +2484,11 @@ export default function GeographyGame() {
       activeCountries,
       addFilledCountry,
       addRoundWrongCountry,
+      clearContinentFeedbackTimer,
       gameActiveRef,
       gamePausedRef,
       setFeedback,
+      showWrongContinentFeedback,
       tutorialStepId,
     ]
   );
@@ -3028,7 +3064,7 @@ export default function GeographyGame() {
   );
 
   const handleCountryClick = useCallback(
-    (feature) => {
+    (feature, context = {}) => {
       if (gamePausedRef.current) {
         if (tutorialStepId === "map") return;
         setShowResumeConfirm(true);
@@ -3037,6 +3073,13 @@ export default function GeographyGame() {
 
       const target = targetCountryRef.current;
       if (!gameActiveRef.current || !target || !isFindLevel(session?.level ?? 0)) return;
+
+      if (context.inactive) {
+        showWrongContinentFeedback();
+        return;
+      }
+
+      clearContinentFeedbackTimer();
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
@@ -3097,6 +3140,7 @@ export default function GeographyGame() {
       activeCountries,
       addRoundWrongCountry,
       addWrongCountry,
+      clearContinentFeedbackTimer,
       finishRound,
       gamePausedRef,
       handleCorrectRound,
@@ -3109,6 +3153,7 @@ export default function GeographyGame() {
       setFlashSmallCountryId,
       setHighlightCountryId,
       setRevealMode,
+      showWrongContinentFeedback,
       targetCountryRef,
       isFindFlagsGame,
       triggerWrongFlash,
@@ -3535,6 +3580,10 @@ export default function GeographyGame() {
       ? handleLearnMapClick
       : handleCountryClick;
 
+  const allowInactiveCountryClicks =
+    isDiscoverGame ||
+    (mapInteractionEnabled && session?.region != null && session.region !== "world");
+
   const promptWrong =
     feedback.type === "wrong" ||
     feedback.type === "reveal" ||
@@ -3949,6 +3998,7 @@ export default function GeographyGame() {
                   onMapMove={needsMapProjection ? handleMapMove : undefined}
                   mapControlsRef={pacificControlsRef}
                   forceShowSmallCountryCircles={tutorialOpen}
+                  allowInactiveCountryClicks={allowInactiveCountryClicks}
                 />
               ) : (
                 <MapboxMap
@@ -3968,7 +4018,7 @@ export default function GeographyGame() {
                   flashSmallCountryId={flashSmallCountryId}
                   mapView={mapViewForRender}
                   forceShowSmallCountryCircles={tutorialOpen}
-                  allowInactiveCountryClicks={isDiscoverGame}
+                  allowInactiveCountryClicks={allowInactiveCountryClicks}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={needsMapProjection ? registerMapProject : undefined}

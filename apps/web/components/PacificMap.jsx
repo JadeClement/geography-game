@@ -162,6 +162,7 @@ export default function PacificMap({
   onMapMove,
   mapControlsRef,
   forceShowSmallCountryCircles = false,
+  allowInactiveCountryClicks = false,
 }) {
   const { theme } = useTheme();
   const colors = MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
@@ -484,10 +485,10 @@ export default function PacificMap({
   }, []);
 
   const handleCountryPointer = useCallback(
-    (countryId) => {
+    (countryId, { inactive = false } = {}) => {
       if (suppressClickRef.current || !gameActive) return;
-      triggerCountryExpand(countryId);
-      onCountryClick({ properties: { id: countryId }, id: countryId });
+      if (!inactive) triggerCountryExpand(countryId);
+      onCountryClick({ properties: { id: countryId }, id: countryId }, { inactive });
     },
     [gameActive, onCountryClick, triggerCountryExpand]
   );
@@ -550,6 +551,19 @@ export default function PacificMap({
               fill={colors.inactiveLand}
               fillRule="evenodd"
               aria-hidden="true"
+              className={
+                gameActive && allowInactiveCountryClicks
+                  ? pacificMapCountryClickable
+                  : undefined
+              }
+              onPointerDown={
+                allowInactiveCountryClicks ? handleCountryPointerDown : undefined
+              }
+              onClick={
+                allowInactiveCountryClicks
+                  ? () => handleCountryPointer(country.id, { inactive: true })
+                  : undefined
+              }
             />
           ))}
         </g>
