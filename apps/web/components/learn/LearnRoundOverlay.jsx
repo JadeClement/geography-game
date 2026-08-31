@@ -85,11 +85,7 @@ export default function LearnRoundOverlay({
           "relative flex w-full flex-col items-center",
           isTop
             ? "max-w-md"
-            : question.type === "shape_name_entry"
-              ? "max-h-full max-w-3xl"
-              : shapeQuestion
-                ? "max-h-full max-w-2xl"
-                : "max-h-full max-w-lg"
+            : "max-h-full max-w-lg"
         )}
       >
         <div

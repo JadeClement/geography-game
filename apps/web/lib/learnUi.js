@@ -92,7 +92,7 @@ export function learnShapeChoiceButton({ state = "idle", locked = false } = {}) 
 }
 
 export const learnShapeChoiceSvg = "h-full min-h-0 w-full min-w-0";
-export const learnShapePromptSvg = "mx-auto h-[min(24rem,50vh)] w-full";
+export const learnShapePromptSvg = "mx-auto h-[min(12rem,30vh)] w-full max-w-xs";
 
 // ── yes / no ─────────────────────────────────────────────────────────────────
 
