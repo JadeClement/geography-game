@@ -276,7 +276,8 @@ export function generateShapeNameEntry(country) {
     prompt: "What country is this shape?",
     answerType: "text_entry",
     correctAnswer: country.name,
-    // No map — neighbors / relative size would give the shape away.
+    // Don't highlight the country — neighbors / relative size would give the
+    // shape away. The region map still sits behind the card, lightly blurred.
   });
 }
 

@@ -25,7 +25,8 @@ import LearnQuestionRenderer from "./LearnQuestionRenderer";
  * Map-click soft misses use `awaitingRetry` + `onTryAgain` instead — show which
  * country was clicked and let the learner try again without scoring yet.
  *
- * Outcome toasts (Correct / Incorrect) render beneath the question card.
+ * Outcome toasts and the Continue bar hang under the question card so they
+ * never shift the centered prompt.
  */
 
 export default function LearnRoundOverlay({
@@ -74,11 +75,9 @@ export default function LearnRoundOverlay({
         // map behind can't be dragged, while remaining visually visible.
         isTop
           ? "pointer-events-none items-start justify-center pt-3"
-          : shapeQuestion
-            ? "pointer-events-auto items-center justify-center bg-background/85 py-4 backdrop-blur-xl"
-            : heavierMapBlur
-              ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
-              : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
+          : heavierMapBlur
+            ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
+            : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
       )}
     >
       <div
@@ -96,13 +95,16 @@ export default function LearnRoundOverlay({
         <div
           ref={cardRef}
           className={cn(
-            "pointer-events-auto relative w-full rounded-xl border border-border bg-surface shadow-xl",
+            "pointer-events-auto relative w-full border border-border bg-surface shadow-xl",
+            showFooter ? "rounded-t-xl border-b-0" : "rounded-xl",
             isTop
               ? cn(
                   "bg-surface/95 backdrop-blur",
                   highlightMapPrompt ? "p-2.5" : "p-3"
                 )
-              : "max-h-full overflow-y-auto p-5"
+              : showFooter
+                ? "max-h-full overflow-y-auto px-5 pt-5 pb-4"
+                : "max-h-full overflow-y-auto p-5"
           )}
         >
           {/* TEST-ONLY: current country's EMA mastery score */}
@@ -117,37 +119,53 @@ export default function LearnRoundOverlay({
             awaitingContinue={awaitingContinue}
             {...rendererProps}
           />
-          {showFooter && (
-            <div className="mt-4 flex flex-col items-center gap-3 border-t border-border-subtle pt-4">
-              {(awaitingRetry ? retryMessage : continueMessage) && (
-                <p className="m-0 text-center text-sm font-semibold leading-snug text-text">
-                  {awaitingRetry ? retryMessage : continueMessage}
-                </p>
-              )}
-              {awaitingContinue && question.continueNote && (
-                <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
-                  {question.continueNote}
-                </p>
-              )}
-              {awaitingRetry ? (
-                <button type="button" className={primaryBtn} onClick={onTryAgain} autoFocus>
-                  Try again
-                </button>
-              ) : (
-                <button type="button" className={primaryBtn} onClick={onContinue} autoFocus>
-                  {continueLabel}
-                </button>
-              )}
-            </div>
-          )}
         </div>
-        {showOutcomeFeedback && (
-          <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2">
-            <MapFeedback
-              text={feedbackText}
-              type={feedbackType}
-              detail={feedbackDetail}
-            />
+        {(showFooter || showOutcomeFeedback) && (
+          <div className="absolute left-0 right-0 top-full z-10 flex flex-col items-center">
+            {showFooter && (
+              <div
+                className={cn(
+                  "pointer-events-auto w-full rounded-b-xl border-x border-b border-border bg-surface shadow-xl",
+                  isTop
+                    ? cn(
+                        "bg-surface/95 backdrop-blur",
+                        highlightMapPrompt ? "px-2.5 pb-2.5" : "px-3 pb-3"
+                      )
+                    : "px-5 pb-5"
+                )}
+              >
+                <div className="flex flex-col items-center gap-3 border-t border-border-subtle pt-4">
+                  {(awaitingRetry ? retryMessage : continueMessage) && (
+                    <p className="m-0 text-center text-sm font-semibold leading-snug text-text">
+                      {awaitingRetry ? retryMessage : continueMessage}
+                    </p>
+                  )}
+                  {awaitingContinue && question.continueNote && (
+                    <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
+                      {question.continueNote}
+                    </p>
+                  )}
+                  {awaitingRetry ? (
+                    <button type="button" className={primaryBtn} onClick={onTryAgain} autoFocus>
+                      Try again
+                    </button>
+                  ) : (
+                    <button type="button" className={primaryBtn} onClick={onContinue} autoFocus>
+                      {continueLabel}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {showOutcomeFeedback && (
+              <div className="pointer-events-none mt-2">
+                <MapFeedback
+                  text={feedbackText}
+                  type={feedbackType}
+                  detail={feedbackDetail}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
