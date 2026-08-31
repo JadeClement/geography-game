@@ -2,12 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import {
+  getCentroid,
+  getCountryVisualCenter,
   getCountryVisibleScreenAnchor,
   getGeographicBoundsFromCountries,
   getLearnFocusMapView,
   getMainlandPolygons,
   RUS_EUROPE_MAX_LNG,
 } from "../lib/geometry.js";
+import { pointInPolygon } from "../lib/polylabel.js";
 
 const geojson = JSON.parse(readFileSync("public/data/countries.geojson", "utf8"));
 const rusFeature = geojson.features.find(
@@ -206,4 +209,114 @@ test("Latvia neighbor teach does not fit all of European Russia", () => {
   assert.ok(east < 60, `expanded camera must stay west of the Urals, got east=${east}`);
   assert.ok(south > 35, `expanded camera must not drop to North Africa, got south=${south}`);
   assert.ok(north < 85, `expanded camera must not go pole-to-pole, got north=${north}`);
+});
+
+function featureByIso3(iso3) {
+  return geojson.features.find(
+    (feature) => feature.properties?.["ISO3166-1-Alpha-3"] === iso3
+  );
+}
+
+function pointInFeature(lng, lat, feature) {
+  const geometry = feature?.geometry;
+  if (!geometry) return false;
+  const polygons =
+    geometry.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry.type === "MultiPolygon"
+        ? geometry.coordinates
+        : [];
+  return polygons.some((polygon) => pointInPolygon(lng, lat, polygon));
+}
+
+const hrvFeature = featureByIso3("HRV");
+const bihFeature = featureByIso3("BIH");
+
+test("Croatia visual center sits inside Croatia, not Bosnia", () => {
+  assert.ok(hrvFeature && bihFeature, "Croatia and Bosnia features present");
+
+  const visual = getCountryVisualCenter(hrvFeature, "HRV");
+  const outlineAverage = getCentroid(hrvFeature);
+
+  assert.ok(visual, "Croatia should have a visual center");
+  assert.ok(
+    pointInFeature(visual[0], visual[1], hrvFeature),
+    `visual center ${visual} must lie inside Croatia`
+  );
+  assert.equal(
+    pointInFeature(visual[0], visual[1], bihFeature),
+    false,
+    `visual center ${visual} must not lie inside Bosnia`
+  );
+
+  const bosniaInterior = getCountryVisualCenter(bihFeature, "BIH");
+  const visualDist = Math.hypot(
+    visual[0] - bosniaInterior[0],
+    visual[1] - bosniaInterior[1]
+  );
+  const outlineDist = Math.hypot(
+    outlineAverage[0] - bosniaInterior[0],
+    outlineAverage[1] - bosniaInterior[1]
+  );
+  assert.ok(
+    visualDist > outlineDist,
+    `visual center should sit farther from Bosnia than the outline average (visual ${visualDist.toFixed(3)} vs outline ${outlineDist.toFixed(3)})`
+  );
+});
+
+test("Croatia neighbor-teach anchor uses the visual center, not the Bosnia border", () => {
+  assert.ok(hrvFeature, "Croatia feature present");
+
+  const projectLngLat = (lng, lat) => ({
+    x: (lng - 13) * 40,
+    y: (47.5 - lat) * 40,
+  });
+  // Balkans frame covering Bosnia and its neighbors (Croatia fully in view).
+  const balkansViewport = { left: 0, top: 0, right: 360, bottom: 280 };
+  const visual = getCountryVisualCenter(hrvFeature, "HRV");
+  const expected = projectLngLat(visual[0], visual[1]);
+
+  const anchor = getCountryVisibleScreenAnchor(
+    { id: "HRV", feature: hrvFeature, visualCenter: visual },
+    projectLngLat,
+    balkansViewport
+  );
+
+  assert.ok(anchor, "Croatia should have an on-screen label anchor");
+  assert.ok(
+    Math.abs(anchor.x - expected.x) < 0.6 && Math.abs(anchor.y - expected.y) < 0.6,
+    `expected visual-center projection ${JSON.stringify(expected)}, got ${JSON.stringify(anchor)}`
+  );
+});
+
+test("Croatia Dalmatia zoom does not pin the label at off-screen Zagreb", () => {
+  assert.ok(hrvFeature, "Croatia feature present");
+
+  const projectLngLat = (lng, lat) => ({
+    x: (lng - 14) * 80,
+    y: (44.2 - lat) * 80,
+  });
+  // Southern Dalmatia only — Zagreb (~45.8N) is well above this frame.
+  const dalmatiaViewport = { left: 0, top: 0, right: 400, bottom: 200 };
+  const visual = getCountryVisualCenter(hrvFeature, "HRV");
+  const zagreb = projectLngLat(visual[0], visual[1]);
+
+  const anchor = getCountryVisibleScreenAnchor(
+    { id: "HRV", feature: hrvFeature, visualCenter: visual },
+    projectLngLat,
+    dalmatiaViewport
+  );
+
+  assert.ok(anchor, "visible Dalmatian land should still get an anchor");
+  assert.ok(
+    zagreb.y < dalmatiaViewport.top || zagreb.y > dalmatiaViewport.bottom,
+    "precondition: Zagreb visual center is off-screen"
+  );
+  assert.ok(
+    anchor.x >= dalmatiaViewport.left &&
+      anchor.x <= dalmatiaViewport.right &&
+      anchor.y >= dalmatiaViewport.top &&
+      anchor.y <= dalmatiaViewport.bottom,
+    `clipped-view anchor must stay on-screen, got ${JSON.stringify(anchor)}`
+  );
 });

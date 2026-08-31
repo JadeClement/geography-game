@@ -1,4 +1,5 @@
 import { shiftLngForOceania } from "./globeProjection.js";
+import { polylabel } from "./polylabel.js";
 
 const SMALL_BBOX_AREA_THRESHOLD = 4;
 
@@ -70,7 +71,8 @@ const SMALL_COUNTRY_EXCLUSIONS = new Set([
 
 /**
  * Naive coordinate averaging fails for dateline-spanning countries (e.g. Kiribati
- * lands near 37°E / Kenya). Use a representative anchor instead.
+ * lands near 37°E / Kenya) and for overseas territories. Used for framing,
+ * markers, and as the label visual-center pin for these countries.
  */
 export const CENTROID_OVERRIDES = {
   KIR: [173.0, 1.4], // Tarawa
@@ -150,6 +152,61 @@ export function getCountryCentroid(feature, iso3) {
   return getCentroid(feature);
 }
 
+const visualCenterCache = new WeakMap();
+
+function visualCenterPrecision(ring) {
+  if (!Array.isArray(ring) || ring.length === 0) return 0.01;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of ring) {
+    if (!Array.isArray(point) || point.length < 2) continue;
+    minX = Math.min(minX, point[0]);
+    minY = Math.min(minY, point[1]);
+    maxX = Math.max(maxX, point[0]);
+    maxY = Math.max(maxY, point[1]);
+  }
+  const span = Math.min(maxX - minX, maxY - minY);
+  if (!Number.isFinite(span) || span <= 0) return 0.01;
+  return Math.max(span / 80, 0.0005);
+}
+
+function visualCenterForPolygons(polygons) {
+  let best = null;
+  let bestDistance = -Infinity;
+  for (const polygon of polygons) {
+    if (!Array.isArray(polygon?.[0]) || polygon[0].length < 4) continue;
+    const result = polylabel(polygon, visualCenterPrecision(polygon[0]));
+    if (!result || result.length < 2) continue;
+    const distance = result.distance ?? 0;
+    if (distance > bestDistance) {
+      bestDistance = distance;
+      best = [result[0], result[1]];
+    }
+  }
+  return best;
+}
+
+/**
+ * Interior label anchor (pole of inaccessibility). Overseas / dateline
+ * overrides still win so France/Kiribati stay pinned to the metropolitan body.
+ */
+export function getCountryVisualCenter(feature, iso3) {
+  if (iso3 && CENTROID_OVERRIDES[iso3]) {
+    return CENTROID_OVERRIDES[iso3];
+  }
+  if (!feature?.geometry) return null;
+
+  const cached = visualCenterCache.get(feature.geometry);
+  if (cached) return cached;
+
+  const polygons = getMainlandPolygons(feature.geometry, iso3);
+  const center = visualCenterForPolygons(polygons) ?? getCentroid(feature);
+  if (center) visualCenterCache.set(feature.geometry, center);
+  return center;
+}
+
 function getCircleMeasureBbox(feature, iso3, centroid) {
   if (iso3 && METROPOLITAN_MEASURE_BBOX_OVERRIDES.has(iso3) && centroid) {
     const [lng, lat] = centroid;
@@ -226,6 +283,8 @@ export function getCountryScreenBounds(country, projectLngLat) {
 }
 
 const VISIBLE_ANCHOR_MAX_SAMPLES = 320;
+/** Use the precomputed visual center only when most of the mainland is in view. */
+const VISIBLE_ANCHOR_MOSTLY_ONSCREEN = 0.45;
 
 function ringArea(ring) {
   if (!Array.isArray(ring) || ring.length < 3) return 0;
@@ -339,12 +398,13 @@ function averagePoints(points) {
 }
 
 /**
- * Anchor at the screen-space center of the country shape currently visible in
- * the viewport — adapts as the user zooms/pans instead of using a fixed centroid.
+ * Anchor labels at the visual center of the country (pole of inaccessibility)
+ * when that point — and most of the mainland — is on-screen. Averaging outline
+ * vertices pulls C-shaped countries (Croatia) onto a neighbor's border.
  *
- * Returns null when no sampled geometry is on-screen so Discover labels for
- * off-map countries (e.g. Norway while zoomed on the Alps) are not shown.
- * Small island polygons are ignored when a dominant mainland exists.
+ * If the country is clipped by the viewport, fall back to the average of
+ * visible vertices so a pan onto Dalmatia does not pin the title at off-map
+ * Zagreb. Returns null when no sampled geometry is on-screen.
  */
 export function getCountryVisibleScreenAnchor(country, projectLngLat, viewportRect) {
   if (!country?.feature?.geometry || !viewportRect) return null;
@@ -358,6 +418,7 @@ export function getCountryVisibleScreenAnchor(country, projectLngLat, viewportRe
 
   const sampleStep = Math.max(1, Math.ceil(vertexCount / VISIBLE_ANCHOR_MAX_SAMPLES));
   const visiblePoints = [];
+  let sampled = 0;
   let index = 0;
 
   for (const polygon of mainlandPolygons) {
@@ -367,12 +428,30 @@ export function getCountryVisibleScreenAnchor(country, projectLngLat, viewportRe
         return;
       }
       index += 1;
+      sampled += 1;
 
       const point = projectLngLat(lng, lat);
       if (point && pointInScreenRect(point.x, point.y, viewportRect)) {
         visiblePoints.push(point);
       }
     });
+  }
+
+  if (visiblePoints.length === 0) return null;
+
+  const visualCenter =
+    country.visualCenter ?? getCountryVisualCenter(country.feature, country.id);
+  if (visualCenter) {
+    const projected = projectLngLat(visualCenter[0], visualCenter[1]);
+    const mostlyVisible =
+      sampled > 0 && visiblePoints.length / sampled >= VISIBLE_ANCHOR_MOSTLY_ONSCREEN;
+    if (
+      projected &&
+      pointInScreenRect(projected.x, projected.y, viewportRect) &&
+      mostlyVisible
+    ) {
+      return projected;
+    }
   }
 
   return averagePoints(visiblePoints);
