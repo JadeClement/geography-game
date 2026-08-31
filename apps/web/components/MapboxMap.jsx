@@ -456,7 +456,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
     if (mapView.type === "camera") {
       map.jumpTo({
         center: mapView.center,
-        zoom: mapView.zoom,
+        zoom: mapView.zoom + (Number(mapView.zoomDelta) || 0),
         padding: mapView.padding ?? 48,
         duration: 0,
         retainPadding: false,
@@ -490,6 +490,16 @@ function applyMapView(map, mapView, { onSettled } = {}) {
         console.warn("Mapbox fitBounds failed:", error);
         return;
       }
+    }
+
+    const zoomDelta = Number(mapView.zoomDelta);
+    if (
+      mapView.type !== "camera" &&
+      Number.isFinite(zoomDelta) &&
+      zoomDelta !== 0 &&
+      typeof map.getZoom === "function"
+    ) {
+      map.setZoom(map.getZoom() + zoomDelta);
     }
 
     if (onSettled) {
