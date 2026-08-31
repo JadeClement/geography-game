@@ -52,7 +52,10 @@ export function resolveContinueNote(question) {
     return SOUTH_AFRICA_CAPITALS_NOTE;
   }
 
-  if (countryId === "VAT" || countryId === "SMR") {
+  if (
+    type === "landlocked_check" &&
+    (countryId === "VAT" || countryId === "SMR")
+  ) {
     return ENCLAVE_NOTE;
   }
 

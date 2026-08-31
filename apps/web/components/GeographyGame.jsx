@@ -2169,8 +2169,8 @@ export default function GeographyGame() {
           return;
         }
         // Highlight free-recall without a teaching note: green flash, then
-        // auto-advance (no arrow). Enclave notes (VAT/SMR) still pause with the
-        // continue arrow so the note can be read.
+        // auto-advance (no arrow). Notes still pause with Continue so they
+        // can be read.
         if (
           question?.mapConfig?.display === "highlight" &&
           question?.answerType === "text_entry" &&

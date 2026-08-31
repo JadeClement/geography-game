@@ -194,6 +194,17 @@ export function buildLearnWrongReveal(
     };
   }
 
+  // Typed answers already show the correct value in-form (red input + green
+  // reveal). Don't also put "That's Sarajevo." above Continue.
+  if (question.answerType === "text_entry") {
+    return {
+      message: null,
+      neighborReveal: null,
+      areaCompareReveal: null,
+      landlockedReveal: null,
+    };
+  }
+
   // Wrong capital pick: the green option already marks the right city.
   // Teach which country the chosen capital belongs to.
   if (question.type === "capital_matching") {

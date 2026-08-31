@@ -466,3 +466,24 @@ test("wrong capital pick names the selected city and its country", () => {
   assert.equal(reveal.message, "Chisinau is the capital of Moldova.");
   assert.equal(moldova?.name, "Moldova");
 });
+
+test("wrong typed capital does not add That's-copy above Continue", () => {
+  const question = {
+    type: "capital_free_recall",
+    answerType: "text_entry",
+    countryId: "BIH",
+    correctAnswer: "Sarajevo",
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "fjksl",
+  });
+  assert.equal(reveal.message, null);
+});
+
+test("enclave fun fact only appears on landlocked questions", () => {
+  const smr = ENABLED_BY_ID.get("SMR");
+  const landlocked = generateQuestion("landlocked_check", smr, ENABLED_BY_ID);
+  const capital = generateQuestion("capital_free_recall", smr, ENABLED_BY_ID);
+  assert.match(landlocked?.continueNote ?? "", /enclave/);
+  assert.equal(capital?.continueNote, undefined);
+});
