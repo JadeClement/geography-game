@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import geojson from "../../assets/geo/countries.geojson";
 import { Colors } from "../../constants/theme";
+import { haptics } from "../../lib/haptics";
 
 function project(lon: number, lat: number, w: number, h: number) {
   return [((lon + 180) / 360) * w, ((90 - lat) / 180) * h];
@@ -73,7 +74,10 @@ export function SessionMap({ region, highlightId, wrongId, onSelect }: Props) {
               fill={fill}
               stroke={Colors.border.subtle}
               strokeWidth={0.4}
-              onPress={() => onSelect(id)}
+              onPress={() => {
+                haptics.tap();
+                onSelect(id);
+              }}
             />
           );
         })}

@@ -1,6 +1,5 @@
-import { Audio } from "expo-av";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,45 +9,44 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  DEFAULT_LEARN_LEVEL,
-} from "@worldly/constants";
+import { DEFAULT_LEARN_LEVEL } from "@worldly/constants";
 import { buildFullRegionLearningQueue } from "@worldly/core/learning";
 import { buildLearnSession } from "@worldly/core/learn/sessionSequencer";
 import { buildLearnStatPayload } from "@worldly/core/learn/emaIntegration";
 import { selectLearnFact } from "@worldly/core/learn/factSelection";
 import { normalizeName } from "@worldly/core/nameUtils";
+import { BinaryChoice } from "../../components/game/BinaryChoice";
+import { CountrySilhouette } from "../../components/game/CountrySilhouette";
 import { FactModal } from "../../components/game/FactModal";
+import { MultipleChoice } from "../../components/game/MultipleChoice";
 import { SessionMap } from "../../components/game/SessionMap";
+import { YesNo } from "../../components/game/YesNo";
 import { Button } from "../../components/ui/Button";
+import { NotificationPermissionPrompt } from "../../components/ui/NotificationPermissionPrompt";
+import { StreakMilestoneOverlay } from "../../components/ui/StreakMilestoneOverlay";
 import { Colors, Font, Radius, Spacing } from "../../constants/theme";
 import { api } from "../../lib/api";
+import { playPronunciation } from "../../lib/audio/pronunciation";
 import { haptics } from "../../lib/haptics";
 import {
+  getPermissionStatus,
+  getAndRegisterPushToken,
+  requestPermissionIfAppropriate,
+  scheduleStreakReminder,
+} from "../../lib/notifications/setup";
+import { soundManager } from "../../lib/sound";
+import {
   getCountriesFromCache,
+  getMeta,
   getSeenFactsForCountry,
   markFactSeen,
   recordPendingAnswer,
+  setMeta,
 } from "../../lib/storage/db";
+import { writeWidgetData } from "../../lib/storage/widgetData";
 import { useSettingsStore } from "../../store/settingsStore";
-import {
-  getAndRegisterPushToken,
-  requestPermissionIfAppropriate,
-} from "../../lib/notifications/setup";
 
-async function playSound(kind: "correct" | "incorrect") {
-  if (!useSettingsStore.getState().soundEnabled) return;
-  const source =
-    kind === "correct"
-      ? require("../../assets/audio/correct.wav")
-      : require("../../assets/audio/incorrect.wav");
-  const { sound } = await Audio.Sound.createAsync(source);
-  await sound.playAsync();
-  sound.setOnPlaybackStatusUpdate((status) => {
-    if (!status.isLoaded || !status.didJustFinish) return;
-    sound.unloadAsync();
-  });
-}
+const STREAK_MILESTONES = [7, 14, 30, 60, 100, 365];
 
 export default function GameSessionScreen() {
   const params = useLocalSearchParams<{
@@ -63,6 +61,9 @@ export default function GameSessionScreen() {
   const region = params.region || "world";
   const gameType = params.gameType || "learning";
   const level = params.level || DEFAULT_LEARN_LEVEL;
+  const isGo = params.source === "go";
+
+  const preferredVoice = useSettingsStore((s) => s.preferredVoice);
 
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -76,8 +77,20 @@ export default function GameSessionScreen() {
   const [wrongId, setWrongId] = useState<string | null>(null);
   const [fact, setFact] = useState<any>(null);
   const [startedAt, setStartedAt] = useState(Date.now());
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
+  const [pendingFinish, setPendingFinish] = useState(false);
 
   const current = questions[index];
+
+  useEffect(() => {
+    let cancelled = false;
+    soundManager.load().catch(() => {});
+    return () => {
+      cancelled = true;
+      soundManager.unload().catch(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,7 +98,11 @@ export default function GameSessionScreen() {
       try {
         const [countries, mastery] = await Promise.all([
           getCountriesFromCache(),
-          api.getAllMastery().catch(() => ({ mastery: { countries: [], capitals: [], flags: [] } })),
+          api
+            .getAllMastery()
+            .catch(() => ({
+              mastery: { countries: [], capitals: [], flags: [] },
+            })),
         ]);
         if (cancelled) return;
 
@@ -147,6 +164,93 @@ export default function GameSessionScreen() {
     };
   }, [gameType, mode, region]);
 
+  const finishSession = useCallback(async () => {
+    if (!isGo) {
+      router.replace("/(tabs)");
+      return;
+    }
+
+    setPendingFinish(true);
+
+    let completed = Number((await getMeta("go_sessions_completed")) || "0");
+    completed += 1;
+    await setMeta("go_sessions_completed", String(completed));
+
+    let hitMilestone: number | null = null;
+
+    try {
+      const streakRes = await api.recordSession();
+      const currentStreak = streakRes?.currentStreak ?? 0;
+      const prev = Math.max(0, currentStreak - (streakRes?.recorded ? 1 : 0));
+      hitMilestone =
+        STREAK_MILESTONES.find((m) => currentStreak === m && prev < m) ?? null;
+      if (hitMilestone) haptics.success();
+
+      const [mastery, weak] = await Promise.all([
+        api.getAllMastery().catch(() => null),
+        api
+          .getWeakCountries("countries", DEFAULT_LEARN_LEVEL, "world")
+          .catch(() => null),
+      ]);
+      let worldlyPercent = 0;
+      if (mastery?.mastery) {
+        const { computeWorldlyScoreFromMastery } = await import(
+          "@worldly/core/worldlyScore"
+        );
+        const countriesManifest = await import(
+          "../../assets/data/countries.json"
+        );
+        const ids = ((countriesManifest as any).countries || [])
+          .filter((c: any) => c.enabled)
+          .map((c: any) => c.iso3);
+        worldlyPercent = computeWorldlyScoreFromMastery(mastery.mastery, ids)
+          .percent;
+      }
+      await writeWidgetData({
+        streak: currentStreak,
+        dueCount: weak?.weakCount ?? weak?.stats?.length ?? 0,
+        worldlyPercent,
+        updatedAt: Date.now(),
+      });
+    } catch {
+      // offline — skip streak/widget
+    }
+
+    const dismissed = await getMeta("notification_prompt_dismissed");
+    const perm = await getPermissionStatus();
+    const shouldPrompt =
+      completed === 1 && dismissed !== "1" && perm.canAsk && !perm.granted;
+
+    if (!(await getMeta("push_token_registered")) && !shouldPrompt) {
+      try {
+        const granted = await requestPermissionIfAppropriate();
+        if (granted) await getAndRegisterPushToken();
+      } catch {
+        // ignore
+      }
+    }
+
+    if (shouldPrompt) {
+      setShowNotifPrompt(true);
+      if (hitMilestone) setMilestoneDays(hitMilestone);
+      return;
+    }
+
+    if (hitMilestone) {
+      setMilestoneDays(hitMilestone);
+      return;
+    }
+
+    router.replace("/(tabs)");
+  }, [isGo]);
+
+  const leaveAfterOverlays = useCallback(() => {
+    setMilestoneDays(null);
+    setShowNotifPrompt(false);
+    setPendingFinish(false);
+    router.replace("/(tabs)");
+  }, []);
+
   const advance = useCallback(
     async (country: any, wasCorrect: boolean) => {
       const isLast = index >= questions.length - 1;
@@ -167,17 +271,7 @@ export default function GameSessionScreen() {
         }
       }
       if (isLast) {
-        if (params.source === "go") {
-          const granted = await requestPermissionIfAppropriate();
-          if (granted) {
-            try {
-              await getAndRegisterPushToken();
-            } catch {
-              // ignore push registration failures
-            }
-          }
-        }
-        router.replace("/(tabs)");
+        await finishSession();
         return;
       }
       setIndex((i) => i + 1);
@@ -187,7 +281,7 @@ export default function GameSessionScreen() {
       setWrongId(null);
       setStartedAt(Date.now());
     },
-    [index, mode, params.source, questions.length]
+    [finishSession, index, mode, questions.length]
   );
 
   const record = useCallback(
@@ -220,18 +314,26 @@ export default function GameSessionScreen() {
 
       if (current.answerType === "map_click" || via === "map") {
         correct = guess === current.countryId || guess === current.correctAnswer;
+      } else if (current.answerType === "yes_no") {
+        const expected = String(current.correctAnswer).toLowerCase();
+        correct = guess.toLowerCase() === expected;
       } else {
         const expected = String(current.correctAnswer || country?.name || "");
         correct = normalizeName(guess) === normalizeName(expected);
       }
 
+      // Haptics + visual feedback first, then sound
       if (correct) haptics.correct();
       else haptics.incorrect();
-      await playSound(correct ? "correct" : "incorrect");
 
       setFeedback(correct ? "Correct!" : "Not quite");
       setHighlightId(correct ? current.countryId : null);
       setWrongId(correct ? null : guess);
+
+      if (useSettingsStore.getState().soundEnabled) {
+        if (correct) await soundManager.playCorrect();
+        else await soundManager.playIncorrect();
+      }
 
       await record({
         countryId: current.countryId,
@@ -259,7 +361,7 @@ export default function GameSessionScreen() {
     );
   }
 
-  if (!current) {
+  if (!current && !pendingFinish && !showNotifPrompt && milestoneDays == null) {
     return (
       <SafeAreaView style={styles.safe}>
         <Text style={styles.prompt}>No questions available.</Text>
@@ -268,66 +370,121 @@ export default function GameSessionScreen() {
     );
   }
 
-  const country = countriesById.get(current.countryId);
+  const country = current ? countriesById.get(current.countryId) : null;
+  const resolveLabel = (value: string) =>
+    countriesById.get(value)?.name || value;
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Text style={styles.progress}>
-        {index + 1} / {questions.length}
-      </Text>
-      <Text style={styles.prompt}>{current.prompt}</Text>
-      {current.promptSubtext ? (
-        <Text style={styles.sub}>{current.promptSubtext}</Text>
-      ) : null}
-
-      {(current.answerType === "map_click" ||
-        current.answerType === "binary_choice") && (
-        <SessionMap
-          region={region}
-          highlightId={highlightId}
-          wrongId={wrongId}
-          onSelect={(id) => handleAnswer(id, "map")}
-        />
-      )}
-
-      {(current.answerType === "text_entry" ||
-        current.answerType === "multi_text_entry") && (
-        <View style={styles.textWrap}>
-          <TextInput
-            style={styles.input}
-            value={text}
-            onChangeText={setText}
-            placeholder="Type your answer"
-            placeholderTextColor={Colors.text.tertiary}
-            autoCapitalize="words"
-            onSubmitEditing={() => handleAnswer(text, "text")}
-          />
-          <Button title="Submit" onPress={() => handleAnswer(text, "text")} />
-        </View>
-      )}
-
-      {Array.isArray(current.options) && current.options.length > 0 && (
-        <View style={styles.options}>
-          {current.options.map((opt: any) => {
-            const value = typeof opt === "string" ? opt : opt.id || opt.value;
-            const label =
-              typeof opt === "string"
-                ? opt
-                : opt.label || countriesById.get(value)?.name || value;
-            return (
+      {current ? (
+        <>
+          <View style={styles.topRow}>
+            <Text style={styles.progress}>
+              {index + 1} / {questions.length}
+            </Text>
+            {country &&
+            current.type !== "shape_name_entry" &&
+            current.type !== "free_name_entry" ? (
               <Pressable
-                key={String(value)}
-                style={styles.option}
-                onPress={() => handleAnswer(String(value), "text")}
+                onPress={() =>
+                  playPronunciation(
+                    country.id || country.iso3,
+                    mode === "capitals" ? "capital" : "country",
+                    preferredVoice
+                  )
+                }
+                hitSlop={8}
               >
-                <Text style={styles.optionText}>{label}</Text>
+                <Text style={styles.speaker}>🔊</Text>
               </Pressable>
-            );
-          })}
-        </View>
-      )}
+            ) : null}
+          </View>
+          <Text style={styles.prompt}>{current.prompt}</Text>
+          {current.promptSubtext ? (
+            <Text style={styles.sub}>{current.promptSubtext}</Text>
+          ) : null}
 
-      {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+          {current.type === "shape_name_entry" && (
+            <CountrySilhouette
+              countryId={current.countryId}
+              fit="aspect"
+              height={280}
+            />
+          )}
+
+          {current.answerType === "map_click" && (
+            <SessionMap
+              region={region}
+              highlightId={highlightId}
+              wrongId={wrongId}
+              onSelect={(id) => handleAnswer(id, "map")}
+            />
+          )}
+
+          {(current.answerType === "text_entry" ||
+            current.answerType === "multi_text_entry") && (
+            <View style={styles.textWrap}>
+              <TextInput
+                style={styles.input}
+                value={text}
+                onChangeText={setText}
+                placeholder="Type your answer"
+                placeholderTextColor={Colors.text.tertiary}
+                autoCapitalize="words"
+                onSubmitEditing={() => handleAnswer(text, "text")}
+              />
+              <Button title="Submit" onPress={() => handleAnswer(text, "text")} />
+            </View>
+          )}
+
+          {current.answerType === "multiple_choice" &&
+            Array.isArray(current.options) && (
+              <MultipleChoice
+                options={current.options}
+                resolveLabel={resolveLabel}
+                variant={
+                  current.type === "shape_identification" ? "shape" : "text"
+                }
+                disabled={Boolean(feedback)}
+                onSelect={(value) => handleAnswer(value, "text")}
+              />
+            )}
+
+          {current.answerType === "yes_no" && (
+            <YesNo
+              disabled={Boolean(feedback)}
+              onSelect={(value) => handleAnswer(value, "text")}
+            />
+          )}
+
+          {current.answerType === "binary_choice" &&
+            Array.isArray(current.options) &&
+            current.options.length >= 2 && (
+              <BinaryChoice
+                left={current.options[0]}
+                right={current.options[1]}
+                resolveLabel={resolveLabel}
+                disabled={Boolean(feedback)}
+                onSelect={(value) => handleAnswer(value, "text")}
+              />
+            )}
+
+          {!["multiple_choice", "yes_no", "binary_choice"].includes(
+            current.answerType
+          ) &&
+            Array.isArray(current.options) &&
+            current.options.length > 0 && (
+              <MultipleChoice
+                options={current.options}
+                resolveLabel={resolveLabel}
+                disabled={Boolean(feedback)}
+                onSelect={(value) => handleAnswer(value, "text")}
+              />
+            )}
+
+          {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+        </>
+      ) : null}
 
       {fact ? (
         <FactModal
@@ -335,7 +492,10 @@ export default function GameSessionScreen() {
           factText={fact.text}
           onDismiss={async () => {
             if (fact.index != null) {
-              await markFactSeen(fact.country.id || fact.country.iso3, fact.index);
+              await markFactSeen(
+                fact.country.id || fact.country.iso3,
+                fact.index
+              );
               try {
                 await api.markFactSeen(
                   fact.country.id || fact.country.iso3,
@@ -347,7 +507,7 @@ export default function GameSessionScreen() {
             }
             setFact(null);
             const isLast = index >= questions.length - 1;
-            if (isLast) router.replace("/(tabs)");
+            if (isLast) await finishSession();
             else {
               setIndex((i) => i + 1);
               setText("");
@@ -359,19 +519,62 @@ export default function GameSessionScreen() {
           }}
         />
       ) : null}
+
+      <NotificationPermissionPrompt
+        visible={showNotifPrompt}
+        onEnable={async () => {
+          const granted = await requestPermissionIfAppropriate();
+          if (granted) {
+            try {
+              await getAndRegisterPushToken();
+              const { notificationHour, notificationMinute } =
+                useSettingsStore.getState();
+              useSettingsStore.getState().setNotificationsEnabled(true);
+              await scheduleStreakReminder(
+                notificationHour,
+                notificationMinute
+              );
+            } catch {
+              // ignore
+            }
+          }
+          leaveAfterOverlays();
+        }}
+        onDismiss={async () => {
+          await setMeta("notification_prompt_dismissed", "1");
+          leaveAfterOverlays();
+        }}
+      />
+
+      <StreakMilestoneOverlay
+        visible={milestoneDays != null && !showNotifPrompt}
+        days={milestoneDays || 0}
+        onDismiss={leaveAfterOverlays}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background.primary, padding: Spacing.lg },
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    padding: Spacing.lg,
+  },
   center: {
     flex: 1,
     backgroundColor: Colors.background.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  progress: { color: Colors.text.tertiary, marginBottom: Spacing.sm },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  progress: { color: Colors.text.tertiary },
+  speaker: { fontSize: 22 },
   prompt: {
     color: Colors.text.primary,
     fontSize: Font.lg,
@@ -388,15 +591,6 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     padding: Spacing.md,
   },
-  options: { gap: Spacing.sm, marginTop: Spacing.md },
-  option: {
-    backgroundColor: Colors.background.card,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border.subtle,
-  },
-  optionText: { color: Colors.text.primary, fontWeight: "600" },
   feedback: {
     marginTop: Spacing.lg,
     color: Colors.brand.teal,

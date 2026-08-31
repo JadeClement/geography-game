@@ -20,15 +20,37 @@ export async function requestPermissionIfAppropriate(): Promise<boolean> {
   return result.granted;
 }
 
+export async function getPermissionStatus(): Promise<{
+  granted: boolean;
+  canAsk: boolean;
+}> {
+  const existing = await Notifications.getPermissionsAsync();
+  if (existing.granted) return { granted: true, canAsk: false };
+  if (existing.status === "denied") return { granted: false, canAsk: false };
+  const asked = await AsyncStorage.getItem(PERMISSION_KEY);
+  return { granted: false, canAsk: asked !== "1" };
+}
+
+/**
+ * Register Expo push token with the API once per install (app_meta gate).
+ * Call after first Go! session completion when permission is granted.
+ */
 export async function getAndRegisterPushToken(): Promise<void> {
-  const existing = await getMeta("expo_push_token");
-  if (existing) return;
+  const registered = await getMeta("push_token_registered");
+  if (registered === "1") return;
+
+  const existingToken = await getMeta("expo_push_token");
+  if (existingToken) {
+    await setMeta("push_token_registered", "1");
+    return;
+  }
 
   const tokenData = await Notifications.getExpoPushTokenAsync();
   const token = tokenData.data;
   const platform = Platform.OS === "ios" ? "ios" : "android";
   await api.registerPushToken(token, platform);
   await setMeta("expo_push_token", token);
+  await setMeta("push_token_registered", "1");
 }
 
 export async function scheduleStreakReminder(
@@ -36,11 +58,19 @@ export async function scheduleStreakReminder(
   minute: number
 ): Promise<void> {
   if (!useSettingsStore.getState().notificationsEnabled) {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    await cancelStreakReminder();
     return;
   }
 
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const already = scheduled.some(
+    (n) => n.content?.data?.type === "streak_reminder"
+  );
+  if (already) {
+    // Reschedule to pick up time changes
+    await cancelStreakReminder();
+  }
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "Time for your daily review 🌍",
@@ -53,4 +83,28 @@ export async function scheduleStreakReminder(
       minute,
     },
   });
+}
+
+export async function cancelStreakReminder(): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((n) => n.content?.data?.type === "streak_reminder")
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+  );
+}
+
+/** Ensure a streak reminder exists when notifications are enabled. */
+export async function ensureStreakReminderScheduled(): Promise<void> {
+  const { notificationsEnabled, notificationHour, notificationMinute } =
+    useSettingsStore.getState();
+  if (!notificationsEnabled) return;
+
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const hasReminder = scheduled.some(
+    (n) => n.content?.data?.type === "streak_reminder"
+  );
+  if (hasReminder) return;
+
+  await scheduleStreakReminder(notificationHour, notificationMinute);
 }

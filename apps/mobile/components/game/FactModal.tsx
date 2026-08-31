@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Colors, Font, Radius, Spacing } from "../../constants/theme";
+import { haptics } from "../../lib/haptics";
 
 type Props = {
   countryName: string;
@@ -29,17 +30,24 @@ export function FactModal({ countryName, factText, onDismiss }: Props) {
     transform: [{ translateY: translateY.value }],
   }));
 
-  const pan = Gesture.Pan().onUpdate((e) => {
-    if (e.translationY > 0) translateY.value = e.translationY;
-  }).onEnd((e) => {
-    if (e.translationY > 60) {
-      translateY.value = withTiming(400, { duration: 200 }, () => {
-        runOnJS(onDismiss)();
-      });
-    } else {
-      translateY.value = withTiming(0);
-    }
-  });
+  const dismissViaSwipe = () => {
+    haptics.tap();
+    onDismiss();
+  };
+
+  const pan = Gesture.Pan()
+    .onUpdate((e) => {
+      if (e.translationY > 0) translateY.value = e.translationY;
+    })
+    .onEnd((e) => {
+      if (e.translationY > 60) {
+        translateY.value = withTiming(400, { duration: 200 }, () => {
+          runOnJS(dismissViaSwipe)();
+        });
+      } else {
+        translateY.value = withTiming(0);
+      }
+    });
 
   return (
     <Pressable style={styles.backdrop} onPress={onDismiss}>

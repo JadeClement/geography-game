@@ -12,6 +12,7 @@ import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { Colors, Font, Radius, Spacing } from "../../constants/theme";
 import { api } from "../../lib/api";
+import { haptics } from "../../lib/haptics";
 
 type Tab = "week" | "streak" | "worldly";
 
@@ -104,10 +105,15 @@ export default function FriendsScreen() {
                   variant="outline"
                   style={{ paddingVertical: 6, paddingHorizontal: 12 }}
                   onPress={async () => {
-                    await api.sendFriendRequest(u.id);
-                    setQuery("");
-                    setResults([]);
-                    load();
+                    try {
+                      await api.sendFriendRequest(u.id);
+                      haptics.success();
+                      setQuery("");
+                      setResults([]);
+                      load();
+                    } catch (e: any) {
+                      setError(e?.message || "Could not send request");
+                    }
                   }}
                 />
               </View>

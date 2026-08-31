@@ -9,14 +9,21 @@ import { Colors } from "../constants/theme";
 import { AuthProvider, useAuth } from "../lib/auth/context";
 import { setupNotificationHandlers } from "../lib/notifications/handlers";
 import {
+  ensureStreakReminderScheduled,
+} from "../lib/notifications/setup";
+import {
   cacheCountriesFromJSON,
   getMeta,
   getPendingAnswers,
   initialize,
   markAnswerSynced,
 } from "../lib/storage/db";
+import { writeWidgetData } from "../lib/storage/widgetData";
 import { api } from "../lib/api";
 import countriesManifest from "../assets/data/countries.json";
+import { DEFAULT_LEARN_LEVEL } from "@worldly/constants";
+import { computeWorldlyScoreFromMastery } from "@worldly/core/worldlyScore";
+import { useSettingsStore } from "../store/settingsStore";
 
 function RootNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -25,6 +32,22 @@ function RootNavigator() {
 
   useEffect(() => {
     setupNotificationHandlers();
+    ensureStreakReminderScheduled().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    // Re-check reminder when notification preference becomes available after hydrate
+    try {
+      const unsub = useSettingsStore.persist.onFinishHydration(() => {
+        ensureStreakReminderScheduled().catch(() => {});
+      });
+      if (useSettingsStore.persist.hasHydrated?.()) {
+        ensureStreakReminderScheduled().catch(() => {});
+      }
+      return typeof unsub === "function" ? unsub : undefined;
+    } catch {
+      return undefined;
+    }
   }, []);
 
   useEffect(() => {
@@ -64,6 +87,26 @@ function RootNavigator() {
         }
       } catch {
         // offline — keep pending
+      }
+
+      try {
+        const [mastery, weak, streak] = await Promise.all([
+          api.getAllMastery(),
+          api.getWeakCountries("countries", DEFAULT_LEARN_LEVEL, "world"),
+          api.getStreak(),
+        ]);
+        const ids = ((countriesManifest as any).countries || [])
+          .filter((c: any) => c.enabled)
+          .map((c: any) => c.iso3);
+        const score = computeWorldlyScoreFromMastery(mastery.mastery, ids);
+        await writeWidgetData({
+          streak: streak.currentStreak ?? 0,
+          dueCount: weak.weakCount ?? weak.stats?.length ?? 0,
+          worldlyPercent: score.percent,
+          updatedAt: Date.now(),
+        });
+      } catch {
+        // offline
       }
     })();
   }, [isAuthenticated]);

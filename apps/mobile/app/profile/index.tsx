@@ -1,17 +1,32 @@
+import * as LocalAuthentication from "expo-local-authentication";
 import Constants from "expo-constants";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Linking, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { Colors, Font, Spacing } from "../../constants/theme";
-import { API_URL } from "../../lib/api";
+import { API_URL, api } from "../../lib/api";
 import { useAuth } from "../../lib/auth/context";
+import { tokenStorage } from "../../lib/auth/tokenStorage";
+import {
+  cancelStreakReminder,
+  scheduleStreakReminder,
+} from "../../lib/notifications/setup";
 import { useSettingsStore } from "../../store/settingsStore";
-import { scheduleStreakReminder } from "../../lib/notifications/setup";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const settings = useSettingsStore();
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const hasHw = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(hasHw && enrolled);
+    })();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -47,13 +62,54 @@ export default function ProfileScreen() {
           value={settings.notificationsEnabled}
           onValueChange={async (v) => {
             settings.setNotificationsEnabled(v);
-            await scheduleStreakReminder(
-              settings.notificationHour,
-              settings.notificationMinute
-            );
+            if (v) {
+              await scheduleStreakReminder(
+                settings.notificationHour,
+                settings.notificationMinute
+              );
+            } else {
+              await cancelStreakReminder();
+            }
           }}
         />
       </View>
+      <View style={styles.row}>
+        <Text style={styles.rowLabel}>Voice (Matthew)</Text>
+        <Switch
+          value={settings.preferredVoice === "matthew"}
+          onValueChange={(v) =>
+            settings.setPreferredVoice(v ? "matthew" : "joanna")
+          }
+        />
+      </View>
+      {biometricAvailable ? (
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Face ID login</Text>
+          <Switch
+            value={settings.biometricEnabled}
+            onValueChange={async (v) => {
+              if (v) {
+                const result = await LocalAuthentication.authenticateAsync({
+                  promptMessage: "Enable Face ID for Worldly",
+                });
+                if (!result.success) return;
+                const token = await tokenStorage.get();
+                if (token) await tokenStorage.setBiometricToken(token);
+                settings.setBiometricEnabled(true);
+                settings.setBiometricPromptShown(true);
+              } else {
+                settings.setBiometricEnabled(false);
+                await tokenStorage.clearBiometricToken();
+                try {
+                  await api.logout();
+                } catch {
+                  // local clear is enough
+                }
+              }
+            }}
+          />
+        </View>
+      ) : null}
 
       <Text style={[styles.label, { marginTop: Spacing.xl }]}>About</Text>
       <Text style={styles.value}>
@@ -80,7 +136,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background.primary, padding: Spacing.xl },
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    padding: Spacing.xl,
+  },
   title: { color: Colors.text.primary, fontSize: Font.xl, fontWeight: "800" },
   label: {
     color: Colors.text.secondary,
