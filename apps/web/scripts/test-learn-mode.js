@@ -401,6 +401,7 @@ test("shape name entry shows an isolated outline and asks for the country name",
   assert.equal(question.type, "shape_name_entry");
   assert.equal(question.answerType, "text_entry");
   assert.equal(question.correctAnswer, "Chile");
+  assert.equal(question.promptSubtext, "");
   assert.equal(question.mapConfig, null);
 });
 
@@ -431,6 +432,47 @@ test("geometryToFittedPath aspect fit keeps a wide country's proportions", () =>
   assert.ok(fitted);
   const [, , w, h] = fitted.viewBox.split(" ").map(Number);
   assert.ok(w > h, "wide country should have a wider-than-tall viewBox");
+});
+
+function pathBBox(d) {
+  const nums = [...d.matchAll(/-?\d+(?:\.\d+)?/g)].map(Number);
+  const xs = [];
+  const ys = [];
+  for (let i = 0; i + 1 < nums.length; i += 2) {
+    xs.push(nums[i]);
+    ys.push(nums[i + 1]);
+  }
+  return {
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+test("geometryToFittedPath uses one uniform scale (no x/y stretch)", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 0], [8, 0], [8, 4], [0, 4], [0, 0]]],
+  };
+  const fitted = geometryToFittedPath(geometry, { fit: "aspect", padding: 0 });
+  const box = pathBBox(fitted.d);
+  const ratio = box.width / box.height;
+  // Equator-ish (mid lat 2°) rectangle is ~2:1; cosine correction is ~1.
+  assert.ok(Math.abs(ratio - 2) < 0.05, `expected ~2:1, got ${ratio}`);
+});
+
+test("geometryToFittedPath does not treat high-latitude degrees as square", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 60], [10, 60], [10, 70], [0, 70], [0, 60]]],
+  };
+  const fitted = geometryToFittedPath(geometry, { fit: "aspect", padding: 0 });
+  const box = pathBBox(fitted.d);
+  const expected = Math.cos((65 * Math.PI) / 180);
+  const ratio = box.width / box.height;
+  assert.ok(
+    Math.abs(ratio - expected) < 0.02,
+    `10°×10° at 65°N should be ~${expected.toFixed(3)} wide:tall, got ${ratio.toFixed(3)}`
+  );
 });
 
 test("wrong flag pick relies on option labels instead of That's-copy", () => {

@@ -203,12 +203,13 @@ export default function MultipleChoiceQuestion({
                   feature={meta.feature}
                   countryId={option.countryId}
                   tone={tone}
+                  fit="aspect"
                   className={learnShapeChoiceSvg}
                 />
                 <span
                   className={cn(
-                    "text-center text-sm font-semibold leading-tight",
-                    locked ? "text-text" : "invisible"
+                    "pointer-events-none absolute inset-x-0 bottom-0 px-1 pb-1 text-center text-sm font-semibold leading-tight",
+                    locked ? "text-text" : "hidden"
                   )}
                 >
                   {meta.name ?? option.label}

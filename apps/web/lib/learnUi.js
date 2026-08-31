@@ -79,7 +79,7 @@ export const learnShapeChoiceGrid = "grid grid-cols-2 gap-3";
 
 export function learnShapeChoiceButton({ state = "idle", locked = false } = {}) {
   return cn(
-    "relative flex min-h-[8.5rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-md border p-3 shadow-sm",
+    "relative flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border p-1.5 shadow-sm",
     "transition-[border-color,background,box-shadow,transform] duration-150 ease-out",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
     state === "idle" &&
@@ -91,8 +91,8 @@ export function learnShapeChoiceButton({ state = "idle", locked = false } = {}) 
   );
 }
 
-export const learnShapeChoiceSvg = "h-28 w-full";
-export const learnShapePromptSvg = "w-full";
+export const learnShapeChoiceSvg = "h-full min-h-0 w-full min-w-0";
+export const learnShapePromptSvg = "mx-auto h-[min(24rem,50vh)] w-full";
 
 // ── yes / no ─────────────────────────────────────────────────────────────────
 

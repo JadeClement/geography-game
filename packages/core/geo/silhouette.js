@@ -5,13 +5,16 @@
  *   so France looks like France, not France + Guiana + Réunion.
  * - Unwraps dateline-spanning rings (Russia, Fiji, USA Aleutians) so the bbox
  *   is a single continuous shape instead of a near-global box.
- * - `fit: "square"` (default) letterboxes into a square — even visual weight in a 2×2 grid.
- * - `fit: "aspect"` uses the country's own proportions so wide places (Russia) and
- *   tall ones (Chile) fill the prompt instead of shrinking into a square.
+ * - Scales longitude by cos(mid-latitude) so a degree of lon isn't treated as
+ *   equal to a degree of lat (which would stretch high-latitude countries).
+ * - Always uses one uniform scale — never independent x/y scales.
+ * - `fit: "square"` (default) letterboxes into a square.
+ * - `fit: "aspect"` uses the country's own proportions so the outline can fill
+ *   its box (wide places like Russia, tall ones like Chile).
  */
 
 const VIEW = 400;
-const PAD = 16;
+const PAD = 8;
 const SIMPLIFY_TOLERANCE = 0.35;
 const MAINLAND_AREA_FRACTION = 0.15;
 const METROPOLITAN_MAX_DISTANCE_DEG = 12;
@@ -195,7 +198,9 @@ export function geometryToFittedPath(
     }
   }
 
-  const spanX = maxLng - minLng;
+  const midLat = (minLat + maxLat) / 2;
+  const lonScale = Math.max(Math.abs(Math.cos((midLat * Math.PI) / 180)), 0.05);
+  const spanX = (maxLng - minLng) * lonScale;
   const spanY = maxLat - minLat;
   if (!(spanX > 0) || !(spanY > 0) || !Number.isFinite(spanX) || !Number.isFinite(spanY)) {
     return null;
@@ -223,7 +228,7 @@ export function geometryToFittedPath(
   const oy = padY + (innerH - spanY * scale) / 2;
 
   const project = (lng, lat) => [
-    ox + (lng - minLng) * scale,
+    ox + (lng - minLng) * lonScale * scale,
     oy + (maxLat - lat) * scale,
   ];
 

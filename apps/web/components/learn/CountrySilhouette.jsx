@@ -19,13 +19,10 @@ const STROKE = {
 };
 
 /**
- * Isolated country outline.
- *
- * `fit="square"` (default) letterboxes into a square — used in the 4-choice grid.
- * `fit="aspect"` keeps the country's proportions and fills the available width
- * so wide outlines (Russia) stay large enough to recognize.
- *
- * `feature` is the GeoJSON Feature from the runtime country object.
+ * Isolated country outline. The path is always drawn with a uniform scale;
+ * `preserveAspectRatio="meet"` letterboxes inside the box so CSS cannot stretch
+ * it. Size the *box* via `className`. `fit="aspect"` keeps the country's own
+ * proportions. `feature` is the GeoJSON Feature from the runtime country.
  */
 export default function CountrySilhouette({
   feature,
@@ -59,47 +56,28 @@ export default function CountrySilhouette({
     );
   }
 
-  const svg = (
-    <svg
-      viewBox={fitted.viewBox}
-      className={
-        fit === "aspect"
-          ? "max-h-full max-w-full"
-          : cn("block h-full w-full", className)
-      }
-      width={fit === "aspect" ? "100%" : undefined}
-      height={fit === "aspect" ? "100%" : undefined}
-      preserveAspectRatio="xMidYMid meet"
-      shapeRendering="geometricPrecision"
-      role={label ? "img" : "presentation"}
-      aria-label={label || undefined}
-      aria-hidden={label ? undefined : true}
-    >
-      <path
-        d={fitted.d}
-        fill={FILL[tone] ?? FILL.idle}
-        fillRule="evenodd"
-        stroke={STROKE[tone] ?? STROKE.idle}
-        strokeWidth="1.5"
-        strokeLinejoin="miter"
-        strokeMiterlimit="2.5"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-
-  if (fit === "aspect") {
-    return (
-      <div
-        className={cn(
-          "mx-auto flex h-[min(24rem,50vh)] w-full items-center justify-center",
-          className
-        )}
+  return (
+    <div className={cn("flex items-center justify-center", className)}>
+      <svg
+        viewBox={fitted.viewBox}
+        preserveAspectRatio="xMidYMid meet"
+        shapeRendering="geometricPrecision"
+        className="h-full w-full max-h-full max-w-full"
+        role={label ? "img" : "presentation"}
+        aria-label={label || undefined}
+        aria-hidden={label ? undefined : true}
       >
-        {svg}
-      </div>
-    );
-  }
-
-  return svg;
+        <path
+          d={fitted.d}
+          fill={FILL[tone] ?? FILL.idle}
+          fillRule="evenodd"
+          stroke={STROKE[tone] ?? STROKE.idle}
+          strokeWidth="1.5"
+          strokeLinejoin="miter"
+          strokeMiterlimit="2.5"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
+  );
 }
