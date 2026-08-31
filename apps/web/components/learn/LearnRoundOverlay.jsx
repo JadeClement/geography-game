@@ -75,7 +75,7 @@ export default function LearnRoundOverlay({
     >
       <div
         className={cn(
-          "flex w-full flex-col items-center gap-2",
+          "relative flex w-full flex-col items-center",
           isTop ? "max-w-md" : "max-h-full max-w-lg"
         )}
       >
@@ -127,7 +127,7 @@ export default function LearnRoundOverlay({
           )}
         </div>
         {showOutcomeFeedback && (
-          <div className="pointer-events-none flex w-full justify-center">
+          <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2">
             <MapFeedback
               text={feedbackText}
               type={feedbackType}
