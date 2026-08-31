@@ -448,3 +448,21 @@ test("wrong flag pick relies on option labels instead of That's-copy", () => {
   });
   assert.equal(reveal.message, null);
 });
+
+test("wrong capital pick names the selected city and its country", () => {
+  const moldova = ENABLED_BY_ID.get("MDA");
+  const question = {
+    type: "capital_matching",
+    countryId: "CYP",
+    correctAnswer: "Nicosia",
+    options: [
+      { value: "Nicosia", label: "Nicosia", countryId: "CYP" },
+      { value: "Chisinau", label: "Chisinau", countryId: "MDA" },
+    ],
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "Chisinau",
+  });
+  assert.equal(reveal.message, "Chisinau is the capital of Moldova.");
+  assert.equal(moldova?.name, "Moldova");
+});

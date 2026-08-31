@@ -70,7 +70,11 @@ export function getNeighborIdsForQuestion(question, allCountriesById) {
 /**
  * Build the continue-screen copy (and whether to paint borders on the map).
  */
-export function buildLearnWrongReveal(question, allCountriesById) {
+export function buildLearnWrongReveal(
+  question,
+  allCountriesById,
+  { selectedValue } = {}
+) {
   if (!question) {
     return {
       message: "Not quite.",
@@ -188,6 +192,30 @@ export function buildLearnWrongReveal(question, allCountriesById) {
       areaCompareReveal: null,
       landlockedReveal: null,
     };
+  }
+
+  // Wrong capital pick: the green option already marks the right city.
+  // Teach which country the chosen capital belongs to.
+  if (question.type === "capital_matching") {
+    const option = (question.options ?? []).find(
+      (entry) =>
+        entry?.value === selectedValue || entry?.label === selectedValue
+    );
+    const capital =
+      (typeof option?.label === "string" && option.label.trim()) ||
+      (typeof option?.value === "string" && option.value.trim()) ||
+      (typeof selectedValue === "string" ? selectedValue.trim() : "");
+    const owner = option?.countryId
+      ? allCountriesById?.get(option.countryId)
+      : null;
+    if (capital && owner?.name) {
+      return {
+        message: `${capital} is the capital of ${owner.name}.`,
+        neighborReveal: null,
+        areaCompareReveal: null,
+        landlockedReveal: null,
+      };
+    }
   }
 
   const correctLabel = resolveCorrectLabel(question, allCountriesById);
