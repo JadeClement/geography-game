@@ -211,6 +211,16 @@ export const learnFactCategory =
 export const learnSummary = "flex flex-col gap-4 border-t border-border pt-4";
 export const learnSummarySection = "flex flex-col gap-2";
 export const learnSummaryTitle = "m-0 text-sm font-bold uppercase tracking-wide text-text-muted";
+export const learnSummaryDetails = "group flex flex-col gap-2";
+export const learnSummarySummary = cn(
+  "flex w-full cursor-pointer list-none items-center gap-2 rounded-sm py-0.5",
+  "text-sm font-bold uppercase tracking-wide text-text-muted",
+  "hover:text-text [&::-webkit-details-marker]:hidden [&::marker]:hidden",
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+);
+export const learnSummaryCount = "font-semibold normal-case tracking-normal text-text-muted/80";
+export const learnSummaryChevron =
+  "ml-auto block h-[0.4rem] w-[0.4rem] shrink-0 -translate-y-px rotate-45 border-b-2 border-r-2 border-current transition-transform duration-150 group-open:-translate-y-0 group-open:rotate-[225deg]";
 export const learnSummaryTypeList = "flex flex-wrap gap-1.5";
 export const learnSummaryTypeChip =
   "inline-flex items-center gap-1 rounded-pill bg-meta px-2.5 py-1 text-xs font-semibold text-text-secondary";

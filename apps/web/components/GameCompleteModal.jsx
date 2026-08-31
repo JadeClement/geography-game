@@ -281,6 +281,15 @@ export default function GameCompleteModal({
     };
   }, [open, signedIn, isReview, isLearning, mode, region, score, level]);
 
+  useEffect(() => {
+    if (!open) return;
+    const node = dialogRef.current;
+    if (!node) return;
+    node.scrollTo(0, 0);
+    const id = requestAnimationFrame(() => node.scrollTo(0, 0));
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
   if (!open) return null;
 
   const handleAuthSuccess = () => {
@@ -345,9 +354,48 @@ export default function GameCompleteModal({
     return "Keep practicing";
   }
 
+  const actionButtons = (
+    <div className={cn(modalActions, isLearning && learnSummary && "pt-1")}>
+      {!signedIn && (
+        <button
+          type="button"
+          className={primaryBtn}
+          onClick={() => setAuthOpen(true)}
+        >
+          Sign in / Create account
+        </button>
+      )}
+      {signedIn && (
+        <Link href="/results" className={secondaryBtn}>
+          View results
+        </Link>
+      )}
+      {canReviewIncorrect && (
+        <button
+          type="button"
+          className={primaryBtn}
+          onClick={onReviewIncorrect}
+        >
+          Review incorrect answers ({wrongCount})
+        </button>
+      )}
+      <button type="button" className={secondaryBtn} onClick={onPlayAgain}>
+        {isGo ? "Go again!" : isLearning ? "Practice again" : "Play again"}
+      </button>
+      <button type="button" className={secondaryBtn} onClick={onBackToMenu}>
+        Back to menu
+      </button>
+    </div>
+  );
+
   return (
     <>
-      <div className={modalOverlay}>
+      <div
+        className={cn(
+          modalOverlay,
+          isLearning && "items-start max-md:items-end"
+        )}
+      >
         <div
           ref={dialogRef}
           className={cn(modalCard, "max-w-md")}
@@ -398,39 +446,11 @@ export default function GameCompleteModal({
             </p>
           )}
 
-          {isLearning && learnSummary && <LearnSessionSummary summary={learnSummary} />}
-
-          <div className={modalActions}>
-            {!signedIn && (
-              <button
-                type="button"
-                className={primaryBtn}
-                onClick={() => setAuthOpen(true)}
-              >
-                Sign in / Create account
-              </button>
-            )}
-            {signedIn && (
-              <Link href="/results" className={secondaryBtn}>
-                View results
-              </Link>
-            )}
-            {canReviewIncorrect && (
-              <button
-                type="button"
-                className={primaryBtn}
-                onClick={onReviewIncorrect}
-              >
-                Review incorrect answers ({wrongCount})
-              </button>
-            )}
-            <button type="button" className={secondaryBtn} onClick={onPlayAgain}>
-              {isGo ? "Go again!" : isLearning ? "Practice again" : "Play again"}
-            </button>
-            <button type="button" className={secondaryBtn} onClick={onBackToMenu}>
-              Back to menu
-            </button>
-          </div>
+          {isLearning && learnSummary ? (
+            <LearnSessionSummary summary={learnSummary} afterIntro={actionButtons} />
+          ) : (
+            actionButtons
+          )}
         </div>
       </div>
 

@@ -4,15 +4,19 @@ import { getFlagUrl } from "@/lib/flags";
 import { formatTypeBreakdown } from "@/lib/learn/sessionSummary";
 import {
   learnSummary,
+  learnSummaryChevron,
+  learnSummaryCount,
   learnSummaryDeltaDown,
   learnSummaryDeltaList,
   learnSummaryDeltaName,
   learnSummaryDeltaRow,
   learnSummaryDeltaUp,
+  learnSummaryDetails,
   learnSummaryFact,
   learnSummaryFactLabel,
   learnSummaryFactText,
   learnSummarySection,
+  learnSummarySummary,
   learnSummaryTitle,
   learnSummaryTypeChip,
   learnSummaryTypeList,
@@ -30,9 +34,11 @@ function formatDelta(delta) {
  *
  * Props:
  * - summary: output of buildLearnSessionSummary()
+ * - afterIntro: rendered after "This session" and before Improved / Needs work,
+ *   so complete-screen actions sit above the collapsible lists.
  */
-export default function LearnSessionSummary({ summary }) {
-  if (!summary) return null;
+export default function LearnSessionSummary({ summary, afterIntro = null }) {
+  if (!summary) return afterIntro ?? null;
 
   const typeChips = formatTypeBreakdown(summary.typeBreakdown);
   const improved = summary.masteryDeltas.filter((entry) => entry.delta > 0);
@@ -41,7 +47,12 @@ export default function LearnSessionSummary({ summary }) {
     .sort((a, b) => a.delta - b.delta);
   const dropFact = summary.biggestDropFact;
 
-  if (typeChips.length === 0 && improved.length === 0 && dropped.length === 0) {
+  if (
+    typeChips.length === 0 &&
+    improved.length === 0 &&
+    dropped.length === 0 &&
+    !afterIntro
+  ) {
     return null;
   }
 
@@ -62,9 +73,15 @@ export default function LearnSessionSummary({ summary }) {
         </section>
       )}
 
+      {afterIntro}
+
       {improved.length > 0 && (
-        <section className={learnSummarySection}>
-          <h3 className={learnSummaryTitle}>Improved</h3>
+        <details className={learnSummaryDetails}>
+          <summary className={learnSummarySummary}>
+            Improved
+            <span className={learnSummaryCount}>{improved.length}</span>
+            <span className={learnSummaryChevron} aria-hidden="true" />
+          </summary>
           <div className={learnSummaryDeltaList}>
             {improved.map((entry) => (
               <div key={entry.countryId} className={learnSummaryDeltaRow}>
@@ -73,12 +90,16 @@ export default function LearnSessionSummary({ summary }) {
               </div>
             ))}
           </div>
-        </section>
+        </details>
       )}
 
       {dropped.length > 0 && (
-        <section className={learnSummarySection}>
-          <h3 className={learnSummaryTitle}>Needs another look</h3>
+        <details className={learnSummaryDetails}>
+          <summary className={learnSummarySummary}>
+            Needs work
+            <span className={learnSummaryCount}>{dropped.length}</span>
+            <span className={learnSummaryChevron} aria-hidden="true" />
+          </summary>
           <div className={learnSummaryDeltaList}>
             {dropped.map((entry) => (
               <div key={entry.countryId} className={learnSummaryDeltaRow}>
@@ -87,7 +108,7 @@ export default function LearnSessionSummary({ summary }) {
               </div>
             ))}
           </div>
-        </section>
+        </details>
       )}
 
       {dropFact?.fact && (
