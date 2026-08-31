@@ -376,9 +376,7 @@ test("resolveLearnEma maps events to the correct multiplier key", () => {
   );
 });
 
-test("wrong flag pick names the selected country, not the prompt country", () => {
-  const jordan = ENABLED_BY_ID.get("JOR");
-  const azerbaijan = ENABLED_BY_ID.get("AZE");
+test("wrong flag pick relies on option labels instead of That's-copy", () => {
   const question = {
     type: "flag_identification",
     countryId: "JOR",
@@ -391,6 +389,5 @@ test("wrong flag pick names the selected country, not the prompt country", () =>
   const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
     selectedValue: "AZE",
   });
-  assert.equal(reveal.message, "That's Azerbaijan.");
-  assert.ok(jordan && azerbaijan);
+  assert.equal(reveal.message, null);
 });
