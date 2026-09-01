@@ -14,11 +14,15 @@ const MIN_LEADER_DISTANCE = 32;
 const MIN_MAX_ANCHOR_DISTANCE = 36;
 const MAX_MAX_ANCHOR_DISTANCE = 72;
 /** Learn border reveals may push titles farther so every neighbor name can clear. */
-const FAR_MAX_MAX_ANCHOR_DISTANCE = 200;
+const FAR_MIN_MAX_ANCHOR_DISTANCE = 112;
+const FAR_MAX_MAX_ANCHOR_DISTANCE = 220;
+/** Extra padding so outlined/underlined titles don't visually cover a neighbor. */
+const LABEL_SEPARATION = 8;
+const MAX_OVERLAP_RESOLVE_ROUNDS = 80;
 const ANCHOR_DISTANCE_COUNTRY_SCALE = 0.55;
 const DEFAULT_OFFSET_DISTANCES = [12, 20, 28, 40, 52, 64, 80, 96, 112];
 const FAR_OFFSET_DISTANCES = [
-  12, 20, 28, 40, 52, 64, 80, 96, 112, 128, 144, 160, 180, 200,
+  12, 20, 28, 40, 52, 64, 80, 96, 112, 128, 144, 160, 180, 200, 220,
 ];
 // Overseas territories can span continents in GeoJSON bboxes (e.g. France).
 // Use a compact anchor-local bounds for own-country placement rules.
@@ -174,11 +178,12 @@ export function getLayoutOwnCountryBounds(ownCountryId, countryBounds, anchor) {
 
 function maxAnchorDistance(ownCountryId, countryBounds, anchor, { allowFarOffset = false } = {}) {
   const maxCap = allowFarOffset ? FAR_MAX_MAX_ANCHOR_DISTANCE : MAX_MAX_ANCHOR_DISTANCE;
+  const minFloor = allowFarOffset ? FAR_MIN_MAX_ANCHOR_DISTANCE : MIN_MAX_ANCHOR_DISTANCE;
   const own = getLayoutOwnCountryBounds(ownCountryId, countryBounds, anchor);
-  if (!own) return Math.min(56, maxCap);
+  if (!own) return Math.min(allowFarOffset ? FAR_MIN_MAX_ANCHOR_DISTANCE : 56, maxCap);
 
   const span = Math.max(own.right - own.left, own.bottom - own.top);
-  return clamp(span * ANCHOR_DISTANCE_COUNTRY_SCALE, MIN_MAX_ANCHOR_DISTANCE, maxCap);
+  return clamp(span * ANCHOR_DISTANCE_COUNTRY_SCALE, minFloor, maxCap);
 }
 
 function isCenterInOwnCountry(rect, ownCountryId, countryBounds, anchor) {
@@ -308,15 +313,21 @@ function assignmentCost(assignments, measurements, countryBounds) {
   return cost;
 }
 
-function overlapsOtherLabels(rect, measurementId, assignments) {
+function overlapsOtherLabels(rect, measurementId, assignments, gap = LABEL_SEPARATION) {
   for (const [id, assignment] of Object.entries(assignments)) {
     if (id === measurementId) continue;
-    if (overlapArea(rect, assignment.rect) > 0) return true;
+    if (rectsOverlap(rect, assignment.rect, gap)) return true;
   }
   return false;
 }
 
-function buildValidCandidates(measurement, bounds, assignments, countryBounds) {
+function buildValidCandidates(
+  measurement,
+  bounds,
+  assignments,
+  countryBounds,
+  { relaxDistance = false } = {}
+) {
   const skipId = measurement.id;
   const others = { ...assignments };
   delete others[skipId];
@@ -336,10 +347,11 @@ function buildValidCandidates(measurement, bounds, assignments, countryBounds) {
     );
     if (!fitsInBounds(rect, bounds)) continue;
     if (
+      !relaxDistance &&
       distanceToAnchor(measurement.anchor, rect) >
-      maxAnchorDistance(measurement.id, countryBounds, measurement.anchor, {
-        allowFarOffset,
-      })
+        maxAnchorDistance(measurement.id, countryBounds, measurement.anchor, {
+          allowFarOffset,
+        })
     ) {
       continue;
     }
@@ -381,14 +393,156 @@ function buildAssignment(measurement, choice, countryBounds) {
   };
 }
 
+function minTranslationToSeparate(mover, other, gap = LABEL_SEPARATION) {
+  const padded = {
+    left: other.left - gap,
+    top: other.top - gap,
+    right: other.right + gap,
+    bottom: other.bottom + gap,
+  };
+  if (!rectsOverlap(mover, padded)) return { dx: 0, dy: 0 };
+
+  const options = [
+    { dx: -(mover.right - padded.left), dy: 0 },
+    { dx: padded.right - mover.left, dy: 0 },
+    { dx: 0, dy: -(mover.bottom - padded.top) },
+    { dx: 0, dy: padded.bottom - mover.top },
+  ];
+  options.sort(
+    (a, b) => Math.abs(a.dx) + Math.abs(a.dy) - (Math.abs(b.dx) + Math.abs(b.dy))
+  );
+  return options[0];
+}
+
+function assignmentFromRect(measurement, rect, countryBounds, previous) {
+  return buildAssignment(
+    measurement,
+    {
+      candidate: { ...(previous?.candidate ?? { offset: true }), offset: true },
+      rect,
+    },
+    countryBounds
+  );
+}
+
+/**
+ * Hard guarantee: no two titles share pixels (plus LABEL_SEPARATION).
+ * Moves lower-priority labels first so the subject (e.g. Latvia) keeps its spot.
+ */
+function resolveOverlaps(assignments, measurements, bounds, countryBounds) {
+  const byId = Object.fromEntries(measurements.map((item) => [item.id, item]));
+  const ids = measurements.map((item) => item.id).filter((id) => assignments[id]);
+
+  for (let round = 0; round < MAX_OVERLAP_RESOLVE_ROUNDS; round += 1) {
+    let moved = false;
+
+    for (let i = 0; i < ids.length; i += 1) {
+      for (let j = i + 1; j < ids.length; j += 1) {
+        const idA = ids[i];
+        const idB = ids[j];
+        const a = assignments[idA];
+        const b = assignments[idB];
+        if (!rectsOverlap(a.rect, b.rect, LABEL_SEPARATION)) continue;
+
+        const priorityA = byId[idA]?.priority ?? 0;
+        const priorityB = byId[idB]?.priority ?? 0;
+        // Equal priority: move the later title (south / non-subject after sort).
+        const moveA = priorityA === priorityB ? false : priorityA < priorityB;
+        const moverId = moveA ? idA : idB;
+        const other = moveA ? b : a;
+        const mover = assignments[moverId];
+        const measurement = byId[moverId];
+        const { dx, dy } = minTranslationToSeparate(mover.rect, other.rect);
+        if (dx === 0 && dy === 0) continue;
+
+        const nextRect = clampRect(
+          {
+            left: mover.rect.left + dx,
+            top: mover.rect.top + dy,
+            right: mover.rect.right + dx,
+            bottom: mover.rect.bottom + dy,
+          },
+          bounds
+        );
+
+        if (rectsOverlap(nextRect, other.rect, LABEL_SEPARATION)) {
+          const otherId = moveA ? idB : idA;
+          const otherMeas = byId[otherId];
+          const push = minTranslationToSeparate(other.rect, nextRect);
+          const otherNext = clampRect(
+            {
+              left: other.rect.left + push.dx,
+              top: other.rect.top + push.dy,
+              right: other.rect.right + push.dx,
+              bottom: other.rect.bottom + push.dy,
+            },
+            bounds
+          );
+          if (
+            otherNext.left !== other.rect.left ||
+            otherNext.top !== other.rect.top
+          ) {
+            assignments[otherId] = assignmentFromRect(
+              otherMeas,
+              otherNext,
+              countryBounds,
+              assignments[otherId]
+            );
+            moved = true;
+          }
+        }
+
+        if (nextRect.left !== mover.rect.left || nextRect.top !== mover.rect.top) {
+          assignments[moverId] = assignmentFromRect(
+            measurement,
+            nextRect,
+            countryBounds,
+            mover
+          );
+          moved = true;
+        }
+      }
+    }
+
+    if (!moved) break;
+  }
+
+  return assignments;
+}
+
+function pickBestCandidate(measurement, bounds, assignments, countryBounds) {
+  const ranked = (candidates) =>
+    [...candidates].sort((a, b) => a.cost - b.cost)[0] ?? null;
+
+  const strict = ranked(
+    buildValidCandidates(measurement, bounds, assignments, countryBounds)
+  );
+  if (strict) return strict;
+
+  if (measurement.allowFarOffset) {
+    const relaxed = ranked(
+      buildValidCandidates(measurement, bounds, assignments, countryBounds, {
+        relaxDistance: true,
+      })
+    );
+    if (relaxed) return relaxed;
+  }
+
+  // Last resort: place near the anchor even if it overlaps — resolveOverlaps
+  // then pushes titles apart so they never stay stacked.
+  return ranked(buildValidCandidates(measurement, bounds, {}, countryBounds));
+}
+
 function optimizeAssignments(measurements, bounds, countryBounds) {
   const assignments = {};
 
   for (const measurement of measurements) {
-    const candidates = buildValidCandidates(measurement, bounds, assignments, countryBounds);
-    const choice =
-      candidates.sort((a, b) => a.cost - b.cost)[0] ??
-      buildValidCandidates(measurement, bounds, {}, countryBounds)[0];
+    const choice = pickBestCandidate(
+      measurement,
+      bounds,
+      assignments,
+      countryBounds
+    );
 
     if (choice) {
       assignments[measurement.id] = buildAssignment(measurement, choice, countryBounds);
@@ -436,11 +590,15 @@ function optimizeAssignments(measurements, bounds, countryBounds) {
     if (!improved) break;
   }
 
-  return assignments;
+  return resolveOverlaps(assignments, measurements, bounds, countryBounds);
 }
 
 function sortMeasurements(measurements) {
   return [...measurements].sort((a, b) => {
+    const priorityA = a.priority ?? 0;
+    const priorityB = b.priority ?? 0;
+    if (priorityA !== priorityB) return priorityB - priorityA;
+
     const latA = a.lat ?? 0;
     const latB = b.lat ?? 0;
     if (latA !== latB) return latB - latA;
@@ -505,6 +663,7 @@ export function layoutDiscoverLabelsFromElements({
       height: rect.height,
       lng: centroid?.[0],
       lat: centroid?.[1],
+      priority: label.emphasized ? 1 : 0,
       // Learn border reveals set alwaysShow — allow farther offsets so titles
       // can clear each other instead of stacking or being culled.
       allowFarOffset: Boolean(label.alwaysShow),

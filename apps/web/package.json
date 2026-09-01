@@ -14,7 +14,8 @@
     "generate-capital-pronunciations": "node --env-file=../../.env scripts/generate-capital-pronunciations.js",
     "db:setup": "node --env-file=../../.env scripts/setup-db.js",
     "test:learn": "node --import ./scripts/register-alias.mjs --test scripts/test-learn-mode.js",
-    "test": "npm run test:learn"
+    "test:labels": "node --test scripts/test-discover-label-visibility.js scripts/test-discover-label-layout.js",
+    "test": "npm run test:learn && npm run test:labels"
   },
   "dependencies": {
     "@worldly/api-client": "*",
