@@ -760,13 +760,20 @@ export default function GeographyGame() {
     // close-up would otherwise no-op if we only keyed by question id).
     const isHighlightPrompt =
       currentLearnQuestion?.mapConfig?.display === "highlight";
+    // Neighbor recall/ID cards must not sit over a close-up of the subject —
+    // the land borders would give the answer away. Keep the full region in
+    // view (and slightly zoomed out) until the post-answer teach step.
+    const isNeighborBackdrop =
+      isNeighborLearnQuestion(currentLearnQuestion) && !learnNeighborRevealActive;
     const learnCameraMode = learnAreaCompareRevealActive
       ? "area"
       : learnNeighborRevealActive
         ? "neighbors"
         : isHighlightPrompt
           ? "highlight-region"
-          : "region";
+          : isNeighborBackdrop
+            ? "neighbor-region"
+            : "region";
     const learnQuestionKey = learnEngineActive
       ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
       : null;
@@ -823,9 +830,21 @@ export default function GeographyGame() {
           maxZoom: Math.min(mapView.maxZoom ?? 5, 4.5),
         });
       }
-      // Centered cards (shape, neighbors, …) sit over the region. Pull in a
-      // little so land fills the backdrop instead of a small globe in space.
+      // Centered cards sit over the region. Most pull in a little so land
+      // fills the backdrop; neighbor questions zoom out instead so the
+      // subject and its borders aren't readable behind the card.
       if (!isLearnMapClickQuestion && !learnMapOnlyContinue) {
+        if (isNeighborBackdrop) {
+          return withLearnKey({
+            ...mapView,
+            padding:
+              typeof mapView.padding === "number"
+                ? Math.max(mapView.padding, 120)
+                : 120,
+            zoomDelta: (Number(mapView.zoomDelta) || 0) - 0.9,
+            maxZoom: Math.min(mapView.maxZoom ?? 5, 3.5),
+          });
+        }
         return withLearnKey({
           ...mapView,
           padding:

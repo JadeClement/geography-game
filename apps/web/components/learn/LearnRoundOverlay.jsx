@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { primaryBtn } from "@/lib/ui";
-import { isShapeLearnQuestion } from "@/lib/learn/wrongReveal";
+import { isNeighborLearnQuestion, isShapeLearnQuestion } from "@/lib/learn/wrongReveal";
 import MapFeedback from "@/components/MapFeedback";
 import LearnQuestionRenderer from "./LearnQuestionRenderer";
 
@@ -53,7 +53,8 @@ export default function LearnRoundOverlay({
   // a middle card covers the yellow country and fights the region backdrop.
   const forceTop = question.mapConfig?.display === "highlight";
   const isTop = forceTop || variant === "top";
-  const heavierMapBlur = question.type === "landlocked_check";
+  const heavierMapBlur =
+    question.type === "landlocked_check" || isNeighborLearnQuestion(question);
   const shapeQuestion = isShapeLearnQuestion(question);
   const highlightMapPrompt = question.mapConfig?.display === "highlight";
   // Shape cards already mark correct/wrong in-place (check / X), so skip the
@@ -76,7 +77,7 @@ export default function LearnRoundOverlay({
         isTop
           ? "pointer-events-none items-start justify-center pt-3"
           : heavierMapBlur
-            ? "pointer-events-auto items-center justify-center bg-surface/40 py-4 backdrop-blur-[6px]"
+            ? "pointer-events-auto items-center justify-center bg-surface/60 py-4 backdrop-blur-[16px]"
             : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
       )}
     >
