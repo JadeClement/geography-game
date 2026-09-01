@@ -17,6 +17,7 @@ const INITIAL_BOARD = {
   roundWrongCountryIds: [],
   flashWrongCountryIds: [],
   filledCountryIds: [],
+  secondTryCountryIds: [],
   showColorCountryIds: [],
 };
 
@@ -43,6 +44,11 @@ function boardReducer(state, action) {
       };
     case "ADD_FILLED_COUNTRY":
       return { ...state, filledCountryIds: addUnique(state.filledCountryIds, action.id) };
+    case "ADD_SECOND_TRY_COUNTRY":
+      return {
+        ...state,
+        secondTryCountryIds: addUnique(state.secondTryCountryIds, action.id),
+      };
     case "CLEAR_FLASH_WRONG_IF_ONLY":
       return {
         ...state,
@@ -71,6 +77,7 @@ function boardReducer(state, action) {
         showColorCountryIds: [],
         // Learn between-question resets pass clearWrong and must not keep fills.
         filledCountryIds: action.clearWrong ? [] : state.filledCountryIds,
+        secondTryCountryIds: action.clearWrong ? [] : state.secondTryCountryIds,
         // Progressive-fill levels keep accumulated wrong markers between rounds.
         wrongCountryIds: action.clearWrong ? [] : state.wrongCountryIds,
       };
@@ -132,8 +139,16 @@ export function useGameBoard() {
     (id) => dispatch({ type: "ADD_FILLED_COUNTRY", id }),
     []
   );
+  const addSecondTryCountry = useCallback(
+    (id) => dispatch({ type: "ADD_SECOND_TRY_COUNTRY", id }),
+    []
+  );
   const setFilledCountryIds = useCallback(
     (ids) => dispatch({ type: "SET", patch: { filledCountryIds: ids } }),
+    []
+  );
+  const setSecondTryCountryIds = useCallback(
+    (ids) => dispatch({ type: "SET", patch: { secondTryCountryIds: ids } }),
     []
   );
   const setWrongCountryIds = useCallback(
@@ -173,7 +188,9 @@ export function useGameBoard() {
     clearRoundWrongCountries,
     clearFlashWrongIfOnly,
     addFilledCountry,
+    addSecondTryCountry,
     setFilledCountryIds,
+    setSecondTryCountryIds,
     setWrongCountryIds,
     setShowColorCountryIds,
     clearShowColorIfOnly,

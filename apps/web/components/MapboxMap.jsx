@@ -165,6 +165,8 @@ function getLevelFillColorExpression(level, landColor) {
       WRONG_COUNTRY_COLOR,
       ["==", ["feature-state", "flashWrong"], true],
       WRONG_COUNTRY_COLOR,
+      ["==", ["feature-state", "secondTry"], true],
+      TARGET_HIGHLIGHT_COLOR,
       ...highlightBranches,
       ["==", ["feature-state", "filled"], true],
       ["coalesce", ["get", "assignedColor"], landColor],
@@ -179,6 +181,8 @@ function getLevelFillColorExpression(level, landColor) {
       "case",
       ["==", ["feature-state", "wrong"], true],
       WRONG_COUNTRY_COLOR,
+      ["==", ["feature-state", "secondTry"], true],
+      TARGET_HIGHLIGHT_COLOR,
       ...highlightBranches,
       ["==", ["feature-state", "filled"], true],
       CORRECT_COUNTRY_COLOR,
@@ -192,6 +196,8 @@ function getLevelFillColorExpression(level, landColor) {
     "case",
     ["==", ["feature-state", "wrong"], true],
     WRONG_COUNTRY_COLOR,
+    ["==", ["feature-state", "secondTry"], true],
+    TARGET_HIGHLIGHT_COLOR,
     ...highlightBranches,
     ["==", ["feature-state", "showColor"], true],
     ["coalesce", ["get", "assignedColor"], landColor],
@@ -260,6 +266,8 @@ function applySmallCountryCirclePaintMode(
     "case",
     ["==", ["feature-state", "highlight"], true],
     TARGET_HIGHLIGHT_COLOR,
+    ["==", ["feature-state", "secondTry"], true],
+    TARGET_HIGHLIGHT_COLOR,
     ["==", ["feature-state", "target"], true],
     TARGET_HIGHLIGHT_COLOR,
     ["==", ["feature-state", "filled"], true],
@@ -272,6 +280,8 @@ function applySmallCountryCirclePaintMode(
     "case",
     ["==", ["feature-state", "highlight"], true],
     ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+    ["==", ["feature-state", "secondTry"], true],
+    0.92,
     ["==", ["feature-state", "target"], true],
     0.85,
     ["==", ["feature-state", "filled"], true],
@@ -310,6 +320,8 @@ function getSmallCircleStrokeColorExpression(
       WRONG_COUNTRY_COLOR,
       ["==", ["feature-state", "wrong"], true],
       WRONG_COUNTRY_COLOR,
+      ["==", ["feature-state", "secondTry"], true],
+      TARGET_HIGHLIGHT_COLOR,
       ["==", ["feature-state", "filled"], true],
       ["coalesce", ["get", "assignedColor"], landColor],
       ["==", ["feature-state", "showColor"], true],
@@ -321,6 +333,8 @@ function getSmallCircleStrokeColorExpression(
       "case",
       ["==", ["feature-state", "wrong"], true],
       WRONG_COUNTRY_COLOR,
+      ["==", ["feature-state", "secondTry"], true],
+      TARGET_HIGHLIGHT_COLOR,
       ["==", ["feature-state", "filled"], true],
       CORRECT_COUNTRY_COLOR,
       ["==", ["feature-state", "target"], true],
@@ -362,6 +376,8 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
           "case",
           ["==", ["feature-state", "highlight"], true],
           TARGET_HIGHLIGHT_COLOR,
+          ["==", ["feature-state", "secondTry"], true],
+          TARGET_HIGHLIGHT_COLOR,
           ["==", ["feature-state", "target"], true],
           TARGET_HIGHLIGHT_COLOR,
           "transparent",
@@ -370,6 +386,8 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
           "case",
           ["==", ["feature-state", "highlight"], true],
           ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+          ["==", ["feature-state", "secondTry"], true],
+          0.92,
           ["==", ["feature-state", "target"], true],
           0.85,
           0,
@@ -407,6 +425,8 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
         "case",
         ["==", ["feature-state", "highlight"], true],
         TARGET_HIGHLIGHT_COLOR,
+        ["==", ["feature-state", "secondTry"], true],
+        TARGET_HIGHLIGHT_COLOR,
         ["==", ["feature-state", "target"], true],
         TARGET_HIGHLIGHT_COLOR,
         "transparent",
@@ -415,6 +435,8 @@ function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, l
         "case",
         ["==", ["feature-state", "highlight"], true],
         ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+        ["==", ["feature-state", "secondTry"], true],
+        0.92,
         ["==", ["feature-state", "target"], true],
         0.85,
         0,
@@ -739,7 +761,13 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
 function syncSmallCountryFeatureStates(
   map,
   smallCountriesGeojson,
-  { wrongCountryIds, flashWrongCountryIds, showColorCountryIds, filledCountryIds }
+  {
+    wrongCountryIds,
+    flashWrongCountryIds,
+    showColorCountryIds,
+    filledCountryIds,
+    secondTryCountryIds = [],
+  }
 ) {
   if (!map.getSource("small-countries") || !smallCountriesGeojson?.features?.length) {
     return;
@@ -749,6 +777,7 @@ function syncSmallCountryFeatureStates(
   const flashWrongSet = new Set(flashWrongCountryIds);
   const showColorSet = new Set(showColorCountryIds);
   const filledSet = new Set(filledCountryIds);
+  const secondTrySet = new Set(secondTryCountryIds);
 
   for (const feature of smallCountriesGeojson.features) {
     const id = feature.properties.id;
@@ -759,6 +788,7 @@ function syncSmallCountryFeatureStates(
         flashWrong: flashWrongSet.has(id),
         showColor: showColorSet.has(id),
         filled: filledSet.has(id),
+        secondTry: secondTrySet.has(id),
       }
     );
   }
@@ -772,6 +802,7 @@ function syncCountryFeatureStates(
     flashWrongCountryIds,
     showColorCountryIds,
     filledCountryIds,
+    secondTryCountryIds = [],
     highlightCountryId = null,
     highlightTone = "prompt",
   }
@@ -782,6 +813,7 @@ function syncCountryFeatureStates(
   const flashWrongSet = new Set(flashWrongCountryIds);
   const showColorSet = new Set(showColorCountryIds);
   const filledSet = new Set(filledCountryIds);
+  const secondTrySet = new Set(secondTryCountryIds);
   const highlightKind = highlightCountryId
     ? highlightKindFromTone(highlightTone)
     : 0;
@@ -797,6 +829,7 @@ function syncCountryFeatureStates(
         flashWrong: flashWrongSet.has(id),
         showColor: showColorSet.has(id),
         filled: filledSet.has(id),
+        secondTry: secondTrySet.has(id),
         highlightKind: id === highlightCountryId ? highlightKind : 0,
       }
     );
@@ -818,6 +851,7 @@ export default function MapboxMap({
   flashWrongCountryIds,
   showColorCountryIds,
   filledCountryIds,
+  secondTryCountryIds = [],
   highlightTargetCountryId,
   highlightCountryId,
   // "prompt" = yellow (which-country-is-highlighted); "error" = red (find reveal).
@@ -848,6 +882,7 @@ export default function MapboxMap({
     flashWrongCountryIds,
     showColorCountryIds,
     filledCountryIds,
+    secondTryCountryIds,
   });
   const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
@@ -874,6 +909,7 @@ export default function MapboxMap({
     flashWrongCountryIds,
     showColorCountryIds,
     filledCountryIds,
+    secondTryCountryIds,
   };
 
   useEffect(() => {
@@ -1294,6 +1330,7 @@ export default function MapboxMap({
         flashWrongCountryIds,
         showColorCountryIds,
         filledCountryIds,
+        secondTryCountryIds,
         highlightCountryId,
         highlightTone,
       });
@@ -1302,6 +1339,7 @@ export default function MapboxMap({
         flashWrongCountryIds,
         showColorCountryIds,
         filledCountryIds,
+        secondTryCountryIds,
       });
     };
 
@@ -1317,6 +1355,7 @@ export default function MapboxMap({
     flashWrongCountryIds,
     showColorCountryIds,
     filledCountryIds,
+    secondTryCountryIds,
     highlightCountryId,
     highlightTone,
   ]);
@@ -1536,6 +1575,8 @@ export default function MapboxMap({
         "case",
         ["==", ["feature-state", "highlight"], true],
         highlightColor,
+        ["==", ["feature-state", "secondTry"], true],
+        TARGET_HIGHLIGHT_COLOR,
         ["==", ["feature-state", "target"], true],
         TARGET_HIGHLIGHT_COLOR,
         "transparent",
@@ -1544,6 +1585,8 @@ export default function MapboxMap({
         "case",
         ["==", ["feature-state", "highlight"], true],
         ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+        ["==", ["feature-state", "secondTry"], true],
+        0.92,
         ["==", ["feature-state", "target"], true],
         0.85,
         0,

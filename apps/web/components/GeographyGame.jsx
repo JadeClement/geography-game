@@ -45,7 +45,7 @@ import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
 import { getMapViewForRegion, getLearnFocusMapView, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
-import { GAME_TYPE_FOR_STATS, GO_RECENCY_HALF_LIFE_HOURS } from "@/lib/mastery";
+import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE, GO_NEW_COUNTRY_SLOTS } from "@/lib/mastery";
 import {
   appendGuestRound,
   clearPendingGuestGame,
@@ -53,7 +53,7 @@ import {
   setPendingGuestScore,
   syncPendingGuestGame,
 } from "@/lib/pendingGuestGame";
-import { buildLearningQueue, buildFullRegionLearningQueue, pickRecencyWeightedIds } from "@/lib/learning";
+import { buildGoQueue, buildFullRegionLearningQueue } from "@/lib/learning";
 import { buildLearnSession, rebuildQuestionsForCountries } from "@/lib/learn/sessionSequencer";
 import {
   createDefaultChallenge,
@@ -167,9 +167,6 @@ import { useCountryQueue } from "@/lib/hooks/useCountryQueue";
 import { useIdleDetection } from "@/lib/hooks/useIdleDetection";
 import { useGameBoard } from "@/lib/hooks/useGameBoard";
 import { useSession } from "next-auth/react";
-
-// Number of countries in a "Go" quick-review session.
-const GO_SESSION_SIZE = 10;
 
 function CountryPromptLabel({
   text,
@@ -419,7 +416,9 @@ export default function GeographyGame() {
     clearFlashWrongIfOnly,
     clearRoundWrongCountries,
     addFilledCountry,
+    addSecondTryCountry,
     setFilledCountryIds,
+    setSecondTryCountryIds,
     setWrongCountryIds,
     setShowColorCountryIds,
     clearShowColorIfOnly,
@@ -437,6 +436,7 @@ export default function GeographyGame() {
     roundWrongCountryIds,
     flashWrongCountryIds,
     filledCountryIds,
+    secondTryCountryIds,
     showColorCountryIds,
   } = board;
 
@@ -458,6 +458,7 @@ export default function GeographyGame() {
   // already makes, so milestones need no extra API calls.
   const sessionStatRecordsRef = useRef(new Map());
   const pendingStatPromisesRef = useRef([]);
+  const lastGoCountryIdsRef = useRef([]);
   const preCreditedIdsRef = useRef([]);
   const regionCountryIdsRef = useRef([]);
 
@@ -1163,7 +1164,9 @@ export default function GeographyGame() {
     !learnEngineActive &&
     targetCountry &&
     !revealMode &&
-    !gameComplete
+    !gameComplete &&
+    !filledCountryIdSet.has(targetCountry.id) &&
+    !secondTryCountryIds.includes(targetCountry.id)
       ? targetCountry.id
       : null;
 
@@ -1634,14 +1637,19 @@ export default function GeographyGame() {
     ]
   );
 
-  // "Go": a quick 10-country review of your weakest countries in the
-  // chosen region (Countries · Find it · Level 1). Falls back to random
-  // countries when there is no weak data or the player is signed out.
+  // "Go": a 10-country mix of weak countries plus a couple never-seen ones.
+  // The previous Go session's countries are skipped so "Go again" is not the
+  // same quiz. Falls back to a region shuffle when signed out.
   const startGoSession = useCallback(async (region = "world") => {
     const regionPool = filterCountriesByRegion(allCountries, region);
     if (regionPool.length === 0) return;
 
-    let chosen = [];
+    if (pendingStatPromisesRef.current.length > 0) {
+      await Promise.allSettled(pendingStatPromisesRef.current);
+      pendingStatPromisesRef.current = [];
+    }
+
+    let weakStats = [];
     const recencyById = new Map();
     if (signedIn) {
       try {
@@ -1653,12 +1661,7 @@ export default function GeographyGame() {
           }),
           fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }).catch(() => ({ mastery: [] })),
         ]);
-        if ((data.weakCount ?? 0) > 0) {
-          const ids = buildLearningQueue(data.stats, Math.min(GO_SESSION_SIZE, data.weakCount));
-          chosen = ids
-            .map((id) => regionPool.find((country) => country.id === id))
-            .filter(Boolean);
-        }
+        weakStats = data.stats ?? [];
         for (const row of masteryData.mastery ?? []) {
           if (row.level !== GAME_LEVELS.FIND_FILL) continue;
           recencyById.set(row.countryId, {
@@ -1671,26 +1674,19 @@ export default function GeographyGame() {
       }
     }
 
-    if (chosen.length < GO_SESSION_SIZE) {
-      const have = new Set(chosen.map((country) => country.id));
-      const fillerPool = regionPool.filter((country) => !have.has(country.id));
-      const needed = GO_SESSION_SIZE - chosen.length;
-      const fillerIds = signedIn
-        ? pickRecencyWeightedIds(
-            fillerPool.map((country) => country.id),
-            recencyById,
-            needed,
-            GO_RECENCY_HALF_LIFE_HOURS
-          )
-        : shuffleCountries(fillerPool)
-            .slice(0, needed)
-            .map((country) => country.id);
-      const fillerById = new Map(fillerPool.map((country) => [country.id, country]));
-      chosen = [...chosen, ...fillerIds.map((id) => fillerById.get(id)).filter(Boolean)];
-    }
-
-    chosen = chosen.slice(0, GO_SESSION_SIZE);
+    const ids = buildGoQueue({
+      regionCountryIds: regionPool.map((country) => country.id),
+      weakStats,
+      recencyById,
+      excludeIds: lastGoCountryIdsRef.current,
+      sessionSize: GO_SESSION_SIZE,
+      newCountrySlots: GO_NEW_COUNTRY_SLOTS,
+    });
+    const regionById = new Map(regionPool.map((country) => [country.id, country]));
+    const chosen = ids.map((id) => regionById.get(id)).filter(Boolean);
     if (chosen.length === 0) return;
+
+    lastGoCountryIdsRef.current = chosen.map((country) => country.id);
 
     startGame({
       gameType: GAME_TYPES.LEARNING,
@@ -1876,12 +1872,14 @@ export default function GeographyGame() {
     setFlashSmallCountryId(null);
     setShowColorCountryIds([]);
     setFilledCountryIds([]);
+    setSecondTryCountryIds([]);
     setWrongCountryIds([]);
     clearRoundWrongCountries();
   }, [
     clearRoundWrongCountries,
     setFilledCountryIds,
     setFlashSmallCountryId,
+    setSecondTryCountryIds,
     setShowColorCountryIds,
     setWrongCountryIds,
   ]);
@@ -2503,7 +2501,11 @@ export default function GeographyGame() {
       const correct = correctIds.includes(clicked.id);
 
       if (correct) {
-        addFilledCountry(clicked.id);
+        if (learnMapMissedRef.current) {
+          addSecondTryCountry(clicked.id);
+        } else {
+          addFilledCountry(clicked.id);
+        }
         setFeedback(
           outcomeFeedback({
             correct: true,
@@ -2537,6 +2539,7 @@ export default function GeographyGame() {
     [
       activeCountries,
       addFilledCountry,
+      addSecondTryCountry,
       addRoundWrongCountry,
       clearContinentFeedbackTimer,
       gameActiveRef,
@@ -3012,10 +3015,10 @@ export default function GeographyGame() {
         session?.level === GAME_LEVELS.FIND_FILL ||
         session?.level === GAME_LEVELS.NAME_FILL
       ) {
-        if (roundMarkedIncorrectRef.current) {
-          addWrongCountry(target.id);
-        } else {
+        if (attemptsBeforeCorrect === 0) {
           addFilledCountry(target.id);
+        } else {
+          addSecondTryCountry(target.id);
         }
       }
 
@@ -3033,7 +3036,7 @@ export default function GeographyGame() {
     },
     [
       addFilledCountry,
-      addWrongCountry,
+      addSecondTryCountry,
       clearColorFlash,
       clearWrongFlash,
       finishRound,
@@ -3041,7 +3044,6 @@ export default function GeographyGame() {
       isFlagsMode,
       isNameGame,
       markRoundCorrect,
-      roundMarkedIncorrectRef,
       scheduleNextRound,
       session?.level,
       setFeedback,
@@ -4041,6 +4043,7 @@ export default function GeographyGame() {
                   flashWrongCountryIds={flashWrongCountryIds}
                   showColorCountryIds={mapShowColorCountryIds}
                   filledCountryIds={mapFilledCountryIds}
+                  secondTryCountryIds={secondTryCountryIds}
                   highlightTargetCountryId={highlightTargetCountryId}
                   highlightCountryId={mapHighlightCountryId}
                   highlightTone={learnHighlightTone}
@@ -4066,6 +4069,7 @@ export default function GeographyGame() {
                   flashWrongCountryIds={flashWrongCountryIds}
                   showColorCountryIds={mapShowColorCountryIds}
                   filledCountryIds={mapFilledCountryIds}
+                  secondTryCountryIds={secondTryCountryIds}
                   highlightTargetCountryId={highlightTargetCountryId}
                   highlightCountryId={mapHighlightCountryId}
                   highlightTone={learnHighlightTone}

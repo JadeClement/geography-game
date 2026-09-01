@@ -150,6 +150,7 @@ export default function PacificMap({
   flashWrongCountryIds,
   showColorCountryIds,
   filledCountryIds,
+  secondTryCountryIds = [],
   highlightTargetCountryId,
   highlightCountryId,
   // "prompt" = yellow (which-country-is-highlighted); "error" = red (find reveal).
@@ -506,15 +507,18 @@ export default function PacificMap({
     const isWrong = wrongCountryIds.includes(countryId);
     const isFlashWrong = flashWrongCountryIds.includes(countryId);
     const isFilled = filledCountryIdSet.has(countryId);
+    const isSecondTry = secondTryCountryIds.includes(countryId);
     const showColor = showColorCountryIds.includes(countryId);
 
     if (level === GAME_LEVELS.FIND_FILL) {
       if (isFlashWrong || isWrong) return WRONG_COUNTRY_COLOR;
+      if (isSecondTry) return TARGET_HIGHLIGHT_COLOR;
       if (isFilled || showColor) return assignedColor ?? landColor;
       return colors.smallCountryStroke;
     }
 
     if (isWrong) return WRONG_COUNTRY_COLOR;
+    if (isSecondTry) return TARGET_HIGHLIGHT_COLOR;
     if (isFilled) return CORRECT_COUNTRY_COLOR;
     return colors.smallCountryStroke;
   };
@@ -587,6 +591,7 @@ export default function PacificMap({
               flashWrongCountryIds,
               showColorCountryIds,
               filledCountryIdSet,
+              secondTryCountryIds,
               highlightTargetCountryId,
               highlightCountryId,
               highlightTone,
@@ -645,7 +650,9 @@ export default function PacificMap({
                     : TARGET_HIGHLIGHT_COLOR;
             const isTargetCircle =
               level === GAME_LEVELS.NAME_FILL &&
-              highlightTargetCountryId === country.id;
+              highlightTargetCountryId === country.id &&
+              !secondTryCountryIds.includes(country.id) &&
+              !filledCountryIdSet.has(country.id);
             const baseStroke = getCircleStroke(country.id, country.assignedColor);
             const stroke =
               isTargetCircle && !forceShowSmallCountryCircles
@@ -660,8 +667,11 @@ export default function PacificMap({
             const showColor =
               showColorCountryIds.includes(country.id) ||
               filledCountryIdSet.has(country.id);
+            const isSecondTryCircle = secondTryCountryIds.includes(country.id);
             const circleFill =
-              isTargetCircle && !forceShowSmallCountryCircles && targetFlashVisible
+              isSecondTryCircle
+                ? TARGET_HIGHLIGHT_COLOR
+                : isTargetCircle && !forceShowSmallCountryCircles && targetFlashVisible
                 ? TARGET_HIGHLIGHT_COLOR
                 : showColor
                   ? (country.assignedColor ?? landColor)

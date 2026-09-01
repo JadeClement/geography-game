@@ -24,6 +24,7 @@ export function getPacificCountryFill({
   flashWrongCountryIds,
   showColorCountryIds,
   filledCountryIdSet,
+  secondTryCountryIds = [],
   highlightTargetCountryId,
   highlightCountryId = null,
   highlightTone = "prompt",
@@ -34,6 +35,7 @@ export function getPacificCountryFill({
   const isWrong = wrongCountryIds.includes(countryId);
   const isFlashWrong = flashWrongCountryIds.includes(countryId);
   const isFilled = filledCountryIdSet.has(countryId);
+  const isSecondTry = secondTryCountryIds.includes(countryId);
   const showColor = showColorCountryIds.includes(countryId);
   const isTarget = highlightTargetCountryId === countryId;
   const isHighlighted = highlightCountryId === countryId;
@@ -51,6 +53,7 @@ export function getPacificCountryFill({
 
   if (level === GAME_LEVELS.FIND_FILL) {
     if (isWrong || isFlashWrong) return WRONG_COUNTRY_COLOR;
+    if (isSecondTry) return TARGET_HIGHLIGHT_COLOR;
     if (solidHighlight) return solidHighlight;
     if (isFilled) return assignedColor ?? activeLandColor;
     if (showColor) return assignedColor ?? activeLandColor;
@@ -59,6 +62,7 @@ export function getPacificCountryFill({
 
   if (level === GAME_LEVELS.NAME_FILL) {
     if (isWrong) return WRONG_COUNTRY_COLOR;
+    if (isSecondTry) return TARGET_HIGHLIGHT_COLOR;
     if (solidHighlight) return solidHighlight;
     if (isFilled) return CORRECT_COUNTRY_COLOR;
     if (isTarget) return targetFlashOn ? TARGET_HIGHLIGHT_COLOR : activeLandColor;
@@ -66,6 +70,7 @@ export function getPacificCountryFill({
   }
 
   if (isWrong || isFlashWrong) return WRONG_COUNTRY_COLOR;
+  if (isSecondTry) return TARGET_HIGHLIGHT_COLOR;
   if (solidHighlight) return solidHighlight;
   if (showColor) return assignedColor ?? activeLandColor;
   return activeLandColor;
