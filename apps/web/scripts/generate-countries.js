@@ -143,6 +143,9 @@ async function main() {
         name: existing?.name ?? displayName(rawName),
         capital: dr5hn?.capital ?? existing?.capital ?? "",
         population,
+        gdp: existing?.gdp ?? null,
+        area: existing?.area ?? null,
+        landlocked: existing?.landlocked ?? null,
         languages,
         neighbors,
         enabled: existing?.enabled ?? true,
@@ -165,6 +168,14 @@ async function main() {
   if (missingPopulation.length > 0) {
     console.warn(
       `Warning: ${missingPopulation.length} enabled countries missing population`
+    );
+  }
+
+  const missingGdp = countries.filter((c) => c.enabled && c.gdp == null);
+  if (missingGdp.length > 0) {
+    console.warn(
+      `Warning: ${missingGdp.length} enabled countries missing gdp:`,
+      missingGdp.map((c) => c.iso3).join(", ")
     );
   }
 

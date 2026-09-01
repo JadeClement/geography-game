@@ -416,6 +416,31 @@ test("tiny countries do not get shape questions", () => {
   assert.equal(generateQuestion("shape_name_entry", nauru, ENABLED), null);
 });
 
+test("gdp compare asks which country has the larger economy", () => {
+  const germany = ENABLED_BY_ID.get("DEU");
+  const question = generateQuestion("gdp_compare", germany, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "gdp_compare");
+  assert.equal(question.answerType, "binary_choice");
+  assert.equal(question.options.length, 2);
+  assert.match(question.prompt, /larger economy/);
+  assert.ok(typeof germany.gdp === "number" && germany.gdp > 0);
+  const opponentId = question.comparisonCountryId;
+  const opponent = ENABLED_BY_ID.get(opponentId);
+  assert.ok(opponent, "comparison opponent exists");
+  assert.equal(opponent.region, germany.region);
+  assert.ok(typeof opponent.gdp === "number" && opponent.gdp > 0);
+  assert.notEqual(opponent.gdp, germany.gdp);
+  const winnerId = germany.gdp > opponent.gdp ? "DEU" : opponentId;
+  assert.equal(question.correctAnswer, winnerId);
+});
+
+test("vatican does not get a gdp compare (no figure)", () => {
+  const vatican = ENABLED_BY_ID.get("VAT");
+  assert.equal(vatican?.gdp ?? null, null);
+  assert.equal(generateQuestion("gdp_compare", vatican, ENABLED), null);
+});
+
 test("geometryToFittedPath letterboxes a tall polygon into a square viewBox", () => {
   const geometry = {
     type: "Polygon",

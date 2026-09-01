@@ -557,6 +557,7 @@ export default function GeographyGame() {
         name: country.name,
         iso2: country.iso2,
         population: country.population,
+        gdp: country.gdp,
         area: country.area,
         neighborCount: Array.isArray(country.neighbors) ? country.neighbors.length : 0,
         capital: country.capital,

@@ -8,6 +8,7 @@ export const REFERENCE_FIELD_IDS = {
   FLAG: "flag",
   REGION: "region",
   POPULATION: "population",
+  GDP: "gdp",
   LANGUAGES: "languages",
 };
 
@@ -17,6 +18,7 @@ const FIELD_LABELS = {
   [REFERENCE_FIELD_IDS.FLAG]: "Flag",
   [REFERENCE_FIELD_IDS.REGION]: "Region",
   [REFERENCE_FIELD_IDS.POPULATION]: "Population",
+  [REFERENCE_FIELD_IDS.GDP]: "GDP",
   [REFERENCE_FIELD_IDS.LANGUAGES]: "Languages",
 };
 
@@ -27,6 +29,7 @@ function isFieldHidden(fieldId, mode, level) {
   if (
     fieldId === REFERENCE_FIELD_IDS.REGION ||
     fieldId === REFERENCE_FIELD_IDS.POPULATION ||
+    fieldId === REFERENCE_FIELD_IDS.GDP ||
     fieldId === REFERENCE_FIELD_IDS.LANGUAGES
   ) {
     return false;
@@ -84,6 +87,29 @@ export function formatPopulation(value) {
   }
 
   return String(Math.round(value));
+}
+
+export function formatGdp(value) {
+  if (value == null || Number.isNaN(value) || value <= 0) return null;
+
+  if (value >= 1_000_000_000_000) {
+    const scaled = value / 1_000_000_000_000;
+    return `$${scaled >= 10 ? Math.round(scaled) : scaled.toFixed(1).replace(/\.0$/, "")}T`;
+  }
+  if (value >= 1_000_000_000) {
+    const scaled = value / 1_000_000_000;
+    return `$${scaled >= 100 ? Math.round(scaled) : scaled.toFixed(1).replace(/\.0$/, "")}B`;
+  }
+  if (value >= 1_000_000) {
+    const scaled = value / 1_000_000;
+    return `$${scaled >= 100 ? Math.round(scaled) : scaled.toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (value >= 1_000) {
+    const scaled = value / 1_000;
+    return `$${scaled >= 100 ? Math.round(scaled) : scaled.toFixed(1).replace(/\.0$/, "")}K`;
+  }
+
+  return `$${Math.round(value)}`;
 }
 
 export function formatLanguages(languages) {
@@ -144,6 +170,16 @@ export function buildReferenceRows(country, visibility) {
       label: FIELD_LABELS[REFERENCE_FIELD_IDS.POPULATION],
       type: "text",
       value: population,
+    });
+  }
+
+  const gdp = formatGdp(country.gdp);
+  if (visibility[REFERENCE_FIELD_IDS.GDP] === "visible" && gdp) {
+    rows.push({
+      id: REFERENCE_FIELD_IDS.GDP,
+      label: FIELD_LABELS[REFERENCE_FIELD_IDS.GDP],
+      type: "text",
+      value: gdp,
     });
   }
 

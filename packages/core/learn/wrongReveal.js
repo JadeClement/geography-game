@@ -152,8 +152,8 @@ export function buildLearnWrongReveal(
     };
   }
 
-  // Population compare cards already reveal the stats — no map paint.
-  if (question.type === "population_compare") {
+  // Population/GDP compare cards already reveal the stats — no map paint.
+  if (question.type === "population_compare" || question.type === "gdp_compare") {
     return {
       message: null,
       neighborReveal: null,

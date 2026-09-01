@@ -321,7 +321,7 @@ export function predictedSuccess({
     }
   }
 
-  if (type === "population_compare" || type === "area_compare") {
+  if (type === "population_compare" || type === "area_compare" || type === "gdp_compare") {
     const ratio =
       peerMeta?.compareRatio ??
       question?.compareRatio ??

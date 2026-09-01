@@ -26,6 +26,7 @@ const KEY_ORDER = [
   "name",
   "capital",
   "population",
+  "gdp",
   "area",
   "landlocked",
   "languages",

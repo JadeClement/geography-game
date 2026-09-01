@@ -8,6 +8,7 @@
     "start": "next start",
     "generate-countries": "node scripts/generate-countries.js",
     "enrich-languages": "node scripts/enrich-country-languages.js",
+    "enrich-gdp": "node scripts/enrich-country-gdp.js",
     "generate-globe-map": "node scripts/generate-globe-map.js",
     "generate-pronunciations": "node --env-file=../../.env scripts/generate-pronunciations.js",
     "generate-capital-pronunciations": "node --env-file=../../.env scripts/generate-capital-pronunciations.js",

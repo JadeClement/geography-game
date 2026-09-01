@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { getFlagUrl } from "@/lib/flags";
+import { formatGdp } from "@/lib/referencePanel";
 import {
   learnBinaryCard,
   learnBinaryFlag,
@@ -22,6 +23,7 @@ const FEEDBACK_DELAY_MS = 1200;
 const STAT_BY_TYPE = {
   population_compare: "population",
   area_compare: "area",
+  gdp_compare: "gdp",
 };
 
 // Map-recognition binary choice: names only (no flags) so the top prompt card
@@ -32,16 +34,17 @@ function formatStat(field, value) {
   if (typeof value !== "number") return "—";
   if (field === "population") return `${value.toLocaleString()} people`;
   if (field === "area") return `${value.toLocaleString()} km²`;
+  if (field === "gdp") return formatGdp(value) ?? "—";
   if (field === "neighborCount") return `${value} border${value === 1 ? "" : "s"}`;
   return String(value);
 }
 
 /**
- * Binary comparison (Tier 3 population/area/border compares + Tier 2 map choice).
+ * Binary comparison (Tier 3 population/area/GDP compares + Tier 2 map choice).
  * Two country cards side by side. The relevant stat is hidden BEFORE the answer
  * (so it stays a geography question, not reading comprehension) and revealed AFTER.
  *
- * Props: question, onAnswer, resolveCountry(countryId) => { name, iso2, population, area, neighborCount }
+ * Props: question, onAnswer, resolveCountry(countryId) => { name, iso2, population, area, gdp, neighborCount }
  */
 export default function BinaryChoiceQuestion({
   question,

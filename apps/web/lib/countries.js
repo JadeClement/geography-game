@@ -187,6 +187,7 @@ async function fetchCountriesGeoJSON() {
         capital: manifest.capital,
         capitalAlternates: capitalAlternates.alternates?.[iso3] ?? [],
         population: manifest.population ?? null,
+        gdp: typeof manifest.gdp === "number" ? manifest.gdp : null,
         area: typeof manifest.area === "number" ? manifest.area : null,
         landlocked:
           typeof manifest.landlocked === "boolean" ? manifest.landlocked : null,

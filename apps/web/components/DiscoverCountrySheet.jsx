@@ -3,7 +3,7 @@
 import { formatCapitalReference, getQuizCapital } from "@/lib/capitals";
 import { getDidYouKnowFact } from "@/lib/countryFacts";
 import { useMobileViewport } from "@/lib/hooks/useMobileViewport";
-import { formatPopulation } from "@/lib/referencePanel";
+import { formatGdp, formatPopulation } from "@/lib/referencePanel";
 import {
   discoverCountrySheet,
   discoverCountrySheetBody,
@@ -28,6 +28,7 @@ export default function DiscoverCountrySheet({ country, open, onClose }) {
 
   const capital = getQuizCapital(country) ? formatCapitalReference(country) : null;
   const population = formatPopulation(country.population);
+  const gdp = formatGdp(country.gdp);
   const didYouKnow = getDidYouKnowFact(country.facts);
 
   return (
@@ -62,6 +63,12 @@ export default function DiscoverCountrySheet({ country, open, onClose }) {
               <div className={discoverCountrySheetRow}>
                 <dt className={discoverCountrySheetLabel}>Population</dt>
                 <dd className={discoverCountrySheetValue}>{population}</dd>
+              </div>
+            )}
+            {gdp && (
+              <div className={discoverCountrySheetRow}>
+                <dt className={discoverCountrySheetLabel}>GDP</dt>
+                <dd className={discoverCountrySheetValue}>{gdp}</dd>
               </div>
             )}
           </dl>

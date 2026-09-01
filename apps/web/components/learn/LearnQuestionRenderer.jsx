@@ -349,7 +349,7 @@ function MapClickPrompt({ question, emit, onMapClickReady, clues }) {
  * Props:
  * - question: the question object from the generator/sequencer
  * - onAnswer: receives the normalized event
- * - resolveCountry?: (countryId) => { name, iso2, population, area, neighborCount }
+ * - resolveCountry?: (countryId) => { name, iso2, population, area, gdp, neighborCount }
  * - lookupCountryByName?: (typedName) => { id, name, feature } — shape-name miss compare
  * - speedBaselineMs?: number — the user's personal speed baseline (for `fast`)
  * - clues?: string[] — Tier 1/2 clue ladder text

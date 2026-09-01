@@ -220,6 +220,11 @@ export const QUESTION_TYPES = {
     id: "area_compare",
     categories: ALL_CATEGORIES,
   },
+  GDP_COMPARE: {
+    tier: QUESTION_TIERS.TIER_3,
+    id: "gdp_compare",
+    categories: ALL_CATEGORIES,
+  },
   NEIGHBOR_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_3,
     id: "neighbor_identification",
@@ -272,6 +277,7 @@ export const TYPE_DISPLAY_NAMES = {
   neighbor_select_all: "Select neighbors",
   population_compare: "Population compare",
   area_compare: "Area compare",
+  gdp_compare: "GDP compare",
   neighbor_identification: "Neighbor ID",
   binary_map_choice: "Map A/B",
   landlocked_check: "Landlocked?",
@@ -299,6 +305,7 @@ export const TYPE_GROUPS = {
   [QUESTION_TIERS.TIER_3]: [
     "population_compare",
     "area_compare",
+    "gdp_compare",
     "neighbor_identification",
     "brazil_non_neighbors",
   ],

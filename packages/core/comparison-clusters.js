@@ -1,16 +1,18 @@
 /**
  * Comparison clusters for the Learn mode question engine (Tier 3 comparative
- * questions: population/area "which is bigger" and neighbor-count comparisons).
+ * questions: population/area/GDP "which is bigger" and neighbor-count comparisons).
  *
  * ── Audit notes (why this file exists / key decisions) ─────────────────────────
  * - Country data lives in `data/countries.json` (keyed by `iso3`). Relevant
- *   fields per country: name, capital, population, area (km²), landlocked,
- *   languages[], neighbors[] (iso3 codes), region, enabled, facts[].
+ *   fields per country: name, capital, population, gdp (current US$), area (km²),
+ *   landlocked, languages[], neighbors[] (iso3 codes), region, enabled, facts[].
  * - `area` and `landlocked` were NOT originally present; they were added
  *   additively via `scripts/enrich-country-geodata.js` (source: mledoze/countries,
  *   the same dataset generate-countries.js already uses). All 200 enabled
  *   countries have both fields. Without area, `areaPeers` / AREA_COMPARE cannot
  *   work, hence that prerequisite.
+ * - `gdp` was added via `scripts/enrich-country-gdp.js` (World Bank NY.GDP.MKTP.CD,
+ *   IMF NGDPD fallback). Vatican is the only enabled country without a figure.
  * - Clusters are pre-computed ONCE at module load (static JSON input) and cached
  *   as module-level constants, per spec — never recomputed per question.
  * - Peers are always drawn from the SAME REGION as the target, so comparisons
@@ -149,6 +151,7 @@ function buildClusters(getMetric) {
 // Computed once, at module load, and reused for every question generation.
 const POPULATION_CLUSTERS = buildClusters((country) => country.population);
 const AREA_CLUSTERS = buildClusters((country) => country.area);
+const GDP_CLUSTERS = buildClusters((country) => country.gdp);
 
 /**
  * @param {string} countryId
@@ -166,6 +169,15 @@ export function getPopulationPeers(countryId) {
  */
 export function getAreaPeers(countryId) {
   return AREA_CLUSTERS.get(countryId) ?? [];
+}
+
+/**
+ * @param {string} countryId
+ * @returns {string[]} same-region opponent ids within the GDP ratio band
+ *   (or the nearest-to-band same-region fallback for outliers)
+ */
+export function getGdpPeers(countryId) {
+  return GDP_CLUSTERS.get(countryId) ?? [];
 }
 
 /**

@@ -29,6 +29,7 @@ export const LEARN_TYPE_LABELS = {
   neighbor_identification: ["border ID", "border IDs"],
   population_compare: ["comparison", "comparisons"],
   area_compare: ["comparison", "comparisons"],
+  gdp_compare: ["comparison", "comparisons"],
   landlocked_check: ["landlocked check", "landlocked checks"],
   language_family: ["language", "languages"],
   brazil_non_neighbors: ["Brazil borders quiz", "Brazil borders quizzes"],

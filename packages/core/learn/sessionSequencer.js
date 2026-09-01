@@ -38,6 +38,7 @@ import {
   indexCountries,
   generatePopulationCompare,
   generateAreaCompare,
+  generateGdpCompare,
 } from "./questionGenerator.js";
 
 const PRIMARY_TIER_WEIGHT = LEARN_CHALLENGE.PRIMARY_TIER_WEIGHT;
@@ -321,7 +322,8 @@ function buildBonusQuestions(
     if (wantComparative) {
       raw =
         generatePopulationCompare(record, allCountries, masteryStats) ??
-        generateAreaCompare(record, allCountries, masteryStats);
+        generateAreaCompare(record, allCountries, masteryStats) ??
+        generateGdpCompare(record, allCountries, masteryStats);
     } else if (wantAssociation) {
       raw =
         generateQuestion("landlocked_check", record, allCountries, masteryStats) ??
@@ -330,7 +332,8 @@ function buildBonusQuestions(
     } else {
       raw =
         generatePopulationCompare(record, allCountries, masteryStats) ??
-        generateAreaCompare(record, allCountries, masteryStats);
+        generateAreaCompare(record, allCountries, masteryStats) ??
+        generateGdpCompare(record, allCountries, masteryStats);
     }
     if (raw) {
       bonus.push(attachPredictedSuccess(raw, workingTier, record, 0));

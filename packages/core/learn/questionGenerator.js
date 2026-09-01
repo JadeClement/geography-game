@@ -8,16 +8,16 @@
  *   (e.g. a landlocked check for an island, or a shape question for a speck).
  *   The sequencer treats null as "try a different type" and never drops the country.
  * - Country records are read from data/countries.json shape (iso3/name/capital/
- *   population/area/landlocked/languages (most common first)/neighbors[iso3]/region). `id` is
+ *   population/gdp/area/landlocked/languages (most common first)/neighbors[iso3]/region). `id` is
  *   accepted as an alias for `iso3` so runtime map-country objects also work.
- *   Fields that only exist in the manifest (area, landlocked) simply make the
+ *   Fields that only exist in the manifest (area, landlocked, gdp) simply make the
  *   dependent generators return null if absent.
  * - Question objects carry only IDs + config for the map; geometry/flag URLs are
  *   resolved by the UI from the runtime country by `countryId`. This keeps
  *   generation pure and testable.
  * - Distractors are ALWAYS drawn from the correct answer's region (plausible
  *   regional alternatives), never random global picks.
- * - Comparative (Tier 3) opponents come from getPopulationPeers/getAreaPeers,
+ * - Comparative (Tier 3) opponents come from getPopulationPeers/getAreaPeers/getGdpPeers,
  *   which return countries within a "distinguishable but fair" ratio band; the
  *   generator shuffles them so pairings vary. Blocked pairs are skipped.
  * - clueEligible is true only for Tier 1 / Tier 2 (Tier 3/4 are already
@@ -39,6 +39,7 @@ import { QUESTION_TIERS, QUESTION_TYPES } from "./questionTypes.js";
 import { applyContinueNote } from "./continueNotes.js";
 import {
   getAreaPeers,
+  getGdpPeers,
   getPopulationPeers,
   isBlockedPair,
   metricRatio,
@@ -471,6 +472,14 @@ export function generateAreaCompare(country, allCountries) {
   });
 }
 
+export function generateGdpCompare(country, allCountries) {
+  return generateNumericCompare(QUESTION_TYPES.GDP_COMPARE, country, allCountries, {
+    peers: getGdpPeers(cid(country)),
+    field: "gdp",
+    prompt: "Which country has the larger economy?",
+  });
+}
+
 export function generateLandlockedCheck(country) {
   if (typeof country.landlocked !== "boolean") return null;
   // Contested coastline status — skip this yes/no rather than force a label.
@@ -647,6 +656,7 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.NEIGHBOR_SELECT_ALL.id]: generateNeighborSelectAll,
   [QUESTION_TYPES.POPULATION_COMPARE.id]: generatePopulationCompare,
   [QUESTION_TYPES.AREA_COMPARE.id]: generateAreaCompare,
+  [QUESTION_TYPES.GDP_COMPARE.id]: generateGdpCompare,
   [QUESTION_TYPES.LANDLOCKED_CHECK.id]: generateLandlockedCheck,
   [QUESTION_TYPES.NEIGHBOR_IDENTIFICATION.id]: generateNeighborIdentification,
   [QUESTION_TYPES.LANGUAGE_FAMILY.id]: generateLanguageFamily,
