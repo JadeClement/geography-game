@@ -371,12 +371,21 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   if (step === START_STEPS.EXPLORE) {
     return (
       <div className={cn(startScreen, startScreenSub, startScreenExplore)}>
-        <StartBackButton onClick={goBack} />
+        <StartBackButton
+          onClick={
+            exploreRegion
+              ? () => {
+                  setExploreMode(null);
+                  setExploreRegion(null);
+                }
+              : goBack
+          }
+        />
         <StartStepHeader
           title="Explore"
           subtitle={
             exploreRegion
-              ? "Now choose Countries, Capitals, or Flags."
+              ? "Choose Countries, Capitals, or Flags."
               : "Pick a region on the map."
           }
         />
