@@ -37,6 +37,7 @@ import {
   resolveGuessedCountryInRegion,
   resolveShapeNameCompare,
 } from "@/lib/learn/resolveGuessedCountry";
+import { readFileSync } from "fs";
 import { geometryToFittedPath } from "@worldly/core/geo/silhouette";
 
 const ENABLED = countriesManifest.countries.filter((c) => c.enabled);
@@ -502,6 +503,75 @@ test("geometryToFittedPath does not treat high-latitude degrees as square", () =
   assert.ok(
     Math.abs(ratio - expected) < 0.02,
     `10°×10° at 65°N should be ~${expected.toFixed(3)} wide:tall, got ${ratio.toFixed(3)}`
+  );
+});
+
+function ringCount(d) {
+  return (d.match(/Z/g) || []).length;
+}
+
+function squareRing(lng, lat, size) {
+  return [
+    [lng, lat],
+    [lng + size, lat],
+    [lng + size, lat + size],
+    [lng, lat + size],
+    [lng, lat],
+  ];
+}
+
+test("geometryToFittedPath keeps nearby islands even when they are small", () => {
+  const geometry = {
+    type: "MultiPolygon",
+    coordinates: [
+      [squareRing(0, 0, 10)],
+      [squareRing(11, 4, 2)],
+      [squareRing(40, 4, 2)],
+    ],
+  };
+  const fitted = geometryToFittedPath(geometry);
+  assert.equal(ringCount(fitted.d), 2, "nearby 4% island stays; distant scrap drops");
+});
+
+test("geometryToFittedPath keeps two large landmasses that are far apart", () => {
+  const geometry = {
+    type: "MultiPolygon",
+    coordinates: [
+      [squareRing(0, 0, 10)],
+      [squareRing(20, 0, 8)],
+    ],
+  };
+  const fitted = geometryToFittedPath(geometry);
+  assert.equal(ringCount(fitted.d), 2, "Malaysia-style split cores both stay");
+});
+
+const COUNTRIES_GEOJSON = JSON.parse(
+  readFileSync(new URL("../public/data/countries.geojson", import.meta.url), "utf8")
+);
+
+test("Philippines silhouette keeps the Visayas, not just Luzon and Mindanao", () => {
+  const feature = COUNTRIES_GEOJSON.features.find(
+    (entry) => entry.properties?.["ISO3166-1-Alpha-3"] === "PHL"
+  );
+  assert.ok(feature, "Philippines feature present in countries.geojson");
+  const fitted = geometryToFittedPath(feature.geometry, { iso3: "PHL" });
+  assert.ok(fitted);
+  assert.ok(
+    ringCount(fitted.d) >= 8,
+    `expected Palawan + Visayas islands, got ${ringCount(fitted.d)} rings`
+  );
+});
+
+test("France silhouette still excludes French Guiana", () => {
+  const feature = COUNTRIES_GEOJSON.features.find(
+    (entry) => entry.properties?.name === "France"
+  );
+  assert.ok(feature, "France feature present in countries.geojson");
+  const fitted = geometryToFittedPath(feature.geometry, { iso3: "FRA" });
+  assert.ok(fitted);
+  assert.ok(
+    ringCount(fitted.d) <= 4,
+    `metropolitan France should not pull in DOM-TOM, got ${ringCount(fitted.d)} rings`
   );
 });
 

@@ -1,7 +1,11 @@
 /**
  * Fit a country's GeoJSON geometry into an isolated SVG silhouette.
  *
- * - Drops tiny overseas scraps and (for FRA/ESP/PRT/NLD) distant DOM-TOM land
+ * - Keeps every large landmass (≥ 15% of the biggest polygon) so split
+ *   countries (Malaysia, USA+Alaska) stay intact.
+ * - Then grows to nearby islands so archipelagos (Philippines, Japan, Greece)
+ *   keep their middle islands — not just the two biggest blobs.
+ * - Drops distant overseas scraps and (for FRA/ESP/PRT/NLD) DOM-TOM land
  *   so France looks like France, not France + Guiana + Réunion.
  * - Unwraps dateline-spanning rings (Russia, Fiji, USA Aleutians) so the bbox
  *   is a single continuous shape instead of a near-global box.
@@ -17,6 +21,10 @@ const VIEW = 400;
 const PAD = 8;
 const SIMPLIFY_TOLERANCE = 0.35;
 const MAINLAND_AREA_FRACTION = 0.15;
+/** Islands smaller than this fraction of the largest landmass are visual noise. */
+const SPECK_AREA_FRACTION = 0.002;
+/** Max empty gap (degrees) between bboxes to treat polygons as one cluster. */
+const NEARBY_ISLAND_GAP_DEG = 4;
 const METROPOLITAN_MAX_DISTANCE_DEG = 12;
 
 const METROPOLITAN_CENTROIDS = {
@@ -62,6 +70,33 @@ function polygonCentroid(polygon) {
   return [sumLng / count, sumLat / count];
 }
 
+function polygonBBox(polygon, refLng) {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  const ring = polygon?.[0];
+  if (!Array.isArray(ring)) return null;
+  for (const point of ring) {
+    if (!Array.isArray(point) || point.length < 2) continue;
+    const lng = unwrapLng(point[0], refLng);
+    const lat = point[1];
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+  if (!Number.isFinite(minLng)) return null;
+  return { minLng, minLat, maxLng, maxLat };
+}
+
+function bboxGap(a, b) {
+  const dx = Math.max(0, a.minLng - b.maxLng, b.minLng - a.maxLng);
+  const dy = Math.max(0, a.minLat - b.maxLat, b.minLat - a.maxLat);
+  return Math.hypot(dx, dy);
+}
+
 function mainlandPolygons(geometry, iso3) {
   const polygons = polygonsFromGeometry(geometry);
   if (polygons.length <= 1) return polygons;
@@ -74,8 +109,39 @@ function mainlandPolygons(geometry, iso3) {
   });
   if (maxArea <= 0) return polygons;
 
-  let mainland = polygons.filter((_, index) => areas[index] >= maxArea * MAINLAND_AREA_FRACTION);
-  if (mainland.length === 0) mainland = polygons;
+  const largestIndex = areas.indexOf(maxArea);
+  const refLng = referenceLng([polygons[largestIndex]], iso3);
+  const bboxes = polygons.map((polygon) => polygonBBox(polygon, refLng));
+
+  const cores = [];
+  for (let index = 0; index < polygons.length; index += 1) {
+    if (areas[index] >= maxArea * MAINLAND_AREA_FRACTION) cores.push(index);
+  }
+  if (cores.length === 0) cores.push(largestIndex);
+
+  const kept = new Set(cores);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let index = 0; index < polygons.length; index += 1) {
+      if (kept.has(index) || !bboxes[index]) continue;
+      for (const keptIndex of kept) {
+        const keptBox = bboxes[keptIndex];
+        if (!keptBox) continue;
+        if (bboxGap(bboxes[index], keptBox) <= NEARBY_ISLAND_GAP_DEG) {
+          kept.add(index);
+          changed = true;
+          break;
+        }
+      }
+    }
+  }
+
+  const speckFloor = maxArea * SPECK_AREA_FRACTION;
+  let mainland = polygons.filter(
+    (_, index) => kept.has(index) && areas[index] >= speckFloor
+  );
+  if (mainland.length === 0) mainland = cores.map((index) => polygons[index]);
 
   const metro = iso3 ? METROPOLITAN_CENTROIDS[iso3] : null;
   if (metro) {
