@@ -45,7 +45,7 @@ import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
 import { getMapViewForRegion, getLearnFocusMapView, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
-import { GAME_TYPE_FOR_STATS } from "@/lib/mastery";
+import { GAME_TYPE_FOR_STATS, GO_RECENCY_HALF_LIFE_HOURS } from "@/lib/mastery";
 import {
   appendGuestRound,
   clearPendingGuestGame,
@@ -53,7 +53,7 @@ import {
   setPendingGuestScore,
   syncPendingGuestGame,
 } from "@/lib/pendingGuestGame";
-import { buildLearningQueue, buildFullRegionLearningQueue } from "@/lib/learning";
+import { buildLearningQueue, buildFullRegionLearningQueue, pickRecencyWeightedIds } from "@/lib/learning";
 import { buildLearnSession, rebuildQuestionsForCountries } from "@/lib/learn/sessionSequencer";
 import {
   createDefaultChallenge,
@@ -1642,18 +1642,29 @@ export default function GeographyGame() {
     if (regionPool.length === 0) return;
 
     let chosen = [];
+    const recencyById = new Map();
     if (signedIn) {
       try {
-        const data = await fetchWeakCountryStats({
-          mode: GAME_MODES.COUNTRIES,
-          level: GAME_LEVELS.FIND_FILL,
-          region,
-        });
+        const [data, masteryData] = await Promise.all([
+          fetchWeakCountryStats({
+            mode: GAME_MODES.COUNTRIES,
+            level: GAME_LEVELS.FIND_FILL,
+            region,
+          }),
+          fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }).catch(() => ({ mastery: [] })),
+        ]);
         if ((data.weakCount ?? 0) > 0) {
           const ids = buildLearningQueue(data.stats, Math.min(GO_SESSION_SIZE, data.weakCount));
           chosen = ids
             .map((id) => regionPool.find((country) => country.id === id))
             .filter(Boolean);
+        }
+        for (const row of masteryData.mastery ?? []) {
+          if (row.level !== GAME_LEVELS.FIND_FILL) continue;
+          recencyById.set(row.countryId, {
+            lastAttemptAt: row.lastAttemptAt,
+            lastOutcome: row.lastOutcome,
+          });
         }
       } catch (error) {
         console.error("Go: failed to load weak countries", error);
@@ -1662,10 +1673,20 @@ export default function GeographyGame() {
 
     if (chosen.length < GO_SESSION_SIZE) {
       const have = new Set(chosen.map((country) => country.id));
-      const fillers = shuffleCountries(
-        regionPool.filter((country) => !have.has(country.id))
-      ).slice(0, GO_SESSION_SIZE - chosen.length);
-      chosen = [...chosen, ...fillers];
+      const fillerPool = regionPool.filter((country) => !have.has(country.id));
+      const needed = GO_SESSION_SIZE - chosen.length;
+      const fillerIds = signedIn
+        ? pickRecencyWeightedIds(
+            fillerPool.map((country) => country.id),
+            recencyById,
+            needed,
+            GO_RECENCY_HALF_LIFE_HOURS
+          )
+        : shuffleCountries(fillerPool)
+            .slice(0, needed)
+            .map((country) => country.id);
+      const fillerById = new Map(fillerPool.map((country) => [country.id, country]));
+      chosen = [...chosen, ...fillerIds.map((id) => fillerById.get(id)).filter(Boolean)];
     }
 
     chosen = chosen.slice(0, GO_SESSION_SIZE);
@@ -1718,6 +1739,7 @@ export default function GeographyGame() {
       if (regionPool.length === 0) return null;
 
       const masteryById = new Map();
+      const recencyById = new Map();
       try {
         const data = await fetchMasteryStats({ mode });
         const provingLevels = new Set(getMasteryProvingLevels(level));
@@ -1728,6 +1750,17 @@ export default function GeographyGame() {
             row.countryId,
             Math.max(prev, Number(row.masteryScore) || 0)
           );
+          const prevRecency = recencyById.get(row.countryId);
+          const rowAttempt = row.lastAttemptAt ? new Date(row.lastAttemptAt).getTime() : 0;
+          const prevAttempt = prevRecency?.lastAttemptAt
+            ? new Date(prevRecency.lastAttemptAt).getTime()
+            : 0;
+          if (!prevRecency || rowAttempt >= prevAttempt) {
+            recencyById.set(row.countryId, {
+              lastAttemptAt: row.lastAttemptAt,
+              lastOutcome: row.lastOutcome,
+            });
+          }
         }
       } catch (error) {
         console.error("Learn: failed to load mastery for weighting", error);
@@ -1743,7 +1776,8 @@ export default function GeographyGame() {
 
       const queueIds = buildFullRegionLearningQueue(
         regionPool.map((country) => country.id),
-        masteryById
+        masteryById,
+        recencyById
       );
       const regionById = new Map(regionPool.map((country) => [country.id, country]));
       const countries = queueIds.map((id) => regionById.get(id)).filter(Boolean);

@@ -115,16 +115,27 @@ export default function GameSessionScreen() {
             : countries.filter((c) => c.region === region);
 
         const masteryRows = mastery.mastery?.[mode] || [];
+        const levelRows = masteryRows.filter(
+          (r: any) => r.level === DEFAULT_LEARN_LEVEL
+        );
         const masteryById = new Map(
-          masteryRows
-            .filter((r: any) => r.level === DEFAULT_LEARN_LEVEL)
-            .map((r: any) => [r.countryId, r.masteryScore ?? 0])
+          levelRows.map((r: any) => [r.countryId, r.masteryScore ?? 0])
+        );
+        const recencyById = new Map(
+          levelRows.map((r: any) => [
+            r.countryId,
+            {
+              lastAttemptAt: r.lastAttemptAt ?? null,
+              lastOutcome: r.lastOutcome ?? null,
+            },
+          ])
         );
 
         if (gameType === "learning") {
           const queueIds = buildFullRegionLearningQueue(
             regionCountries.map((c) => c.id || c.iso3),
-            masteryById
+            masteryById,
+            recencyById
           );
           const queued = queueIds
             .map((id) => byId.get(id))

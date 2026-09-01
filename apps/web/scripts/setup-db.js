@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS country_stats (
   speed_baseline_ms INT,
   graduated BOOLEAN NOT NULL DEFAULT false,
   last_attempt_at TIMESTAMPTZ,
+  last_outcome TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, country_id, mode, level)
@@ -154,6 +155,7 @@ ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS fast_streak INT NOT NULL DEFA
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS speed_baseline_ms INT;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS graduated BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ;
+ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS last_outcome TEXT;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type TEXT NOT NULL DEFAULT 'color';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT;

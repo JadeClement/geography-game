@@ -424,7 +424,8 @@ export async function getCountryStatsForUsers(userIds) {
             needed_reveal AS "neededReveal",
             mastery_score AS "masteryScore",
             graduated,
-            last_attempt_at AS "lastAttemptAt"
+            last_attempt_at AS "lastAttemptAt",
+            last_outcome AS "lastOutcome"
      FROM country_stats
      WHERE user_id = ANY($1)`,
     [userIds]
@@ -585,7 +586,8 @@ const STAT_RETURNING = `
   fast_streak AS "fastStreak",
   speed_baseline_ms AS "speedBaselineMs",
   graduated,
-  last_attempt_at AS "lastAttemptAt"
+  last_attempt_at AS "lastAttemptAt",
+  last_outcome AS "lastOutcome"
 `;
 
 export async function getCountryStatsForUser(userId, { mode, level } = {}) {
@@ -700,6 +702,7 @@ export async function recordCountryPerformance({
       masteryFields.fastStreak,
       masteryFields.speedBaselineMs,
       masteryFields.graduated,
+      outcome,
     ];
 
     let responseTimeSumValue = "0";
@@ -725,14 +728,15 @@ export async function recordCountryPerformance({
          fast_streak,
          speed_baseline_ms,
          graduated,
-         last_attempt_at
+         last_attempt_at,
+         last_outcome
        )
        VALUES (
          $1, $2, $3, $4, $5,
          1,
          ${responseTimeSumValue},
          ${responseTimeCountValue},
-         $6, $7, $8, $9, NOW()
+         $6, $7, $8, $9, NOW(), $10
        )
        ON CONFLICT (user_id, country_id, mode, level)
        DO UPDATE SET
@@ -743,6 +747,7 @@ export async function recordCountryPerformance({
          speed_baseline_ms = $8,
          graduated = $9,
          last_attempt_at = NOW(),
+         last_outcome = $10,
          updated_at = NOW()
        RETURNING ${STAT_RETURNING}`,
       params

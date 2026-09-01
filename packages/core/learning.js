@@ -1,4 +1,9 @@
-import { getLearningWeight, isEligibleForLearning } from "./mastery.js";
+import { LEARN_RECENCY_HALF_LIFE_HOURS } from "@worldly/constants";
+import {
+  getLearningWeight,
+  getRecencyMultiplier,
+  isEligibleForLearning,
+} from "./mastery.js";
 
 export { isEligibleForLearning };
 
@@ -64,28 +69,71 @@ export function buildLearningQueue(eligibleStats, sessionSize) {
   return weightedSampleWithoutReplacement(weighted, count);
 }
 
+function lookupMapOrRecord(store, id) {
+  if (!store) return undefined;
+  if (store instanceof Map) return store.get(id);
+  return store[id];
+}
+
 /**
  * Builds an ordered queue of every country in the region, weighted toward
  * weaker mastery. Countries with no stats count as mastery 0; graduated
  * countries still appear (low weight) so the session covers the full region.
  *
+ * Optional `recencyById` maps countryId → `{ lastAttemptAt, lastOutcome }` so
+ * recent first-try corrects sink toward the end of the queue.
+ *
  * @param {string[]} regionCountryIds
  * @param {Map<string, number>|Record<string, number>} masteryById - masteryScore 0–1
+ * @param {Map<string, object>|Record<string, object>|null} [recencyById]
  * @returns {string[]}
  */
-export function buildFullRegionLearningQueue(regionCountryIds, masteryById = new Map()) {
-  const getMastery = (id) => {
-    if (masteryById instanceof Map) return masteryById.get(id) ?? 0;
-    return masteryById?.[id] ?? 0;
-  };
-
+export function buildFullRegionLearningQueue(
+  regionCountryIds,
+  masteryById = new Map(),
+  recencyById = null
+) {
   const weighted = (regionCountryIds ?? []).map((countryId) => {
-    const mastery = Math.min(1, Math.max(0, Number(getMastery(countryId)) || 0));
+    const mastery = Math.min(
+      1,
+      Math.max(0, Number(lookupMapOrRecord(masteryById, countryId)) || 0)
+    );
+    const recencyStat = lookupMapOrRecord(recencyById, countryId) ?? {};
+    const recency = getRecencyMultiplier(recencyStat, LEARN_RECENCY_HALF_LIFE_HOURS);
     return {
       countryId,
-      weight: (1 - mastery) ** 2 + MIN_SAMPLING_WEIGHT,
+      weight: ((1 - mastery) ** 2 + MIN_SAMPLING_WEIGHT) * recency,
     };
   });
 
   return weightedSampleWithoutReplacement(weighted, weighted.length);
+}
+
+/**
+ * Picks `count` ids, preferring countries that are not in a first-try-correct
+ * recency cooldown. Used for Go leftover fillers.
+ *
+ * @param {string[]} countryIds
+ * @param {Map<string, object>|Record<string, object>|null} recencyById
+ * @param {number} count
+ * @param {number} halfLifeHours
+ * @param {number} [now]
+ * @returns {string[]}
+ */
+export function pickRecencyWeightedIds(
+  countryIds,
+  recencyById,
+  count,
+  halfLifeHours,
+  now = Date.now()
+) {
+  const weighted = (countryIds ?? []).map((countryId) => ({
+    countryId,
+    weight: getRecencyMultiplier(
+      lookupMapOrRecord(recencyById, countryId) ?? {},
+      halfLifeHours,
+      now
+    ),
+  }));
+  return weightedSampleWithoutReplacement(weighted, count);
 }

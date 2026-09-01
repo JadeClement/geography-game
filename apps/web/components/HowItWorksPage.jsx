@@ -448,13 +448,18 @@ export default function HowItWorksPage() {
             are far more likely to be drawn:
           </p>
           <div className={infoFormula}>
-            weight = <span className={infoFormulaAccent}>(1 − mastery)²</span> + 0.05
+            weight = (<span className={infoFormulaAccent}>(1 − mastery)²</span> + 0.05) × recency
           </div>
           <p>
             Squaring the gap means a country at 20% mastery is picked far more often than one
             at 80%. The small <strong>+0.05</strong> floor keeps even near-mastered places in
             the mix occasionally, so nothing gets stale. Only countries you&apos;ve actually
             struggled with (and haven&apos;t graduated) are eligible.
+          </p>
+          <p>
+            After a <strong>first-try correct</strong>, recency cools that country down so it
+            does not immediately reappear: Go recovers half its weight in about 8 hours, Learn
+            in about a day. Misses stay fully eligible so you can retry them right away.
           </p>
           <div className={infoCallout("accent")}>
             <span className={infoCalloutIcon} aria-hidden="true">🎯</span>

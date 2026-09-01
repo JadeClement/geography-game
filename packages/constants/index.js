@@ -100,6 +100,10 @@ export const MASTERY_FAST_STREAK_REQUIRED = 3;
 export const MASTERY_REENTRY_THRESHOLD = 0.75;
 export const MASTERY_DECAY_HALF_LIFE_DAYS = 30;
 export const MASTERY_MIN_WEIGHT = 0.05;
+/** Hours until a first-try-correct country recovers half its Go sampling weight. */
+export const GO_RECENCY_HALF_LIFE_HOURS = 8;
+/** Hours until a first-try-correct country recovers half its Learn sampling weight. */
+export const LEARN_RECENCY_HALF_LIFE_HOURS = 24;
 
 /** Fast first-try EMA step (was private MASTERY_EMA_FAST in web mastery.js). */
 export const MASTERY_GRADUATION_FAST_CORRECT_DELTA = 0.2;

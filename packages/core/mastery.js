@@ -5,6 +5,8 @@ import {
   MASTERY_REENTRY_THRESHOLD,
   MASTERY_DECAY_HALF_LIFE_DAYS,
   MASTERY_MIN_WEIGHT,
+  GO_RECENCY_HALF_LIFE_HOURS,
+  LEARN_RECENCY_HALF_LIFE_HOURS,
   MASTERY_GRADUATION_FAST_CORRECT_DELTA,
   MASTERY_GRADUATION_SLOW_CORRECT_DELTA,
   MASTERY_SECOND_TRY_PENALTY,
@@ -18,10 +20,13 @@ export {
   MASTERY_REENTRY_THRESHOLD,
   MASTERY_DECAY_HALF_LIFE_DAYS,
   MASTERY_MIN_WEIGHT,
+  GO_RECENCY_HALF_LIFE_HOURS,
+  LEARN_RECENCY_HALF_LIFE_HOURS,
   GAME_TYPE_FOR_STATS,
 };
 
 const MS_PER_DAY = 86_400_000;
+const MS_PER_HOUR = 3_600_000;
 
 const MASTERY_EMA_FAST = MASTERY_GRADUATION_FAST_CORRECT_DELTA;
 const MASTERY_EMA_SLOW = MASTERY_GRADUATION_SLOW_CORRECT_DELTA;
@@ -209,12 +214,34 @@ export function isEffectivelyGraduated(stat, now = Date.now()) {
   return getDecayAdjustedMastery(stat, now) >= MASTERY_REENTRY_THRESHOLD;
 }
 
+/**
+ * Down-weights a country after a recent first-try correct. Misses, reveals,
+ * missing timestamps, and unknown lastOutcome (legacy rows) all return 1.
+ *
+ * `hours / (hours + halfLifeHours)` is 0 at t=0 and 0.5 after one half-life.
+ */
+export function getRecencyMultiplier(stat, halfLifeHours, now = Date.now()) {
+  if (!stat?.lastAttemptAt) return 1;
+  if (stat.lastOutcome !== ROUND_OUTCOMES.FIRST_TRY_CORRECT) return 1;
+  if (!Number.isFinite(halfLifeHours) || halfLifeHours <= 0) return 1;
+
+  const lastAttemptMs = new Date(stat.lastAttemptAt).getTime();
+  if (!Number.isFinite(lastAttemptMs)) return 1;
+
+  const hours = Math.max(0, (now - lastAttemptMs) / MS_PER_HOUR);
+  return hours / (hours + halfLifeHours);
+}
+
 /** Higher = more likely to appear in a learning session. */
 export function getLearningWeight(stat, now = Date.now()) {
   if (stat.graduated) return 0;
 
   const mastery = stat.masteryScore ?? getDecayAdjustedMastery(stat, now);
-  return (1 - mastery) ** 2 + MASTERY_MIN_WEIGHT;
+  const base = (1 - mastery) ** 2 + MASTERY_MIN_WEIGHT;
+  const recency = getRecencyMultiplier(stat, GO_RECENCY_HALF_LIFE_HOURS, now);
+  // Keep a tiny floor so a just-nailed country can still fill a short Go
+  // session; graduated countries stay at 0 and are filtered out.
+  return Math.max(base * recency, 0.01);
 }
 
 export function hasEverStruggled(stat) {
@@ -278,6 +305,8 @@ export function mapStatToMasteryEntry(stat) {
     level: stat.level,
     masteryScore: getDecayAdjustedMastery(stat),
     graduated: isEffectivelyGraduated(stat),
+    lastAttemptAt: stat.lastAttemptAt ?? null,
+    lastOutcome: stat.lastOutcome ?? null,
   };
 }
 
