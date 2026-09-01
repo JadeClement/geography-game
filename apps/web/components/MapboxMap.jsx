@@ -32,7 +32,7 @@ import {
   playMapCountryClickExpand,
 } from "@/lib/mapCountryClickExpand";
 import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
-import { isLngLatBehindGlobe } from "@/lib/mapboxGlobe";
+import { isLngLatBehindGlobe, isShowingGlobe, setGlobeHorizonShift } from "@/lib/mapboxGlobe";
 import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
@@ -65,15 +65,20 @@ function getMapProjection() {
 }
 
 function configureGlobeAtmosphere(map, theme) {
+  setGlobeHorizonShift(map, true);
+
   if (typeof map.setFog !== "function") return;
 
+  // horizon-blend of 0.02 (Mapbox's "thin atmosphere" demo) leaves a hard
+  // space-colored gap at the limb. Default at low zoom is ~0.2.
   if (theme === THEMES.LIGHT) {
     map.setFog({
       color: "rgb(186, 210, 235)",
       "high-color": "rgb(36, 92, 223)",
-      "horizon-blend": 0.02,
+      "horizon-blend": 0.18,
       "space-color": "rgb(186, 210, 235)",
       "star-intensity": 0,
+      range: [-0.5, 7],
     });
     return;
   }
@@ -81,23 +86,32 @@ function configureGlobeAtmosphere(map, theme) {
   map.setFog({
     color: "rgb(186, 210, 235)",
     "high-color": "rgb(36, 92, 223)",
-    "horizon-blend": 0.02,
-    "space-color": "rgb(11, 11, 25)",
+    "horizon-blend": 0.18,
+    "space-color": "rgb(11, 17, 32)",
     "star-intensity": 0.35,
+    range: [-0.5, 7],
   });
 }
 
 function applyMapProjection(map, theme) {
   const useGlobe = isMobileViewport();
   map.setProjection(useGlobe ? "globe" : "naturalEarth");
+  if (typeof map.setMaxPitch === "function") {
+    map.setMaxPitch(useGlobe ? 0 : 85);
+  }
   if (useGlobe) {
+    if (typeof map.setPitch === "function") map.setPitch(0);
+    map.touchPitch?.disable();
     configureGlobeAtmosphere(map, theme);
+  } else {
+    setGlobeHorizonShift(map, false);
   }
 }
 
 function configureMobileGlobeControls(map) {
   map.touchZoomRotate.enable();
   map.dragPan.enable();
+  map.touchPitch?.disable();
 }
 
 function setMapNavigationEnabled(map, enabled) {
@@ -453,11 +467,18 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
     }
 
+    const useGlobe = isShowingGlobe(map);
+    if (useGlobe && typeof map.setPitch === "function") {
+      map.setPitch(0);
+    }
+
     if (mapView.type === "camera") {
+      // jumpTo padding writes transform.padding, which on globe punches a
+      // static hole through the atmosphere (mapbox-gl-js#12636).
       map.jumpTo({
         center: mapView.center,
         zoom: mapView.zoom + (Number(mapView.zoomDelta) || 0),
-        padding: mapView.padding ?? 48,
+        ...(useGlobe ? { pitch: 0 } : { padding: mapView.padding ?? 48 }),
         duration: 0,
         retainPadding: false,
       });
@@ -485,6 +506,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
           duration: 0,
           maxZoom: mapView.maxZoom ?? 5,
           retainPadding: false,
+          ...(useGlobe ? { pitch: 0 } : {}),
         });
       } catch (error) {
         console.warn("Mapbox fitBounds failed:", error);
@@ -880,7 +902,9 @@ export default function MapboxMap({
       center: initialCenter,
       zoom: initialZoom,
       projection: getMapProjection(),
+      ...(useGlobe ? { pitch: 0, maxPitch: 0 } : {}),
     });
+    if (useGlobe) setGlobeHorizonShift(map, true);
 
     if (!useGlobe) {
       map.addControl(new mapboxgl.NavigationControl(), "bottom-right");

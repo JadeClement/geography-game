@@ -3,10 +3,27 @@
  * the far-side test so HTML discover labels hide when a country rotates away.
  */
 
-function isShowingGlobe(map) {
+/** Mapbox Transform default — cinematic mercator horizon, harmful on globe. */
+export const MAPBOX_DEFAULT_HORIZON_SHIFT = 0.1;
+
+export function isShowingGlobe(map) {
   if (!map) return false;
   if (typeof map._showingGlobe === "function") return map._showingGlobe();
   return map.getProjection?.()?.name === "globe";
+}
+
+/**
+ * Mapbox paints atmosphere / stars in screen space, then shifts them down by
+ * `_horizonShift` (default 0.1) so pitched mercator views look cinematic.
+ * On a globe that shift is a static crescent of space over the bottom of the
+ * sphere — it stays put while the map rotates underneath.
+ */
+export function setGlobeHorizonShift(map, alignedWithGlobe) {
+  const transform = map?.transform;
+  if (!transform || !("_horizonShift" in transform)) return false;
+  transform._horizonShift = alignedWithGlobe ? 0 : MAPBOX_DEFAULT_HORIZON_SHIFT;
+  if (typeof map.triggerRepaint === "function") map.triggerRepaint();
+  return true;
 }
 
 /** Unit-sphere ECEF with Mapbox's Y-up convention. */

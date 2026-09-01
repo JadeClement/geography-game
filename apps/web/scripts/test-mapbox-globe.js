@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { isLngLatBehindGlobe } from "../lib/mapboxGlobe.js";
+import {
+  isLngLatBehindGlobe,
+  MAPBOX_DEFAULT_HORIZON_SHIFT,
+  setGlobeHorizonShift,
+} from "../lib/mapboxGlobe.js";
 
 function mockGlobeMap(centerLng, centerLat) {
   return {
@@ -24,4 +28,24 @@ test("occlusion is skipped for non-globe projections", () => {
     getCenter: () => ({ lng: 20, lat: 10 }),
   };
   assert.equal(isLngLatBehindGlobe(map, -100, 60), false);
+});
+
+test("globe horizon shift is cleared so space does not overlay the sphere", () => {
+  let repaints = 0;
+  const map = {
+    transform: { _horizonShift: MAPBOX_DEFAULT_HORIZON_SHIFT },
+    triggerRepaint() {
+      repaints += 1;
+    },
+  };
+  assert.equal(setGlobeHorizonShift(map, true), true);
+  assert.equal(map.transform._horizonShift, 0);
+  assert.equal(repaints, 1);
+  assert.equal(setGlobeHorizonShift(map, false), true);
+  assert.equal(map.transform._horizonShift, MAPBOX_DEFAULT_HORIZON_SHIFT);
+});
+
+test("horizon shift is a no-op without a Mapbox transform", () => {
+  assert.equal(setGlobeHorizonShift({}, true), false);
+  assert.equal(setGlobeHorizonShift(null, true), false);
 });
