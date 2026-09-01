@@ -519,6 +519,21 @@
     0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+@keyframes start-mode-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.start-mode-row-enter {
+  animation: start-mode-row-enter 0.28s var(--ease-out) both;
+}
+
 /* Explore mode buttons — soft idle tint; clearer jump to selected */
 .start-mode-btn {
   border-color: color-mix(in srgb, var(--color-accent) 18%, var(--color-border-subtle));

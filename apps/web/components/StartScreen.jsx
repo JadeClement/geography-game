@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AuthModal from "@/components/AuthModal";
 import RegionMapPicker from "@/components/RegionMapPicker";
 import StartBackButton from "@/components/StartBackButton";
@@ -84,7 +84,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   const [exploreMode, setExploreMode] = useState(null);
   const [exploreRegion, setExploreRegion] = useState(null);
   const [homeGreeting, setHomeGreeting] = useState(null);
-  const pendingExploreAdvanceRef = useRef(false);
 
   const route = normalizeStartScreenRoute(parseStartScreenSearchParams(searchParams));
   const { step, mode: selectedMode, region: selectedRegion } = route;
@@ -111,7 +110,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   const goBack = () => router.back();
 
   const goBackToExplore = () => {
-    pendingExploreAdvanceRef.current = false;
     navigate({ step: START_STEPS.EXPLORE }, { replace: true });
   };
 
@@ -129,21 +127,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     if (step !== START_STEPS.EXPLORE) return;
     setExploreMode(null);
     setExploreRegion(null);
-    pendingExploreAdvanceRef.current = false;
   }, [step]);
-
-  // Advance from Explore once both mode and region are chosen.
-  useEffect(() => {
-    if (step !== START_STEPS.EXPLORE || !pendingExploreAdvanceRef.current) return;
-    if (!exploreMode || !exploreRegion) return;
-
-    pendingExploreAdvanceRef.current = false;
-    navigate({
-      step: START_STEPS.CHOOSE_TYPE,
-      mode: exploreMode,
-      region: exploreRegion,
-    });
-  }, [step, exploreMode, exploreRegion, navigate]);
 
   const handleGo = () => {
     if (!gameReady || starting) return;
@@ -204,13 +188,17 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   };
 
   const handleModeSelect = (mode) => {
+    if (!exploreRegion) return;
     setExploreMode(mode);
-    pendingExploreAdvanceRef.current = true;
+    navigate({
+      step: START_STEPS.CHOOSE_TYPE,
+      mode,
+      region: exploreRegion,
+    });
   };
 
   const handleRegionSelect = (regionId) => {
     setExploreRegion(regionId);
-    pendingExploreAdvanceRef.current = true;
   };
 
   const getSectionSubtitle = (section) => {
@@ -386,33 +374,39 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         <StartBackButton onClick={goBack} />
         <StartStepHeader
           title="Explore"
-          subtitle="Choose what to practice and where."
+          subtitle={
+            exploreRegion
+              ? "Now choose Countries, Capitals, or Flags."
+              : "Pick a region on the map."
+          }
         />
 
         <div className={startExploreSection}>
-          <div className={cn(startRow, startModeRow, "mx-auto w-full max-w-xl")}>
-            <button
-              type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.COUNTRIES })}
-              onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
-            >
-              Countries
-            </button>
-            <button
-              type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.CAPITALS })}
-              onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
-            >
-              Capitals
-            </button>
-            <button
-              type="button"
-              className={startModeBtn({ selected: exploreMode === GAME_MODES.FLAGS })}
-              onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
-            >
-              Flags
-            </button>
-          </div>
+          {exploreRegion && (
+            <div className={cn(startRow, startModeRow, "start-mode-row-enter mx-auto w-full max-w-xl")}>
+              <button
+                type="button"
+                className={startModeBtn({ selected: exploreMode === GAME_MODES.COUNTRIES })}
+                onClick={() => handleModeSelect(GAME_MODES.COUNTRIES)}
+              >
+                Countries
+              </button>
+              <button
+                type="button"
+                className={startModeBtn({ selected: exploreMode === GAME_MODES.CAPITALS })}
+                onClick={() => handleModeSelect(GAME_MODES.CAPITALS)}
+              >
+                Capitals
+              </button>
+              <button
+                type="button"
+                className={startModeBtn({ selected: exploreMode === GAME_MODES.FLAGS })}
+                onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
+              >
+                Flags
+              </button>
+            </div>
+          )}
 
           <RegionMapPicker
             countries={countries}
