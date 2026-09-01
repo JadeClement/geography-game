@@ -519,7 +519,7 @@ export const startScreenSub =
   "relative items-center justify-start gap-5 px-8 pb-10 pt-4 max-md:px-5 max-md:pb-8 max-md:pt-3";
 
 export const startScreenWithGlobe =
-  "start-screen--with-globe relative isolate bg-transparent max-md:overflow-x-hidden";
+  "start-screen--with-globe relative isolate bg-transparent max-md:overflow-x-hidden max-md:px-0 max-sm:px-0";
 
 export const startScreenExplore = "w-full justify-center";
 
@@ -547,7 +547,7 @@ export const startBrandSubtitle =
   "start-brand-subtitle -mt-4 text-[clamp(1.05rem,2.8vw,1.3rem)] font-semibold lowercase tracking-[0.14em] text-[#f8fafc] max-md:-mt-2.5";
 
 export const startHomeGreeting =
-  "start-home-greeting absolute inset-x-0 top-2 z-[2] m-0 px-4 whitespace-nowrap text-center text-[clamp(0.72rem,2.6vw,1.05rem)] font-medium italic leading-snug text-[#f8fafc]/90 max-md:top-1.5 max-md:px-3";
+  "start-home-greeting absolute inset-x-0 top-2 z-[2] m-0 px-4 whitespace-nowrap text-center text-[clamp(0.72rem,2.6vw,1.05rem)] font-medium italic leading-snug text-[#f8fafc]/90 max-md:px-3";
 
 export const startHero =
   "relative mb-1 flex min-h-[clamp(20rem,68vw,28rem)] w-full max-w-[56rem] items-center justify-center max-sm:min-h-[clamp(8rem,30vw,11rem)] short:min-h-[clamp(6rem,22vh,9rem)]";

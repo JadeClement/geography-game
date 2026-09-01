@@ -710,8 +710,32 @@
 }
 
 @media (max-width: 48rem) {
+  .start-screen.start-screen--with-globe {
+    overflow: hidden;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .start-home-greeting {
+    position: relative;
+    top: auto;
+    inset: auto;
+    margin-top: 1.7rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .start-screen--with-globe .start-screen-content {
+    flex: 1 1 auto;
+    justify-content: space-between;
+    gap: 0.85rem;
+    min-height: 0;
+    padding-top: 0.15rem;
+    padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
+  }
+
   .start-hero-stage {
-    width: min(78vw, 20rem);
+    width: min(100vw, 58dvh);
+    flex-shrink: 0;
   }
 
   .start-hero-title-group {
@@ -719,13 +743,15 @@
   }
 
   .start-home-actions {
-    margin-top: 0.5rem;
+    width: 100%;
+    padding-inline: 1.25rem;
+    padding-bottom: 0.15rem;
   }
 }
 
 @media (max-width: 30rem) {
   .start-hero-stage {
-    width: min(82vw, 15.5rem);
+    width: min(100vw, 56dvh);
   }
 
   .start-hero-title-group {
@@ -733,25 +759,21 @@
   }
 
   .start-home-actions {
-    margin-top: 0.75rem;
+    padding-inline: 1rem;
   }
 
   .start-title-globe {
-    font-size: clamp(3.25rem, 20vw, 6rem);
+    font-size: clamp(3.5rem, 22vw, 6.5rem);
   }
 }
 
 @media (max-width: 30rem) and (max-height: 45rem) {
   .start-hero-stage {
-    width: min(76vw, 14rem);
-  }
-
-  .start-home-actions {
-    margin-top: 0.5rem;
+    width: min(92vw, 42dvh);
   }
 
   .start-title-globe {
-    font-size: clamp(2.75rem, 18vw, 5rem);
+    font-size: clamp(3rem, 20vw, 5.5rem);
   }
 }
 
