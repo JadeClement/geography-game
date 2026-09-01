@@ -453,13 +453,15 @@ export default function HowItWorksPage() {
           <p>
             Squaring the gap means a country at 20% mastery is picked far more often than one
             at 80%. The small <strong>+0.05</strong> floor keeps even near-mastered places in
-            the mix occasionally, so nothing gets stale. Only countries you&apos;ve actually
-            struggled with (and haven&apos;t graduated) are eligible.
+            the mix occasionally, so nothing gets stale.
           </p>
           <p>
-            After a <strong>first-try correct</strong>, recency cools that country down so it
-            does not immediately reappear: Go recovers half its weight in about 8 hours, Learn
-            in about a day. Misses stay fully eligible so you can retry them right away.
+            <strong>Go!</strong> is a 10-country mix of your own range: a few of your weakest,
+            some in the middle, a couple closest to mastered, and one you have not seen yet.
+            After a <strong>first-try correct</strong>, that country cools down (about 8 hours
+            to recover half its Go weight) so the next game can move on. Misses stay fully
+            eligible. Learn uses the same recency idea with a slower, about-a-day cooldown,
+            and still weights the full region toward weaker countries.
           </p>
           <div className={infoCallout("accent")}>
             <span className={infoCalloutIcon} aria-hidden="true">🎯</span>

@@ -1,4 +1,16 @@
-import { LEARN_RECENCY_HALF_LIFE_HOURS } from "@worldly/constants";
+import {
+  GO_COOLED_RECENCY_THRESHOLD,
+  GO_MIX_FLEX,
+  GO_MIX_MIDDLE,
+  GO_MIX_MIN_FOR_THIRDS,
+  GO_MIX_NEAR,
+  GO_MIX_NEW,
+  GO_MIX_SPREAD_MIN,
+  GO_MIX_WEAK,
+  GO_RECENCY_HALF_LIFE_HOURS,
+  GO_SESSION_SIZE,
+  LEARN_RECENCY_HALF_LIFE_HOURS,
+} from "@worldly/constants";
 import {
   getLearningWeight,
   getRecencyMultiplier,
@@ -109,9 +121,150 @@ export function buildFullRegionLearningQueue(
   return weightedSampleWithoutReplacement(weighted, weighted.length);
 }
 
+function pickUniform(ids, count) {
+  return weightedSampleWithoutReplacement(
+    (ids ?? []).map((countryId) => ({ countryId, weight: 1 })),
+    count
+  );
+}
+
+function masteryOf(stat) {
+  return Math.min(1, Math.max(0, Number(stat?.masteryScore) || 0));
+}
+
+function recencyOf(stat, now) {
+  return getRecencyMultiplier(stat, GO_RECENCY_HALF_LIFE_HOURS, now);
+}
+
+function isHot(stat, now) {
+  return recencyOf(stat, now) >= GO_COOLED_RECENCY_THRESHOLD;
+}
+
+function splitThirds(stats) {
+  const sorted = [...stats].sort((a, b) => masteryOf(a) - masteryOf(b));
+  const n = sorted.length;
+  const t1 = Math.ceil(n / 3);
+  const t2 = Math.ceil((2 * n) / 3);
+  return {
+    weak: sorted.slice(0, t1),
+    middle: sorted.slice(t1, t2),
+    near: sorted.slice(t2),
+  };
+}
+
+function shouldSplitThirds(stats) {
+  if (stats.length < GO_MIX_MIN_FOR_THIRDS) return false;
+  const scores = stats.map(masteryOf);
+  return Math.max(...scores) - Math.min(...scores) >= GO_MIX_SPREAD_MIN;
+}
+
+function sampleHot(stats, count, now, have) {
+  const pool = (stats ?? []).filter(
+    (stat) => stat?.countryId && !have.has(stat.countryId) && isHot(stat, now)
+  );
+  if (pool.length === 0 || count <= 0) return [];
+  return weightedSampleWithoutReplacement(
+    pool.map((stat) => ({
+      countryId: stat.countryId,
+      weight: recencyOf(stat, now),
+    })),
+    count
+  );
+}
+
+function pickDue(stats, now, have) {
+  const pool = (stats ?? []).filter(
+    (stat) =>
+      stat?.countryId &&
+      !have.has(stat.countryId) &&
+      isHot(stat, now) &&
+      stat.lastAttemptAt
+  );
+  pool.sort(
+    (a, b) => new Date(a.lastAttemptAt).getTime() - new Date(b.lastAttemptAt).getTime()
+  );
+  return pool[0]?.countryId ?? null;
+}
+
+/**
+ * Builds a Go! session as a mix of this user's weak / middle / near-mastered
+ * countries plus a never-seen one. Ranks are percentiles of the player's own
+ * in-play EMA range. Recent first-tries are skipped inside a bucket; a fully
+ * cooled bucket donates its slots instead of repeating.
+ *
+ * @param {object} params
+ * @param {string[]} params.regionCountryIds
+ * @param {object[]} [params.inPlayStats] - non-graduated attempted stats
+ * @param {number} [params.sessionSize]
+ * @param {number} [params.now]
+ * @returns {string[]}
+ */
+export function buildGoQueue({
+  regionCountryIds,
+  inPlayStats = [],
+  sessionSize = GO_SESSION_SIZE,
+  now = Date.now(),
+} = {}) {
+  const region = [...new Set((regionCountryIds ?? []).filter(Boolean))];
+  const inPlay = (inPlayStats ?? []).filter(
+    (stat) => stat?.countryId && region.includes(stat.countryId) && !stat.graduated
+  );
+  const inPlayIds = new Set(inPlay.map((stat) => stat.countryId));
+  const neverSeen = region.filter((id) => !inPlayIds.has(id));
+
+  const chosen = [];
+  const have = new Set();
+
+  const take = (ids) => {
+    for (const id of ids ?? []) {
+      if (!id || have.has(id)) continue;
+      have.add(id);
+      chosen.push(id);
+      if (chosen.length >= sessionSize) return true;
+    }
+    return false;
+  };
+
+  const split = shouldSplitThirds(inPlay)
+    ? splitThirds(inPlay)
+    : { weak: inPlay, middle: [], near: [] };
+
+  const needed = () => sessionSize - chosen.length;
+
+  if (shouldSplitThirds(inPlay)) {
+    if (take(sampleHot(split.weak, GO_MIX_WEAK, now, have))) return chosen;
+    if (take(sampleHot(split.middle, GO_MIX_MIDDLE, now, have))) return chosen;
+    if (take(sampleHot(split.near, GO_MIX_NEAR, now, have))) return chosen;
+  } else {
+    const inPlaySlots = Math.max(0, sessionSize - GO_MIX_NEW - GO_MIX_FLEX);
+    if (take(sampleHot(inPlay, inPlaySlots, now, have))) return chosen;
+  }
+
+  if (take(pickUniform(neverSeen.filter((id) => !have.has(id)), GO_MIX_NEW))) {
+    return chosen;
+  }
+
+  const leftoverNever = neverSeen.filter((id) => !have.has(id));
+  if (leftoverNever.length > 0) {
+    if (take(pickUniform(leftoverNever, GO_MIX_FLEX))) return chosen;
+  } else {
+    const dueId = pickDue(inPlay, now, have);
+    if (dueId && take([dueId])) return chosen;
+    if (take(sampleHot(split.weak, GO_MIX_FLEX, now, have))) return chosen;
+  }
+
+  if (take(sampleHot(split.middle, needed(), now, have))) return chosen;
+  if (take(sampleHot(split.weak, needed(), now, have))) return chosen;
+  if (take(sampleHot(split.near, needed(), now, have))) return chosen;
+  if (take(pickUniform(neverSeen.filter((id) => !have.has(id)), needed()))) return chosen;
+  if (take(sampleHot(inPlay, needed(), now, have))) return chosen;
+  take(region.filter((id) => !have.has(id)));
+  return chosen;
+}
+
 /**
  * Picks `count` ids, preferring countries that are not in a first-try-correct
- * recency cooldown. Used for Go leftover fillers.
+ * recency cooldown.
  *
  * @param {string[]} countryIds
  * @param {Map<string, object>|Record<string, object>|null} recencyById

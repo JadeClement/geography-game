@@ -27,7 +27,6 @@ import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeName } from "@/lib/constants";
 import {
   fetchMasteryStats,
-  fetchWeakCountryStats,
   fetchLearnChallenge,
   saveLearnChallenge,
   recordCountryStat,
@@ -45,7 +44,7 @@ import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
 import { getMapViewForRegion, getLearnFocusMapView, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
-import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE, GO_NEW_COUNTRY_SLOTS } from "@/lib/mastery";
+import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
 import {
   appendGuestRound,
   clearPendingGuestGame,
@@ -458,7 +457,6 @@ export default function GeographyGame() {
   // already makes, so milestones need no extra API calls.
   const sessionStatRecordsRef = useRef(new Map());
   const pendingStatPromisesRef = useRef([]);
-  const lastGoCountryIdsRef = useRef([]);
   const preCreditedIdsRef = useRef([]);
   const regionCountryIdsRef = useRef([]);
 
@@ -1637,9 +1635,8 @@ export default function GeographyGame() {
     ]
   );
 
-  // "Go": a 10-country mix of weak countries plus a couple never-seen ones.
-  // The previous Go session's countries are skipped so "Go again" is not the
-  // same quiz. Falls back to a region shuffle when signed out.
+  // "Go": a 10-country mix of this player's weak / middle / near-mastered
+  // countries plus a never-seen one (Countries · Find it · Level 1).
   const startGoSession = useCallback(async (region = "world") => {
     const regionPool = filterCountriesByRegion(allCountries, region);
     if (regionPool.length === 0) return;
@@ -1649,44 +1646,37 @@ export default function GeographyGame() {
       pendingStatPromisesRef.current = [];
     }
 
-    let weakStats = [];
-    const recencyById = new Map();
+    const inPlayStats = [];
     if (signedIn) {
       try {
-        const [data, masteryData] = await Promise.all([
-          fetchWeakCountryStats({
-            mode: GAME_MODES.COUNTRIES,
-            level: GAME_LEVELS.FIND_FILL,
-            region,
-          }),
-          fetchMasteryStats({ mode: GAME_MODES.COUNTRIES }).catch(() => ({ mastery: [] })),
-        ]);
-        weakStats = data.stats ?? [];
-        for (const row of masteryData.mastery ?? []) {
+        const data = await fetchMasteryStats({ mode: GAME_MODES.COUNTRIES });
+        const regionIds = new Set(regionPool.map((country) => country.id));
+        for (const row of data.mastery ?? []) {
           if (row.level !== GAME_LEVELS.FIND_FILL) continue;
-          recencyById.set(row.countryId, {
+          if (!regionIds.has(row.countryId)) continue;
+          if (row.graduated) continue;
+          if (!row.lastAttemptAt) continue;
+          inPlayStats.push({
+            countryId: row.countryId,
+            masteryScore: Number(row.masteryScore) || 0,
+            graduated: false,
             lastAttemptAt: row.lastAttemptAt,
             lastOutcome: row.lastOutcome,
           });
         }
       } catch (error) {
-        console.error("Go: failed to load weak countries", error);
+        console.error("Go: failed to load mastery", error);
       }
     }
 
     const ids = buildGoQueue({
       regionCountryIds: regionPool.map((country) => country.id),
-      weakStats,
-      recencyById,
-      excludeIds: lastGoCountryIdsRef.current,
+      inPlayStats,
       sessionSize: GO_SESSION_SIZE,
-      newCountrySlots: GO_NEW_COUNTRY_SLOTS,
     });
     const regionById = new Map(regionPool.map((country) => [country.id, country]));
     const chosen = ids.map((id) => regionById.get(id)).filter(Boolean);
     if (chosen.length === 0) return;
-
-    lastGoCountryIdsRef.current = chosen.map((country) => country.id);
 
     startGame({
       gameType: GAME_TYPES.LEARNING,

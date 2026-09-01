@@ -104,6 +104,19 @@ export const MASTERY_MIN_WEIGHT = 0.05;
 export const GO_RECENCY_HALF_LIFE_HOURS = 8;
 /** Hours until a first-try-correct country recovers half its Learn sampling weight. */
 export const LEARN_RECENCY_HALF_LIFE_HOURS = 24;
+/** Countries in a Go! session. */
+export const GO_SESSION_SIZE = 10;
+export const GO_MIX_WEAK = 4;
+export const GO_MIX_MIDDLE = 2;
+export const GO_MIX_NEAR = 2;
+export const GO_MIX_NEW = 1;
+export const GO_MIX_FLEX = 1;
+/** Recency below this counts as cooled; the bucket donates its slots. */
+export const GO_COOLED_RECENCY_THRESHOLD = 0.15;
+/** If in-play mastery spans less than this, do not split into thirds. */
+export const GO_MIX_SPREAD_MIN = 0.15;
+/** Need at least this many in-play countries before splitting into thirds. */
+export const GO_MIX_MIN_FOR_THIRDS = 6;
 
 /** Fast first-try EMA step (was private MASTERY_EMA_FAST in web mastery.js). */
 export const MASTERY_GRADUATION_FAST_CORRECT_DELTA = 0.2;
