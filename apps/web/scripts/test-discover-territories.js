@@ -1,5 +1,5 @@
 /**
- * Out-of-region / territory click copy for Learn and Test.
+ * Territory matching and out-of-region click copy.
  *
  * Run: node --import ./scripts/register-alias.mjs --test scripts/test-discover-territories.js
  */

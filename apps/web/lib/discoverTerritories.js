@@ -2,9 +2,7 @@
  * Non-playable overseas scraps that show up on regional maps.
  *
  * Discover: clicking them opens an informational note instead of a discovery.
- * Learn/Test: the same match drives a "This is X" toast instead of
- * "wrong continent" — these places sit on the wrong-continent layer even when
- * they are territories of a European country, not a different continent.
+ * Learn/Test: they are drawn on the map but clicks are ignored.
  *
  * Disabled countries with their own GeoJSON are drawn as outlined inactive-style
  * land. French Caribbean / Guiana scraps (and Bonaire) are part of FRA / NLD
