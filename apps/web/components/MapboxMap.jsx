@@ -597,8 +597,41 @@ function applyCoverFit(map, geoBounds, { bleed = 1.08, maxExtraZoom = 3 } = {}) 
   map.setZoom(map.getZoom() + Math.min(Math.log2(scale), maxExtraZoom));
 }
 
+function mapViewCameraKey(mapView) {
+  if (!mapView) return "";
+  const bounds = mapView.bounds;
+  const boundsKey = Array.isArray(bounds)
+    ? `${bounds[0]?.[0]},${bounds[0]?.[1]},${bounds[1]?.[0]},${bounds[1]?.[1]}`
+    : "";
+  const padding = mapView.padding;
+  const paddingKey =
+    padding && typeof padding === "object"
+      ? `${padding.top},${padding.bottom},${padding.left},${padding.right}`
+      : String(padding ?? "");
+  const center = mapView.center;
+  const centerKey = Array.isArray(center) ? center.join(",") : "";
+  return [
+    mapView._learnQuestionId ?? "",
+    mapView.type ?? "",
+    mapView.fit ?? "",
+    paddingKey,
+    mapView.maxZoom ?? "",
+    mapView.clampToMaxZoom ? "1" : "0",
+    mapView.zoomDelta ?? "",
+    mapView.zoom ?? "",
+    centerKey,
+    boundsKey,
+  ].join("|");
+}
+
 function applyMapView(map, mapView, { onSettled } = {}) {
   if (!mapView) return;
+
+  // Same camera as last time (e.g. shape-drop Correct overlay appeared).
+  // Re-running fitBounds compounds sticky padding and shoves the map down.
+  const cameraKey = mapViewCameraKey(mapView);
+  if (cameraKey && map.__lastMapViewCameraKey === cameraKey) return;
+  map.__lastMapViewCameraKey = cameraKey;
 
   // Invalidate any earlier pending fit (e.g. a stale once("idle") from a
   // previous question). Without this, an old callback can snap the camera back.

@@ -678,9 +678,9 @@ export const gameHeaderCenterDiscoverMobile =
 export const gameHeaderDiscoverPrompt =
   "text-3xl font-semibold leading-tight text-text max-md:text-xl max-md:leading-snug";
 
-/** Mobile map stack: country/capital prompt, then Try again beneath it. */
+/** Overlay chrome on the map (prompt, Correct, Continue) — never in document flow. */
 export const mapOverlayStack =
-  "pointer-events-none absolute inset-x-0 top-3 z-[4] flex flex-col items-center gap-2 px-4";
+  "pointer-events-none absolute inset-x-0 top-0 z-[4] flex flex-col items-center gap-2 px-4 pt-3";
 
 export const gamePromptMobileFloat =
   "pointer-events-none flex w-full justify-center md:hidden";
@@ -745,6 +745,9 @@ export const promptWithPronunciation =
   "inline-flex max-w-full items-center justify-center gap-2";
 
 export const mapStage = "relative min-h-0 flex-1";
+
+/** Pins the GL/SVG map to the stage so overlay chrome cannot displace it. */
+export const mapStageFill = "absolute inset-0";
 
 export const discoverMapLabelLayer = "pointer-events-none absolute inset-0 z-[2] overflow-visible";
 
@@ -1680,7 +1683,7 @@ export const masteryLegendScale =
   "flex justify-between text-[0.72rem] text-text-muted";
 
 // — Map containers (shared with Pacific/Mapbox) —
-export const mapContainer = "h-full min-h-0 w-full flex-1";
+export const mapContainer = "h-full min-h-0 w-full";
 
 export const pacificMap = "relative overflow-hidden bg-inset";
 

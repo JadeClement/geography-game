@@ -14,7 +14,7 @@ import DiscoverMapLabels from "@/components/DiscoverMapLabels";
 import DiscoverTerritoryModal from "@/components/DiscoverTerritoryModal";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
-import { ShapeDropPlacement } from "@/components/learn/ShapeDropQuestion";
+import { ShapeDropPlacement, DistanceRevealOverlay } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
@@ -152,6 +152,7 @@ import {
   mapFeedbackAnchor,
   mapOverlayStack,
   mapStage,
+  mapStageFill,
   modalActions,
   modalCard,
   modalOverlay,
@@ -888,7 +889,8 @@ export default function GeographyGame() {
     if (learnEngineActive) {
       if (!mapView) return null;
       // Shape-drop needs the full region at a fixed scale so the silhouette
-      // matches on-map size. No cover-zoom, no subject close-up.
+      // matches on-map size. Keep this camera after the drop too — Correct /
+      // Continue overlay the map and must not re-fit (that shoves land down).
       if (isLearnShapeDropQuestion) {
         if (session?.region === "oceania") {
           return withLearnKey({
@@ -3712,8 +3714,10 @@ export default function GeographyGame() {
 
   // Discover labels subscribe here so pan frames don't re-render GeographyGame.
   const discoverMapMoveHandlerRef = useRef(null);
+  const distanceOverlayMoveRef = useRef(null);
   const handleMapMove = useCallback(() => {
     discoverMapMoveHandlerRef.current?.();
+    distanceOverlayMoveRef.current?.();
   }, []);
 
   const handleDiscoverCountryHover = useCallback((countryId) => {
@@ -3749,6 +3753,12 @@ export default function GeographyGame() {
     const api = mapProjectRef.current;
     if (!api || typeof api === "function") return null;
     return api.projectBoundsClient?.(country) ?? null;
+  }, [mapViewRevision]);
+
+  const projectClientPoint = useCallback((lng, lat) => {
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return null;
+    return api.projectClient?.(lng, lat) ?? null;
   }, [mapViewRevision]);
 
   const getDiscoverLabelScale = useCallback(() => {
@@ -4396,6 +4406,7 @@ export default function GeographyGame() {
                     </div>
                   )}
               </div>
+              <div className={mapStageFill}>
               {isOceaniaRegion ? (
                 <PacificMap
                   activeCountries={activeCountries}
@@ -4426,7 +4437,6 @@ export default function GeographyGame() {
                   mapNavigationEnabled={mapNavigationEnabled}
                   hideCountryBorders={hideCountryBorders}
                   allowEmptyMapClicks={allowEmptyMapClicks}
-                  distanceFeedback={distanceFeedback}
                 />
               ) : (
                 <MapboxMap
@@ -4453,7 +4463,6 @@ export default function GeographyGame() {
                   allowInactiveCountryClicks={allowInactiveCountryClicks}
                   hideCountryBorders={hideCountryBorders}
                   allowEmptyMapClicks={allowEmptyMapClicks}
-                  distanceFeedback={distanceFeedback}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={needsMapProjection ? registerMapProject : undefined}
@@ -4461,6 +4470,7 @@ export default function GeographyGame() {
                   onMapMove={needsMapProjection ? handleMapMove : undefined}
                 />
               )}
+              </div>
               {learnNeighborRevealActive && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[4] flex justify-center px-4 max-md:bottom-[calc(4.5rem+env(safe-area-inset-bottom))]">
                   <NeighborTeachLegend
@@ -4479,6 +4489,16 @@ export default function GeographyGame() {
                   countryId={droppedShapeReveal.targetId}
                   tone="wrong"
                   excludeRect={droppedShapeCorrectRect}
+                />
+              )}
+              {distanceFeedback && (
+                <DistanceRevealOverlay
+                  from={distanceFeedback.from}
+                  to={distanceFeedback.to}
+                  label={distanceFeedback.label}
+                  projectClient={projectClientPoint}
+                  mapMoveHandlerRef={distanceOverlayMoveRef}
+                  revision={mapViewRevision}
                 />
               )}
               {gamePaused &&

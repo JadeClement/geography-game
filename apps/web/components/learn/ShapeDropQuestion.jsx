@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import {
@@ -56,6 +56,107 @@ export function ShapeDropPlacement({
         className="h-full w-full"
         label=""
       />
+    </div>,
+    document.body
+  );
+}
+
+/**
+ * Miss line + distance label, portaled above the dropped silhouette.
+ * Label is the top layer; the dotted line sits just under it.
+ */
+export function DistanceRevealOverlay({
+  from,
+  to,
+  label,
+  projectClient,
+  mapMoveHandlerRef,
+  revision = 0,
+}) {
+  const [pts, setPts] = useState(null);
+  const projectRef = useRef(projectClient);
+  projectRef.current = projectClient;
+  const fromRef = useRef(from);
+  const toRef = useRef(to);
+  fromRef.current = from;
+  toRef.current = to;
+
+  const update = useCallback(() => {
+    const start = fromRef.current;
+    const end = toRef.current;
+    const project = projectRef.current;
+    if (!start || !end || typeof project !== "function") {
+      setPts(null);
+      return;
+    }
+    const a = project(start.lng, start.lat);
+    const b = project(end.lng, end.lat);
+    if (
+      !a ||
+      !b ||
+      !Number.isFinite(a.x) ||
+      !Number.isFinite(a.y) ||
+      !Number.isFinite(b.x) ||
+      !Number.isFinite(b.y)
+    ) {
+      setPts(null);
+      return;
+    }
+    setPts({ a, b });
+  }, []);
+
+  useLayoutEffect(() => {
+    update();
+  }, [update, from, to, revision]);
+
+  useEffect(() => {
+    if (!mapMoveHandlerRef) return undefined;
+    mapMoveHandlerRef.current = update;
+    return () => {
+      if (mapMoveHandlerRef.current === update) {
+        mapMoveHandlerRef.current = null;
+      }
+    };
+  }, [mapMoveHandlerRef, update]);
+
+  if (typeof document === "undefined" || !pts) return null;
+
+  const { a, b } = pts;
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+
+  return createPortal(
+    <div className="pointer-events-none fixed inset-0 z-[40]">
+      <svg className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
+        <line
+          x1={a.x}
+          y1={a.y}
+          x2={b.x}
+          y2={b.y}
+          stroke="#0f172a"
+          strokeWidth="4.5"
+          strokeDasharray="8 6"
+          strokeLinecap="round"
+        />
+        <line
+          x1={a.x}
+          y1={a.y}
+          x2={b.x}
+          y2={b.y}
+          stroke="#f8fafc"
+          strokeWidth="2.25"
+          strokeDasharray="8 6"
+          strokeLinecap="round"
+        />
+      </svg>
+      {label ? (
+        <div
+          className="absolute z-[1] -translate-x-1/2 -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-pill border border-border bg-surface/95 px-2.5 py-1 text-xs font-semibold text-text shadow-lg"
+          style={{ left: midX, top: midY }}
+        >
+          {label}
+        </div>
+      ) : null}
     </div>,
     document.body
   );
