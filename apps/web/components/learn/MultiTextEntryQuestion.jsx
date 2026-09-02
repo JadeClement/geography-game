@@ -7,6 +7,13 @@ import { primaryBtn } from "@/lib/ui";
 
 const FEEDBACK_DELAY_MS = 900;
 
+const foundChipClass =
+  "inline-flex items-center rounded-pill border px-3 py-1 text-sm font-semibold border-success bg-[color-mix(in_srgb,var(--color-success)_16%,transparent)] text-success";
+const missedChipClass =
+  "inline-flex items-center rounded-pill border px-3 py-1 text-sm font-semibold border-error bg-[color-mix(in_srgb,var(--color-error)_14%,transparent)] text-error";
+const hiddenChipClass =
+  "inline-flex items-center rounded-pill border px-3 py-1 text-sm font-semibold border-border-subtle bg-inset text-text-muted";
+
 function normalizeText(value) {
   return normalizeName(String(value ?? ""));
 }
@@ -14,24 +21,31 @@ function normalizeText(value) {
 /**
  * Tier 1 free recall of the FULL neighbor set ("Name every country that borders
  * X."). The learner types one country at a time; each correct, not-yet-found
- * neighbor is accepted and shown as a chip. The question resolves when every
- * neighbor is found (correct) or the learner gives up (reveal → incorrect).
+ * neighbor is accepted and shown as a chip. Extra (non-border) guesses stay as
+ * red chips above the text box and mean the round is never marked fully correct.
+ * The question resolves when every neighbor is found, or the learner gives up.
  *
  * question.options: [{ value: iso3, label: name }] — the neighbors to recall.
  * Emits the standard answer event via onEmit (supplied by LearnQuestionRenderer).
  */
-export default function MultiTextEntryQuestion({ question, onEmit }) {
+export default function MultiTextEntryQuestion({
+  question,
+  onEmit,
+  lookupCountryByName,
+}) {
   const options = useMemo(() => question?.options ?? [], [question?.options]);
   const [foundIds, setFoundIds] = useState(() => new Set());
+  const [wrongGuesses, setWrongGuesses] = useState([]);
   const [value, setValue] = useState("");
   const [revealed, setRevealed] = useState(false);
-  const [flash, setFlash] = useState(null); // "wrong" | "dupe" | null
+  const [flash, setFlash] = useState(null); // "dupe" | null
   const startedAtRef = useRef(Date.now());
   const timerRef = useRef(null);
   const flashTimerRef = useRef(null);
 
   useEffect(() => {
     setFoundIds(new Set());
+    setWrongGuesses([]);
     setValue("");
     setRevealed(false);
     setFlash(null);
@@ -52,24 +66,48 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
     flashTimerRef.current = setTimeout(() => setFlash(null), 1100);
   };
 
-  const emitResult = ({ correct, revealUsed }) => {
+  const emitResult = ({ correct, revealUsed, found }) => {
+    const foundSet = found ?? foundIds;
     const responseTimeMs = Date.now() - startedAtRef.current;
     const foundNames = options
-      .filter((option) => foundIds.has(option.value))
+      .filter((option) => foundSet.has(option.value))
       .map((option) => option.label);
-    onEmit?.({ correct, responseTimeMs, revealUsed, timedOut: false, selectedValue: foundNames });
+    onEmit?.({
+      correct,
+      responseTimeMs,
+      revealUsed,
+      timedOut: false,
+      selectedValue: foundNames,
+    });
+  };
+
+  const alreadyWrong = (key, label) => {
+    const normalized = normalizeText(label);
+    return wrongGuesses.some(
+      (guess) => guess.key === key || normalizeText(guess.label) === normalized
+    );
   };
 
   const submit = (event) => {
     event.preventDefault();
     if (done) return;
-    const guess = normalizeText(value);
+    const raw = value.trim();
+    const guess = normalizeText(raw);
     if (!guess) return;
 
     const match = options.find((option) => normalizeText(option.label) === guess);
     if (!match) {
-      showFlash("wrong");
+      const resolved = lookupCountryByName?.(raw) ?? null;
+      const label = resolved?.name ?? raw;
+      const key = resolved?.id ?? guess;
+      if (alreadyWrong(key, label)) {
+        showFlash("dupe");
+        setValue("");
+        return;
+      }
+      setWrongGuesses((prev) => [...prev, { key, label }]);
       setValue("");
+      setFlash(null);
       return;
     }
     if (foundIds.has(match.value)) {
@@ -85,7 +123,16 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
     setFlash(null);
 
     if (next.size >= total) {
-      timerRef.current = setTimeout(() => emitResult({ correct: true, revealUsed: false }), FEEDBACK_DELAY_MS);
+      const perfect = wrongGuesses.length === 0;
+      timerRef.current = setTimeout(
+        () =>
+          emitResult({
+            correct: perfect,
+            revealUsed: false,
+            found: next,
+          }),
+        FEEDBACK_DELAY_MS
+      );
     }
   };
 
@@ -93,7 +140,7 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
     if (done) return;
     setRevealed(true);
     // Reveal chips immediately; host shows Continue (no auto-advance timer).
-    emitResult({ correct: false, revealUsed: true });
+    emitResult({ correct: false, revealUsed: true, found: foundIds });
   };
 
   return (
@@ -115,12 +162,11 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
             <span
               key={option.value}
               className={
-                "inline-flex items-center rounded-pill border px-3 py-1 text-sm font-semibold " +
-                (state === "found"
-                  ? "border-success bg-[color-mix(in_srgb,var(--color-success)_16%,transparent)] text-success"
+                state === "found"
+                  ? foundChipClass
                   : state === "missed"
-                    ? "border-error bg-[color-mix(in_srgb,var(--color-error)_14%,transparent)] text-error"
-                    : "border-border-subtle bg-inset text-text-muted")
+                    ? missedChipClass
+                    : hiddenChipClass
               }
             >
               {state === "hidden" ? "•••••" : option.label}
@@ -128,6 +174,19 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
           );
         })}
       </div>
+
+      {wrongGuesses.length > 0 && (
+        <div
+          className="flex flex-wrap justify-center gap-2"
+          aria-label="Incorrect guesses"
+        >
+          {wrongGuesses.map((guess) => (
+            <span key={guess.key} className={missedChipClass}>
+              {guess.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {!done && (
         <form className={learnTextForm} onSubmit={submit}>
@@ -141,11 +200,10 @@ export default function MultiTextEntryQuestion({ question, onEmit }) {
             autoFocus
             aria-label={question?.prompt}
           />
-          {flash === "wrong" && (
-            <p className="m-0 text-center text-sm font-semibold text-error">Not a border — try another.</p>
-          )}
           {flash === "dupe" && (
-            <p className="m-0 text-center text-sm font-semibold text-text-muted">Already found.</p>
+            <p className="m-0 text-center text-sm font-semibold text-text-muted">
+              Already entered.
+            </p>
           )}
           <button type="submit" className={primaryBtn} disabled={!value.trim()}>
             Add

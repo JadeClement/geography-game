@@ -479,7 +479,12 @@ export default function LearnQuestionRenderer({
       );
     case "multi_text_entry":
       return (
-        <MultiTextEntryQuestion key={question.id} question={question} onEmit={emit} />
+        <MultiTextEntryQuestion
+          key={question.id}
+          question={question}
+          onEmit={emit}
+          lookupCountryByName={lookupCountryByName}
+        />
       );
     case "map_click":
       return (
