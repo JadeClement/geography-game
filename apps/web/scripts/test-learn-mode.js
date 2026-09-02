@@ -805,14 +805,32 @@ test("neighbor select-all is a 9-option grid of neighbors plus nearby distractor
   }
   assert.equal(question.correctAnswer.length, neighbors.length);
 
-  // Albania has exactly five 2-hop countries; those should fill the grid.
-  const nearby = ["BIH", "HRV", "SRB", "BGR", "TUR"];
+  // 2-hop land neighbors in Europe fill first; Turkey is Asia so it is not used.
+  const nearby = ["BIH", "HRV", "SRB", "BGR"];
   for (const id of nearby) {
     assert.ok(optionIds.includes(id), `expected nearby distractor ${id}`);
   }
+  assert.ok(!optionIds.includes("TUR"));
   assert.ok(!optionIds.includes("FIN"));
   assert.ok(!optionIds.includes("AND"));
   assert.ok(!optionIds.includes("ALB"));
+  for (const id of optionIds) {
+    assert.equal(ENABLED_BY_ID.get(id).region, "europe");
+  }
+
+  const norway = ENABLED_BY_ID.get("NOR");
+  const norwayQ = generateQuestion("neighbor_select_all", norway, ENABLED);
+  assert.ok(norwayQ);
+  const norwayIds = norwayQ.options.map((option) => option.value);
+  assert.equal(norwayIds.length, 9);
+  for (const id of ["SWE", "FIN", "RUS"]) {
+    assert.ok(norwayIds.includes(id));
+  }
+  assert.ok(!norwayIds.includes("CHN"));
+  assert.ok(!norwayIds.includes("KAZ"));
+  for (const id of norwayIds) {
+    assert.equal(ENABLED_BY_ID.get(id).region, "europe");
+  }
 
   const germany = ENABLED_BY_ID.get("DEU");
   const germanyQ = generateQuestion("neighbor_select_all", germany, ENABLED);

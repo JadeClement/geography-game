@@ -17,7 +17,7 @@
  *   generation pure and testable.
  * - Multiple-choice distractors are drawn from the correct answer's region
  *   (plausible regional alternatives), never random global picks.
- *   neighbor_select_all instead pads a 9-option grid with the nearest
+ *   neighbor_select_all pads a 9-option grid with the nearest same-region
  *   non-borders by land-border hop distance.
  * - Comparative (Tier 3) opponents come from getPopulationPeers/getAreaPeers/getGdpPeers,
  *   which return countries within a "distinguishable but fair" ratio band; the
@@ -150,27 +150,26 @@ function hopDistancesFrom(originId, index) {
 }
 
 /**
- * Non-neighbors nearest to `country` by land-border hops. Closer hops are
- * always preferred; the bucket that fills the last slots is shuffled so
- * questions vary. Unreachable (no land path) countries fill last, same-region
- * first.
+ * Same-region non-neighbors nearest to `country` by land-border hops. Closer
+ * hops are always preferred; the bucket that fills the last slots is shuffled
+ * so questions vary. Unreachable (no land path) same-region countries fill last.
  */
 function pickNearbyNonNeighbors(country, index, { excludeIds, count }) {
   if (count <= 0) return [];
   const originId = cid(country);
+  const region = country.region;
   const exclude = new Set([originId, ...excludeIds]);
   const hops = hopDistancesFrom(originId, index);
 
   const byHop = new Map();
   const unreachableSame = [];
-  const unreachableOther = [];
   for (const record of index.values()) {
     const id = cid(record);
     if (!id || exclude.has(id) || record.enabled === false) continue;
+    if (record.region !== region) continue;
     const distance = hops.get(id);
     if (distance == null) {
-      if (record.region === country.region) unreachableSame.push(record);
-      else unreachableOther.push(record);
+      unreachableSame.push(record);
       continue;
     }
     if (!byHop.has(distance)) byHop.set(distance, []);
@@ -183,9 +182,8 @@ function pickNearbyNonNeighbors(country, index, { excludeIds, count }) {
     const bucket = shuffle(byHop.get(distance));
     picked.push(...bucket.slice(0, count - picked.length));
   }
-  for (const pool of [shuffle(unreachableSame), shuffle(unreachableOther)]) {
-    if (picked.length >= count) break;
-    picked.push(...pool.slice(0, count - picked.length));
+  if (picked.length < count) {
+    picked.push(...shuffle(unreachableSame).slice(0, count - picked.length));
   }
   return picked.slice(0, count);
 }
@@ -479,8 +477,9 @@ export function generateNeighborSelectAll(country, allCountries) {
   if (neighbors.length < SELECT_ALL_MIN_CORRECT) return null;
 
   // Every land neighbor must appear (prompt is "select every bordering country").
-  // Pad to a 9-option grid with the nearest non-borders by hop distance; countries
-  // with 8+ neighbors still get at least one distractor so "check all" isn't free.
+  // Pad to a 9-option grid with the nearest same-region non-borders by hop
+  // distance; countries with 8+ neighbors still get at least one distractor so
+  // "check all" isn't free.
   const correctIds = neighbors.map((record) => cid(record));
   const distractorsNeeded = Math.max(
     SELECT_ALL_MIN_DISTRACTORS,
