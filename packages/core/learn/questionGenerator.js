@@ -556,7 +556,7 @@ export function generateGdpCompare(country, allCountries) {
   return generateNumericCompare(QUESTION_TYPES.GDP_COMPARE, country, allCountries, {
     peers: getGdpPeers(cid(country)),
     field: "gdp",
-    prompt: "Which country has the larger economy?",
+    prompt: "Which country has the larger GDP?",
   });
 }
 
@@ -674,7 +674,7 @@ export function generateAreaRank(country, allCountries) {
 export function generateGdpRank(country, allCountries) {
   return generateNumericRank(QUESTION_TYPES.GDP_RANK, country, allCountries, {
     field: "gdp",
-    prompt: "Rank these countries from largest to smallest economy.",
+    prompt: "Rank these countries from largest to smallest GDP.",
   });
 }
 

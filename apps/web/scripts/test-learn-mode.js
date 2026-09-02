@@ -618,14 +618,14 @@ test("map click copy: under 20 km is green Close enough, under 100 km is Close!"
   assert.equal(nearHit.correct, true);
 });
 
-test("gdp compare asks which country has the larger economy", () => {
+test("gdp compare asks which country has the larger GDP", () => {
   const germany = ENABLED_BY_ID.get("DEU");
   const question = generateQuestion("gdp_compare", germany, ENABLED);
   assert.ok(question);
   assert.equal(question.type, "gdp_compare");
   assert.equal(question.answerType, "binary_choice");
   assert.equal(question.options.length, 2);
-  assert.match(question.prompt, /larger economy/);
+  assert.match(question.prompt, /larger GDP/);
   assert.ok(typeof germany.gdp === "number" && germany.gdp > 0);
   const opponentId = question.comparisonCountryId;
   const opponent = ENABLED_BY_ID.get(opponentId);
