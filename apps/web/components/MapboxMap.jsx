@@ -497,6 +497,28 @@ function pickClickedFeature(map, features) {
   return circleFeature ?? fillFeature ?? features[0];
 }
 
+/** Extra zoom so a contain-fitted bbox covers the map stage (object-fit: cover). */
+function applyCoverFit(map, geoBounds, { bleed = 1.08, maxExtraZoom = 3 } = {}) {
+  if (typeof map.project !== "function" || typeof map.getZoom !== "function") {
+    return;
+  }
+  const viewW = map.getContainer?.()?.clientWidth;
+  const viewH = map.getContainer?.()?.clientHeight;
+  if (!(viewW > 0 && viewH > 0)) return;
+
+  const [[west, south], [east, north]] = geoBounds;
+  const nw = map.project([west, north]);
+  const se = map.project([east, south]);
+  if (!nw || !se) return;
+  const boundsW = Math.abs(se.x - nw.x);
+  const boundsH = Math.abs(se.y - nw.y);
+  if (!(boundsW > 1 && boundsH > 1)) return;
+
+  const scale = Math.max(viewW / boundsW, viewH / boundsH) * bleed;
+  if (!(scale > 1)) return;
+  map.setZoom(map.getZoom() + Math.min(Math.log2(scale), maxExtraZoom));
+}
+
 function applyMapView(map, mapView, { onSettled } = {}) {
   if (!mapView) return;
 
@@ -527,13 +549,16 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       map.setPitch(0);
     }
 
+    const coverFit = mapView.fit === "cover";
+    let coverBounds = null;
+
     if (mapView.type === "camera") {
       // jumpTo padding writes transform.padding, which on globe punches a
       // static hole through the atmosphere (mapbox-gl-js#12636).
       map.jumpTo({
         center: mapView.center,
         zoom: mapView.zoom + (Number(mapView.zoomDelta) || 0),
-        ...(useGlobe ? { pitch: 0 } : { padding: mapView.padding ?? 48 }),
+        ...(useGlobe ? { pitch: 0 } : { padding: coverFit ? 0 : (mapView.padding ?? 48) }),
         duration: 0,
         retainPadding: false,
       });
@@ -557,26 +582,31 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       ];
       try {
         map.fitBounds(safeBounds, {
-          padding: mapView.padding ?? 48,
+          padding: coverFit ? 0 : (mapView.padding ?? 48),
           duration: 0,
-          maxZoom: mapView.maxZoom ?? 5,
+          maxZoom: coverFit ? Math.max(mapView.maxZoom ?? 5, 8) : (mapView.maxZoom ?? 5),
           retainPadding: false,
           ...(useGlobe ? { pitch: 0 } : {}),
         });
+        coverBounds = safeBounds;
       } catch (error) {
         console.warn("Mapbox fitBounds failed:", error);
         return;
       }
     }
 
-    const zoomDelta = Number(mapView.zoomDelta);
-    if (
-      mapView.type !== "camera" &&
-      Number.isFinite(zoomDelta) &&
-      zoomDelta !== 0 &&
-      typeof map.getZoom === "function"
-    ) {
-      map.setZoom(map.getZoom() + zoomDelta);
+    if (coverFit && coverBounds) {
+      applyCoverFit(map, coverBounds);
+    } else {
+      const zoomDelta = Number(mapView.zoomDelta);
+      if (
+        mapView.type !== "camera" &&
+        Number.isFinite(zoomDelta) &&
+        zoomDelta !== 0 &&
+        typeof map.getZoom === "function"
+      ) {
+        map.setZoom(map.getZoom() + zoomDelta);
+      }
     }
 
     if (onSettled) {
@@ -787,6 +817,7 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
     paint: {
       "line-color": mapColors.levelBorder,
       "line-width": 0.5,
+      "line-opacity": 1,
     },
   });
 
@@ -970,10 +1001,13 @@ function syncLearnDistanceOverlay(map, overlay) {
 
 function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
   const borderOpacity = hide ? 0 : 1;
+  const borderVisibility = hide ? "none" : "visible";
   if (map.getLayer("country-borders")) {
+    map.setLayoutProperty("country-borders", "visibility", borderVisibility);
     map.setPaintProperty("country-borders", "line-opacity", borderOpacity);
   }
   if (map.getLayer("inactive-country-borders")) {
+    map.setLayoutProperty("inactive-country-borders", "visibility", borderVisibility);
     map.setPaintProperty("inactive-country-borders", "line-opacity", hide ? 0 : 0.85);
   }
   if (map.getLayer("country-fill")) {
@@ -1227,6 +1261,11 @@ export default function MapboxMap({
         strokeColor: mapColors.smallCountryStroke,
         landColor,
         hideUntilFeedback: hideCountryBordersRef.current,
+      });
+      applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
+        forceShow: forceShowSmallCountryCirclesRef.current,
+        level,
+        landColor,
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCirclesRef.current,
@@ -1486,13 +1525,21 @@ export default function MapboxMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
+    if (!map) return;
     const mapColors = getMapThemeColors(theme);
-    applyHideCountryBorders(map, hideCountryBorders, mapColors, {
-      forceShow: forceShowSmallCountryCircles,
-      level,
-      landColor: getActiveLandColor(theme),
-    });
+    const apply = () => {
+      if (!map.getStyle?.()) return;
+      applyHideCountryBorders(map, hideCountryBorders, mapColors, {
+        forceShow: forceShowSmallCountryCircles,
+        level,
+        landColor: getActiveLandColor(theme),
+      });
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("idle", apply);
+    return () => {
+      map.off("idle", apply);
+    };
   }, [hideCountryBorders, theme, level, forceShowSmallCountryCircles]);
 
   useEffect(() => {
@@ -1862,6 +1909,12 @@ export default function MapboxMap({
             ]
       );
     }
+
+    applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
+      forceShow: forceShowSmallCountryCircles,
+      level,
+      landColor,
+    });
 
     // Outline the subject country. White fill uses a dark edge so it stays
     // defined against ocean/neighbors. While the fill is flashing (yellow/red
