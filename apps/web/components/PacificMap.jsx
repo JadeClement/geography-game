@@ -127,6 +127,7 @@ function buildCountryPaths(countries, mapView, colorMap, landColor) {
         isSmall: country.isSmall,
         centroid: getPacificCentroid(country),
         measureBbox: projectMeasureBboxToSvg(country, mapView),
+        territory: Boolean(country.displayOnly || country.feature?.properties?.territory),
       };
     })
     .filter(Boolean);
@@ -139,6 +140,26 @@ function isCountryEventTarget(target) {
     (target instanceof SVGCircleElement &&
       target.closest(".pacific-map-circles") &&
       target.getAttribute("fill") === "transparent")
+  );
+}
+
+function InactiveLandPath({
+  country,
+  fill,
+  clickable,
+  onPointerDown,
+  onClick,
+}) {
+  return (
+    <path
+      d={country.path}
+      fill={fill}
+      fillRule="evenodd"
+      aria-hidden="true"
+      className={clickable ? pacificMapCountryClickable : undefined}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
+    />
   );
 }
 
@@ -650,39 +671,55 @@ export default function PacificMap({
           fill={colors.ocean}
         />
 
+        <g className="pacific-map-inactive" stroke="none" strokeWidth={0}>
+          {inactivePaths
+            .filter((country) => !country.territory)
+            .map((country) => (
+              <InactiveLandPath
+                key={`inactive-${country.id}`}
+                country={country}
+                fill={colors.inactiveLand}
+                clickable={gameActive && allowInactiveCountryClicks}
+                onPointerDown={
+                  allowInactiveCountryClicks ? handleCountryPointerDown : undefined
+                }
+                onClick={
+                  allowInactiveCountryClicks
+                    ? (event) => handleCountryPointer(country.id, { inactive: true, event })
+                    : undefined
+                }
+              />
+            ))}
+        </g>
         <g
-          className="pacific-map-inactive"
-          stroke={hideCountryBorders ? colors.inactiveLand : colors.inactiveBorder}
-          strokeWidth={hideCountryBorders ? "0.4" : "0.6"}
+          className="pacific-map-inactive-territories"
+          stroke={hideCountryBorders ? "none" : colors.inactiveBorder}
+          strokeWidth={hideCountryBorders ? 0 : "0.6"}
         >
-          {inactivePaths.map((country) => (
-            <path
-              key={`inactive-${country.id}`}
-              d={country.path}
-              fill={colors.inactiveLand}
-              fillRule="evenodd"
-              aria-hidden="true"
-              className={
-                gameActive && allowInactiveCountryClicks
-                  ? pacificMapCountryClickable
-                  : undefined
-              }
-              onPointerDown={
-                allowInactiveCountryClicks ? handleCountryPointerDown : undefined
-              }
-              onClick={
-                allowInactiveCountryClicks
-                  ? (event) => handleCountryPointer(country.id, { inactive: true, event })
-                  : undefined
-              }
-            />
-          ))}
+          {inactivePaths
+            .filter((country) => country.territory)
+            .map((country) => (
+              <InactiveLandPath
+                key={`inactive-territory-${country.id}`}
+                country={country}
+                fill={colors.inactiveLand}
+                clickable={gameActive && allowInactiveCountryClicks}
+                onPointerDown={
+                  allowInactiveCountryClicks ? handleCountryPointerDown : undefined
+                }
+                onClick={
+                  allowInactiveCountryClicks
+                    ? (event) => handleCountryPointer(country.id, { inactive: true, event })
+                    : undefined
+                }
+              />
+            ))}
         </g>
 
         <g
           className="pacific-map-active"
-          stroke={hideCountryBorders ? landColor : colors.levelBorder}
-          strokeWidth={hideCountryBorders ? "0.4" : "0.75"}
+          stroke={hideCountryBorders ? "none" : colors.levelBorder}
+          strokeWidth={hideCountryBorders ? 0 : "0.75"}
           strokeLinejoin="round"
         >
           {activePaths.map((country) => {
@@ -913,6 +950,7 @@ export default function PacificMap({
               strokeDasharray="8 6"
               strokeLinecap="round"
             />
+            {!distanceFeedback?.hideFromMarker ? (
             <circle
               cx={distanceOverlaySvg.from[0]}
               cy={distanceOverlaySvg.from[1]}
@@ -921,6 +959,7 @@ export default function PacificMap({
               stroke="#ffffff"
               strokeWidth="2"
             />
+            ) : null}
             {distanceOverlaySvg.label ? (
               <text
                 x={(distanceOverlaySvg.from[0] + distanceOverlaySvg.to[0]) / 2}

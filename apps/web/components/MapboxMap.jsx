@@ -727,7 +727,6 @@ function addBaseLandLayer(map, baseLandGeojson, mapColors, beforeId) {
     source: "base-land",
     paint: {
       "fill-pattern": BASE_LAND_HATCH_ID,
-      "fill-outline-color": mapColors.baseLandLine,
     },
   };
 
@@ -738,17 +737,26 @@ function addBaseLandLayer(map, baseLandGeojson, mapColors, beforeId) {
   }
 }
 
+const TERRITORY_BORDER_FILTER = ["==", ["get", "territory"], true];
+
 function addInactiveCountryBorders(map, mapColors) {
-  if (map.getLayer("inactive-country-borders") || !map.getSource("inactive-countries")) {
+  if (!map.getSource("inactive-countries")) {
     return;
   }
 
-  // Same crisp border as playable countries so overseas scraps in-region
-  // (e.g. French Guiana during South America) don't look cut out of the map.
+  // Other-region countries stay borderless so only the region in play reads as
+  // countries. Territory scraps (Greenland, Puerto Rico, …) keep an outline so
+  // they don't look like a hole in the map.
+  if (map.getLayer("inactive-country-borders")) {
+    map.setFilter("inactive-country-borders", TERRITORY_BORDER_FILTER);
+    return;
+  }
+
   const layer = {
     id: "inactive-country-borders",
     type: "line",
     source: "inactive-countries",
+    filter: TERRITORY_BORDER_FILTER,
     paint: {
       "line-color": mapColors.levelBorder,
       "line-width": 0.5,
@@ -766,6 +774,9 @@ function addInactiveCountryBorders(map, mapColors) {
 function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landColor) {
   if (map.getSource("inactive-countries")) {
     map.getSource("inactive-countries").setData(inactiveGeojson);
+    if (map.getLayer("inactive-country-fill")) {
+      map.setPaintProperty("inactive-country-fill", "fill-antialias", false);
+    }
     addInactiveCountryBorders(map, mapColors);
   } else {
     map.addSource("inactive-countries", {
@@ -780,7 +791,9 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
       paint: {
         "fill-color": mapColors.inactiveLand,
         "fill-opacity": 1,
-        "fill-outline-color": mapColors.inactiveBorder,
+        // Adjacent other-region countries should merge into one landmass
+        // instead of showing hairline borders between them.
+        "fill-antialias": false,
       },
     });
 
@@ -808,7 +821,6 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
     paint: {
       "fill-color": getLevelFillColorExpression(level, landColor),
       "fill-opacity": 0.92,
-      "fill-outline-color": mapColors.levelBorder,
     },
   });
 
@@ -1002,32 +1014,34 @@ function syncLearnDistanceOverlay(map, overlay) {
   const from = [overlay.from.lng, overlay.from.lat];
   const to = [overlay.to.lng, overlay.to.lat];
   const mid = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  const features = [
+    {
+      type: "Feature",
+      properties: { kind: "line" },
+      geometry: { type: "LineString", coordinates: [from, to] },
+    },
+    {
+      type: "Feature",
+      properties: { kind: "label", label: overlay.label ?? "" },
+      geometry: { type: "Point", coordinates: mid },
+    },
+  ];
+  if (!overlay.hideFromMarker) {
+    features.splice(1, 0, {
+      type: "Feature",
+      properties: { kind: "from" },
+      geometry: { type: "Point", coordinates: from },
+    });
+  }
   source.setData({
     type: "FeatureCollection",
-    features: [
-      {
-        type: "Feature",
-        properties: { kind: "line" },
-        geometry: { type: "LineString", coordinates: [from, to] },
-      },
-      {
-        type: "Feature",
-        properties: { kind: "from" },
-        geometry: { type: "Point", coordinates: from },
-      },
-      {
-        type: "Feature",
-        properties: { kind: "label", label: overlay.label ?? "" },
-        geometry: { type: "Point", coordinates: mid },
-      },
-    ],
+    features,
   });
 }
 
 function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
   const borderOpacity = hide ? 0 : 1;
   const borderVisibility = hide ? "none" : "visible";
-  const landColor = circleOpts.landColor ?? mapColors.inactiveLand;
   hideBasemapBoundaryLayers(map);
   if (map.getLayer("country-borders")) {
     map.setLayoutProperty("country-borders", "visibility", borderVisibility);
@@ -1040,40 +1054,24 @@ function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
   if (map.getLayer("country-click-expand")) {
     map.setLayoutProperty("country-click-expand", "visibility", borderVisibility);
   }
+  if (map.getLayer("country-target-outline")) {
+    map.setLayoutProperty("country-target-outline", "visibility", borderVisibility);
+  }
+  // fill-outline-color strokes every polygon ring, including coasts, as broken
+  // "border" segments in the ocean. Disable antialiasing so adjacent land
+  // merges instead of drawing those hairlines.
   if (map.getLayer("country-fill")) {
-    // Transparent fill-outline-color still antialiases into a hairline at high
-    // zoom. Match the land fill instead so internal seams disappear.
-    map.setPaintProperty(
-      "country-fill",
-      "fill-outline-color",
-      hide ? landColor : mapColors.levelBorder
-    );
+    map.setPaintProperty("country-fill", "fill-antialias", !hide);
     map.setPaintProperty("country-fill", "fill-opacity", hide ? 1 : 0.92);
   }
   if (map.getLayer("inactive-country-fill")) {
-    map.setPaintProperty(
-      "inactive-country-fill",
-      "fill-outline-color",
-      hide ? mapColors.inactiveLand : mapColors.inactiveBorder
-    );
+    map.setPaintProperty("inactive-country-fill", "fill-antialias", false);
+  }
+  if (map.getLayer("base-land-fill")) {
+    map.setPaintProperty("base-land-fill", "fill-antialias", !hide);
   }
   if (map.getLayer("country-feedback-outline")) {
-    map.setPaintProperty(
-      "country-feedback-outline",
-      "line-opacity",
-      hide
-        ? [
-            "case",
-            ["==", ["feature-state", "wrong"], true],
-            1,
-            [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
-            1,
-            ["==", ["feature-state", "filled"], true],
-            1,
-            0,
-          ]
-        : 0
-    );
+    map.setPaintProperty("country-feedback-outline", "line-opacity", 0);
   }
   if (map.getLayer("small-country-circles")) {
     applySmallCountryCirclePaintMode(map, {
@@ -1584,8 +1582,13 @@ export default function MapboxMap({
     else map.once("idle", apply);
     return () => {
       map.off("idle", apply);
-      const source = map.getSource?.("learn-distance");
-      if (source) source.setData(EMPTY_GEOJSON);
+      try {
+        if (!map.getStyle?.()) return;
+        const source = map.getSource?.("learn-distance");
+        if (source) source.setData(EMPTY_GEOJSON);
+      } catch {
+        // Map already torn down (React Strict Mode remount / unmount).
+      }
     };
   }, [distanceFeedback]);
 
