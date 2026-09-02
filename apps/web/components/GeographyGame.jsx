@@ -16,7 +16,7 @@ import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import { ShapeDropPlacement } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
-import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
+import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import {
   getOutOfRegionClickFeedback,
@@ -738,6 +738,11 @@ export default function GeographyGame() {
   // Overlay card over the region (blurred, borderless) until the teach step.
   const isNeighborBackdrop =
     isNeighborLearnQuestion(currentLearnQuestion) && !learnNeighborRevealActive;
+  // Shape-ID / name-the-shape cards sit over the region map — hide outlines so
+  // the country's real shape isn't readable behind the choices.
+  const isShapeBackdrop =
+    isShapeLearnQuestion(currentLearnQuestion) &&
+    currentLearnQuestion?.answerType !== "shape_drop";
   const learnAreaCompareRevealActive = Boolean(learnAreaCompareReveal);
   const learnLandlockedRevealActive = Boolean(learnLandlockedReveal);
   const learnLandlockedTopMessage = (() => {
@@ -3918,10 +3923,12 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  // Neighbor overlay cards cover-fit the region behind a blur — hide outlines
-  // so land borders can't give the answer away. Teach-step reveals restore them.
+  // Overlay cards cover-fit the region behind a blur — hide outlines so land
+  // borders can't give the answer away. Teach-step reveals restore them.
   const hideCountryBorders =
-    Boolean(isLearnBorderlessQuestion) || Boolean(isNeighborBackdrop);
+    Boolean(isLearnBorderlessQuestion) ||
+    Boolean(isNeighborBackdrop) ||
+    Boolean(isShapeBackdrop);
   const allowEmptyMapClicks =
     isLearnBorderlessQuestion && isLearnMapClickQuestion && !learnDistanceRevealActive;
   const distanceFeedback = useMemo(() => {
