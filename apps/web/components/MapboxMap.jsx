@@ -235,13 +235,33 @@ function updateSmallCountryCircles(map, smallCountriesGeojson, { forceShow = fal
   }
 }
 
+function smallCircleFeedbackOnlyOpacity({ fill = false } = {}) {
+  const on = fill ? 0.92 : 1;
+  return [
+    "case",
+    ["==", ["feature-state", "wrong"], true],
+    on,
+    ["==", ["feature-state", "highlight"], true],
+    fill
+      ? ["coalesce", ["feature-state", "highlightPulse"], 0.55]
+      : ["coalesce", ["feature-state", "highlightPulse"], 1],
+    ["==", ["feature-state", "secondTry"], true],
+    on,
+    ["==", ["feature-state", "filled"], true],
+    on,
+    [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
+    on,
+    0,
+  ];
+}
+
 function applySmallCountryCirclePaintMode(
   map,
-  { forceShow, level, strokeColor, landColor }
+  { forceShow, level, strokeColor, landColor, hideUntilFeedback = false }
 ) {
   if (!map.getLayer("small-country-circles")) return;
 
-  if (forceShow) {
+  if (forceShow && !hideUntilFeedback) {
     map.setPaintProperty("small-country-circles", "circle-radius", TUTORIAL_CIRCLE_RADIUS_PX);
     map.setPaintProperty("small-country-circles", "circle-stroke-opacity", 1);
     map.setPaintProperty("small-country-circles", "circle-stroke-width", TUTORIAL_CIRCLE_STROKE_WIDTH);
@@ -290,12 +310,25 @@ function applySmallCountryCirclePaintMode(
     0.92,
     0,
   ]);
-  map.setPaintProperty("small-country-circles", "circle-stroke-opacity", [
-    "case",
-    ["==", ["feature-state", "highlight"], true],
-    ["coalesce", ["feature-state", "highlightPulse"], 1],
-    ["coalesce", ["feature-state", "opacity"], 0],
-  ]);
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-stroke-opacity",
+    hideUntilFeedback
+      ? smallCircleFeedbackOnlyOpacity({ fill: false })
+      : [
+          "case",
+          ["==", ["feature-state", "highlight"], true],
+          ["coalesce", ["feature-state", "highlightPulse"], 1],
+          ["coalesce", ["feature-state", "opacity"], 0],
+        ]
+  );
+  if (hideUntilFeedback) {
+    map.setPaintProperty(
+      "small-country-circles",
+      "circle-opacity",
+      smallCircleFeedbackOnlyOpacity({ fill: true })
+    );
+  }
 }
 
 function isCircleClickTarget(map, circleFeature) {
@@ -935,7 +968,7 @@ function syncLearnDistanceOverlay(map, overlay) {
   });
 }
 
-function applyHideCountryBorders(map, hide, mapColors) {
+function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
   const borderOpacity = hide ? 0 : 1;
   if (map.getLayer("country-borders")) {
     map.setPaintProperty("country-borders", "line-opacity", borderOpacity);
@@ -975,28 +1008,14 @@ function applyHideCountryBorders(map, hide, mapColors) {
         : 0
     );
   }
-  if (hide && map.getLayer("small-country-circles")) {
-    const feedbackOnly = [
-      "case",
-      ["==", ["feature-state", "wrong"], true],
-      1,
-      [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
-      1,
-      ["==", ["feature-state", "filled"], true],
-      1,
-      0,
-    ];
-    map.setPaintProperty("small-country-circles", "circle-stroke-opacity", feedbackOnly);
-    map.setPaintProperty("small-country-circles", "circle-opacity", [
-      "case",
-      ["==", ["feature-state", "wrong"], true],
-      0.92,
-      [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
-      0.92,
-      ["==", ["feature-state", "filled"], true],
-      0.92,
-      0,
-    ]);
+  if (map.getLayer("small-country-circles")) {
+    applySmallCountryCirclePaintMode(map, {
+      forceShow: Boolean(circleOpts.forceShow),
+      level: circleOpts.level,
+      strokeColor: mapColors.smallCountryStroke,
+      landColor: circleOpts.landColor,
+      hideUntilFeedback: hide,
+    });
   }
 }
 
@@ -1130,7 +1149,12 @@ export default function MapboxMap({
 
       const layers = [];
       if (map.getLayer("country-fill")) layers.push("country-fill");
-      if (map.getLayer("small-country-circles")) layers.push("small-country-circles");
+      if (
+        map.getLayer("small-country-circles") &&
+        !hideCountryBordersRef.current
+      ) {
+        layers.push("small-country-circles");
+      }
       if (
         allowInactiveCountryClicksRef.current &&
         map.getLayer("inactive-country-fill")
@@ -1182,6 +1206,7 @@ export default function MapboxMap({
     };
 
     const setCirclePointerCursor = (event) => {
+      if (hideCountryBordersRef.current) return;
       const feature = event.features?.[0];
       if (feature && isCircleClickTarget(map, feature)) {
         map.getCanvas().style.cursor = "pointer";
@@ -1201,6 +1226,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideUntilFeedback: hideCountryBordersRef.current,
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCirclesRef.current,
@@ -1240,7 +1266,11 @@ export default function MapboxMap({
 
       addCountryClickExpandLayers(map);
       addLearnDistanceLayers(map);
-      applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors);
+      applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
+        forceShow: forceShowSmallCountryCirclesRef.current,
+        level,
+        landColor,
+      });
 
       map.on("zoom", handleViewChangeForCircles);
       map.on("moveend", handleViewChangeForCircles);
@@ -1290,6 +1320,7 @@ export default function MapboxMap({
           level,
           strokeColor: getMapThemeColors(theme).smallCountryStroke,
           landColor: getActiveLandColor(theme),
+          hideUntilFeedback: hideCountryBordersRef.current,
         });
         updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current, {
           forceShow: forceShowSmallCountryCirclesRef.current,
@@ -1420,6 +1451,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideUntilFeedback: hideCountryBordersRef.current,
       });
     }
 
@@ -1439,19 +1471,29 @@ export default function MapboxMap({
       level,
       strokeColor: mapColors.smallCountryStroke,
       landColor,
+      hideUntilFeedback: hideCountryBordersRef.current,
     });
     updateSmallCountryCircles(map, smallCountriesGeojson, {
       forceShow: forceShowSmallCountryCircles,
     });
     addLearnDistanceLayers(map);
-    applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors);
+    applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
+      forceShow: forceShowSmallCountryCircles,
+      level,
+      landColor,
+    });
   }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, theme, level, forceShowSmallCountryCircles]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applyHideCountryBorders(map, hideCountryBorders, getMapThemeColors(theme));
-  }, [hideCountryBorders, theme]);
+    const mapColors = getMapThemeColors(theme);
+    applyHideCountryBorders(map, hideCountryBorders, mapColors, {
+      forceShow: forceShowSmallCountryCircles,
+      level,
+      landColor: getActiveLandColor(theme),
+    });
+  }, [hideCountryBorders, theme, level, forceShowSmallCountryCircles]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1515,6 +1557,7 @@ export default function MapboxMap({
         level,
         strokeColor: mapColors.smallCountryStroke,
         landColor,
+        hideUntilFeedback: hideCountryBordersRef.current,
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCircles,
@@ -1789,22 +1832,35 @@ export default function MapboxMap({
         TARGET_HIGHLIGHT_COLOR,
         "transparent",
       ]);
-      map.setPaintProperty("small-country-circles", "circle-opacity", [
-        "case",
-        ["==", ["feature-state", "highlight"], true],
-        ["coalesce", ["feature-state", "highlightPulse"], 0.55],
-        ["==", ["feature-state", "secondTry"], true],
-        0.92,
-        ["==", ["feature-state", "target"], true],
-        0.85,
-        0,
-      ]);
-      map.setPaintProperty("small-country-circles", "circle-stroke-opacity", [
-        "case",
-        ["==", ["feature-state", "highlight"], true],
-        ["coalesce", ["feature-state", "highlightPulse"], 1],
-        ["coalesce", ["feature-state", "opacity"], 0],
-      ]);
+      const hideCircles = hideCountryBordersRef.current;
+      map.setPaintProperty(
+        "small-country-circles",
+        "circle-opacity",
+        hideCircles
+          ? smallCircleFeedbackOnlyOpacity({ fill: true })
+          : [
+              "case",
+              ["==", ["feature-state", "highlight"], true],
+              ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+              ["==", ["feature-state", "secondTry"], true],
+              0.92,
+              ["==", ["feature-state", "target"], true],
+              0.85,
+              0,
+            ]
+      );
+      map.setPaintProperty(
+        "small-country-circles",
+        "circle-stroke-opacity",
+        hideCircles
+          ? smallCircleFeedbackOnlyOpacity({ fill: false })
+          : [
+              "case",
+              ["==", ["feature-state", "highlight"], true],
+              ["coalesce", ["feature-state", "highlightPulse"], 1],
+              ["coalesce", ["feature-state", "opacity"], 0],
+            ]
+      );
     }
 
     // Outline the subject country. White fill uses a dark edge so it stays
