@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/AuthModal";
@@ -227,12 +228,30 @@ export default function AppHeader({ onHomeClick }) {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [worldlyPercent, setWorldlyPercent] = useState(null);
   const menuTriggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const pathname = usePathname();
 
   const signedIn = status === "authenticated" && session?.user;
   const userName = session?.user?.name || session?.user?.email;
   const username = session?.user?.username;
 
   const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    closeMenu();
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (menuRef.current?.contains(event.target)) return;
+      closeMenu();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!signedIn) {
@@ -344,7 +363,7 @@ export default function AppHeader({ onHomeClick }) {
               <span className={appHeaderWorldlyLabel}>WORLDLY</span>
             </Link>
           )}
-          <div className={profileMenu}>
+          <div className={profileMenu} ref={menuRef}>
             <button
               ref={menuTriggerRef}
               type="button"
