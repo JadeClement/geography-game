@@ -766,6 +766,42 @@ test("Serbia neighbor data includes Kosovo as XKX, not the mledoze UNK code", ()
   assert.ok(reveal.neighborReveal?.neighborIds.includes("XKX"));
 });
 
+test("neighbor select-all is a 9-option grid of neighbors plus nearby distractors", () => {
+  const albania = ENABLED_BY_ID.get("ALB");
+  const question = generateQuestion("neighbor_select_all", albania, ENABLED);
+  assert.ok(question);
+  const optionIds = question.options.map((option) => option.value);
+  assert.equal(optionIds.length, 9);
+  assert.equal(new Set(optionIds).size, 9);
+
+  const neighbors = ["MNE", "GRC", "MKD", "XKX"];
+  for (const id of neighbors) {
+    assert.ok(optionIds.includes(id), `missing neighbor ${id}`);
+    assert.ok(question.correctAnswer.includes(id));
+  }
+  assert.equal(question.correctAnswer.length, neighbors.length);
+
+  // Albania has exactly five 2-hop countries; those should fill the grid.
+  const nearby = ["BIH", "HRV", "SRB", "BGR", "TUR"];
+  for (const id of nearby) {
+    assert.ok(optionIds.includes(id), `expected nearby distractor ${id}`);
+  }
+  assert.ok(!optionIds.includes("FIN"));
+  assert.ok(!optionIds.includes("AND"));
+  assert.ok(!optionIds.includes("ALB"));
+
+  const germany = ENABLED_BY_ID.get("DEU");
+  const germanyQ = generateQuestion("neighbor_select_all", germany, ENABLED);
+  assert.ok(germanyQ);
+  const germanyNeighbors = germany.neighbors.filter((id) => ENABLED_BY_ID.has(id));
+  const germanyIds = germanyQ.options.map((option) => option.value);
+  assert.ok(germanyIds.length >= 9);
+  assert.equal(germanyIds.length, germanyNeighbors.length + 1);
+  for (const id of germanyNeighbors) {
+    assert.ok(germanyIds.includes(id));
+  }
+});
+
 test("neighbor teach paints found green, missed orange, and extra guesses red", () => {
   const neighbors = ["LVA", "RUS"];
   const paint = classifyNeighborTeachPaint({
