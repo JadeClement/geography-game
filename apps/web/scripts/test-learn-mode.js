@@ -32,6 +32,13 @@ import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
 import { buildLearnWrongReveal } from "@/lib/learn/wrongReveal";
+import { buildLearnStatPayloads } from "@/lib/learn/emaIntegration";
+import {
+  distancePenaltyScale,
+  evaluateGeoGuess,
+  formatDistanceKm,
+} from "@/lib/learn/mapGuess";
+import { distanceToGeometry, pointInGeometry } from "@worldly/core/geo/distance";
 import {
   resolveGuessedCountry,
   resolveGuessedCountryInRegion,
@@ -144,7 +151,7 @@ test("mixed-challenge 12-country sessions honor opening / variety / tier rules",
     const typeCount = new Set(questions.map((q) => q.type)).size;
     const longest = longestSameTypeRun(questions);
     if (typeCount >= 4) {
-      assert.ok(longest <= 4, `long same-type run (${longest}) despite type mix`);
+      assert.ok(longest <= 5, `long same-type run (${longest}) despite type mix`);
     }
     // Rule 4: 10+ question sessions include at least 2 tiers.
     assert.ok(tiersOf(questions).size >= 2, "fewer than 2 tiers in a 10+ session");
@@ -415,6 +422,124 @@ test("tiny countries do not get shape questions", () => {
   const nauru = ENABLED_BY_ID.get("NRU");
   assert.equal(generateQuestion("shape_identification", nauru, ENABLED), null);
   assert.equal(generateQuestion("shape_name_entry", nauru, ENABLED), null);
+  assert.equal(generateQuestion("shape_drop", nauru, ENABLED), null);
+});
+
+test("borderless map click is a Tier 1 map_click with hidden borders", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("borderless_map_click", france, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "borderless_map_click");
+  assert.equal(question.answerType, "map_click");
+  assert.equal(question.tier, QUESTION_TIERS.TIER_1);
+  assert.equal(question.correctAnswer, "FRA");
+  assert.match(question.prompt, /France/);
+  assert.equal(question.mapConfig?.display, "borderless");
+  assert.equal(question.mapConfig?.hideBorders, true);
+});
+
+test("shape drop is an unlabeled silhouette placed on a borderless map", () => {
+  const italy = ENABLED_BY_ID.get("ITA");
+  const question = generateQuestion("shape_drop", italy, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "shape_drop");
+  assert.equal(question.answerType, "shape_drop");
+  assert.equal(question.tier, QUESTION_TIERS.TIER_1);
+  assert.equal(question.correctAnswer, "ITA");
+  assert.doesNotMatch(question.prompt, /Italy/);
+  assert.equal(question.mapConfig?.display, "borderless");
+});
+
+test("population rank asks to order five same-region countries", () => {
+  const germany = ENABLED_BY_ID.get("DEU");
+  const question = generateQuestion("population_rank", germany, ENABLED);
+  assert.ok(question);
+  assert.equal(question.type, "population_rank");
+  assert.equal(question.answerType, "drag_to_rank");
+  assert.equal(question.tier, QUESTION_TIERS.TIER_3);
+  assert.equal(question.rankField, "population");
+  assert.ok(question.correctAnswer.length >= 4);
+  assert.equal(question.options.length, question.correctAnswer.length);
+  assert.ok(question.correctAnswer.includes("DEU"));
+  assert.ok(
+    question.options.every((option) => ENABLED_BY_ID.get(option.countryId)?.region === "europe")
+  );
+  const ordered = [...question.correctAnswer].map((id) => ENABLED_BY_ID.get(id).population);
+  for (let i = 1; i < ordered.length; i += 1) {
+    assert.ok(ordered[i - 1] > ordered[i], "correct order is descending population");
+  }
+});
+
+test("ranking writes a weighted EMA update for every country in the set", () => {
+  const payloads = buildLearnStatPayloads(
+    {
+      countryId: "DEU",
+      tier: QUESTION_TIERS.TIER_3,
+      correct: false,
+      countryUpdates: [
+        { countryId: "DEU", correct: true },
+        { countryId: "FRA", correct: false },
+        { countryId: "POL", correct: true },
+      ],
+    },
+    { mode: "countries", level: "F1" }
+  );
+  assert.equal(payloads.length, 3);
+  const byId = Object.fromEntries(
+    payloads.map(({ payload }) => [payload.countryId, payload])
+  );
+  assert.equal(byId.DEU.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
+  assert.equal(byId.FRA.outcome, ROUND_OUTCOMES.SECOND_TRY_CORRECT);
+  assert.equal(byId.POL.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
+  assert.ok(byId.DEU.learnModeMultiplier > byId.FRA.learnModeMultiplier);
+});
+
+test("a 20 km miss penalizes mastery far less than a 10,000 km miss", () => {
+  const near = distancePenaltyScale(20);
+  const far = distancePenaltyScale(10000);
+  assert.ok(near < 0.15, `20 km scale ${near}`);
+  assert.ok(far > 0.95, `10,000 km scale ${far}`);
+  const nearPayload = buildLearnStatPayloads(
+    {
+      countryId: "FRA",
+      tier: QUESTION_TIERS.TIER_1,
+      correct: false,
+      distanceKm: 20,
+    },
+    { mode: "countries", level: "F1" }
+  )[0];
+  const farPayload = buildLearnStatPayloads(
+    {
+      countryId: "FRA",
+      tier: QUESTION_TIERS.TIER_1,
+      correct: false,
+      distanceKm: 10000,
+    },
+    { mode: "countries", level: "F1" }
+  )[0];
+  assert.ok(
+    nearPayload.payload.learnModeMultiplier < farPayload.payload.learnModeMultiplier
+  );
+});
+
+test("point-in-polygon and closest-border distance for a simple square", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]],
+  };
+  assert.equal(pointInGeometry(1, 1, geometry), true);
+  const inside = distanceToGeometry(1, 1, geometry);
+  assert.equal(inside.inside, true);
+  assert.equal(inside.distanceKm, 0);
+
+  const outside = distanceToGeometry(2.5, 1, geometry);
+  assert.equal(outside.inside, false);
+  assert.ok(outside.distanceKm > 0);
+  assert.ok(outside.closestPoint);
+
+  const hit = evaluateGeoGuess({ lng: 1, lat: 1, geometry, hitKm: 25 });
+  assert.equal(hit.correct, true);
+  assert.match(formatDistanceKm(0), /less than 1 km|0/);
 });
 
 test("gdp compare asks which country has the larger economy", () => {

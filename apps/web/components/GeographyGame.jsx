@@ -17,7 +17,10 @@ import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
-import { matchDiscoverTerritoryNote } from "@/lib/discoverTerritories";
+import {
+  getOutOfRegionClickFeedback,
+  matchDiscoverTerritoryNote,
+} from "@/lib/discoverTerritories";
 import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
@@ -61,7 +64,14 @@ import {
   updateChallengeLevel,
   challengeOutcomeFromAnswer,
 } from "@/lib/learn/challengeLevel";
-import { buildLearnStatPayload, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
+import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
+import {
+  evaluateGeoGuess,
+  formatDistanceKm,
+  isBorderlessMapQuestion,
+  MAP_CLICK_HIT_KM,
+  SHAPE_DROP_HIT_KM,
+} from "@/lib/learn/mapGuess";
 import { fetchSeenFacts } from "@/lib/learn/factsClient";
 import { buildLearnSessionSummary } from "@/lib/learn/sessionSummary";
 import { getGameTourId } from "@/lib/gameTutorial";
@@ -221,11 +231,7 @@ function outcomeFeedback({ correct, secondTry = false, detail = null }) {
     : { text: "Incorrect", type: "incorrect" };
 }
 
-const WRONG_CONTINENT_FEEDBACK = {
-  text: "Oops that's not the right continent!",
-  type: "wrong",
-};
-const WRONG_CONTINENT_FEEDBACK_MS = 2500;
+const WRONG_CONTINENT_FEEDBACK_MS = 3500;
 
 export default function GeographyGame() {
   const router = useRouter();
@@ -296,6 +302,8 @@ export default function GeographyGame() {
   const [learnLandlockedReveal, setLearnLandlockedReveal] = useState(null);
   // Highlight wrongs ("which country is highlighted"): correct + guessed titles.
   const [learnHighlightWrongReveal, setLearnHighlightWrongReveal] = useState(null);
+  // Borderless map / shape-drop: green target, optional red click, miss line + km.
+  const [learnDistanceReveal, setLearnDistanceReveal] = useState(null);
   // Soft miss on map-click: toast names the clicked country; map stays clickable.
   const [learnAwaitingRetry, setLearnAwaitingRetry] = useState(false);
   const [learnRetryMessage, setLearnRetryMessage] = useState(null);
@@ -671,6 +679,9 @@ export default function GeographyGame() {
     ? (learnQuestions[learnIndex] ?? null)
     : null;
   const isLearnMapClickQuestion = currentLearnQuestion?.answerType === "map_click";
+  const isLearnShapeDropQuestion = currentLearnQuestion?.answerType === "shape_drop";
+  const isLearnBorderlessQuestion = isBorderlessMapQuestion(currentLearnQuestion);
+  const learnDistanceRevealActive = Boolean(learnDistanceReveal);
   // Questions that reference the map ("find"/"which is highlighted") use the top
   // layout so the map stays visible; everything else is a centered card. Wrong
   // neighbor answers also force the map layout so borders can be taught on-map.
@@ -709,12 +720,15 @@ export default function GeographyGame() {
     learnNeighborMapVisible ||
     learnHighlightMapContinue ||
     learnAreaCompareRevealActive ||
-    learnLandlockedRevealActive;
+    learnLandlockedRevealActive ||
+    (learnDistanceRevealActive && learnAwaitingContinue);
   const learnUsesMap =
     Boolean(currentLearnQuestion?.mapConfig) ||
+    isLearnShapeDropQuestion ||
     learnNeighborRevealActive ||
     learnAreaCompareRevealActive ||
-    learnLandlockedRevealActive;
+    learnLandlockedRevealActive ||
+    learnDistanceRevealActive;
   // Highlight prompts paint their subject yellow on the region backdrop. The
   // question card is top-pinned (see LearnRoundOverlay) so the full region stays
   // in view — we intentionally do NOT zoom to the subject or use asymmetric
@@ -727,14 +741,16 @@ export default function GeographyGame() {
   // guess red via wrongCountryIds — two reds made correct vs guess ambiguous.
   const learnHighlightTone = learnAreaCompareRevealActive
     ? "correct"
-    : learnNeighborRevealActive
-      ? "success"
-      : learnHighlightWrongReveal ||
-          learnLandlockedRevealActive ||
-          learnHighlightRevealsAnchor ||
-          learnHighlightMapContinue
-        ? "prompt"
-        : "error";
+    : learnDistanceRevealActive
+      ? "correct"
+      : learnNeighborRevealActive
+        ? "success"
+        : learnHighlightWrongReveal ||
+            learnLandlockedRevealActive ||
+            learnHighlightRevealsAnchor ||
+            learnHighlightMapContinue
+          ? "prompt"
+          : "error";
 
   // Derive Learn highlights from the question / teach step — never rely on a
   // board-state race between startRoundBoard, clearLearnContinueState, and a
@@ -743,6 +759,7 @@ export default function GeographyGame() {
     if (isDiscoverGame) return null;
     if (!learnEngineActive) return highlightCountryId;
     if (learnAreaCompareReveal?.largerId) return learnAreaCompareReveal.largerId;
+    if (learnDistanceReveal?.targetId) return learnDistanceReveal.targetId;
     if (learnLandlockedReveal?.countryId) return learnLandlockedReveal.countryId;
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       return currentLearnQuestion.countryId;
@@ -1353,15 +1370,25 @@ export default function GeographyGame() {
     }
   }, []);
 
-  const showWrongContinentFeedback = useCallback(() => {
-    playIncorrectSound();
-    clearContinentFeedbackTimer();
-    setFeedback(WRONG_CONTINENT_FEEDBACK);
-    continentFeedbackTimeoutRef.current = setTimeout(() => {
-      continentFeedbackTimeoutRef.current = null;
-      setFeedback({ text: "", type: "" });
-    }, WRONG_CONTINENT_FEEDBACK_MS);
-  }, [clearContinentFeedbackTimer, setFeedback]);
+  const showWrongContinentFeedback = useCallback(
+    (feature, context = {}) => {
+      playIncorrectSound();
+      clearContinentFeedbackTimer();
+      setFeedback(
+        getOutOfRegionClickFeedback({
+          feature,
+          lngLat: context.lngLat,
+          regionId: session?.region,
+          allCountriesById,
+        })
+      );
+      continentFeedbackTimeoutRef.current = setTimeout(() => {
+        continentFeedbackTimeoutRef.current = null;
+        setFeedback({ text: "", type: "" });
+      }, WRONG_CONTINENT_FEEDBACK_MS);
+    },
+    [allCountriesById, clearContinentFeedbackTimer, session?.region, setFeedback]
+  );
 
   const triggerWrongFlash = useCallback(
     (countryId) => {
@@ -1853,6 +1880,7 @@ export default function GeographyGame() {
     setLearnAreaCompareReveal(null);
     setLearnLandlockedReveal(null);
     setLearnHighlightWrongReveal(null);
+    setLearnDistanceReveal(null);
     setLearnAwaitingRetry(false);
     setLearnRetryMessage(null);
     learnMapMissedRef.current = false;
@@ -2124,8 +2152,8 @@ export default function GeographyGame() {
     ]
   );
 
-  // Unified answer handler for every Learn question type. Records the PRIMARY
-  // country only (the comparison country's mastery is never touched).
+  // Unified answer handler for every Learn question type. Records the primary
+  // country, plus every country in a ranking set (weighted per placement).
   const handleLearnAnswer = useCallback(
     (event) => {
       if (learnLockRef.current) return;
@@ -2144,14 +2172,22 @@ export default function GeographyGame() {
         playIncorrectSound();
       }
 
-      const { payload, meta } = buildLearnStatPayload(event, {
+      const payloads = buildLearnStatPayloads(event, {
         mode: activeSession.mode,
         level: activeSession.level,
       });
+      const meta = payloads[0]?.meta ?? {
+        outcome: null,
+        multiplierKey: null,
+        multiplier: 1,
+      };
       logLearnEmaUpdate(event, meta);
       learnAnswersRef.current.push({
         countryId: event.countryId,
         questionType: event.questionType,
+        relatedCountryIds: (event.countryUpdates ?? [])
+          .map((update) => update.countryId)
+          .filter((id) => id && id !== event.countryId),
       });
 
       // Adaptive challenge: update mode×region pacing, then rebuild not-yet-shown
@@ -2215,31 +2251,37 @@ export default function GeographyGame() {
         });
         pendingStatPromisesRef.current.push(challengePromise);
 
-        const promise = recordCountryStat(payload)
-          .then((res) => {
-            const stat = res?.stat;
-            if (!stat?.countryId) return;
-            learnMasteryAfterRef.current.set(stat.countryId, stat.masteryScore ?? 0);
-            if (!learnMasteryBeforeRef.current.has(stat.countryId)) {
-              learnMasteryBeforeRef.current.set(
-                stat.countryId,
-                stat.previousMasteryScore ?? 0
-              );
-            }
-            const prior = sessionStatRecordsRef.current.get(stat.countryId);
-            sessionStatRecordsRef.current.set(stat.countryId, {
-              beforeMastery: prior?.beforeMastery ?? stat.previousMasteryScore ?? 0,
-              beforeGraduated: prior?.beforeGraduated ?? stat.previousGraduated ?? false,
-              afterMastery: stat.masteryScore ?? 0,
-              afterGraduated: stat.graduated ?? false,
-            });
-          })
-          .catch((error) => {
-            console.error("Failed to record learn stat:", error);
+        const applyRecordedStat = (res) => {
+          const stat = res?.stat;
+          if (!stat?.countryId) return;
+          learnMasteryAfterRef.current.set(stat.countryId, stat.masteryScore ?? 0);
+          if (!learnMasteryBeforeRef.current.has(stat.countryId)) {
+            learnMasteryBeforeRef.current.set(
+              stat.countryId,
+              stat.previousMasteryScore ?? 0
+            );
+          }
+          const prior = sessionStatRecordsRef.current.get(stat.countryId);
+          sessionStatRecordsRef.current.set(stat.countryId, {
+            beforeMastery: prior?.beforeMastery ?? stat.previousMasteryScore ?? 0,
+            beforeGraduated: prior?.beforeGraduated ?? stat.previousGraduated ?? false,
+            afterMastery: stat.masteryScore ?? 0,
+            afterGraduated: stat.graduated ?? false,
           });
-        pendingStatPromisesRef.current.push(promise);
+        };
+
+        for (const { payload } of payloads) {
+          const promise = recordCountryStat(payload)
+            .then(applyRecordedStat)
+            .catch((error) => {
+              console.error("Failed to record learn stat:", error);
+            });
+          pendingStatPromisesRef.current.push(promise);
+        }
       } else {
-        appendGuestRound(payload);
+        for (const { payload } of payloads) {
+          appendGuestRound(payload);
+        }
       }
 
       const question = currentLearnQuestionRef.current;
@@ -2290,9 +2332,45 @@ export default function GeographyGame() {
           );
           return;
         }
+        // Borderless hit: keep the green outline on screen so the learner
+        // sees where the country actually is, not just a flash of Correct.
+        if (isBorderlessMapQuestion(question)) {
+          learnAwaitingContinueRef.current = true;
+          setLearnAwaitingContinue(true);
+          setLearnContinueMessage(null);
+          setFeedback(outcomeFeedback({ correct: true, secondTry }));
+          return;
+        }
         // Correct path keeps a brief pause so option/map feedback is seen.
         setFeedback(outcomeFeedback({ correct: true, secondTry }));
         advanceLearnAfterAnswer(650);
+        return;
+      }
+
+      // Borderless map / shape-drop: distance overlay is already painted;
+      // pause so the learner can read how far off they were.
+      if (isBorderlessMapQuestion(question)) {
+        const kmLabel =
+          event.distanceKm != null && Number.isFinite(event.distanceKm)
+            ? formatDistanceKm(event.distanceKm)
+            : null;
+        const clicked =
+          typeof event.selectedValue === "string"
+            ? allCountriesById.get(event.selectedValue)
+            : null;
+        const message = kmLabel
+          ? clicked?.name && clicked.id !== question.countryId
+            ? `${kmLabel} away. That is ${clicked.name}.`
+            : `${kmLabel} away.`
+          : "Not quite.";
+        learnAwaitingContinueRef.current = true;
+        setLearnAwaitingContinue(true);
+        setLearnContinueMessage(message);
+        setFeedback({
+          text: "Not quite.",
+          type: "wrong",
+          detail: kmLabel ? `${kmLabel} away` : null,
+        });
         return;
       }
 
@@ -2461,6 +2539,71 @@ export default function GeographyGame() {
     ]
   );
 
+  const applyLearnGeoGuess = useCallback(
+    (lngLat, feature, { hitKm, responseTimeMs, revealUsed } = {}) => {
+      const question = currentLearnQuestionRef.current;
+      const emit = learnMapEmitRef.current;
+      if (!question || typeof emit !== "function" || !lngLat) return;
+
+      const targetId = question.correctAnswer ?? question.countryId;
+      const target = allCountriesById.get(targetId);
+      const geometry = target?.feature?.geometry ?? null;
+      const guess = evaluateGeoGuess({
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+        geometry,
+        hitKm,
+      });
+      const clicked = feature ? countryFromFeature(feature, activeCountries) : null;
+      const clickedId =
+        clicked && clicked.id && clicked.id !== targetId ? clicked.id : null;
+
+      if (clickedId) addRoundWrongCountry(clickedId);
+
+      const labels = {};
+      if (target?.name) {
+        labels[targetId] = {
+          kind: "text",
+          text: target.name,
+          countryId: targetId,
+          emphasized: true,
+          alwaysShow: true,
+        };
+      }
+      if (clickedId && clicked?.name) {
+        labels[clickedId] = {
+          kind: "text",
+          text: clicked.name,
+          countryId: clickedId,
+          emphasized: false,
+          alwaysShow: true,
+        };
+      }
+      setLearnFeedbackLabelsById(labels);
+      setLearnDistanceReveal({
+        targetId,
+        clickedId,
+        from: { lng: lngLat.lng, lat: lngLat.lat },
+        to: guess.closestPoint
+          ? { lng: guess.closestPoint[0], lat: guess.closestPoint[1] }
+          : null,
+        distanceKm: guess.distanceKm,
+        correct: guess.correct,
+        label: guess.correct ? null : `${formatDistanceKm(guess.distanceKm)} away`,
+      });
+
+      emit({
+        correct: guess.correct,
+        responseTimeMs: responseTimeMs ?? Date.now() - learnQuestionStartRef.current,
+        revealUsed: Boolean(revealUsed),
+        timedOut: false,
+        selectedValue: clicked?.id ?? null,
+        distanceKm: guess.distanceKm,
+      });
+    },
+    [activeCountries, addRoundWrongCountry, allCountriesById]
+  );
+
   const handleLearnMapClick = useCallback(
     (feature, context = {}) => {
       if (gamePausedRef.current) {
@@ -2476,12 +2619,22 @@ export default function GeographyGame() {
         return;
       }
 
-      if (context.inactive) {
-        showWrongContinentFeedback();
+      const borderless = isBorderlessMapQuestion(question);
+      if (context.inactive && !borderless) {
+        showWrongContinentFeedback(feature, context);
         return;
       }
 
       clearContinentFeedbackTimer();
+
+      if (borderless) {
+        const lngLat = context.lngLat;
+        if (!lngLat || !Number.isFinite(lngLat.lng) || !Number.isFinite(lngLat.lat)) {
+          return;
+        }
+        applyLearnGeoGuess(lngLat, feature, { hitKm: MAP_CLICK_HIT_KM });
+        return;
+      }
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
@@ -2538,7 +2691,38 @@ export default function GeographyGame() {
       setFeedback,
       showWrongContinentFeedback,
       tutorialStepId,
+      applyLearnGeoGuess,
     ]
+  );
+
+  const handleLearnShapeDrop = useCallback(
+    ({ clientX, clientY, responseTimeMs, revealUsed } = {}) => {
+      if (gamePausedRef.current) {
+        if (tutorialStepId === "map") return;
+        setShowResumeConfirm(true);
+        return;
+      }
+      if (learnLockRef.current) return;
+
+      const question = currentLearnQuestionRef.current;
+      const emit = learnMapEmitRef.current;
+      if (!question || question.answerType !== "shape_drop" || typeof emit !== "function") {
+        return;
+      }
+
+      const api = mapProjectRef.current;
+      const lngLat = api?.unprojectClient?.(clientX, clientY);
+      if (!lngLat || !Number.isFinite(lngLat.lng) || !Number.isFinite(lngLat.lat)) {
+        return;
+      }
+
+      applyLearnGeoGuess(lngLat, null, {
+        hitKm: SHAPE_DROP_HIT_KM,
+        responseTimeMs,
+        revealUsed,
+      });
+    },
+    [applyLearnGeoGuess, gamePausedRef, tutorialStepId]
   );
 
   const startLearnEngineGame = useCallback(
@@ -3122,7 +3306,7 @@ export default function GeographyGame() {
       if (!gameActiveRef.current || !target || !isFindLevel(session?.level ?? 0)) return;
 
       if (context.inactive) {
-        showWrongContinentFeedback();
+        showWrongContinentFeedback(feature, context);
         return;
       }
 
@@ -3341,10 +3525,31 @@ export default function GeographyGame() {
       }
     }
 
+    if (learnDistanceReveal?.targetId) {
+      const { targetId, clickedId } = learnDistanceReveal;
+      for (const [id, emphasized] of [
+        [targetId, true],
+        [clickedId, false],
+      ]) {
+        if (!id) continue;
+        const country =
+          activeCountriesById[id] ?? allCountriesById.get(id) ?? null;
+        if (!country?.name) continue;
+        labels[id] = {
+          kind: "text",
+          text: country.name,
+          countryId: id,
+          emphasized,
+          alwaysShow: true,
+        };
+      }
+    }
+
     return labels;
   }, [
     learnAreaCompareReveal,
     learnHighlightWrongReveal,
+    learnDistanceReveal,
     learnFeedbackLabelsById,
     activeCountriesById,
     allCountriesById,
@@ -3610,6 +3815,18 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
+  const hideCountryBorders = Boolean(isLearnBorderlessQuestion);
+  const allowEmptyMapClicks =
+    isLearnBorderlessQuestion && isLearnMapClickQuestion && !learnDistanceRevealActive;
+  const distanceFeedback = learnDistanceReveal
+    ? {
+        from: learnDistanceReveal.from,
+        to: learnDistanceReveal.to,
+        label: learnDistanceReveal.label,
+        correct: learnDistanceReveal.correct,
+      }
+    : null;
+
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card
   // questions stay locked so comparison answers can't be peeked from shapes.
@@ -3629,7 +3846,8 @@ export default function GeographyGame() {
 
   const allowInactiveCountryClicks =
     isDiscoverGame ||
-    (mapInteractionEnabled && session?.region != null && session.region !== "world");
+    (mapInteractionEnabled && session?.region != null && session.region !== "world") ||
+    allowEmptyMapClicks;
 
   const promptWrong =
     feedback.type === "wrong" ||
@@ -4047,6 +4265,9 @@ export default function GeographyGame() {
                   mapControlsRef={pacificControlsRef}
                   forceShowSmallCountryCircles={tutorialOpen}
                   allowInactiveCountryClicks={allowInactiveCountryClicks}
+                  hideCountryBorders={hideCountryBorders}
+                  allowEmptyMapClicks={allowEmptyMapClicks}
+                  distanceFeedback={distanceFeedback}
                 />
               ) : (
                 <MapboxMap
@@ -4068,6 +4289,9 @@ export default function GeographyGame() {
                   mapView={mapViewForRender}
                   forceShowSmallCountryCircles={tutorialOpen}
                   allowInactiveCountryClicks={allowInactiveCountryClicks}
+                  hideCountryBorders={hideCountryBorders}
+                  allowEmptyMapClicks={allowEmptyMapClicks}
+                  distanceFeedback={distanceFeedback}
                   onCountryClick={mapCountryClickHandler}
                   onCountryHover={isDiscoverGame ? handleDiscoverCountryHover : undefined}
                   onRegisterMapProject={needsMapProjection ? registerMapProject : undefined}
@@ -4153,6 +4377,10 @@ export default function GeographyGame() {
                   onMapClickReady={(emit) => {
                     learnMapEmitRef.current = emit;
                   }}
+                  onShapeDropReady={(emit) => {
+                    learnMapEmitRef.current = emit;
+                  }}
+                  onShapeDropPoint={handleLearnShapeDrop}
                 />
               )}
               {learnEngineActive && learnMapOnlyContinue && !gameComplete && (

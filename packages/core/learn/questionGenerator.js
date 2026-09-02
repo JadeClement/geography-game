@@ -30,7 +30,8 @@
  *   emaMultiplierKey
  * }
  * answerType ∈ 'map_click' | 'text_entry' | 'multiple_choice' | 'multi_select'
- *              | 'yes_no' | 'binary_choice' | 'multi_text_entry'
+ *              | 'yes_no' | 'binary_choice' | 'multi_text_entry' | 'shape_drop'
+ *              | 'drag_to_rank'
  * emaMultiplierKey is the question tier; resolve to a number at answer time via
  * resolveLearnEmaMultiplier(tier, outcome, { fast }).
  */
@@ -51,6 +52,8 @@ const SELECT_ALL_DISTRACTORS = 3;
 const CLUE_ELIGIBLE_TIERS = new Set([QUESTION_TIERS.TIER_1, QUESTION_TIERS.TIER_2]);
 // Specks and city-states don't make a readable isolated silhouette.
 const MIN_SHAPE_AREA_KM2 = 1000;
+const RANK_SIZE = 5;
+const RANK_MIN = 4;
 
 // ── low-level helpers ──────────────────────────────────────────────────────────
 
@@ -180,6 +183,27 @@ export function generateBlankMapClick(country) {
     answerType: "map_click",
     correctAnswer: cid(country),
     mapConfig: { display: "blank", targetId: cid(country) },
+  });
+}
+
+export function generateBorderlessMapClick(country) {
+  return baseQuestion(QUESTION_TYPES.BORDERLESS_MAP_CLICK, country, {
+    prompt: `Where is ${country.name}?`,
+    promptSubtext: "No borders — click where you think it is.",
+    answerType: "map_click",
+    correctAnswer: cid(country),
+    mapConfig: { display: "borderless", targetId: cid(country), hideBorders: true },
+  });
+}
+
+export function generateShapeDrop(country) {
+  if (!isShapeEligible(country)) return null;
+  return baseQuestion(QUESTION_TYPES.SHAPE_DROP, country, {
+    prompt: "Place this country on the map.",
+    promptSubtext: "Drag the outline to where it belongs.",
+    answerType: "shape_drop",
+    correctAnswer: cid(country),
+    mapConfig: { display: "borderless", targetId: cid(country), hideBorders: true },
   });
 }
 
@@ -480,6 +504,124 @@ export function generateGdpCompare(country, allCountries) {
   });
 }
 
+function pickSpacedRankSet(sortedDesc, subjectId, n) {
+  if (!Array.isArray(sortedDesc) || sortedDesc.length < n) return null;
+  const subjectIndex = sortedDesc.findIndex((record) => cid(record) === subjectId);
+  if (subjectIndex < 0) return null;
+
+  const chosen = new Set();
+  const step = n === 1 ? 0 : (sortedDesc.length - 1) / (n - 1);
+  for (let i = 0; i < n; i += 1) {
+    let idx = Math.round(i * step);
+    while (chosen.has(idx) && idx < sortedDesc.length - 1) idx += 1;
+    while (chosen.has(idx) && idx > 0) idx -= 1;
+    chosen.add(idx);
+  }
+
+  if (![...chosen].some((idx) => cid(sortedDesc[idx]) === subjectId)) {
+    let replace = null;
+    let bestDist = Infinity;
+    for (const idx of chosen) {
+      const dist = Math.abs(idx - subjectIndex);
+      if (dist < bestDist) {
+        bestDist = dist;
+        replace = idx;
+      }
+    }
+    chosen.delete(replace);
+    chosen.add(subjectIndex);
+  }
+
+  return [...chosen]
+    .sort((a, b) => a - b)
+    .map((idx) => sortedDesc[idx])
+    .filter(Boolean);
+}
+
+function generateNumericRank(type, country, allCountries, { field, prompt }) {
+  const index = toCountryIndex(allCountries);
+  const value = country[field];
+  if (typeof value !== "number" || value <= 0) return null;
+
+  const seen = new Set();
+  const pool = [];
+  for (const record of [country, ...sameRegionPool(country, index)]) {
+    const id = cid(record);
+    if (!id || seen.has(id)) continue;
+    if (typeof record[field] !== "number" || record[field] <= 0) continue;
+    seen.add(id);
+    pool.push(record);
+  }
+  if (pool.length < RANK_MIN) return null;
+
+  const sorted = [...pool].sort((a, b) => {
+    const diff = b[field] - a[field];
+    if (diff !== 0) return diff;
+    return String(cid(a)).localeCompare(String(cid(b)));
+  });
+
+  const size = Math.min(RANK_SIZE, sorted.length);
+  let set = pickSpacedRankSet(sorted, cid(country), size);
+  if (!set || set.length < RANK_MIN) return null;
+
+  // Ties make ranking ambiguous — drop extras with duplicate values.
+  const unique = [];
+  const usedValues = new Set();
+  for (const record of set) {
+    if (usedValues.has(record[field])) continue;
+    usedValues.add(record[field]);
+    unique.push(record);
+  }
+  if (unique.length < RANK_MIN) return null;
+  if (!unique.some((record) => cid(record) === cid(country))) {
+    // Subject was a duplicate value and got dropped.
+    return null;
+  }
+
+  // Blocked pairs inside the set — skip rather than teach a forbidden comparison.
+  for (let i = 0; i < unique.length; i += 1) {
+    for (let j = i + 1; j < unique.length; j += 1) {
+      if (isBlockedPair(cid(unique[i]), cid(unique[j]))) return null;
+    }
+  }
+
+  const ordered = [...unique].sort((a, b) => b[field] - a[field]);
+  const correctAnswer = ordered.map((record) => cid(record));
+  const options = shuffle(unique.map(countryOption));
+  const compareRatio = metricRatio(ordered[0][field], ordered[ordered.length - 1][field]);
+
+  return baseQuestion(type, country, {
+    prompt,
+    promptSubtext: "Largest at the top. Drag to reorder.",
+    answerType: "drag_to_rank",
+    correctAnswer,
+    options,
+    rankField: field,
+    compareRatio,
+  });
+}
+
+export function generatePopulationRank(country, allCountries) {
+  return generateNumericRank(QUESTION_TYPES.POPULATION_RANK, country, allCountries, {
+    field: "population",
+    prompt: "Rank these countries from most to least populous.",
+  });
+}
+
+export function generateAreaRank(country, allCountries) {
+  return generateNumericRank(QUESTION_TYPES.AREA_RANK, country, allCountries, {
+    field: "area",
+    prompt: "Rank these countries from largest to smallest in land area.",
+  });
+}
+
+export function generateGdpRank(country, allCountries) {
+  return generateNumericRank(QUESTION_TYPES.GDP_RANK, country, allCountries, {
+    field: "gdp",
+    prompt: "Rank these countries from largest to smallest economy.",
+  });
+}
+
 export function generateLandlockedCheck(country) {
   if (typeof country.landlocked !== "boolean") return null;
   // Contested coastline status — skip this yes/no rather than force a label.
@@ -643,6 +785,8 @@ export function generateLanguageFamily(country, allCountries) {
 
 export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.BLANK_MAP_CLICK.id]: generateBlankMapClick,
+  [QUESTION_TYPES.BORDERLESS_MAP_CLICK.id]: generateBorderlessMapClick,
+  [QUESTION_TYPES.SHAPE_DROP.id]: generateShapeDrop,
   [QUESTION_TYPES.FREE_NAME_ENTRY.id]: generateFreeNameEntry,
   [QUESTION_TYPES.SHAPE_NAME_ENTRY.id]: generateShapeNameEntry,
   [QUESTION_TYPES.CAPITAL_FREE_RECALL.id]: generateCapitalFreeRecall,
@@ -657,6 +801,9 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.POPULATION_COMPARE.id]: generatePopulationCompare,
   [QUESTION_TYPES.AREA_COMPARE.id]: generateAreaCompare,
   [QUESTION_TYPES.GDP_COMPARE.id]: generateGdpCompare,
+  [QUESTION_TYPES.POPULATION_RANK.id]: generatePopulationRank,
+  [QUESTION_TYPES.AREA_RANK.id]: generateAreaRank,
+  [QUESTION_TYPES.GDP_RANK.id]: generateGdpRank,
   [QUESTION_TYPES.LANDLOCKED_CHECK.id]: generateLandlockedCheck,
   [QUESTION_TYPES.NEIGHBOR_IDENTIFICATION.id]: generateNeighborIdentification,
   [QUESTION_TYPES.LANGUAGE_FAMILY.id]: generateLanguageFamily,

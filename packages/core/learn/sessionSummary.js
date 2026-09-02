@@ -15,6 +15,8 @@ import { selectLearnFact } from "./factSelection.js";
 // (e.g. "3 comparisons") as in the spec example.
 export const LEARN_TYPE_LABELS = {
   blank_map_click: ["map click", "map clicks"],
+  borderless_map_click: ["borderless map", "borderless maps"],
+  shape_drop: ["shape drop", "shape drops"],
   free_name_entry: ["name entry", "name entries"],
   shape_name_entry: ["shape name", "shape names"],
   capital_free_recall: ["capital recall", "capital recalls"],
@@ -30,6 +32,9 @@ export const LEARN_TYPE_LABELS = {
   population_compare: ["comparison", "comparisons"],
   area_compare: ["comparison", "comparisons"],
   gdp_compare: ["comparison", "comparisons"],
+  population_rank: ["ranking", "rankings"],
+  area_rank: ["ranking", "rankings"],
+  gdp_rank: ["ranking", "rankings"],
   landlocked_check: ["landlocked check", "landlocked checks"],
   language_family: ["language", "languages"],
   brazil_non_neighbors: ["Brazil borders quiz", "Brazil borders quizzes"],
@@ -96,6 +101,9 @@ export function buildLearnSessionSummary({
       typeBreakdown[answer.questionType] = (typeBreakdown[answer.questionType] ?? 0) + 1;
     }
     if (answer?.countryId) countryIds.add(answer.countryId);
+    for (const relatedId of answer?.relatedCountryIds ?? []) {
+      if (relatedId) countryIds.add(relatedId);
+    }
   }
 
   const masteryDeltas = [];

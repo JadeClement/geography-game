@@ -29,6 +29,8 @@ import MultiSelectQuestion from "./MultiSelectQuestion";
 import YesNoQuestion from "./YesNoQuestion";
 import BinaryChoiceQuestion from "./BinaryChoiceQuestion";
 import MultiTextEntryQuestion from "./MultiTextEntryQuestion";
+import ShapeDropQuestion from "./ShapeDropQuestion";
+import RankQuestion from "./RankQuestion";
 
 function defaultMatch(input, correctAnswer) {
   const normalized = normalizeName(String(input ?? ""));
@@ -364,6 +366,8 @@ export default function LearnQuestionRenderer({
   clues = [],
   matchAnswer,
   onMapClickReady,
+  onShapeDropReady,
+  onShapeDropPoint,
   onContinue,
   awaitingContinue = false,
   lookupCountryByName,
@@ -389,6 +393,8 @@ export default function LearnQuestionRenderer({
             : null,
         responseTimeMs,
         selectedValue: partial.selectedValue,
+        distanceKm: partial.distanceKm,
+        countryUpdates: partial.countryUpdates,
       });
     },
     [question, onAnswer, speedBaselineMs]
@@ -480,6 +486,27 @@ export default function LearnQuestionRenderer({
           emit={emit}
           onMapClickReady={onMapClickReady}
           clues={clues}
+        />
+      );
+    case "shape_drop":
+      return (
+        <ShapeDropQuestion
+          key={question.id}
+          question={question}
+          emit={emit}
+          onShapeDropReady={onShapeDropReady}
+          onDropPoint={onShapeDropPoint}
+          resolveCountry={resolveCountry}
+          clues={clues}
+        />
+      );
+    case "drag_to_rank":
+      return (
+        <RankQuestion
+          key={question.id}
+          question={question}
+          onAnswer={emit}
+          resolveCountry={resolveCountry}
         />
       );
     default:

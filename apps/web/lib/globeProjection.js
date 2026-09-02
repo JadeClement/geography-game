@@ -14,6 +14,17 @@ export function shiftLngForOceania(lng) {
   return rotated;
 }
 
+/** Inverse of PACIFIC_WORLD_VIEW.project — SVG canvas coords → lng/lat. */
+export function unprojectPacificSvg(x, y, mapView = PACIFIC_WORLD_VIEW) {
+  const { minLng, maxLng, minLat, maxLat, width, height } = mapView;
+  const shifted = minLng + (x / width) * (maxLng - minLng);
+  const lat = maxLat - (y / height) * (maxLat - minLat);
+  let lng = shifted + PACIFIC_MAP_ORIGIN_LNG;
+  while (lng > 180) lng -= 360;
+  while (lng < -180) lng += 360;
+  return { lng, lat };
+}
+
 export function rotatedLngDelta(lng1, lng2) {
   return Math.abs(shiftLngForOceania(lng2) - shiftLngForOceania(lng1));
 }

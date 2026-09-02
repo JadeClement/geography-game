@@ -217,6 +217,32 @@ export const learnFactBody = "m-0 mt-3 text-[0.95rem] leading-relaxed text-text-
 export const learnFactCategory =
   "mt-3 inline-block rounded-pill bg-meta px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-text-muted";
 
+// ── drag-to-rank ─────────────────────────────────────────────────────────────
+
+export const learnRankList = "m-0 flex w-full list-none flex-col gap-2 p-0";
+
+export function learnRankRow({ state = "idle", locked = false, dragging = false } = {}) {
+  return cn(
+    "flex min-h-[3.25rem] w-full cursor-grab touch-none items-center gap-2.5 rounded-md border px-3 py-2",
+    "text-left shadow-sm transition-[border-color,background,box-shadow,transform] duration-150 ease-out",
+    "select-none active:cursor-grabbing",
+    state === "idle" &&
+      "border-border bg-surface text-text hover:border-border-subtle hover:bg-surface-hover",
+    state === "correct" && cn("border-success text-success", SUCCESS_BG),
+    state === "wrong" && cn("border-error text-error", ERROR_BG),
+    dragging && "z-10 scale-[1.02] border-accent shadow-md",
+    locked && "cursor-default"
+  );
+}
+
+export const learnRankHandle =
+  "shrink-0 text-xs font-bold tracking-[0.15em] text-text-muted";
+export const learnRankIndex =
+  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-meta text-xs font-bold tabular-nums text-text-secondary";
+export const learnRankName = "min-w-0 flex-1 truncate text-sm font-semibold text-text";
+export const learnRankStat = "shrink-0 text-xs font-bold tabular-nums text-text-secondary";
+export const learnRankStatHidden = "shrink-0 text-xs font-bold text-text-muted";
+
 // ── session summary (appended to GameCompleteModal) ────────────────────────────
 
 export const learnSummary = "flex flex-col gap-4 border-t border-border pt-4";

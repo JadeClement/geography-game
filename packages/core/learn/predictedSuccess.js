@@ -367,6 +367,8 @@ export function predictedSuccess({
 
   if (
     type === "blank_map_click" ||
+    type === "borderless_map_click" ||
+    type === "shape_drop" ||
     type === "free_name_entry" ||
     type === "shape_name_entry" ||
     type === "capital_free_recall"
@@ -376,6 +378,21 @@ export function predictedSuccess({
     if (type === "shape_name_entry" && DISTINCTIVE_SHAPES.has(countryId)) {
       score += 0.06;
     }
+    if (type === "borderless_map_click") {
+      // Harder than outlined blank-map click — no visual scaffolding.
+      score -= 0.08;
+    }
+    if (type === "shape_drop") {
+      score -= 0.06;
+      if (DISTINCTIVE_SHAPES.has(countryId)) score += 0.05;
+    }
+  }
+
+  if (type === "population_rank" || type === "area_rank" || type === "gdp_rank") {
+    const ratio = peerMeta?.compareRatio ?? question?.compareRatio ?? null;
+    score += compareRatioEase(ratio);
+    // Five-way ranking is harder than a binary compare.
+    score -= 0.08;
   }
 
   const mastery = Math.min(1, Math.max(0, Number(countryMastery) || 0));

@@ -17,6 +17,7 @@ export function isNeighborLearnQuestion(question) {
 const SHAPE_QUESTION_TYPES = new Set([
   "shape_identification",
   "shape_name_entry",
+  "shape_drop",
 ]);
 
 export function isShapeLearnQuestion(question) {
@@ -149,6 +150,26 @@ export function buildLearnWrongReveal(
         countryId: question.countryId,
         isLandlocked: question.correctAnswer === true,
       },
+    };
+  }
+
+  // Borderless map / shape-drop misses teach via the distance overlay, not a toast.
+  if (question.mapConfig?.display === "borderless") {
+    return {
+      message: null,
+      neighborReveal: null,
+      areaCompareReveal: null,
+      landlockedReveal: null,
+    };
+  }
+
+  // Ranking cards already mark each row green/red.
+  if (question.answerType === "drag_to_rank") {
+    return {
+      message: null,
+      neighborReveal: null,
+      areaCompareReveal: null,
+      landlockedReveal: null,
     };
   }
 

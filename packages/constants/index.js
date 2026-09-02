@@ -173,6 +173,16 @@ export const QUESTION_TYPES = {
     id: "blank_map_click",
     categories: ["countries"],
   },
+  BORDERLESS_MAP_CLICK: {
+    tier: QUESTION_TIERS.TIER_1,
+    id: "borderless_map_click",
+    categories: ["countries"],
+  },
+  SHAPE_DROP: {
+    tier: QUESTION_TIERS.TIER_1,
+    id: "shape_drop",
+    categories: ["countries"],
+  },
   FREE_NAME_ENTRY: {
     tier: QUESTION_TIERS.TIER_1,
     id: "free_name_entry",
@@ -242,6 +252,21 @@ export const QUESTION_TYPES = {
     id: "gdp_compare",
     categories: ALL_CATEGORIES,
   },
+  POPULATION_RANK: {
+    tier: QUESTION_TIERS.TIER_3,
+    id: "population_rank",
+    categories: ALL_CATEGORIES,
+  },
+  AREA_RANK: {
+    tier: QUESTION_TIERS.TIER_3,
+    id: "area_rank",
+    categories: ALL_CATEGORIES,
+  },
+  GDP_RANK: {
+    tier: QUESTION_TIERS.TIER_3,
+    id: "gdp_rank",
+    categories: ALL_CATEGORIES,
+  },
   NEIGHBOR_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_3,
     id: "neighbor_identification",
@@ -282,6 +307,8 @@ export const MASTERY_BANDS = [
 /** Display labels for Learn question types (from sessionSummary LEARN_TYPE_LABELS). */
 export const TYPE_DISPLAY_NAMES = {
   blank_map_click: "Blank map",
+  borderless_map_click: "Borderless map",
+  shape_drop: "Shape drop",
   free_name_entry: "Name entry",
   shape_name_entry: "Shape name",
   capital_free_recall: "Capital recall",
@@ -295,6 +322,9 @@ export const TYPE_DISPLAY_NAMES = {
   population_compare: "Population compare",
   area_compare: "Area compare",
   gdp_compare: "GDP compare",
+  population_rank: "Population rank",
+  area_rank: "Area rank",
+  gdp_rank: "GDP rank",
   neighbor_identification: "Neighbor ID",
   binary_map_choice: "Map A/B",
   landlocked_check: "Landlocked?",
@@ -306,6 +336,8 @@ export const TYPE_DISPLAY_NAMES = {
 export const TYPE_GROUPS = {
   [QUESTION_TIERS.TIER_1]: [
     "blank_map_click",
+    "borderless_map_click",
+    "shape_drop",
     "free_name_entry",
     "shape_name_entry",
     "capital_free_recall",
@@ -323,6 +355,9 @@ export const TYPE_GROUPS = {
     "population_compare",
     "area_compare",
     "gdp_compare",
+    "population_rank",
+    "area_rank",
+    "gdp_rank",
     "neighbor_identification",
     "brazil_non_neighbors",
   ],

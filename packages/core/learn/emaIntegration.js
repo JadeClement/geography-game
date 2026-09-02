@@ -8,15 +8,16 @@
  *  4. Build the /api/country-stats POST payload (with `learnModeMultiplier`),
  *     which flows through recordCountryPerformance → computeMasteryUpdate.
  *
- * IMPORTANT (Step 6.4): only the PRIMARY `countryId` is ever recorded — the
- * comparison country in Tier 3/4 questions is never written. Callers must record
- * one stat per answered question using `event.countryId` only.
+ * IMPORTANT (Step 6.4): the PRIMARY `countryId` is recorded for most question
+ * types. Ranking questions (`drag_to_rank`) also write a weighted update for
+ * every country in the set via `event.countryUpdates`.
  *
  * The existing Test-mode EMA formula is untouched; `learnModeMultiplier` defaults
  * to 1 everywhere so Test-mode calls (which never pass it) are unaffected.
  */
 
 import { ROUND_OUTCOMES, GAME_TYPE_FOR_STATS, LEARN_EMA_MULTIPLIERS } from "@worldly/constants";
+import { distancePenaltyScale } from "./mapGuess.js";
 
 /**
  * Maps a Learn answer event to a round outcome:
@@ -81,6 +82,15 @@ export function resolveLearnEma(event) {
  */
 export function buildLearnStatPayload(event, { mode, level }) {
   const { outcome, multiplierKey, multiplier } = resolveLearnEma(event);
+  let applied = multiplier;
+  if (
+    !event?.correct &&
+    !event?.revealUsed &&
+    event?.distanceKm != null &&
+    Number.isFinite(event.distanceKm)
+  ) {
+    applied = multiplier * distancePenaltyScale(event.distanceKm);
+  }
   const payload = {
     countryId: event.countryId,
     mode,
@@ -88,14 +98,39 @@ export function buildLearnStatPayload(event, { mode, level }) {
     gameType: GAME_TYPE_FOR_STATS.LEARNING,
     outcome,
     responseTimeMs: event.responseTimeMs ?? null,
-    learnModeMultiplier: multiplier,
+    learnModeMultiplier: applied,
     questionTier: event.tier ?? null,
     predictedSuccess:
       event.predictedSuccess != null && Number.isFinite(event.predictedSuccess)
         ? event.predictedSuccess
         : null,
   };
-  return { payload, meta: { outcome, multiplierKey, multiplier } };
+  return { payload, meta: { outcome, multiplierKey, multiplier: applied } };
+}
+
+/**
+ * Ranking questions emit one payload per country in the set. Everything else
+ * returns a single payload for the primary country.
+ */
+export function buildLearnStatPayloads(event, session) {
+  const updates = Array.isArray(event?.countryUpdates) ? event.countryUpdates : [];
+  if (updates.length === 0) {
+    return [buildLearnStatPayload(event, session)];
+  }
+  return updates
+    .filter((update) => update?.countryId)
+    .map((update) =>
+      buildLearnStatPayload(
+        {
+          ...event,
+          countryId: update.countryId,
+          correct: Boolean(update.correct),
+          // Per-country placement never inherits the overall miss's distance.
+          distanceKm: undefined,
+        },
+        session
+      )
+    );
 }
 
 /**
@@ -109,6 +144,9 @@ export function logLearnEmaUpdate(event, meta) {
     "[learn-ema]",
     `type=${event?.questionType} tier=${event?.tier}`,
     `outcome=${meta?.outcome} key=${meta?.multiplierKey} x=${meta?.multiplier}`,
-    `country=${event?.countryId} correct=${event?.correct} fast=${event?.fast} reveal=${event?.revealUsed}`
+    `country=${event?.countryId} correct=${event?.correct} fast=${event?.fast} reveal=${event?.revealUsed}`,
+    event?.distanceKm != null && Number.isFinite(event.distanceKm)
+      ? `distanceKm=${Math.round(event.distanceKm)}`
+      : ""
   );
 }

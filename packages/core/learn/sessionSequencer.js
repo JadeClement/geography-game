@@ -216,7 +216,10 @@ export function selectQuestionForCountry({
         (entry) => !isTrivialPrediction(entry.predictedSuccess, wt)
       );
       if (nonTrivial.length > 0) {
-        return pickByPredictedSuccess(nonTrivial, wt);
+        // Uniform among non-trivial types in this tier so harder siblings
+        // (borderless map, shape drop) aren't crowded out by easier ones
+        // that sit closer to the flow target.
+        return nonTrivial[Math.floor(Math.random() * nonTrivial.length)].question;
       }
       // Entire tier was trivial — remember a fallback and try a harder/other tier.
       if (!fallback) fallback = pickByPredictedSuccess(scored, wt);

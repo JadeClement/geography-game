@@ -23,6 +23,7 @@ import {
 import {
   geometryToPathData,
   PACIFIC_GAME_VIEW,
+  unprojectPacificSvg,
 } from "@/lib/globeProjection";
 import {
   CIRCLE_CLICK_RADIUS_PX,
@@ -164,6 +165,9 @@ export default function PacificMap({
   mapControlsRef,
   forceShowSmallCountryCircles = false,
   allowInactiveCountryClicks = false,
+  hideCountryBorders = false,
+  allowEmptyMapClicks = false,
+  distanceFeedback = null,
 }) {
   const { theme } = useTheme();
   const colors = MAP_THEME_COLORS[theme] ?? MAP_THEME_COLORS[THEMES.DARK];
@@ -211,10 +215,24 @@ export default function PacificMap({
 
   const showCountryCircle = useCallback(
     (country) => {
+      const isFeedback =
+        wrongCountryIds.includes(country.id) ||
+        flashWrongCountryIds.includes(country.id) ||
+        filledCountryIds.includes(country.id) ||
+        highlightCountryId === country.id;
+      if (hideCountryBorders && !isFeedback) return false;
       if (forceShowSmallCountryCircles && country.isSmall) return true;
       return shouldShowPacificCircle(country, getCountryScreenSizePx(country));
     },
-    [forceShowSmallCountryCircles, getCountryScreenSizePx]
+    [
+      forceShowSmallCountryCircles,
+      getCountryScreenSizePx,
+      hideCountryBorders,
+      wrongCountryIds,
+      flashWrongCountryIds,
+      filledCountryIds,
+      highlightCountryId,
+    ]
   );
 
   const inactivePaths = useMemo(
@@ -398,6 +416,10 @@ export default function PacificMap({
         const zoomRatio = defaultViewBox.width / current.width;
         return getDiscoverLabelScaleFromRatio(zoomRatio);
       },
+      unprojectClient(clientX, clientY) {
+        const pt = clientPointToSvg(svg, clientX, clientY);
+        return unprojectPacificSvg(pt.x, pt.y, PACIFIC_GAME_VIEW);
+      },
     });
 
     return () => {
@@ -486,12 +508,17 @@ export default function PacificMap({
   }, []);
 
   const handleCountryPointer = useCallback(
-    (countryId, { inactive = false } = {}) => {
+    (countryId, { inactive = false, event = null } = {}) => {
       if (suppressClickRef.current || !gameActive) return;
-      if (!inactive) triggerCountryExpand(countryId);
-      onCountryClick({ properties: { id: countryId }, id: countryId }, { inactive });
+      if (!inactive && !hideCountryBorders) triggerCountryExpand(countryId);
+      let lngLat = null;
+      if (event && svgRef.current) {
+        const pt = clientPointToSvg(svgRef.current, event.clientX, event.clientY);
+        lngLat = unprojectPacificSvg(pt.x, pt.y, PACIFIC_GAME_VIEW);
+      }
+      onCountryClick({ properties: { id: countryId }, id: countryId }, { inactive, lngLat });
     },
-    [gameActive, onCountryClick, triggerCountryExpand]
+    [gameActive, hideCountryBorders, onCountryClick, triggerCountryExpand]
   );
 
   const handleCountryHover = useCallback(
@@ -500,6 +527,37 @@ export default function PacificMap({
     },
     [onCountryHover]
   );
+
+  const handleSvgClick = useCallback(
+    (event) => {
+      if (suppressClickRef.current || !gameActive || !allowEmptyMapClicks) return;
+      if (isCountryEventTarget(event.target)) return;
+      const pt = clientPointToSvg(svgRef.current, event.clientX, event.clientY);
+      const lngLat = unprojectPacificSvg(pt.x, pt.y, PACIFIC_GAME_VIEW);
+      onCountryClick?.(null, { lngLat, empty: true });
+    },
+    [allowEmptyMapClicks, gameActive, onCountryClick]
+  );
+
+  const distanceOverlaySvg = useMemo(() => {
+    if (!distanceFeedback?.from || !distanceFeedback?.to || distanceFeedback.correct) {
+      return null;
+    }
+    const from = PACIFIC_GAME_VIEW.project(
+      distanceFeedback.from.lng,
+      distanceFeedback.from.lat,
+      PACIFIC_GAME_VIEW.width,
+      PACIFIC_GAME_VIEW.height
+    );
+    const to = PACIFIC_GAME_VIEW.project(
+      distanceFeedback.to.lng,
+      distanceFeedback.to.lat,
+      PACIFIC_GAME_VIEW.width,
+      PACIFIC_GAME_VIEW.height
+    );
+    if (!from || !to) return null;
+    return { from, to, label: distanceFeedback.label ?? "" };
+  }, [distanceFeedback]);
 
   const filledCountryIdSet = useMemo(() => new Set(filledCountryIds), [filledCountryIds]);
 
@@ -537,6 +595,7 @@ export default function PacificMap({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onClick={handleSvgClick}
       >
         <rect
           x={-oceanExtent}
@@ -547,7 +606,11 @@ export default function PacificMap({
           fill={colors.ocean}
         />
 
-        <g className="pacific-map-inactive" stroke={colors.inactiveBorder} strokeWidth="0.6">
+        <g
+          className="pacific-map-inactive"
+          stroke={hideCountryBorders ? "none" : colors.inactiveBorder}
+          strokeWidth="0.6"
+        >
           {inactivePaths.map((country) => (
             <path
               key={`inactive-${country.id}`}
@@ -565,7 +628,7 @@ export default function PacificMap({
               }
               onClick={
                 allowInactiveCountryClicks
-                  ? () => handleCountryPointer(country.id, { inactive: true })
+                  ? (event) => handleCountryPointer(country.id, { inactive: true, event })
                   : undefined
               }
             />
@@ -574,7 +637,7 @@ export default function PacificMap({
 
         <g
           className="pacific-map-active"
-          stroke={colors.levelBorder}
+          stroke={hideCountryBorders ? "none" : colors.levelBorder}
           strokeWidth="0.75"
           strokeLinejoin="round"
         >
@@ -600,19 +663,33 @@ export default function PacificMap({
               activeLandColor: landColor,
             });
 
+            const isWrong = wrongCountryIds.includes(country.id);
+            const isCorrectHighlight =
+              highlightCountryId === country.id && highlightTone === "correct";
+            const outline =
+              isWrong
+                ? WRONG_COUNTRY_COLOR
+                : isCorrectHighlight
+                  ? CORRECT_COUNTRY_COLOR
+                  : hideCountryBorders
+                    ? "none"
+                    : undefined;
+
             return (
               <path
                 key={country.id}
                 d={country.path}
                 fill={fill ?? landColor}
                 fillRule="evenodd"
+                stroke={outline}
+                strokeWidth={outline && outline !== "none" ? 1.75 : undefined}
                 className={cn(
                   "pacific-map-country",
                   gameActive && pacificMapCountryClickable,
                   expandingCountryId === country.id && "country-click-expanding"
                 )}
                 onPointerDown={handleCountryPointerDown}
-                onClick={() => handleCountryPointer(country.id)}
+                onClick={(event) => handleCountryPointer(country.id, { event })}
                 onPointerEnter={() => handleCountryHover(country.id)}
                 onPointerLeave={() => handleCountryHover(null)}
               />
@@ -698,7 +775,7 @@ export default function PacificMap({
                     strokeWidth={circleStrokeWidth}
                     className={gameActive ? pacificMapCountryClickable : undefined}
                     onPointerDown={handleCountryPointerDown}
-                    onClick={() => handleCountryPointer(country.id)}
+                    onClick={(event) => handleCountryPointer(country.id, { event })}
                     onPointerEnter={() => handleCountryHover(country.id)}
                     onPointerLeave={() => handleCountryHover(null)}
                   />
@@ -780,6 +857,43 @@ export default function PacificMap({
                   />
                 );
               })}
+          </g>
+        )}
+        {distanceOverlaySvg && (
+          <g className="learn-distance" pointerEvents="none">
+            <line
+              x1={distanceOverlaySvg.from[0]}
+              y1={distanceOverlaySvg.from[1]}
+              x2={distanceOverlaySvg.to[0]}
+              y2={distanceOverlaySvg.to[1]}
+              stroke="#f8fafc"
+              strokeWidth="2"
+              strokeDasharray="8 6"
+              strokeLinecap="round"
+            />
+            <circle
+              cx={distanceOverlaySvg.from[0]}
+              cy={distanceOverlaySvg.from[1]}
+              r="5"
+              fill={WRONG_COUNTRY_COLOR}
+              stroke="#ffffff"
+              strokeWidth="2"
+            />
+            {distanceOverlaySvg.label ? (
+              <text
+                x={(distanceOverlaySvg.from[0] + distanceOverlaySvg.to[0]) / 2}
+                y={(distanceOverlaySvg.from[1] + distanceOverlaySvg.to[1]) / 2 - 8}
+                fill="#f8fafc"
+                stroke="#0f172a"
+                strokeWidth="3"
+                paintOrder="stroke"
+                fontSize="13"
+                fontWeight="700"
+                textAnchor="middle"
+              >
+                {distanceOverlaySvg.label}
+              </text>
+            ) : null}
           </g>
         )}
       </svg>

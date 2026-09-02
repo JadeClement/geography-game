@@ -51,7 +51,11 @@ export default function LearnRoundOverlay({
 
   // Highlight prompts must stay top-pinned even if the host passes "center" —
   // a middle card covers the yellow country and fights the region backdrop.
-  const forceTop = question.mapConfig?.display === "highlight";
+  const forceTop =
+    question.mapConfig?.display === "highlight" ||
+    question.mapConfig?.display === "borderless" ||
+    question.answerType === "map_click" ||
+    question.answerType === "shape_drop";
   const isTop = forceTop || variant === "top";
   const heavierMapBlur =
     question.type === "landlocked_check" || isNeighborLearnQuestion(question);

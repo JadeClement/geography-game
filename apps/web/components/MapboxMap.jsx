@@ -756,6 +756,24 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
       "line-width": 0.5,
     },
   });
+
+  if (!map.getLayer("country-feedback-outline")) {
+    map.addLayer({
+      id: "country-feedback-outline",
+      type: "line",
+      source: "countries",
+      paint: {
+        "line-color": [
+          "case",
+          ["==", ["feature-state", "wrong"], true],
+          WRONG_COUNTRY_COLOR,
+          CORRECT_COUNTRY_COLOR,
+        ],
+        "line-width": 1.75,
+        "line-opacity": 0,
+      },
+    });
+  }
 }
 
 function syncSmallCountryFeatureStates(
@@ -836,6 +854,152 @@ function syncCountryFeatureStates(
   }
 }
 
+const EMPTY_GEOJSON = { type: "FeatureCollection", features: [] };
+
+function addLearnDistanceLayers(map) {
+  if (map.getSource("learn-distance")) return;
+  map.addSource("learn-distance", { type: "geojson", data: EMPTY_GEOJSON });
+  map.addLayer({
+    id: "learn-distance-line",
+    type: "line",
+    source: "learn-distance",
+    filter: ["==", ["get", "kind"], "line"],
+    paint: {
+      "line-color": "#f8fafc",
+      "line-width": 2,
+      "line-dasharray": [2, 1.5],
+      "line-opacity": 0.95,
+    },
+  });
+  map.addLayer({
+    id: "learn-distance-dot",
+    type: "circle",
+    source: "learn-distance",
+    filter: ["==", ["get", "kind"], "from"],
+    paint: {
+      "circle-radius": 5,
+      "circle-color": WRONG_COUNTRY_COLOR,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+    },
+  });
+  map.addLayer({
+    id: "learn-distance-label",
+    type: "symbol",
+    source: "learn-distance",
+    filter: ["==", ["get", "kind"], "label"],
+    layout: {
+      "text-field": ["get", "label"],
+      "text-size": 13,
+      "text-offset": [0, -1.15],
+      "text-anchor": "bottom",
+      "text-allow-overlap": true,
+    },
+    paint: {
+      "text-color": "#f8fafc",
+      "text-halo-color": "#0f172a",
+      "text-halo-width": 1.6,
+    },
+  });
+}
+
+function syncLearnDistanceOverlay(map, overlay) {
+  const source = map.getSource("learn-distance");
+  if (!source) return;
+  if (!overlay?.from || !overlay?.to || overlay.correct) {
+    source.setData(EMPTY_GEOJSON);
+    return;
+  }
+  const from = [overlay.from.lng, overlay.from.lat];
+  const to = [overlay.to.lng, overlay.to.lat];
+  const mid = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  source.setData({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { kind: "line" },
+        geometry: { type: "LineString", coordinates: [from, to] },
+      },
+      {
+        type: "Feature",
+        properties: { kind: "from" },
+        geometry: { type: "Point", coordinates: from },
+      },
+      {
+        type: "Feature",
+        properties: { kind: "label", label: overlay.label ?? "" },
+        geometry: { type: "Point", coordinates: mid },
+      },
+    ],
+  });
+}
+
+function applyHideCountryBorders(map, hide, mapColors) {
+  const borderOpacity = hide ? 0 : 1;
+  if (map.getLayer("country-borders")) {
+    map.setPaintProperty("country-borders", "line-opacity", borderOpacity);
+  }
+  if (map.getLayer("inactive-country-borders")) {
+    map.setPaintProperty("inactive-country-borders", "line-opacity", hide ? 0 : 0.85);
+  }
+  if (map.getLayer("country-fill")) {
+    map.setPaintProperty(
+      "country-fill",
+      "fill-outline-color",
+      hide ? "rgba(0,0,0,0)" : mapColors.levelBorder
+    );
+  }
+  if (map.getLayer("inactive-country-fill")) {
+    map.setPaintProperty(
+      "inactive-country-fill",
+      "fill-outline-color",
+      hide ? "rgba(0,0,0,0)" : mapColors.inactiveBorder
+    );
+  }
+  if (map.getLayer("country-feedback-outline")) {
+    map.setPaintProperty(
+      "country-feedback-outline",
+      "line-opacity",
+      hide
+        ? [
+            "case",
+            ["==", ["feature-state", "wrong"], true],
+            1,
+            [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
+            1,
+            ["==", ["feature-state", "filled"], true],
+            1,
+            0,
+          ]
+        : 0
+    );
+  }
+  if (hide && map.getLayer("small-country-circles")) {
+    const feedbackOnly = [
+      "case",
+      ["==", ["feature-state", "wrong"], true],
+      1,
+      [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
+      1,
+      ["==", ["feature-state", "filled"], true],
+      1,
+      0,
+    ];
+    map.setPaintProperty("small-country-circles", "circle-stroke-opacity", feedbackOnly);
+    map.setPaintProperty("small-country-circles", "circle-opacity", [
+      "case",
+      ["==", ["feature-state", "wrong"], true],
+      0.92,
+      [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
+      0.92,
+      ["==", ["feature-state", "filled"], true],
+      0.92,
+      0,
+    ]);
+  }
+}
+
 export default function MapboxMap({
   geojson,
   inactiveGeojson,
@@ -861,6 +1025,12 @@ export default function MapboxMap({
   forceShowSmallCountryCircles = false,
   /** Discover: allow clicks on out-of-region land (e.g. French Guiana in South America). */
   allowInactiveCountryClicks = false,
+  /** Learn borderless map: hide country outlines until the answer reveal. */
+  hideCountryBorders = false,
+  /** Learn borderless map: a click on ocean / empty canvas still counts. */
+  allowEmptyMapClicks = false,
+  /** { from, to, label, correct } — miss line from click to nearest border. */
+  distanceFeedback = null,
   onCountryClick,
   onCountryHover,
   onRegisterMapProject,
@@ -893,6 +1063,8 @@ export default function MapboxMap({
   const geojsonRef = useRef(geojson);
   const forceShowSmallCountryCirclesRef = useRef(forceShowSmallCountryCircles);
   const allowInactiveCountryClicksRef = useRef(allowInactiveCountryClicks);
+  const hideCountryBordersRef = useRef(hideCountryBorders);
+  const allowEmptyMapClicksRef = useRef(allowEmptyMapClicks);
 
   onCountryClickRef.current = onCountryClick;
   onCountryHoverRef.current = onCountryHover;
@@ -902,6 +1074,8 @@ export default function MapboxMap({
   geojsonRef.current = geojson;
   forceShowSmallCountryCirclesRef.current = forceShowSmallCountryCircles;
   allowInactiveCountryClicksRef.current = allowInactiveCountryClicks;
+  hideCountryBordersRef.current = hideCountryBorders;
+  allowEmptyMapClicksRef.current = allowEmptyMapClicks;
   highlightCountryIdRef.current = highlightCountryId;
   highlightToneRef.current = highlightTone;
   boardPaintRef.current = {
@@ -950,6 +1124,10 @@ export default function MapboxMap({
     const handleClick = (event) => {
       if (!gameActiveRef.current) return;
 
+      const lngLat = event.lngLat
+        ? { lng: event.lngLat.lng, lat: event.lngLat.lat }
+        : null;
+
       const layers = [];
       if (map.getLayer("country-fill")) layers.push("country-fill");
       if (map.getLayer("small-country-circles")) layers.push("small-country-circles");
@@ -959,16 +1137,31 @@ export default function MapboxMap({
       ) {
         layers.push("inactive-country-fill");
       }
-      if (layers.length === 0) return;
+      if (layers.length === 0) {
+        if (allowEmptyMapClicksRef.current) {
+          onCountryClickRef.current?.(null, { lngLat, empty: true, inactive: false });
+        }
+        return;
+      }
 
       const features = map.queryRenderedFeatures(event.point, { layers });
-      if (features.length === 0) return;
+      if (features.length === 0) {
+        if (allowEmptyMapClicksRef.current) {
+          onCountryClickRef.current?.(null, { lngLat, empty: true, inactive: false });
+        }
+        return;
+      }
 
       const feature = pickClickedFeature(map, features);
       const countryId = feature.properties?.id ?? feature.id;
       const isInactive = feature.layer?.id === "inactive-country-fill";
 
-      if (!isInactive && getCountryClickExpandEnabled() && countryId) {
+      if (
+        !isInactive &&
+        !hideCountryBordersRef.current &&
+        getCountryClickExpandEnabled() &&
+        countryId
+      ) {
         if (expandCleanupRef.current) {
           expandCleanupRef.current();
           expandCleanupRef.current = null;
@@ -981,10 +1174,8 @@ export default function MapboxMap({
         });
       }
 
-      onCountryClickRef.current(feature, {
-        lngLat: event.lngLat
-          ? { lng: event.lngLat.lng, lat: event.lngLat.lat }
-          : null,
+      onCountryClickRef.current?.(feature, {
+        lngLat,
         layerId: feature.layer?.id ?? null,
         inactive: isInactive,
       });
@@ -1048,6 +1239,8 @@ export default function MapboxMap({
       }
 
       addCountryClickExpandLayers(map);
+      addLearnDistanceLayers(map);
+      applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors);
 
       map.on("zoom", handleViewChangeForCircles);
       map.on("moveend", handleViewChangeForCircles);
@@ -1250,7 +1443,22 @@ export default function MapboxMap({
     updateSmallCountryCircles(map, smallCountriesGeojson, {
       forceShow: forceShowSmallCountryCircles,
     });
+    addLearnDistanceLayers(map);
+    applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors);
   }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, theme, level, forceShowSmallCountryCircles]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    applyHideCountryBorders(map, hideCountryBorders, getMapThemeColors(theme));
+  }, [hideCountryBorders, theme]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    addLearnDistanceLayers(map);
+    syncLearnDistanceOverlay(map, distanceFeedback);
+  }, [distanceFeedback]);
 
   // Camera-only updates: never setData here — GeoJSON setData clears feature-state
   // and was wiping the yellow small-country highlight on language-question pans.
@@ -1821,6 +2029,14 @@ export default function MapboxMap({
           if (refZoom == null) return 1;
           const zoomRatio = 2 ** (map.getZoom() - refZoom);
           return getDiscoverLabelScaleFromRatio(zoomRatio);
+        },
+        unprojectClient(clientX, clientY) {
+          const rect = container.getBoundingClientRect();
+          const point = map.unproject([clientX - rect.left, clientY - rect.top]);
+          if (!point || !Number.isFinite(point.lng) || !Number.isFinite(point.lat)) {
+            return null;
+          }
+          return { lng: point.lng, lat: point.lat };
         },
       });
     };
