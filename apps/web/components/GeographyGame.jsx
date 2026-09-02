@@ -22,6 +22,7 @@ import MapFeedback from "@/components/MapFeedback";
 import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
 import PronunciationButton from "@/components/PronunciationButton";
+import FitText from "@/components/FitText";
 import SoundVolumeButton from "@/components/SoundVolumeButton";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeName } from "@/lib/constants";
@@ -3651,9 +3652,9 @@ export default function GeographyGame() {
   const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => {
     if (isDiscoverGame) {
       return (
-        <div className={cn(className ?? prompt, promptWrong && "text-error")}>
+        <FitText className={cn(className ?? prompt, promptWrong && "text-error")}>
           {getDiscoverInstructionText(session?.mode)}
-        </div>
+        </FitText>
       );
     }
 

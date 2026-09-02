@@ -659,22 +659,21 @@ export const gameHeader =
 export const gameHeaderMobileDefault =
   "max-md:grid-cols-1 max-md:[grid-template-areas:'right']";
 
-/** Discover mobile: instruction centered, controls right-aligned. */
+/** Discover: instruction uses leftover space between side controls and shrinks to fit. */
 export const gameHeaderDiscoverMobile =
-  "max-md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] max-md:gap-x-2 max-md:[grid-template-areas:'left_center_right']";
+  "grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 [grid-template-areas:'left_center_right'] max-md:gap-x-2";
 
 export const gameHeaderLeft =
   "flex items-center justify-self-start gap-3 max-md:hidden";
 
-/** Balances the right-side controls so the discover instruction stays centered. */
 export const gameHeaderLeftDiscoverMobile =
-  "flex min-w-0 items-center justify-self-start max-md:[grid-area:left]";
+  "flex shrink-0 items-center justify-self-start [grid-area:left]";
 
 export const gameHeaderCenter =
   "justify-self-center text-center max-md:hidden";
 
 export const gameHeaderCenterDiscoverMobile =
-  "min-w-0 max-w-full justify-self-center px-1 text-center max-md:[grid-area:center]";
+  "min-w-0 w-full max-w-full justify-self-stretch px-1 text-center [grid-area:center]";
 
 export const gameHeaderDiscoverPrompt =
   "text-3xl font-semibold leading-tight text-text max-md:text-xl max-md:leading-snug";
@@ -695,7 +694,7 @@ export const gameHeaderRight =
   "flex items-center justify-self-end gap-4 md:col-start-3 max-md:w-full max-md:justify-self-stretch max-md:gap-2.5 max-md:[grid-area:right]";
 
 export const gameHeaderRightDiscoverMobile =
-  "flex items-center justify-self-end gap-4 md:col-start-3 max-md:w-auto max-md:justify-end max-md:gap-2.5 max-md:[grid-area:right]";
+  "flex shrink-0 items-center justify-self-end gap-4 [grid-area:right] max-md:w-auto max-md:justify-end max-md:gap-2.5";
 
 /** Play mobile: controls | centered timer | score. */
 export const gameHeaderRightMobilePlay =
@@ -1608,7 +1607,7 @@ export const masterySignIn =
   "flex flex-col items-start gap-4 rounded-lg border border-border bg-surface p-6";
 
 export const masteryToolbar =
-  "mb-4 flex flex-wrap items-center justify-between gap-3";
+  "mb-4 flex flex-wrap items-center justify-center gap-3 md:justify-between";
 
 export const masteryTabs =
   "flex shrink-0 flex-nowrap items-center gap-1.5 rounded-pill border border-border bg-inset p-1";
