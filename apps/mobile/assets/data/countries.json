@@ -73,7 +73,7 @@
         "MNE",
         "GRC",
         "MKD",
-        "UNK"
+        "XKX"
       ],
       "enabled": true,
       "region": "europe",
@@ -3771,7 +3771,12 @@
         "Albanian",
         "Serbian"
       ],
-      "neighbors": [],
+      "neighbors": [
+        "ALB",
+        "MKD",
+        "MNE",
+        "SRB"
+      ],
       "enabled": true,
       "region": "europe",
       "facts": [
@@ -4706,7 +4711,7 @@
         "ALB",
         "BIH",
         "HRV",
-        "UNK",
+        "XKX",
         "SRB"
       ],
       "enabled": true,
@@ -5274,7 +5279,7 @@
         "ALB",
         "BGR",
         "GRC",
-        "UNK",
+        "XKX",
         "SRB"
       ],
       "enabled": true,
@@ -5842,7 +5847,7 @@
         "BGR",
         "HRV",
         "HUN",
-        "UNK",
+        "XKX",
         "MKD",
         "MNE",
         "ROU"

@@ -700,6 +700,20 @@ test("France silhouette still excludes French Guiana", () => {
   );
 });
 
+test("Serbia neighbor data includes Kosovo as XKX, not the mledoze UNK code", () => {
+  const serbia = ENABLED_BY_ID.get("SRB");
+  const kosovo = ENABLED_BY_ID.get("XKX");
+  assert.ok(serbia?.neighbors.includes("XKX"));
+  assert.ok(!serbia?.neighbors.includes("UNK"));
+  assert.ok(kosovo?.neighbors.includes("SRB"));
+
+  const question = generateQuestion("neighbor_recall_all", serbia, ENABLED);
+  assert.ok(question);
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID);
+  assert.match(reveal.message, /Kosovo/);
+  assert.ok(reveal.neighborReveal?.neighborIds.includes("XKX"));
+});
+
 test("wrong flag pick relies on option labels instead of That's-copy", () => {
   const question = {
     type: "flag_identification",

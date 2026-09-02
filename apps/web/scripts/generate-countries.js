@@ -26,6 +26,21 @@ const mledozeUrl =
 
 const EXCLUDED = new Set(["ATA", "Antarctica"]);
 
+// mledoze/countries uses UNK (the old UNMIK code) for Kosovo; this game uses XKX.
+const MLEDOZE_ISO3_ALIASES = {
+  UNK: "XKX",
+};
+const MLEDOZE_CCA3_BY_GAME_ISO3 = Object.fromEntries(
+  Object.entries(MLEDOZE_ISO3_ALIASES).map(([mledozeCode, gameCode]) => [
+    gameCode,
+    mledozeCode,
+  ])
+);
+
+function canonicalizeIso3(code) {
+  return MLEDOZE_ISO3_ALIASES[code] ?? code;
+}
+
 function resolveIso3(rawName, iso3) {
   if (typeof iso3 === "string" && /^[A-Z]{3}$/.test(iso3)) {
     return iso3;
@@ -118,7 +133,9 @@ async function main() {
 
       const existing = existingByIso3.get(iso3);
       const dr5hn = dr5hnByIso3.get(iso3);
-      const mledoze = mledozeByIso3.get(iso3);
+      const mledoze =
+        mledozeByIso3.get(iso3) ??
+        mledozeByIso3.get(MLEDOZE_CCA3_BY_GAME_ISO3[iso3]);
       const population =
         typeof dr5hn?.population === "number" && dr5hn.population > 0
           ? dr5hn.population
@@ -135,8 +152,10 @@ async function main() {
       const languages =
         ranked.length > 0 ? ranked : fallbackLanguages(mledoze?.languages);
       const neighbors = Array.isArray(mledoze?.borders)
-        ? mledoze.borders.filter((borderIso3) => borderIso3 && borderIso3 !== iso3)
-        : existing?.neighbors ?? [];
+        ? mledoze.borders
+            .map(canonicalizeIso3)
+            .filter((borderIso3) => borderIso3 && borderIso3 !== iso3)
+        : (existing?.neighbors ?? []).map(canonicalizeIso3);
 
       return {
         iso3,
@@ -155,6 +174,17 @@ async function main() {
     })
     .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Land borders are symmetric. mledoze lists Kosovo only as UNK on its
+  // neighbors, so without this pass XKX would keep an empty neighbor list.
+  const byIso3 = new Map(countries.map((country) => [country.iso3, country]));
+  for (const country of countries) {
+    for (const neighborId of country.neighbors) {
+      const neighbor = byIso3.get(neighborId);
+      if (!neighbor || neighbor.neighbors.includes(country.iso3)) continue;
+      neighbor.neighbors.push(country.iso3);
+    }
+  }
 
   const missingCapitals = countries.filter((c) => !c.capital);
   if (missingCapitals.length > 0) {
