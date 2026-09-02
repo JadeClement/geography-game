@@ -21,6 +21,7 @@ import {
   getCountryScreenBounds,
   getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
+  projectMainlandRings,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
@@ -2350,6 +2351,18 @@ export default function MapboxMap({
             width,
             height,
           };
+        },
+        projectMainlandRingsClient(country) {
+          const projectToClient = (lng, lat) => {
+            if (isLngLatBehindGlobe(map, lng, lat)) return null;
+            const point = map.project([lng, lat]);
+            const mapRect = container.getBoundingClientRect();
+            return {
+              x: point.x + mapRect.left,
+              y: point.y + mapRect.top,
+            };
+          };
+          return projectMainlandRings(country, projectToClient);
         },
         projectDiscoverAnchor(country, viewportRect) {
           return getCountryVisibleScreenAnchor(country, projectToOverlay, viewportRect);

@@ -68,6 +68,7 @@ import {
 import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
 import {
   evaluateGeoGuess,
+  evaluateShapeDrop,
   formatDistanceKm,
   formatMapClickDistanceFeedback,
   isBorderlessMapQuestion,
@@ -262,6 +263,35 @@ function NeighborTeachLegend({ foundCount, missedCount, wrongCount }) {
 }
 
 const WRONG_CONTINENT_FEEDBACK_MS = 3500;
+
+/** Screen position of the country's centroid inside a dropped silhouette box. */
+function clientPointForDroppedCentroid(target, dropRect, api) {
+  if (!dropRect || !(dropRect.width > 0) || !(dropRect.height > 0) || !api) {
+    return null;
+  }
+  const [lng, lat] = target?.centroid ?? [];
+  const trueRect = api.projectBoundsClient?.(target);
+  const trueCentroid =
+    Number.isFinite(lng) && Number.isFinite(lat)
+      ? api.projectClient?.(lng, lat)
+      : null;
+  if (
+    trueRect?.width > 0 &&
+    trueRect?.height > 0 &&
+    trueCentroid &&
+    Number.isFinite(trueCentroid.x) &&
+    Number.isFinite(trueCentroid.y)
+  ) {
+    return {
+      x: dropRect.left + ((trueCentroid.x - trueRect.left) / trueRect.width) * dropRect.width,
+      y: dropRect.top + ((trueCentroid.y - trueRect.top) / trueRect.height) * dropRect.height,
+    };
+  }
+  return {
+    x: dropRect.left + dropRect.width / 2,
+    y: dropRect.top + dropRect.height / 2,
+  };
+}
 
 export default function GeographyGame() {
   const router = useRouter();
@@ -2618,7 +2648,7 @@ export default function GeographyGame() {
   }, []);
 
   const applyLearnGeoGuess = useCallback(
-    (lngLat, feature, { hitKm, responseTimeMs, revealUsed, dropRect } = {}) => {
+    (lngLat, feature, { hitKm, responseTimeMs, revealUsed, dropRect, centroid } = {}) => {
       const question = currentLearnQuestionRef.current;
       const emit = learnMapEmitRef.current;
       if (!question || typeof emit !== "function" || !lngLat) return;
@@ -2626,12 +2656,19 @@ export default function GeographyGame() {
       const targetId = question.correctAnswer ?? question.countryId;
       const target = allCountriesById.get(targetId);
       const geometry = target?.feature?.geometry ?? null;
-      const guess = evaluateGeoGuess({
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-        geometry,
-        hitKm,
-      });
+      const guess = centroid
+        ? evaluateShapeDrop({
+            lng: lngLat.lng,
+            lat: lngLat.lat,
+            centroid,
+            hitKm: hitKm ?? SHAPE_DROP_HIT_KM,
+          })
+        : evaluateGeoGuess({
+            lng: lngLat.lng,
+            lat: lngLat.lat,
+            geometry,
+            hitKm,
+          });
       const clicked = feature ? countryFromFeature(feature, activeCountries) : null;
       const guessRect = guess.correct
         ? null
@@ -2801,7 +2838,13 @@ export default function GeographyGame() {
           : clientY;
 
       const api = mapProjectRef.current;
-      const lngLat = api?.unprojectClient?.(dropX, dropY);
+      const targetId = question.correctAnswer ?? question.countryId;
+      const target = allCountriesById.get(targetId);
+      const droppedCentroid = clientPointForDroppedCentroid(target, dropRect, api);
+      const lngLat = api?.unprojectClient?.(
+        droppedCentroid?.x ?? dropX,
+        droppedCentroid?.y ?? dropY
+      );
       if (!lngLat || !Number.isFinite(lngLat.lng) || !Number.isFinite(lngLat.lat)) {
         return;
       }
@@ -2811,9 +2854,10 @@ export default function GeographyGame() {
         responseTimeMs,
         revealUsed,
         dropRect: dropRect ?? null,
+        centroid: target?.centroid ?? null,
       });
     },
-    [applyLearnGeoGuess, gamePausedRef, tutorialStepId]
+    [allCountriesById, applyLearnGeoGuess, gamePausedRef, tutorialStepId]
   );
 
   const startLearnEngineGame = useCallback(
@@ -3983,12 +4027,15 @@ export default function GeographyGame() {
     }
     return learnDistanceReveal;
   }, [learnDistanceReveal, currentLearnQuestion?.id]);
-  const droppedShapeCorrectRect = useMemo(() => {
+  const droppedShapeExcludeRings = useMemo(() => {
     if (!droppedShapeReveal?.targetId) return null;
     const country = allCountriesById.get(droppedShapeReveal.targetId);
     if (!country) return null;
-    return getShapeDropMapRect(country);
-  }, [allCountriesById, droppedShapeReveal, getShapeDropMapRect]);
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return null;
+    const rings = api.projectMainlandRingsClient?.(country);
+    return Array.isArray(rings) && rings.length > 0 ? rings : null;
+  }, [allCountriesById, droppedShapeReveal, mapViewRevision]);
 
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card
@@ -4488,7 +4535,7 @@ export default function GeographyGame() {
                   }
                   countryId={droppedShapeReveal.targetId}
                   tone="wrong"
-                  excludeRect={droppedShapeCorrectRect}
+                  excludeRings={droppedShapeExcludeRings}
                 />
               )}
               {distanceFeedback && (

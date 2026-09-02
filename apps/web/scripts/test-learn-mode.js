@@ -36,10 +36,12 @@ import { buildLearnStatPayloads } from "@/lib/learn/emaIntegration";
 import {
   distancePenaltyScale,
   evaluateGeoGuess,
+  evaluateShapeDrop,
   formatDistanceKm,
   formatMapClickDistanceFeedback,
   MAP_CLICK_HIT_KM,
   MAP_CLICK_CLOSE_KM,
+  SHAPE_DROP_HIT_KM,
 } from "@/lib/learn/mapGuess";
 import { distanceToGeometry, pointInGeometry } from "@worldly/core/geo/distance";
 import {
@@ -543,6 +545,28 @@ test("point-in-polygon and closest-border distance for a simple square", () => {
   const hit = evaluateGeoGuess({ lng: 1, lat: 1, geometry, hitKm: MAP_CLICK_HIT_KM });
   assert.equal(hit.correct, true);
   assert.match(formatDistanceKm(0), /less than 1 km|0/);
+});
+
+test("shape drop measures centroid to centroid, not nearest border", () => {
+  const geometry = {
+    type: "Polygon",
+    coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]],
+  };
+  // Inside the square: border distance is 0, but 0.5° north of the centroid.
+  const border = evaluateGeoGuess({ lng: 1, lat: 1.5, geometry });
+  assert.equal(border.inside, true);
+  assert.equal(border.distanceKm, 0);
+
+  const dropped = evaluateShapeDrop({
+    lng: 1,
+    lat: 1.5,
+    centroid: [1, 1],
+    hitKm: SHAPE_DROP_HIT_KM,
+  });
+  assert.equal(dropped.inside, false);
+  assert.ok(dropped.distanceKm > 40 && dropped.distanceKm < 70);
+  assert.deepEqual(dropped.closestPoint, [1, 1]);
+  assert.equal(dropped.correct, true);
 });
 
 test("map click copy: under 20 km is green Close enough, under 100 km is Close!", () => {

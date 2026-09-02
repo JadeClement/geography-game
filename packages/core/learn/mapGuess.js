@@ -1,18 +1,21 @@
 /**
  * Score a borderless-map click or shape drop against the target country.
  *
- * Hits inside the polygon (or within a small km tolerance for finger/mouse
- * slop) count as correct. Misses keep a distance so EMA can penalize a
+ * Map clicks: inside the polygon (or within a small km of the border) counts
+ * as a hit. Misses keep the nearest-border distance so EMA can penalize a
  * 10,000 km miss far more than a 20 km near-miss.
+ *
+ * Shape drops: great-circle distance from the dropped silhouette's centroid
+ * to the country's centroid.
  */
 
-import { distanceToGeometry, formatDistanceKm } from "../geo/distance.js";
+import { distanceToGeometry, formatDistanceKm, haversineKm } from "../geo/distance.js";
 
 /** Inside, or this close to the border, counts as a hit for map clicks. */
 export const MAP_CLICK_HIT_KM = 20;
 /** Misses closer than this get a "Close!" toast instead of a generic miss. */
 export const MAP_CLICK_CLOSE_KM = 100;
-/** Shape drops are coarser — the silhouette center is a blob, not a pinpoint. */
+/** Shape drops are coarser — centroid-to-centroid within this counts as a hit. */
 export const SHAPE_DROP_HIT_KM = 100;
 
 /**
@@ -45,6 +48,44 @@ export function evaluateGeoGuess({ lng, lat, geometry, hitKm = MAP_CLICK_HIT_KM 
     ...result,
     correct,
     penaltyScale: correct ? 0 : distancePenaltyScale(result.distanceKm),
+  };
+}
+
+/**
+ * Shape-drop scoring: great-circle distance from the dropped silhouette's
+ * centroid to the target country's centroid. Map-clicks keep evaluateGeoGuess
+ * (inside / nearest border).
+ */
+export function evaluateShapeDrop({
+  lng,
+  lat,
+  centroid,
+  hitKm = SHAPE_DROP_HIT_KM,
+} = {}) {
+  const toLng = Array.isArray(centroid) ? centroid[0] : centroid?.lng;
+  const toLat = Array.isArray(centroid) ? centroid[1] : centroid?.lat;
+  if (
+    !Number.isFinite(lng) ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(toLng) ||
+    !Number.isFinite(toLat)
+  ) {
+    return {
+      inside: false,
+      distanceKm: Infinity,
+      closestPoint: null,
+      correct: false,
+      penaltyScale: 1,
+    };
+  }
+  const distanceKm = haversineKm(lng, lat, toLng, toLat);
+  const correct = distanceKm <= hitKm;
+  return {
+    inside: false,
+    distanceKm,
+    closestPoint: [toLng, toLat],
+    correct,
+    penaltyScale: correct ? 0 : distancePenaltyScale(distanceKm),
   };
 }
 

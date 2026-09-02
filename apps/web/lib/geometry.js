@@ -322,6 +322,46 @@ export function getCountryFillScreenBounds(country, projectLngLat) {
   };
 }
 
+const MAX_CLIP_RING_POINTS = 180;
+
+function subsampleProjectedRing(points, maxPoints = MAX_CLIP_RING_POINTS) {
+  if (points.length <= maxPoints) return points;
+  const step = Math.ceil(points.length / maxPoints);
+  const out = [];
+  for (let i = 0; i < points.length; i += step) out.push(points[i]);
+  const last = points[points.length - 1];
+  const prev = out[out.length - 1];
+  if (!prev || prev.x !== last.x || prev.y !== last.y) out.push(last);
+  return out;
+}
+
+/**
+ * Mainland rings in screen/client pixels, matching the filled country on the
+ * map. Used to punch a country-shaped hole in the dropped silhouette so the
+ * true-location fill shows through without a rectangular crop.
+ */
+export function projectMainlandRings(country, projectLngLat) {
+  if (!country?.feature?.geometry || typeof projectLngLat !== "function") return [];
+
+  const mainland = getMainlandPolygons(country.feature.geometry, country.id);
+  const rings = [];
+  for (const polygon of mainland) {
+    if (!Array.isArray(polygon)) continue;
+    for (const ring of polygon) {
+      if (!Array.isArray(ring) || ring.length < 3) continue;
+      const pts = [];
+      for (const coord of ring) {
+        if (!Array.isArray(coord) || coord.length < 2) continue;
+        const point = projectLngLat(coord[0], coord[1]);
+        if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+        pts.push({ x: point.x, y: point.y });
+      }
+      if (pts.length >= 3) rings.push(subsampleProjectedRing(pts));
+    }
+  }
+  return rings;
+}
+
 const VISIBLE_ANCHOR_MAX_SAMPLES = 320;
 /** Use the precomputed visual center only when most of the mainland is in view. */
 const VISIBLE_ANCHOR_MOSTLY_ONSCREEN = 0.45;
