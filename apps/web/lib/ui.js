@@ -1607,7 +1607,10 @@ export const masterySignIn =
   "flex flex-col items-start gap-4 rounded-lg border border-border bg-surface p-6";
 
 export const masteryToolbar =
-  "mb-4 flex flex-wrap items-center justify-center gap-3";
+  "mb-4 flex w-full flex-col items-center gap-3";
+
+export const masteryTabsCenter =
+  "flex w-full justify-center translate-x-[calc(var(--scrollbar-width,0px)/2)]";
 
 export const masteryTabs =
   "flex shrink-0 flex-nowrap items-center gap-1.5 rounded-pill border border-border bg-inset p-1";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import MasteryMap from "@/components/MasteryMap";
@@ -51,6 +51,7 @@ import {
   masteryTab,
   masteryTabDot,
   masteryTabs,
+  masteryTabsCenter,
   masteryTitle,
   masteryToolbar,
   masteryTooltip,
@@ -107,6 +108,25 @@ export default function MasteryPage() {
   const [hover, setHover] = useState(null);
 
   const mapRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const syncScrollbarWidth = () => {
+      const next = `${window.innerWidth - root.clientWidth}px`;
+      if (root.style.getPropertyValue("--scrollbar-width") === next) return;
+      root.style.setProperty("--scrollbar-width", next);
+    };
+    syncScrollbarWidth();
+    window.addEventListener("resize", syncScrollbarWidth);
+    const observer = new ResizeObserver(syncScrollbarWidth);
+    observer.observe(root);
+    observer.observe(document.body);
+    return () => {
+      window.removeEventListener("resize", syncScrollbarWidth);
+      observer.disconnect();
+      root.style.removeProperty("--scrollbar-width");
+    };
+  }, []);
 
   useEffect(() => {
     if (!signedIn) {
@@ -261,30 +281,32 @@ export default function MasteryPage() {
         {signedIn && !loading && !error && data && (
           <>
             <div className={masteryToolbar}>
-              <div className={masteryTabs} role="tablist" aria-label="Mastery mode">
-                {MODE_TABS.map((tab) => {
-                  const tabVisual = getModeVisual(tab);
-                  const active = tab === mode;
-                  const label = tab === ALL_MODE ? "All" : getModeLabel(tab);
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      className={masteryTab({ active })}
-                      style={active ? { borderColor: tabVisual.accent, color: tabVisual.accent } : undefined}
-                      onClick={() => setMode(tab)}
-                    >
-                      <span
-                        className={masteryTabDot}
-                        style={{ background: tabVisual.accent }}
-                        aria-hidden="true"
-                      />
-                      {label}
-                    </button>
-                  );
-                })}
+              <div className={masteryTabsCenter}>
+                <div className={masteryTabs} role="tablist" aria-label="Mastery mode">
+                  {MODE_TABS.map((tab) => {
+                    const tabVisual = getModeVisual(tab);
+                    const active = tab === mode;
+                    const label = tab === ALL_MODE ? "All" : getModeLabel(tab);
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        className={masteryTab({ active })}
+                        style={active ? { borderColor: tabVisual.accent, color: tabVisual.accent } : undefined}
+                        onClick={() => setMode(tab)}
+                      >
+                        <span
+                          className={masteryTabDot}
+                          style={{ background: tabVisual.accent }}
+                          aria-hidden="true"
+                        />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <button type="button" className={cn(secondaryBtn, masteryShare)} onClick={handleShare}>
