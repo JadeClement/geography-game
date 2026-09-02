@@ -479,6 +479,25 @@ export default function PacificMap({
         const zoomRatio = defaultViewBox.width / current.width;
         return getDiscoverLabelScaleFromRatio(zoomRatio);
       },
+      projectClient(lng, lat) {
+        const svgRect = svg.getBoundingClientRect();
+        const currentViewBox = viewBoxRef.current;
+        const point = PACIFIC_GAME_VIEW.project(
+          lng,
+          lat,
+          PACIFIC_GAME_VIEW.width,
+          PACIFIC_GAME_VIEW.height
+        );
+        if (!point) return null;
+        return {
+          x:
+            ((point[0] - currentViewBox.x) / currentViewBox.width) * svgRect.width +
+            svgRect.left,
+          y:
+            ((point[1] - currentViewBox.y) / currentViewBox.height) * svgRect.height +
+            svgRect.top,
+        };
+      },
       unprojectClient(clientX, clientY) {
         const pt = clientPointToSvg(svg, clientX, clientY);
         return unprojectPacificSvg(pt.x, pt.y, PACIFIC_GAME_VIEW);

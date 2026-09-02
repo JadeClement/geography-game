@@ -2577,6 +2577,23 @@ export default function GeographyGame() {
     ]
   );
 
+  const dropRectForGeoGuess = useCallback((target, lngLat, existing) => {
+    if (existing && existing.width > 0 && existing.height > 0) return existing;
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function" || !target || !lngLat) return null;
+    const size = api.projectBoundsClient?.(target) ?? null;
+    const point = api.projectClient?.(lngLat.lng, lngLat.lat);
+    if (!size || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      return null;
+    }
+    return {
+      left: point.x - size.width / 2,
+      top: point.y - size.height / 2,
+      width: size.width,
+      height: size.height,
+    };
+  }, []);
+
   const applyLearnGeoGuess = useCallback(
     (lngLat, feature, { hitKm, responseTimeMs, revealUsed, dropRect } = {}) => {
       const question = currentLearnQuestionRef.current;
@@ -2593,10 +2610,9 @@ export default function GeographyGame() {
         hitKm,
       });
       const clicked = feature ? countryFromFeature(feature, activeCountries) : null;
-      const clickedId =
-        clicked && clicked.id && clicked.id !== targetId ? clicked.id : null;
-
-      if (clickedId) addRoundWrongCountry(clickedId);
+      const guessRect = guess.correct
+        ? null
+        : dropRectForGeoGuess(target, lngLat, dropRect);
 
       const labels = {};
       if (target?.name) {
@@ -2608,20 +2624,11 @@ export default function GeographyGame() {
           alwaysShow: true,
         };
       }
-      if (clickedId && clicked?.name) {
-        labels[clickedId] = {
-          kind: "text",
-          text: clicked.name,
-          countryId: clickedId,
-          emphasized: false,
-          alwaysShow: true,
-        };
-      }
       setLearnFeedbackLabelsById(labels);
       setLearnDistanceReveal({
         questionId: question.id,
         targetId,
-        clickedId,
+        clickedId: null,
         from: { lng: lngLat.lng, lat: lngLat.lat },
         to: guess.closestPoint
           ? { lng: guess.closestPoint[0], lat: guess.closestPoint[1] }
@@ -2629,7 +2636,7 @@ export default function GeographyGame() {
         distanceKm: guess.distanceKm,
         correct: guess.correct,
         label: guess.correct ? null : `${formatDistanceKm(guess.distanceKm)} away`,
-        dropRect: dropRect ?? null,
+        dropRect: guessRect,
       });
 
       emit({
@@ -2642,7 +2649,7 @@ export default function GeographyGame() {
         inside: guess.inside,
       });
     },
-    [activeCountries, addRoundWrongCountry, allCountriesById]
+    [activeCountries, allCountriesById, dropRectForGeoGuess]
   );
 
   const handleLearnMapClick = useCallback(
@@ -3938,6 +3945,12 @@ export default function GeographyGame() {
     }
     return learnDistanceReveal;
   }, [learnDistanceReveal, currentLearnQuestion?.id]);
+  const droppedShapeCorrectRect = useMemo(() => {
+    if (!droppedShapeReveal?.targetId) return null;
+    const country = allCountriesById.get(droppedShapeReveal.targetId);
+    if (!country) return null;
+    return getShapeDropMapRect(country);
+  }, [allCountriesById, droppedShapeReveal, getShapeDropMapRect]);
 
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card
@@ -4415,6 +4428,7 @@ export default function GeographyGame() {
                 />
               )}
               {droppedShapeReveal && (
+                <>
                 <ShapeDropPlacement
                   rect={droppedShapeReveal.dropRect}
                   feature={
@@ -4423,6 +4437,16 @@ export default function GeographyGame() {
                   countryId={droppedShapeReveal.targetId}
                   tone="wrong"
                 />
+                <ShapeDropPlacement
+                  rect={droppedShapeCorrectRect}
+                  feature={
+                    resolveLearnCountry(droppedShapeReveal.targetId).feature
+                  }
+                  countryId={droppedShapeReveal.targetId}
+                  tone="correct"
+                  className="z-[4]"
+                />
+                </>
               )}
               {gamePaused &&
                 !gameComplete &&
@@ -4598,6 +4622,7 @@ export default function GeographyGame() {
                 </>
               )}
               {(isDiscoverGame || hasLearnMapLabels) && (
+                <div className={droppedShapeReveal ? "relative z-[5]" : undefined}>
                 <DiscoverMapLabels
                   mapContainerRef={mapContainerRef}
                   headerAnchorRef={discoverHeaderAnchorRef}
@@ -4620,6 +4645,7 @@ export default function GeographyGame() {
                   )}
                   onLabelLanded={handleDiscoverLabelLanded}
                 />
+                </div>
               )}
             </div>
           )}

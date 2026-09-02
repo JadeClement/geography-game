@@ -2204,6 +2204,15 @@ export default function MapboxMap({
           const zoomRatio = 2 ** (map.getZoom() - refZoom);
           return getDiscoverLabelScaleFromRatio(zoomRatio);
         },
+        projectClient(lng, lat) {
+          if (isLngLatBehindGlobe(map, lng, lat)) return null;
+          const point = map.project([lng, lat]);
+          const mapRect = container.getBoundingClientRect();
+          return {
+            x: point.x + mapRect.left,
+            y: point.y + mapRect.top,
+          };
+        },
         unprojectClient(clientX, clientY) {
           const rect = container.getBoundingClientRect();
           const point = map.unproject([clientX - rect.left, clientY - rect.top]);
