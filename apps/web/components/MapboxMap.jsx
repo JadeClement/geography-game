@@ -609,11 +609,29 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       ) {
         map.setZoom(map.getZoom() + zoomDelta);
       }
+      const cap = mapView.maxZoom;
+      if (
+        mapView.clampToMaxZoom &&
+        Number.isFinite(cap) &&
+        typeof map.getZoom === "function" &&
+        map.getZoom() > cap
+      ) {
+        map.setZoom(cap);
+      }
     }
 
     if (onSettled) {
       map.once("idle", () => {
         if (map.__mapViewApplyToken !== token) return;
+        const cap = mapView.maxZoom;
+        if (
+          mapView.clampToMaxZoom &&
+          Number.isFinite(cap) &&
+          typeof map.getZoom === "function" &&
+          map.getZoom() > cap
+        ) {
+          map.setZoom(cap);
+        }
         onSettled(map.getZoom());
       });
     }

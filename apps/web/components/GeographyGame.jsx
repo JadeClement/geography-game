@@ -47,7 +47,7 @@ import {
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
-import { getMapViewForRegion, getLearnFocusMapView, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
+import { getMapViewForRegion, getLearnFocusMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
 import {
@@ -853,13 +853,21 @@ export default function GeographyGame() {
       // Shape-drop needs the full region at a fixed scale so the silhouette
       // matches on-map size. No cover-zoom, no subject close-up.
       if (isLearnShapeDropQuestion) {
+        if (session?.region === "oceania") {
+          return withLearnKey({
+            ...mapView,
+            maxZoom: Math.min(mapView.maxZoom ?? 5, 4),
+            clampToMaxZoom: true,
+          });
+        }
+        const regionBounds =
+          getGeographicBoundsFromCountries(activeCountries) ?? mapView.bounds;
         return withLearnKey({
-          ...mapView,
-          padding:
-            typeof mapView.padding === "number"
-              ? Math.max(mapView.padding, 80)
-              : 80,
-          maxZoom: Math.min(mapView.maxZoom ?? 5, 4),
+          type: "bounds",
+          bounds: regionBounds,
+          padding: 48,
+          maxZoom: 3.2,
+          clampToMaxZoom: true,
         });
       }
       if (isHighlightPrompt) {
@@ -900,6 +908,7 @@ export default function GeographyGame() {
     isLearnMapClickQuestion,
     isLearnShapeDropQuestion,
     allCountriesById,
+    activeCountries,
     session?.region,
   ]);
 
@@ -4428,7 +4437,6 @@ export default function GeographyGame() {
                 />
               )}
               {droppedShapeReveal && (
-                <>
                 <ShapeDropPlacement
                   rect={droppedShapeReveal.dropRect}
                   feature={
@@ -4436,17 +4444,8 @@ export default function GeographyGame() {
                   }
                   countryId={droppedShapeReveal.targetId}
                   tone="wrong"
+                  excludeRect={droppedShapeCorrectRect}
                 />
-                <ShapeDropPlacement
-                  rect={droppedShapeCorrectRect}
-                  feature={
-                    resolveLearnCountry(droppedShapeReveal.targetId).feature
-                  }
-                  countryId={droppedShapeReveal.targetId}
-                  tone="correct"
-                  className="z-[4]"
-                />
-                </>
               )}
               {gamePaused &&
                 !gameComplete &&

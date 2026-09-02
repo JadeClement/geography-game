@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { primaryBtn } from "@/lib/ui";
 import { isNeighborLearnQuestion, isShapeLearnQuestion } from "@/lib/learn/wrongReveal";
@@ -47,6 +48,11 @@ export default function LearnRoundOverlay({
   feedbackDetail = null,
   ...rendererProps
 }) {
+  const [shapeDragging, setShapeDragging] = useState(false);
+  useEffect(() => {
+    setShapeDragging(false);
+  }, [question?.id]);
+
   if (!question) return null;
 
   // Highlight prompts must stay top-pinned even if the host passes "center" —
@@ -92,7 +98,8 @@ export default function LearnRoundOverlay({
             ? question.answerType === "shape_drop"
               ? "max-w-[min(100%,42rem)]"
               : "max-w-md"
-            : "max-h-full max-w-lg"
+            : "max-h-full max-w-lg",
+          shapeDragging && "invisible pointer-events-none"
         )}
       >
         <div
@@ -121,6 +128,7 @@ export default function LearnRoundOverlay({
             onContinue={onContinue}
             awaitingContinue={awaitingContinue}
             {...rendererProps}
+            onShapeDraggingChange={setShapeDragging}
           />
         </div>
         {(showFooter || showOutcomeFeedback) && (

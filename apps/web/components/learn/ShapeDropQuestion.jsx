@@ -15,6 +15,9 @@ import CountrySilhouette from "./CountrySilhouette";
 /**
  * Viewport-fixed country silhouette. Portaled to `document.body` so
  * `position: fixed` is not trapped by the Learn card's `backdrop-filter`.
+ *
+ * `excludeRect` punches a hole (viewport coords) so the map's true-country
+ * fill can show through when a dropped shape overlaps the correct location.
  */
 export function ShapeDropPlacement({
   rect,
@@ -22,12 +25,15 @@ export function ShapeDropPlacement({
   countryId,
   tone = "idle",
   className,
+  excludeRect = null,
 }) {
   if (!rect || typeof document === "undefined") return null;
   const left = rect.left ?? rect.x;
   const top = rect.top ?? rect.y;
   if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
   if (!(rect.width > 0) || !(rect.height > 0)) return null;
+
+  const clipPath = clipPathExcludingOverlap(rect, excludeRect);
 
   return createPortal(
     <div
@@ -37,6 +43,7 @@ export function ShapeDropPlacement({
         top,
         width: rect.width,
         height: rect.height,
+        ...(clipPath ? { clipPath } : {}),
       }}
     >
       <CountrySilhouette
@@ -54,6 +61,34 @@ export function ShapeDropPlacement({
   );
 }
 
+function clipPathExcludingOverlap(rect, hole) {
+  if (!hole) return null;
+  const left = rect.left ?? rect.x;
+  const top = rect.top ?? rect.y;
+  const width = rect.width;
+  const height = rect.height;
+  const holeLeft = hole.left ?? hole.x;
+  const holeTop = hole.top ?? hole.y;
+  if (
+    !Number.isFinite(holeLeft) ||
+    !Number.isFinite(holeTop) ||
+    !(hole.width > 0) ||
+    !(hole.height > 0)
+  ) {
+    return null;
+  }
+  const x0 = Math.max(left, holeLeft);
+  const y0 = Math.max(top, holeTop);
+  const x1 = Math.min(left + width, holeLeft + hole.width);
+  const y1 = Math.min(top + height, holeTop + hole.height);
+  if (!(x1 > x0 && y1 > y0)) return null;
+  const lx0 = x0 - left;
+  const ly0 = y0 - top;
+  const lx1 = x1 - left;
+  const ly1 = y1 - top;
+  return `polygon(evenodd, 0px 0px, ${width}px 0px, ${width}px ${height}px, 0px ${height}px, 0px 0px, ${lx0}px ${ly0}px, ${lx0}px ${ly1}px, ${lx1}px ${ly1}px, ${lx1}px ${ly0}px, ${lx0}px ${ly0}px)`;
+}
+
 /**
  * Unlabeled silhouette the learner drags onto a borderless map.
  * The ghost is the country's on-map pixel size and lifts off the prompt
@@ -64,6 +99,7 @@ export default function ShapeDropQuestion({
   emit,
   onShapeDropReady,
   onDropPoint,
+  onDraggingChange,
   resolveCountry,
   getMapShapeRect,
   mapViewRevision = 0,
@@ -106,7 +142,8 @@ export default function ShapeDropQuestion({
     draggingRef.current = false;
     revealUsedRef.current = false;
     startedAtRef.current = Date.now();
-  }, [question?.id]);
+    onDraggingChange?.(false);
+  }, [question?.id, onDraggingChange]);
 
   useEffect(() => {
     measureMapSize();
@@ -139,6 +176,7 @@ export default function ShapeDropQuestion({
       if (!draggingRef.current || dropped) return;
       draggingRef.current = false;
       setDragging(false);
+      onDraggingChange?.(false);
 
       const card = document.elementFromPoint(clientX, clientY);
       if (card?.closest("[data-learn-shape-source]")) {
@@ -165,7 +203,7 @@ export default function ShapeDropQuestion({
         revealUsed: revealUsedRef.current,
       });
     },
-    [dropped, onDropPoint]
+    [dropped, onDropPoint, onDraggingChange]
   );
 
   useEffect(() => {
@@ -202,6 +240,7 @@ export default function ShapeDropQuestion({
     }
     draggingRef.current = true;
     setDragging(true);
+    onDraggingChange?.(true);
     const next = ghostFromPointer(event.clientX, event.clientY);
     ghostRef.current = next;
     setGhost(next);

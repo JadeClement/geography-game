@@ -368,6 +368,7 @@ export default function LearnQuestionRenderer({
   onMapClickReady,
   onShapeDropReady,
   onShapeDropPoint,
+  onShapeDraggingChange,
   getMapShapeRect,
   mapViewRevision = 0,
   onContinue,
@@ -395,6 +396,7 @@ export default function LearnQuestionRenderer({
             : null,
         responseTimeMs,
         selectedValue: partial.selectedValue,
+        wrongValues: partial.wrongValues,
         distanceKm: partial.distanceKm,
         inside: partial.inside,
         countryUpdates: partial.countryUpdates,
@@ -504,6 +506,7 @@ export default function LearnQuestionRenderer({
           emit={emit}
           onShapeDropReady={onShapeDropReady}
           onDropPoint={onShapeDropPoint}
+          onDraggingChange={onShapeDraggingChange}
           resolveCountry={resolveCountry}
           getMapShapeRect={getMapShapeRect}
           mapViewRevision={mapViewRevision}
