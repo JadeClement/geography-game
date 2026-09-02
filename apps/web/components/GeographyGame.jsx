@@ -16,7 +16,7 @@ import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import { ShapeDropPlacement } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
-import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
+import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import {
   getOutOfRegionClickFeedback,
@@ -46,7 +46,7 @@ import {
 } from "@/lib/countries";
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { cn } from "@/lib/cn";
-import { enrichGeojsonWithColors, getCountryColorMap } from "@/lib/countryColors";
+import { enrichGeojsonWithColors, getCountryColorMap, CORRECT_COUNTRY_COLOR, MISSED_COUNTRY_COLOR, WRONG_COUNTRY_COLOR } from "@/lib/countryColors";
 import { getMapViewForRegion, getLearnFocusMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
@@ -233,6 +233,33 @@ function outcomeFeedback({ correct, secondTry = false, detail = null }) {
     : { text: "Incorrect", type: "incorrect" };
 }
 
+function NeighborTeachLegend({ foundCount, missedCount, wrongCount }) {
+  const items = [];
+  if (foundCount > 0) {
+    items.push({
+      color: CORRECT_COUNTRY_COLOR,
+      label: missedCount === 0 && wrongCount === 0 ? "Neighbors" : "Found",
+    });
+  }
+  if (missedCount > 0) items.push({ color: MISSED_COUNTRY_COLOR, label: "Missed" });
+  if (wrongCount > 0) items.push({ color: WRONG_COUNTRY_COLOR, label: "Not a neighbor" });
+  if (items.length === 0) return null;
+  return (
+    <div className="pointer-events-none flex flex-wrap justify-center gap-x-3 gap-y-1 rounded-pill border border-border bg-surface/90 px-3 py-1.5 text-xs font-semibold text-text shadow-lg backdrop-blur">
+      {items.map((item) => (
+        <span key={item.label} className="inline-flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-sm"
+            style={{ background: item.color }}
+            aria-hidden="true"
+          />
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const WRONG_CONTINENT_FEEDBACK_MS = 3500;
 
 export default function GeographyGame() {
@@ -298,6 +325,11 @@ export default function GeographyGame() {
   const learnAwaitingContinueRef = useRef(false);
   // Neighbor wrongs: map teach step (highlight + border colors + titles).
   const [learnNeighborMapVisible, setLearnNeighborMapVisible] = useState(false);
+  const [learnNeighborPaint, setLearnNeighborPaint] = useState({
+    foundIds: [],
+    missedIds: [],
+    wrongIds: [],
+  });
   // Area-compare wrongs: larger green / smaller red on the map with area labels.
   const [learnAreaCompareReveal, setLearnAreaCompareReveal] = useState(null);
   // Landlocked wrongs: show the country on the map with bottom Continue.
@@ -1900,6 +1932,7 @@ export default function GeographyGame() {
     setLearnAwaitingContinue(false);
     setLearnContinueMessage(null);
     setLearnNeighborMapVisible(false);
+    setLearnNeighborPaint({ foundIds: [], missedIds: [], wrongIds: [] });
     setLearnAreaCompareReveal(null);
     setLearnLandlockedReveal(null);
     setLearnHighlightWrongReveal(null);
@@ -1930,13 +1963,34 @@ export default function GeographyGame() {
   const showLearnNeighborMapReveal = useCallback(
     (
       neighborReveal,
-      { selectedValue = null, feedbackType = "wrong", message = "", secondTry = false } = {}
+      {
+        selectedValue = null,
+        wrongValues = [],
+        feedbackType = "wrong",
+        message = "",
+        secondTry = false,
+      } = {}
     ) => {
       const { mainId, neighborIds } = neighborReveal;
       const visibleNeighborIds = neighborIds.filter((id) =>
         activeCountries.some((country) => country.id === id)
       );
-      const neighborIdSet = new Set(neighborIds);
+      const resolveId = (value) =>
+        resolveGuessedCountryInRegion(value, {
+          allCountriesById,
+          activeCountries,
+          excludeIds: [mainId],
+        })?.id ?? (typeof value === "string" && visibleNeighborIds.includes(value) ? value : null);
+
+      const paint = classifyNeighborTeachPaint({
+        neighborIds: visibleNeighborIds,
+        mainId,
+        selectedValue,
+        wrongValues,
+        feedbackType,
+        resolveId,
+      });
+
       const labels = {};
       const mainCountry = allCountriesById.get(mainId);
       if (
@@ -1951,72 +2005,25 @@ export default function GeographyGame() {
           alwaysShow: true,
         };
       }
-      for (const id of visibleNeighborIds) {
-        const neighbor = allCountriesById.get(id);
-        if (neighbor?.name) {
-          labels[id] = {
-            kind: "text",
-            text: neighbor.name,
-            countryId: id,
-            alwaysShow: true,
-          };
-        }
-      }
-
-      // Wrong path: red for distractors + bordering countries the learner missed
-      // (multi-select / recall-all pass an array of picks).
-      const foundNeighborIds = new Set();
-      const missedNeighborIds = new Set();
-      if (feedbackType === "wrong" && selectedValue != null) {
-        const selections = Array.isArray(selectedValue)
-          ? selectedValue
-          : [selectedValue];
-
-        clearWrongFlash();
-
-        for (const value of selections) {
-          if (typeof value === "string" && neighborIdSet.has(value)) {
-            foundNeighborIds.add(value);
-            continue;
-          }
-          const guessed = resolveGuessedCountryInRegion(value, {
-            allCountriesById,
-            activeCountries,
-            excludeIds: [mainId],
-          });
-          if (!guessed) continue;
-          if (neighborIdSet.has(guessed.id)) {
-            foundNeighborIds.add(guessed.id);
-            continue;
-          }
-          addRoundWrongCountry(guessed.id);
-          labels[guessed.id] = {
-            kind: "text",
-            text: guessed.name,
-            countryId: guessed.id,
-            alwaysShow: true,
-          };
-        }
-
-        if (Array.isArray(selectedValue)) {
-          for (const id of visibleNeighborIds) {
-            if (!foundNeighborIds.has(id)) {
-              missedNeighborIds.add(id);
-              addRoundWrongCountry(id);
-            }
-          }
-        }
+      for (const id of [
+        ...visibleNeighborIds,
+        ...paint.wrongIds,
+      ]) {
+        if (labels[id]) continue;
+        const country = allCountriesById.get(id);
+        if (!country?.name) continue;
+        labels[id] = {
+          kind: "text",
+          text: country.name,
+          countryId: id,
+          alwaysShow: true,
+        };
       }
 
       setHighlightCountryId(mainId);
-      // Learn maps as FIND_FILL: `filled` is what actually paints assigned colors.
-      // `showColor` covers flash levels / Pacific stroke; both clear on Continue.
-      // Missed neighbors stay out of the green fill — they're painted red via wrong.
-      const greenNeighborIds = visibleNeighborIds.filter(
-        (id) => !missedNeighborIds.has(id)
-      );
-      setFilledCountryIds(greenNeighborIds);
-      setShowColorCountryIds(greenNeighborIds);
+      setLearnNeighborPaint(paint);
+      setFilledCountryIds([]);
+      setShowColorCountryIds([]);
       setLearnFeedbackLabelsById(labels);
       setLearnNeighborMapVisible(true);
       setLearnAreaCompareReveal(null);
@@ -2032,9 +2039,7 @@ export default function GeographyGame() {
     },
     [
       activeCountries,
-      addRoundWrongCountry,
       allCountriesById,
-      clearWrongFlash,
       setFeedback,
       setFilledCountryIds,
       setHighlightCountryId,
@@ -2321,6 +2326,7 @@ export default function GeographyGame() {
           if (reveal.neighborReveal) {
             showLearnNeighborMapReveal(reveal.neighborReveal, {
               selectedValue: event.selectedValue,
+              wrongValues: event.wrongValues,
               feedbackType: "correct",
               message: reveal.message,
               secondTry,
@@ -2433,6 +2439,7 @@ export default function GeographyGame() {
       if (reveal.neighborReveal) {
         showLearnNeighborMapReveal(reveal.neighborReveal, {
           selectedValue: event.selectedValue,
+          wrongValues: event.wrongValues,
           feedbackType: "wrong",
           message: reveal.message,
         });
@@ -3672,19 +3679,24 @@ export default function GeographyGame() {
     allCountriesById,
     activeCountries,
   ]);
-  // Exclude missed / distractor reds so the teach override can't re-green them.
-  const learnNeighborGreenIds = useMemo(() => {
-    if (!learnNeighborRevealActive) return [];
-    const wrongSet = new Set(mapWrongCountryIds);
-    return learnNeighborPaintIds.filter((id) => !wrongSet.has(id));
-  }, [learnNeighborRevealActive, learnNeighborPaintIds, mapWrongCountryIds]);
-  const mapFilledCountryIds = learnNeighborRevealActive
-    ? learnNeighborGreenIds
-    : filledCountryIds;
+  const mapNeighborPaint = useMemo(() => {
+    if (!learnNeighborRevealActive) {
+      return { foundIds: [], missedIds: [], wrongIds: [] };
+    }
+    if (
+      learnNeighborPaint.foundIds.length ||
+      learnNeighborPaint.missedIds.length ||
+      learnNeighborPaint.wrongIds.length
+    ) {
+      return learnNeighborPaint;
+    }
+    return { foundIds: learnNeighborPaintIds, missedIds: [], wrongIds: [] };
+  }, [learnNeighborRevealActive, learnNeighborPaint, learnNeighborPaintIds]);
+  const mapFilledCountryIds = learnNeighborRevealActive ? [] : filledCountryIds;
   // Learn only uses showColor for the neighbor-teach step. Gate it on that flag so
   // a stale id list can't leave the "Y" country painted after Continue.
   const mapShowColorCountryIds = learnNeighborRevealActive
-    ? learnNeighborGreenIds
+    ? []
     : learnEngineActive
       ? []
       : showColorCountryIds;
@@ -4389,6 +4401,9 @@ export default function GeographyGame() {
                   showColorCountryIds={mapShowColorCountryIds}
                   filledCountryIds={mapFilledCountryIds}
                   secondTryCountryIds={secondTryCountryIds}
+                  correctCountryIds={mapNeighborPaint.foundIds}
+                  missedCountryIds={mapNeighborPaint.missedIds}
+                  neighborWrongIds={mapNeighborPaint.wrongIds}
                   highlightTargetCountryId={highlightTargetCountryId}
                   highlightCountryId={mapHighlightCountryId}
                   highlightTone={learnHighlightTone}
@@ -4419,6 +4434,9 @@ export default function GeographyGame() {
                   showColorCountryIds={mapShowColorCountryIds}
                   filledCountryIds={mapFilledCountryIds}
                   secondTryCountryIds={secondTryCountryIds}
+                  correctCountryIds={mapNeighborPaint.foundIds}
+                  missedCountryIds={mapNeighborPaint.missedIds}
+                  neighborWrongIds={mapNeighborPaint.wrongIds}
                   highlightTargetCountryId={highlightTargetCountryId}
                   highlightCountryId={mapHighlightCountryId}
                   highlightTone={learnHighlightTone}
@@ -4435,6 +4453,15 @@ export default function GeographyGame() {
                   onMapViewChange={needsMapProjection ? handleMapViewChange : undefined}
                   onMapMove={needsMapProjection ? handleMapMove : undefined}
                 />
+              )}
+              {learnNeighborRevealActive && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[4] flex justify-center px-4 max-md:bottom-[calc(4.5rem+env(safe-area-inset-bottom))]">
+                  <NeighborTeachLegend
+                    foundCount={mapNeighborPaint.foundIds.length}
+                    missedCount={mapNeighborPaint.missedIds.length}
+                    wrongCount={mapNeighborPaint.wrongIds.length}
+                  />
+                </div>
               )}
               {droppedShapeReveal && (
                 <ShapeDropPlacement

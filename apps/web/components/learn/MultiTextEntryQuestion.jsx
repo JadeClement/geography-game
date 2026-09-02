@@ -69,15 +69,13 @@ export default function MultiTextEntryQuestion({
   const emitResult = ({ correct, revealUsed, found }) => {
     const foundSet = found ?? foundIds;
     const responseTimeMs = Date.now() - startedAtRef.current;
-    const foundNames = options
-      .filter((option) => foundSet.has(option.value))
-      .map((option) => option.label);
     onEmit?.({
       correct,
       responseTimeMs,
       revealUsed,
       timedOut: false,
-      selectedValue: foundNames,
+      selectedValue: [...foundSet],
+      wrongValues: wrongGuesses.map((guess) => guess.key),
     });
   };
 

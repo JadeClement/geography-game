@@ -31,7 +31,7 @@ import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
-import { buildLearnWrongReveal } from "@/lib/learn/wrongReveal";
+import { buildLearnWrongReveal, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { buildLearnStatPayloads } from "@/lib/learn/emaIntegration";
 import {
   distancePenaltyScale,
@@ -764,6 +764,35 @@ test("Serbia neighbor data includes Kosovo as XKX, not the mledoze UNK code", ()
   const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID);
   assert.match(reveal.message, /Kosovo/);
   assert.ok(reveal.neighborReveal?.neighborIds.includes("XKX"));
+});
+
+test("neighbor teach paints found green, missed orange, and extra guesses red", () => {
+  const neighbors = ["LVA", "RUS"];
+  const paint = classifyNeighborTeachPaint({
+    neighborIds: neighbors,
+    mainId: "EST",
+    selectedValue: ["LVA"],
+    wrongValues: ["FIN"],
+    feedbackType: "wrong",
+    resolveId: (value) => value,
+  });
+  assert.deepEqual(paint.foundIds, ["LVA"]);
+  assert.deepEqual(paint.missedIds, ["RUS"]);
+  assert.deepEqual(paint.wrongIds, ["FIN"]);
+});
+
+test("correct neighbor teach paints the full border set green", () => {
+  const neighbors = ["LVA", "RUS"];
+  const paint = classifyNeighborTeachPaint({
+    neighborIds: neighbors,
+    mainId: "EST",
+    selectedValue: ["LVA", "RUS"],
+    feedbackType: "correct",
+    resolveId: (value) => value,
+  });
+  assert.deepEqual(paint.foundIds, neighbors);
+  assert.deepEqual(paint.missedIds, []);
+  assert.deepEqual(paint.wrongIds, []);
 });
 
 test("wrong flag pick relies on option labels instead of That's-copy", () => {

@@ -9,6 +9,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import {
   CORRECT_COUNTRY_COLOR,
   getActiveLandColor,
+  MISSED_COUNTRY_COLOR,
   SUBJECT_COUNTRY_COLOR,
   SUBJECT_COUNTRY_OUTLINE,
   TARGET_HIGHLIGHT_COLOR,
@@ -145,6 +146,81 @@ function highlightKindFromTone(tone) {
   if (tone === "success") return 3;
   if (tone === "correct") return 4;
   return 1;
+}
+
+function uniquePaintIds(...lists) {
+  const ids = [];
+  const seen = new Set();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const id of list) {
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/** Same boolean filter shape as the white subject highlight (`==` / `match`). */
+function featureIdFilter(ids) {
+  const list = uniquePaintIds(ids);
+  if (list.length === 0) return ["==", ["get", "id"], ""];
+  if (list.length === 1) return ["==", ["get", "id"], list[0]];
+  return ["match", ["get", "id"], list, true, false];
+}
+
+const NEIGHBOR_TEACH_OVERLAYS = [
+  { id: "country-neighbor-missed", color: MISSED_COUNTRY_COLOR },
+  { id: "country-neighbor-correct", color: CORRECT_COUNTRY_COLOR },
+  { id: "country-neighbor-wrong", color: WRONG_COUNTRY_COLOR },
+];
+
+function ensureNeighborTeachOverlays(map) {
+  if (!map.getSource("countries")) return;
+
+  for (const { id, color } of NEIGHBOR_TEACH_OVERLAYS) {
+    if (map.getLayer(id)) continue;
+    const layer = {
+      id,
+      type: "fill",
+      source: "countries",
+      paint: {
+        "fill-color": color,
+        "fill-opacity": 0.92,
+      },
+      filter: ["==", ["get", "id"], ""],
+    };
+    // Sit above the base fill and below the white subject highlight.
+    if (map.getLayer("country-highlight")) {
+      map.addLayer(layer, "country-highlight");
+    } else if (map.getLayer("country-target-outline")) {
+      map.addLayer(layer, "country-target-outline");
+    } else if (map.getLayer("country-borders")) {
+      map.addLayer(layer, "country-borders");
+    } else {
+      map.addLayer(layer);
+    }
+  }
+
+  if (map.getLayer("country-highlight")) {
+    for (const { id } of NEIGHBOR_TEACH_OVERLAYS) {
+      if (map.getLayer(id)) map.moveLayer(id, "country-highlight");
+    }
+  }
+}
+
+function applyNeighborTeachOverlays(map, paint = {}) {
+  ensureNeighborTeachOverlays(map);
+  const byLayer = {
+    "country-neighbor-missed": paint.missedCountryIds,
+    "country-neighbor-correct": paint.correctCountryIds,
+    "country-neighbor-wrong": paint.neighborWrongIds,
+  };
+  for (const { id } of NEIGHBOR_TEACH_OVERLAYS) {
+    if (!map.getLayer(id)) continue;
+    map.setFilter(id, featureIdFilter(byLayer[id]));
+  }
 }
 
 function getLevelFillColorExpression(level, landColor) {
@@ -823,6 +899,7 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
     if (map.getLayer("country-fill")) {
       map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level, landColor));
     }
+    ensureNeighborTeachOverlays(map);
     return;
   }
 
@@ -841,6 +918,8 @@ function addCountryLayers(map, geojson, inactiveGeojson, mapColors, level, landC
       "fill-opacity": 0.92,
     },
   });
+
+  ensureNeighborTeachOverlays(map);
 
   map.addLayer({
     id: "country-target-outline",
@@ -1082,6 +1161,11 @@ function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
     map.setPaintProperty("country-fill", "fill-antialias", !hide);
     map.setPaintProperty("country-fill", "fill-opacity", hide ? 1 : 0.92);
   }
+  for (const { id } of NEIGHBOR_TEACH_OVERLAYS) {
+    if (!map.getLayer(id)) continue;
+    map.setPaintProperty(id, "fill-antialias", !hide);
+    map.setPaintProperty(id, "fill-opacity", hide ? 1 : 0.92);
+  }
   if (map.getLayer("inactive-country-fill")) {
     map.setPaintProperty("inactive-country-fill", "fill-antialias", false);
   }
@@ -1118,6 +1202,9 @@ export default function MapboxMap({
   showColorCountryIds,
   filledCountryIds,
   secondTryCountryIds = [],
+  correctCountryIds = [],
+  missedCountryIds = [],
+  neighborWrongIds = [],
   highlightTargetCountryId,
   highlightCountryId,
   // "prompt" = yellow (which-country-is-highlighted); "error" = red (find reveal).
@@ -1155,6 +1242,9 @@ export default function MapboxMap({
     showColorCountryIds,
     filledCountryIds,
     secondTryCountryIds,
+    correctCountryIds,
+    missedCountryIds,
+    neighborWrongIds,
   });
   const expandCleanupRef = useRef(null);
   const onCountryClickRef = useRef(onCountryClick);
@@ -1188,6 +1278,9 @@ export default function MapboxMap({
     showColorCountryIds,
     filledCountryIds,
     secondTryCountryIds,
+    correctCountryIds,
+    missedCountryIds,
+    neighborWrongIds,
   };
 
   useEffect(() => {
@@ -1361,6 +1454,7 @@ export default function MapboxMap({
         level,
         landColor,
       });
+      applyNeighborTeachOverlays(map, boardPaintRef.current);
 
       map.on("zoom", handleViewChangeForCircles);
       map.on("moveend", handleViewChangeForCircles);
@@ -1525,6 +1619,7 @@ export default function MapboxMap({
       highlightCountryId: highlightId,
       highlightTone: highlightToneRef.current,
     });
+    applyNeighborTeachOverlays(map, boardPaintRef.current);
     if (highlightId && map.getLayer("country-highlight")) {
       map.setFilter("country-highlight", ["==", ["get", "id"], highlightId]);
     }
@@ -1634,6 +1729,7 @@ export default function MapboxMap({
             highlightCountryId: highlightId,
             highlightTone: highlightToneRef.current,
           });
+          applyNeighborTeachOverlays(map, paint);
         }
         const smallData = smallCountriesGeojsonRef.current;
         if (smallData && map.getSource("small-countries")) {
@@ -1700,6 +1796,11 @@ export default function MapboxMap({
         filledCountryIds,
         secondTryCountryIds,
       });
+      applyNeighborTeachOverlays(map, {
+        correctCountryIds,
+        missedCountryIds,
+        neighborWrongIds,
+      });
     };
 
     if (map.isStyleLoaded()) {
@@ -1715,6 +1816,9 @@ export default function MapboxMap({
     showColorCountryIds,
     filledCountryIds,
     secondTryCountryIds,
+    correctCountryIds,
+    missedCountryIds,
+    neighborWrongIds,
     highlightCountryId,
     highlightTone,
   ]);
@@ -1976,6 +2080,7 @@ export default function MapboxMap({
       level,
       landColor,
     });
+    applyNeighborTeachOverlays(map, boardPaintRef.current);
 
     // Outline the subject country. White fill uses a dark edge so it stays
     // defined against ocean/neighbors. While the fill is flashing (yellow/red

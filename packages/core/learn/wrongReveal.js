@@ -68,6 +68,79 @@ export function getNeighborIdsForQuestion(question, allCountriesById) {
   );
 }
 
+function collectAnswerValues(selectedValue, wrongValues) {
+  const values = [];
+  if (Array.isArray(selectedValue)) values.push(...selectedValue);
+  else if (typeof selectedValue === "string") values.push(selectedValue);
+  if (Array.isArray(wrongValues)) values.push(...wrongValues);
+  return values.filter((value) => typeof value === "string" && value.trim());
+}
+
+/**
+ * Split a neighbor teach step into found (green), missed (orange), and
+ * non-neighbor guesses (red). Correct answers paint the full border set green.
+ *
+ * `resolveId(value)` should turn a typed name or iso3 into a country id.
+ */
+export function classifyNeighborTeachPaint({
+  neighborIds = [],
+  mainId = null,
+  selectedValue = null,
+  wrongValues = [],
+  feedbackType = "wrong",
+  resolveId = null,
+} = {}) {
+  const neighborIdSet = new Set(neighborIds);
+  const found = new Set();
+  const wrong = new Set();
+
+  const lookup = (value) => {
+    if (neighborIdSet.has(value) || value === mainId) return value;
+    if (typeof resolveId === "function") return resolveId(value);
+    return null;
+  };
+
+  for (const value of collectAnswerValues(selectedValue, [])) {
+    const id = lookup(value);
+    if (!id || id === mainId) continue;
+    if (neighborIdSet.has(id)) found.add(id);
+    else wrong.add(id);
+  }
+  for (const value of collectAnswerValues(wrongValues, [])) {
+    const id = lookup(value);
+    if (!id || id === mainId || neighborIdSet.has(id)) continue;
+    wrong.add(id);
+  }
+
+  if (feedbackType === "correct") {
+    return {
+      foundIds: neighborIds.filter((id) => id && id !== mainId),
+      missedIds: [],
+      wrongIds: [...wrong],
+    };
+  }
+
+  const isListAnswer =
+    Array.isArray(selectedValue) ||
+    (Array.isArray(wrongValues) && wrongValues.length > 0);
+
+  if (!isListAnswer) {
+    // Yes/no and single-pick ID: teach the full border set in green, and paint
+    // a wrong country pick red when we can resolve it.
+    return {
+      foundIds: neighborIds.filter((id) => id && id !== mainId),
+      missedIds: [],
+      wrongIds: [...wrong],
+    };
+  }
+
+  return {
+    foundIds: neighborIds.filter((id) => found.has(id)),
+    missedIds: neighborIds.filter((id) => !found.has(id) && id !== mainId),
+    wrongIds: [...wrong],
+  };
+}
+
 /**
  * Build the continue-screen copy (and whether to paint borders on the map).
  */

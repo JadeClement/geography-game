@@ -466,6 +466,7 @@ export const ACTIVE_LAND_COLORS = {
 export const ACTIVE_LAND_COLOR = ACTIVE_LAND_COLORS.dark;
 export const WRONG_COUNTRY_COLOR = "#ff2222";
 export const CORRECT_COUNTRY_COLOR = "#22c55e";
+export const MISSED_COUNTRY_COLOR = "#f97316";
 export const TARGET_HIGHLIGHT_COLOR = "#ffe600";
 export const SUBJECT_COUNTRY_COLOR = "#ffffff";
 export const SUBJECT_COUNTRY_OUTLINE = "#0f172a";
