@@ -368,6 +368,8 @@ export default function LearnQuestionRenderer({
   onMapClickReady,
   onShapeDropReady,
   onShapeDropPoint,
+  getMapShapeRect,
+  mapViewRevision = 0,
   onContinue,
   awaitingContinue = false,
   lookupCountryByName,
@@ -497,6 +499,8 @@ export default function LearnQuestionRenderer({
           onShapeDropReady={onShapeDropReady}
           onDropPoint={onShapeDropPoint}
           resolveCountry={resolveCountry}
+          getMapShapeRect={getMapShapeRect}
+          mapViewRevision={mapViewRevision}
           clues={clues}
         />
       );

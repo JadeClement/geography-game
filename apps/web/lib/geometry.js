@@ -67,6 +67,7 @@ const SMALL_COUNTRY_OVERRIDES = new Set([
 const SMALL_COUNTRY_EXCLUSIONS = new Set([
   "BLZ", // Belize
   "SLV", // El Salvador
+  "PRI", // Puerto Rico — large enough to click without a marker
 ]);
 
 /**

@@ -165,6 +165,7 @@ export default function PacificMap({
   mapControlsRef,
   forceShowSmallCountryCircles = false,
   allowInactiveCountryClicks = false,
+  mapNavigationEnabled = true,
   hideCountryBorders = false,
   allowEmptyMapClicks = false,
   distanceFeedback = null,
@@ -184,8 +185,15 @@ export default function PacificMap({
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
   const expandTimeoutRef = useRef(null);
+  const mapNavigationEnabledRef = useRef(mapNavigationEnabled);
 
   viewBoxRef.current = viewBox;
+  mapNavigationEnabledRef.current = mapNavigationEnabled;
+
+  useEffect(() => {
+    if (mapNavigationEnabled) return;
+    setViewBox(getDefaultPacificViewBox());
+  }, [mapNavigationEnabled]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -325,6 +333,7 @@ export default function PacificMap({
 
   const handleWheel = useCallback((event) => {
     event.preventDefault();
+    if (!mapNavigationEnabledRef.current) return;
     const factor = event.deltaY > 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR;
     zoomAt(factor, event.clientX, event.clientY);
   }, [zoomAt]);
@@ -394,6 +403,29 @@ export default function PacificMap({
           bottom: Math.max(nw.y, se.y),
         };
       },
+      projectBoundsClient(country) {
+        const svgBounds = projectMeasureBboxToSvg(country, PACIFIC_GAME_VIEW);
+        if (!svgBounds) return null;
+
+        const svgRect = svg.getBoundingClientRect();
+        const currentViewBox = viewBoxRef.current;
+        const toClient = (svgX, svgY) => ({
+          x:
+            ((svgX - currentViewBox.x) / currentViewBox.width) * svgRect.width +
+            svgRect.left,
+          y:
+            ((svgY - currentViewBox.y) / currentViewBox.height) * svgRect.height +
+            svgRect.top,
+        });
+        const nw = toClient(svgBounds.minX, svgBounds.minY);
+        const se = toClient(svgBounds.maxX, svgBounds.maxY);
+        const left = Math.min(nw.x, se.x);
+        const top = Math.min(nw.y, se.y);
+        const width = Math.abs(se.x - nw.x);
+        const height = Math.abs(se.y - nw.y);
+        if (!(width > 2) || !(height > 2)) return null;
+        return { left, top, width, height };
+      },
       projectDiscoverAnchor(country, viewportRect) {
         return getCountryVisibleScreenAnchor(
           country,
@@ -428,6 +460,7 @@ export default function PacificMap({
   }, [onRegisterMapProject]);
 
   const handlePointerDown = useCallback((event) => {
+    if (!mapNavigationEnabledRef.current) return;
     if (event.button !== 0) return;
     if (isCountryEventTarget(event.target)) return;
 
@@ -442,6 +475,7 @@ export default function PacificMap({
   }, []);
 
   const handlePointerMove = useCallback((event) => {
+    if (!mapNavigationEnabledRef.current) return;
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
@@ -584,7 +618,7 @@ export default function PacificMap({
   const oceanExtent = PACIFIC_OCEAN_PADDING;
 
   return (
-    <div className={cn(mapContainer, pacificMap)}>
+      <div className={cn(mapContainer, pacificMap)}>
       <svg
         ref={svgRef}
         viewBox={viewBoxToString(viewBox)}
@@ -898,6 +932,7 @@ export default function PacificMap({
         )}
       </svg>
 
+      {mapNavigationEnabled ? (
       <div className={pacificMapControls} ref={mapControlsRef} aria-label="Map zoom controls">
         <button type="button" className={pacificMapControlBtn} onClick={zoomIn} aria-label="Zoom in">
           +
@@ -917,6 +952,9 @@ export default function PacificMap({
           ⊕
         </button>
       </div>
+      ) : (
+        <div ref={mapControlsRef} className="hidden" />
+      )}
     </div>
   );
 }

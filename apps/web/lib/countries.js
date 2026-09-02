@@ -11,7 +11,6 @@ import {
   getCountryCentroid,
   isSmallCountry,
 } from "./geometry";
-import { getDisplayTerritoryIso3s } from "./discoverTerritories";
 
 function getManifestByIso3() {
   return new Map(
@@ -100,7 +99,6 @@ async function fetchCountriesGeoJSON() {
   const baseLandFeatures = [];
   const territoryFeatures = [];
   const displayMapCountries = [];
-  const displayTerritoryIso3s = getDisplayTerritoryIso3s();
 
   // First pass: collect geometries that should be merged into a parent country.
   const mergedGeomsByIso3 = new Map();
@@ -136,9 +134,9 @@ async function fetchCountriesGeoJSON() {
           properties: { ...feature.properties, id: iso3 ?? rawName, playable: false },
         };
 
-        // Outlined display-only territories (e.g. Greenland) — drawn on maps,
-        // clickable in Discover, but not playable in Test/Learn.
-        if (iso3 && displayTerritoryIso3s.has(iso3)) {
+        // Disabled countries with a manifest entry — drawn on maps, clickable
+        // in Discover as "not a country", but not playable in Test/Learn.
+        if (iso3 && manifest) {
           const territoryFeature = {
             ...landFeature,
             properties: { ...landFeature.properties, territory: true },
@@ -146,9 +144,11 @@ async function fetchCountriesGeoJSON() {
           territoryFeatures.push(territoryFeature);
           displayMapCountries.push({
             id: iso3,
-            name: manifest?.name || displayName(rawName),
-            region: manifest?.region ?? "world",
+            name: manifest.name || displayName(rawName),
+            region: manifest.region ?? "world",
             feature: territoryFeature,
+            isSmall: isSmallCountry(territoryFeature, iso3),
+            centroid: getCountryCentroid(territoryFeature, iso3),
             displayOnly: true,
           });
           return null;

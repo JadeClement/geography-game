@@ -89,7 +89,9 @@ export default function LearnRoundOverlay({
         className={cn(
           "relative flex w-full flex-col items-center",
           isTop
-            ? "max-w-md"
+            ? question.answerType === "shape_drop"
+              ? "max-w-[min(100%,42rem)]"
+              : "max-w-md"
             : "max-h-full max-w-lg"
         )}
       >
@@ -100,7 +102,7 @@ export default function LearnRoundOverlay({
             showFooter ? "rounded-t-xl border-b-0" : "rounded-xl",
             isTop
               ? cn(
-                  "bg-surface/95 backdrop-blur",
+                  "overflow-visible bg-surface/95 backdrop-blur",
                   highlightMapPrompt ? "p-2.5" : "p-3"
                 )
               : showFooter

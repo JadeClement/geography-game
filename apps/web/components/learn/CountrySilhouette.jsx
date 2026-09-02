@@ -29,7 +29,10 @@ export default function CountrySilhouette({
   countryId,
   tone = "idle",
   fit = "square",
+  padding,
+  preserveAspectRatio = "xMidYMid meet",
   className,
+  style,
   label,
 }) {
   const fitted = useMemo(
@@ -37,8 +40,9 @@ export default function CountrySilhouette({
       geometryToFittedPath(feature?.geometry, {
         iso3: countryId ?? feature?.properties?.id ?? null,
         fit,
+        ...(padding != null ? { padding } : {}),
       }),
-    [feature, countryId, fit]
+    [feature, countryId, fit, padding]
   );
 
   if (!fitted) {
@@ -48,6 +52,7 @@ export default function CountrySilhouette({
           "flex items-center justify-center text-sm text-text-muted",
           className
         )}
+        style={style}
         aria-hidden={!label}
         aria-label={label || undefined}
       >
@@ -57,10 +62,10 @@ export default function CountrySilhouette({
   }
 
   return (
-    <div className={cn("flex items-center justify-center", className)}>
+    <div className={cn("flex items-center justify-center", className)} style={style}>
       <svg
         viewBox={fitted.viewBox}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio={preserveAspectRatio}
         shapeRendering="geometricPrecision"
         className="h-full w-full max-h-full max-w-full"
         role={label ? "img" : "presentation"}

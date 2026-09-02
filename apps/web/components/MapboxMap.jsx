@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/cn";
 import { mapContainer } from "@/lib/ui";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -2130,6 +2131,28 @@ export default function MapboxMap({
         projectBounds(country) {
           return getCountryScreenBounds(country, projectToOverlay);
         },
+        projectBoundsClient(country) {
+          const projectToClient = (lng, lat) => {
+            if (isLngLatBehindGlobe(map, lng, lat)) return null;
+            const point = map.project([lng, lat]);
+            const mapRect = container.getBoundingClientRect();
+            return {
+              x: point.x + mapRect.left,
+              y: point.y + mapRect.top,
+            };
+          };
+          const bounds = getCountryScreenBounds(country, projectToClient);
+          if (!bounds) return null;
+          const width = bounds.right - bounds.left;
+          const height = bounds.bottom - bounds.top;
+          if (!(width > 2) || !(height > 2)) return null;
+          return {
+            left: bounds.left,
+            top: bounds.top,
+            width,
+            height,
+          };
+        },
         projectDiscoverAnchor(country, viewportRect) {
           return getCountryVisibleScreenAnchor(country, projectToOverlay, viewportRect);
         },
@@ -2183,5 +2206,13 @@ export default function MapboxMap({
     };
   }, [geojson, onRegisterMapProject, onMapViewChange, onMapMove]);
 
-  return <div ref={containerRef} className={mapContainer} />;
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        mapContainer,
+        !mapNavigationEnabled && "[&_.mapboxgl-ctrl-bottom-right]:hidden"
+      )}
+    />
+  );
 }

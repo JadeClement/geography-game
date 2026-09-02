@@ -614,8 +614,11 @@ export default function GeographyGame() {
 
   const inactiveCountries = useMemo(() => {
     if (!isOceaniaRegion) return [];
-    return allCountries.filter((country) => country.region !== "oceania");
-  }, [allCountries, isOceaniaRegion]);
+    return [
+      ...allCountries.filter((country) => country.region !== "oceania"),
+      ...displayMapCountries,
+    ];
+  }, [allCountries, displayMapCountries, isOceaniaRegion]);
 
   const countryColorMap = useMemo(
     () => getCountryColorMap(activeCountries),
@@ -628,9 +631,14 @@ export default function GeographyGame() {
   }, [activeCountries, countryColorMap]);
 
   const activeSmallCountriesGeojson = useMemo(() => {
-    const base = buildSmallCountriesGeoJSON(activeCountries);
+    const regionTerritories = displayMapCountries.filter((country) => {
+      if (!country.isSmall) return false;
+      if (!session?.region || session.region === "world") return true;
+      return country.region === session.region || country.region === "world";
+    });
+    const base = buildSmallCountriesGeoJSON([...activeCountries, ...regionTerritories]);
     return enrichGeojsonWithColors(base, countryColorMap);
-  }, [activeCountries, countryColorMap]);
+  }, [activeCountries, countryColorMap, displayMapCountries, session?.region]);
 
   const inactiveGeojson = useMemo(() => {
     const inactive = buildInactiveGeojson(allCountries, session?.region);
@@ -688,6 +696,9 @@ export default function GeographyGame() {
   // Neighbor map teach step paints borders without a question modal.
   // Highlight wrongs do the same: map feedback + labels stay visible, only Continue.
   const learnNeighborRevealActive = learnNeighborMapVisible;
+  // Overlay card over the region (blurred, borderless) until the teach step.
+  const isNeighborBackdrop =
+    isNeighborLearnQuestion(currentLearnQuestion) && !learnNeighborRevealActive;
   const learnAreaCompareRevealActive = Boolean(learnAreaCompareReveal);
   const learnLandlockedRevealActive = Boolean(learnLandlockedReveal);
   const learnLandlockedTopMessage = (() => {
@@ -777,20 +788,17 @@ export default function GeographyGame() {
     // close-up would otherwise no-op if we only keyed by question id).
     const isHighlightPrompt =
       currentLearnQuestion?.mapConfig?.display === "highlight";
-    // Neighbor recall/ID cards must not sit over a close-up of the subject —
-    // the land borders would give the answer away. Keep the full region in
-    // view (and slightly zoomed out) until the post-answer teach step.
-    const isNeighborBackdrop =
-      isNeighborLearnQuestion(currentLearnQuestion) && !learnNeighborRevealActive;
     const learnCameraMode = learnAreaCompareRevealActive
       ? "area"
       : learnNeighborRevealActive
         ? "neighbors"
-        : isHighlightPrompt
-          ? "highlight-region"
-          : isNeighborBackdrop
-            ? "neighbor-region"
-            : "region";
+        : isLearnShapeDropQuestion
+          ? "shape-drop-region"
+          : isHighlightPrompt
+            ? "highlight-region"
+            : isNeighborBackdrop
+              ? "neighbor-region"
+              : "region";
     const learnQuestionKey = learnEngineActive
       ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
       : null;
@@ -835,6 +843,18 @@ export default function GeographyGame() {
     // previous question was already on the region backdrop.
     if (learnEngineActive) {
       if (!mapView) return null;
+      // Shape-drop needs the full region at a fixed scale so the silhouette
+      // matches on-map size. No cover-zoom, no subject close-up.
+      if (isLearnShapeDropQuestion) {
+        return withLearnKey({
+          ...mapView,
+          padding:
+            typeof mapView.padding === "number"
+              ? Math.max(mapView.padding, 80)
+              : 80,
+          maxZoom: Math.min(mapView.maxZoom ?? 5, 4),
+        });
+      }
       if (isHighlightPrompt) {
         return withLearnKey({
           ...mapView,
@@ -847,28 +867,13 @@ export default function GeographyGame() {
           maxZoom: Math.min(mapView.maxZoom ?? 5, 4.5),
         });
       }
-      // Centered cards sit over the region. Most pull in a little so land
-      // fills the backdrop; neighbor questions zoom out instead so the
-      // subject and its borders aren't readable behind the card.
+      // Centered cards blur the region map behind the prompt. Cover-fit so
+      // land fills the stage instead of sitting in a letterboxed strip.
       if (!isLearnMapClickQuestion && !learnMapOnlyContinue) {
-        if (isNeighborBackdrop) {
-          return withLearnKey({
-            ...mapView,
-            padding:
-              typeof mapView.padding === "number"
-                ? Math.max(mapView.padding, 120)
-                : 120,
-            zoomDelta: (Number(mapView.zoomDelta) || 0) - 0.9,
-            maxZoom: Math.min(mapView.maxZoom ?? 5, 3.5),
-          });
-        }
         return withLearnKey({
           ...mapView,
-          padding:
-            typeof mapView.padding === "number"
-              ? Math.min(mapView.padding, 16)
-              : 16,
-          zoomDelta: (Number(mapView.zoomDelta) || 0) + 0.6,
+          padding: 0,
+          fit: "cover",
         });
       }
       return withLearnKey(mapView);
@@ -881,10 +886,12 @@ export default function GeographyGame() {
     currentLearnQuestion,
     learnMapOnlyContinue,
     learnNeighborRevealActive,
+    isNeighborBackdrop,
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
     learnMapContinueTopPrompt,
     isLearnMapClickQuestion,
+    isLearnShapeDropQuestion,
     allCountriesById,
     session?.region,
   ]);
@@ -2619,6 +2626,16 @@ export default function GeographyGame() {
         return;
       }
 
+      const territoryNote = matchDiscoverTerritoryNote({
+        countryId: feature?.properties?.id ?? feature?.id ?? null,
+        lngLat: context.lngLat,
+        regionId: session?.region,
+      });
+      if (territoryNote) {
+        showWrongContinentFeedback(feature, context);
+        return;
+      }
+
       const borderless = isBorderlessMapQuestion(question);
       if (context.inactive && !borderless) {
         showWrongContinentFeedback(feature, context);
@@ -2688,6 +2705,7 @@ export default function GeographyGame() {
       clearContinentFeedbackTimer,
       gameActiveRef,
       gamePausedRef,
+      session?.region,
       setFeedback,
       showWrongContinentFeedback,
       tutorialStepId,
@@ -3305,6 +3323,16 @@ export default function GeographyGame() {
       const target = targetCountryRef.current;
       if (!gameActiveRef.current || !target || !isFindLevel(session?.level ?? 0)) return;
 
+      const territoryNote = matchDiscoverTerritoryNote({
+        countryId: feature?.properties?.id ?? feature?.id ?? null,
+        lngLat: context.lngLat,
+        regionId: session?.region,
+      });
+      if (territoryNote) {
+        showWrongContinentFeedback(feature, context);
+        return;
+      }
+
       if (context.inactive) {
         showWrongContinentFeedback(feature, context);
         return;
@@ -3380,6 +3408,7 @@ export default function GeographyGame() {
       revealModeRef,
       scheduleNextRound,
       session?.level,
+      session?.region,
       setFeedback,
       setFlashSmallCountryId,
       setHighlightCountryId,
@@ -3643,6 +3672,12 @@ export default function GeographyGame() {
     return api.projectBounds?.(country) ?? null;
   }, []);
 
+  const getShapeDropMapRect = useCallback((country) => {
+    const api = mapProjectRef.current;
+    if (!api || typeof api === "function") return null;
+    return api.projectBoundsClient?.(country) ?? null;
+  }, [mapViewRevision]);
+
   const getDiscoverLabelScale = useCallback(() => {
     const api = mapProjectRef.current;
     if (!api || typeof api === "function") return 1;
@@ -3815,7 +3850,10 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  const hideCountryBorders = Boolean(isLearnBorderlessQuestion);
+  // Neighbor overlay cards cover-fit the region behind a blur — hide outlines
+  // so land borders can't give the answer away. Teach-step reveals restore them.
+  const hideCountryBorders =
+    Boolean(isLearnBorderlessQuestion) || Boolean(isNeighborBackdrop);
   const allowEmptyMapClicks =
     isLearnBorderlessQuestion && isLearnMapClickQuestion && !learnDistanceRevealActive;
   const distanceFeedback = learnDistanceReveal
@@ -3833,7 +3871,9 @@ export default function GeographyGame() {
   const mapNavigationEnabled =
     !learnEngineActive ||
     isDiscoverGame ||
-    (learnUsesMap && !learnLandlockedRevealActive);
+    (learnUsesMap &&
+      !learnLandlockedRevealActive &&
+      !isLearnShapeDropQuestion);
 
   const mapLevel =
     isDiscoverGame || learnEngineActive ? GAME_LEVELS.FIND_FILL : session?.level;
@@ -4265,6 +4305,7 @@ export default function GeographyGame() {
                   mapControlsRef={pacificControlsRef}
                   forceShowSmallCountryCircles={tutorialOpen}
                   allowInactiveCountryClicks={allowInactiveCountryClicks}
+                  mapNavigationEnabled={mapNavigationEnabled}
                   hideCountryBorders={hideCountryBorders}
                   allowEmptyMapClicks={allowEmptyMapClicks}
                   distanceFeedback={distanceFeedback}
@@ -4381,6 +4422,8 @@ export default function GeographyGame() {
                     learnMapEmitRef.current = emit;
                   }}
                   onShapeDropPoint={handleLearnShapeDrop}
+                  getMapShapeRect={getShapeDropMapRect}
+                  mapViewRevision={mapViewRevision}
                 />
               )}
               {learnEngineActive && learnMapOnlyContinue && !gameComplete && (
