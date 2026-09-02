@@ -1611,11 +1611,11 @@ export const masteryToolbar =
   "mb-4 flex flex-wrap items-center justify-between gap-3";
 
 export const masteryTabs =
-  "flex flex-wrap gap-1.5 rounded-pill border border-border bg-inset p-1";
+  "flex shrink-0 flex-nowrap items-center gap-1.5 rounded-pill border border-border bg-inset p-1";
 
 export function masteryTab({ active = false, className } = {}) {
   return cn(
-    "inline-flex cursor-pointer items-center gap-1.5 rounded-pill border border-transparent bg-transparent px-4 py-2 text-[0.9rem] font-semibold text-text-muted",
+    "inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-pill border border-transparent bg-transparent px-4 py-2 text-[0.9rem] font-semibold text-text-muted",
     "transition-[color,background,border-color] duration-150 hover:bg-menu-hover hover:text-text max-md:px-3 max-md:py-2.5",
     active && "border-border bg-surface text-text shadow-sm",
     className

@@ -31,8 +31,8 @@ export const ALL_MODE = "all";
 
 export const ALL_VISUAL = {
   label: "All three",
-  accent: "#fcd34d",
-  soft: "rgba(252, 211, 77, 0.16)",
+  accent: "#4ade80",
+  soft: "rgba(74, 222, 128, 0.16)",
 };
 
 // Tier colors for the combined "All" view: how many of the 3 modes are mastered.
