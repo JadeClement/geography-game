@@ -14,6 +14,7 @@ import DiscoverMapLabels from "@/components/DiscoverMapLabels";
 import DiscoverTerritoryModal from "@/components/DiscoverTerritoryModal";
 import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
+import { ShapeDropPlacement } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, getNeighborIdsForQuestion } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
@@ -2577,7 +2578,7 @@ export default function GeographyGame() {
   );
 
   const applyLearnGeoGuess = useCallback(
-    (lngLat, feature, { hitKm, responseTimeMs, revealUsed } = {}) => {
+    (lngLat, feature, { hitKm, responseTimeMs, revealUsed, dropRect } = {}) => {
       const question = currentLearnQuestionRef.current;
       const emit = learnMapEmitRef.current;
       if (!question || typeof emit !== "function" || !lngLat) return;
@@ -2628,6 +2629,7 @@ export default function GeographyGame() {
         distanceKm: guess.distanceKm,
         correct: guess.correct,
         label: guess.correct ? null : `${formatDistanceKm(guess.distanceKm)} away`,
+        dropRect: dropRect ?? null,
       });
 
       emit({
@@ -2744,7 +2746,7 @@ export default function GeographyGame() {
   );
 
   const handleLearnShapeDrop = useCallback(
-    ({ clientX, clientY, responseTimeMs, revealUsed } = {}) => {
+    ({ clientX, clientY, responseTimeMs, revealUsed, dropRect } = {}) => {
       if (gamePausedRef.current) {
         if (tutorialStepId === "map") return;
         setShowResumeConfirm(true);
@@ -2759,8 +2761,17 @@ export default function GeographyGame() {
         return;
       }
 
+      const dropX =
+        dropRect && Number.isFinite(dropRect.left) && Number.isFinite(dropRect.width)
+          ? dropRect.left + dropRect.width / 2
+          : clientX;
+      const dropY =
+        dropRect && Number.isFinite(dropRect.top) && Number.isFinite(dropRect.height)
+          ? dropRect.top + dropRect.height / 2
+          : clientY;
+
       const api = mapProjectRef.current;
-      const lngLat = api?.unprojectClient?.(clientX, clientY);
+      const lngLat = api?.unprojectClient?.(dropX, dropY);
       if (!lngLat || !Number.isFinite(lngLat.lng) || !Number.isFinite(lngLat.lat)) {
         return;
       }
@@ -2769,6 +2780,7 @@ export default function GeographyGame() {
         hitKm: SHAPE_DROP_HIT_KM,
         responseTimeMs,
         revealUsed,
+        dropRect: dropRect ?? null,
       });
     },
     [applyLearnGeoGuess, gamePausedRef, tutorialStepId]
@@ -3906,6 +3918,7 @@ export default function GeographyGame() {
       to: learnDistanceReveal.to,
       label: learnDistanceReveal.label,
       correct: false,
+      hideFromMarker: Boolean(learnDistanceReveal.dropRect),
     };
   }, [
     learnDistanceReveal,
@@ -3913,6 +3926,18 @@ export default function GeographyGame() {
     currentLearnQuestion?.answerType,
     isLearnBorderlessQuestion,
   ]);
+  const droppedShapeReveal = useMemo(() => {
+    if (!learnDistanceReveal?.dropRect || learnDistanceReveal.correct) return null;
+    const questionId = currentLearnQuestion?.id;
+    if (
+      learnDistanceReveal.questionId &&
+      questionId &&
+      learnDistanceReveal.questionId !== questionId
+    ) {
+      return null;
+    }
+    return learnDistanceReveal;
+  }, [learnDistanceReveal, currentLearnQuestion?.id]);
 
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card
@@ -4387,6 +4412,16 @@ export default function GeographyGame() {
                   onRegisterMapProject={needsMapProjection ? registerMapProject : undefined}
                   onMapViewChange={needsMapProjection ? handleMapViewChange : undefined}
                   onMapMove={needsMapProjection ? handleMapMove : undefined}
+                />
+              )}
+              {droppedShapeReveal && (
+                <ShapeDropPlacement
+                  rect={droppedShapeReveal.dropRect}
+                  feature={
+                    resolveLearnCountry(droppedShapeReveal.targetId).feature
+                  }
+                  countryId={droppedShapeReveal.targetId}
+                  tone="wrong"
                 />
               )}
               {gamePaused &&

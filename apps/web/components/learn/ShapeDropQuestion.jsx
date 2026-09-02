@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import {
   learnPrompt,
@@ -10,6 +11,48 @@ import {
 } from "@/lib/learnUi";
 import ClueButton from "./ClueButton";
 import CountrySilhouette from "./CountrySilhouette";
+
+/**
+ * Viewport-fixed country silhouette. Portaled to `document.body` so
+ * `position: fixed` is not trapped by the Learn card's `backdrop-filter`.
+ */
+export function ShapeDropPlacement({
+  rect,
+  feature,
+  countryId,
+  tone = "idle",
+  className,
+}) {
+  if (!rect || typeof document === "undefined") return null;
+  const left = rect.left ?? rect.x;
+  const top = rect.top ?? rect.y;
+  if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
+  if (!(rect.width > 0) || !(rect.height > 0)) return null;
+
+  return createPortal(
+    <div
+      className={cn("pointer-events-none fixed z-[3]", className)}
+      style={{
+        left,
+        top,
+        width: rect.width,
+        height: rect.height,
+      }}
+    >
+      <CountrySilhouette
+        feature={feature}
+        countryId={countryId}
+        fit="aspect"
+        padding={0}
+        preserveAspectRatio="none"
+        tone={tone}
+        className="h-full w-full"
+        label=""
+      />
+    </div>,
+    document.body
+  );
+}
 
 /**
  * Unlabeled silhouette the learner drags onto a borderless map.
@@ -108,9 +151,16 @@ export default function ShapeDropQuestion({
       setGhost(null);
       ghostRef.current = null;
       setDropped(true);
+      const dropRect = {
+        left: box.x,
+        top: box.y,
+        width: box.width,
+        height: box.height,
+      };
       onDropPoint?.({
-        clientX: box.x + box.width / 2,
-        clientY: box.y + box.height / 2,
+        clientX: dropRect.left + dropRect.width / 2,
+        clientY: dropRect.top + dropRect.height / 2,
+        dropRect,
         responseTimeMs: Date.now() - startedAtRef.current,
         revealUsed: revealUsedRef.current,
       });
@@ -207,26 +257,13 @@ export default function ShapeDropQuestion({
         />
       )}
       {dragging && ghost && (
-        <div
-          className="pointer-events-none fixed z-[80] drop-shadow-lg"
-          style={{
-            left: ghost.x,
-            top: ghost.y,
-            width: ghost.width,
-            height: ghost.height,
-          }}
-        >
-          <CountrySilhouette
-            feature={shapeMeta.feature}
-            countryId={question?.countryId}
-            fit="aspect"
-            padding={0}
-            preserveAspectRatio="none"
-            tone="idle"
-            className="h-full w-full"
-            label=""
-          />
-        </div>
+        <ShapeDropPlacement
+          rect={ghost}
+          feature={shapeMeta.feature}
+          countryId={question?.countryId}
+          tone="idle"
+          className="z-[80] drop-shadow-lg"
+        />
       )}
     </div>
   );
