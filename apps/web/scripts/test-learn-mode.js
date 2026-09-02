@@ -37,6 +37,9 @@ import {
   distancePenaltyScale,
   evaluateGeoGuess,
   formatDistanceKm,
+  formatMapClickDistanceFeedback,
+  MAP_CLICK_HIT_KM,
+  MAP_CLICK_CLOSE_KM,
 } from "@/lib/learn/mapGuess";
 import { distanceToGeometry, pointInGeometry } from "@worldly/core/geo/distance";
 import {
@@ -537,9 +540,58 @@ test("point-in-polygon and closest-border distance for a simple square", () => {
   assert.ok(outside.distanceKm > 0);
   assert.ok(outside.closestPoint);
 
-  const hit = evaluateGeoGuess({ lng: 1, lat: 1, geometry, hitKm: 25 });
+  const hit = evaluateGeoGuess({ lng: 1, lat: 1, geometry, hitKm: MAP_CLICK_HIT_KM });
   assert.equal(hit.correct, true);
   assert.match(formatDistanceKm(0), /less than 1 km|0/);
+});
+
+test("map click copy: under 20 km is green Close enough, under 100 km is Close!", () => {
+  const closeEnough = formatMapClickDistanceFeedback({
+    correct: true,
+    inside: false,
+    distanceKm: 8,
+  });
+  assert.equal(closeEnough.type, "correct");
+  assert.match(closeEnough.text, /Close enough!/);
+  assert.match(closeEnough.text, /8/);
+
+  const inside = formatMapClickDistanceFeedback({
+    correct: true,
+    inside: true,
+    distanceKm: 0,
+  });
+  assert.equal(inside.text, "Correct");
+  assert.equal(inside.type, "correct");
+
+  const close = formatMapClickDistanceFeedback({
+    correct: false,
+    distanceKm: 45,
+  });
+  assert.equal(close.text, "Close!");
+  assert.equal(close.type, "wrong");
+  assert.match(close.detail, /45 km away/);
+  assert.ok(45 < MAP_CLICK_CLOSE_KM);
+
+  const far = formatMapClickDistanceFeedback({
+    correct: false,
+    distanceKm: 1720,
+  });
+  assert.equal(far.text, "Not quite.");
+  assert.match(far.detail, /1,720 km away/);
+
+  const nearHit = evaluateGeoGuess({
+    lng: 2.15,
+    lat: 1,
+    geometry: {
+      type: "Polygon",
+      coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]],
+    },
+    hitKm: MAP_CLICK_HIT_KM,
+  });
+  // 0.15 deg ~ 16 km at the equator — inside the 20 km hit band.
+  assert.equal(nearHit.inside, false);
+  assert.ok(nearHit.distanceKm > 0 && nearHit.distanceKm <= MAP_CLICK_HIT_KM);
+  assert.equal(nearHit.correct, true);
 });
 
 test("gdp compare asks which country has the larger economy", () => {

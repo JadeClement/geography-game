@@ -176,13 +176,13 @@ export default function ShapeDropQuestion({
         )}
       >
         <button
-          ref={sourceRef}
           type="button"
-          className="inline-flex cursor-grab touch-none border-0 bg-transparent p-0 active:cursor-grabbing"
+          className="inline-flex cursor-grab touch-none border-0 bg-transparent p-5 active:cursor-grabbing"
           onPointerDown={startDrag}
           disabled={dropped}
           aria-label="Drag this country outline onto the map"
         >
+          <span ref={sourceRef} className="block">
           <CountrySilhouette
             feature={shapeMeta.feature}
             countryId={question?.countryId}
@@ -194,6 +194,7 @@ export default function ShapeDropQuestion({
             style={promptStyle}
             label="Country outline"
           />
+          </span>
         </button>
       </div>
       {!dropped && (

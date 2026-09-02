@@ -396,6 +396,7 @@ export default function LearnQuestionRenderer({
         responseTimeMs,
         selectedValue: partial.selectedValue,
         distanceKm: partial.distanceKm,
+        inside: partial.inside,
         countryUpdates: partial.countryUpdates,
       });
     },

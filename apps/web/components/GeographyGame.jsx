@@ -68,6 +68,7 @@ import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegr
 import {
   evaluateGeoGuess,
   formatDistanceKm,
+  formatMapClickDistanceFeedback,
   isBorderlessMapQuestion,
   MAP_CLICK_HIT_KM,
   SHAPE_DROP_HIT_KM,
@@ -631,14 +632,19 @@ export default function GeographyGame() {
   }, [activeCountries, countryColorMap]);
 
   const activeSmallCountriesGeojson = useMemo(() => {
-    const regionTerritories = displayMapCountries.filter((country) => {
-      if (!country.isSmall) return false;
-      if (!session?.region || session.region === "world") return true;
-      return country.region === session.region || country.region === "world";
-    });
+    // Territory rings are Discover-only so Test/Learn doesn't treat them as
+    // clickable small-country targets.
+    const includeTerritoryCircles = session?.gameType === GAME_TYPES.DISCOVER;
+    const regionTerritories = includeTerritoryCircles
+      ? displayMapCountries.filter((country) => {
+          if (!country.isSmall) return false;
+          if (!session?.region || session.region === "world") return true;
+          return country.region === session.region || country.region === "world";
+        })
+      : [];
     const base = buildSmallCountriesGeoJSON([...activeCountries, ...regionTerritories]);
     return enrichGeojsonWithColors(base, countryColorMap);
-  }, [activeCountries, countryColorMap, displayMapCountries, session?.region]);
+  }, [activeCountries, countryColorMap, displayMapCountries, session?.gameType, session?.region]);
 
   const inactiveGeojson = useMemo(() => {
     const inactive = buildInactiveGeojson(allCountries, session?.region);
@@ -2054,9 +2060,9 @@ export default function GeographyGame() {
       learnAdvanceTimerRef.current = null;
     }
 
-    // Clear teach paints and advance in the same turn so neighbor colors never
-    // remain on the following question (and the answered card doesn't flash back).
-    learnLockRef.current = false;
+    // Keep the lock until the next question's board-setup effect unlocks it,
+    // so a Continue click can't also land as a map guess on the question we
+    // just left (and re-paint the miss line).
     const idx = learnIndexRef.current;
     const questions = learnQuestionsRef.current ?? [];
     const isLast = idx >= questions.length - 1;
@@ -2344,8 +2350,18 @@ export default function GeographyGame() {
         if (isBorderlessMapQuestion(question)) {
           learnAwaitingContinueRef.current = true;
           setLearnAwaitingContinue(true);
-          setLearnContinueMessage(null);
-          setFeedback(outcomeFeedback({ correct: true, secondTry }));
+          if (question.answerType === "map_click") {
+            const copy = formatMapClickDistanceFeedback({
+              correct: true,
+              inside: Boolean(event.inside),
+              distanceKm: event.distanceKm,
+            });
+            setLearnContinueMessage(copy.continueMessage);
+            setFeedback({ text: copy.text, type: copy.type, detail: copy.detail });
+          } else {
+            setLearnContinueMessage(null);
+            setFeedback(outcomeFeedback({ correct: true, secondTry }));
+          }
           return;
         }
         // Correct path keeps a brief pause so option/map feedback is seen.
@@ -2357,17 +2373,31 @@ export default function GeographyGame() {
       // Borderless map / shape-drop: distance overlay is already painted;
       // pause so the learner can read how far off they were.
       if (isBorderlessMapQuestion(question)) {
-        const kmLabel =
-          event.distanceKm != null && Number.isFinite(event.distanceKm)
-            ? formatDistanceKm(event.distanceKm)
-            : null;
         const clicked =
           typeof event.selectedValue === "string"
             ? allCountriesById.get(event.selectedValue)
             : null;
+        const clickedName =
+          clicked?.name && clicked.id !== question.countryId ? clicked.name : null;
+        if (question.answerType === "map_click") {
+          const copy = formatMapClickDistanceFeedback({
+            correct: false,
+            distanceKm: event.distanceKm,
+            clickedName,
+          });
+          learnAwaitingContinueRef.current = true;
+          setLearnAwaitingContinue(true);
+          setLearnContinueMessage(copy.continueMessage);
+          setFeedback({ text: copy.text, type: copy.type, detail: copy.detail });
+          return;
+        }
+        const kmLabel =
+          event.distanceKm != null && Number.isFinite(event.distanceKm)
+            ? formatDistanceKm(event.distanceKm)
+            : null;
         const message = kmLabel
-          ? clicked?.name && clicked.id !== question.countryId
-            ? `${kmLabel} away. That is ${clicked.name}.`
+          ? clickedName
+            ? `${kmLabel} away. That is ${clickedName}.`
             : `${kmLabel} away.`
           : "Not quite.";
         learnAwaitingContinueRef.current = true;
@@ -2588,6 +2618,7 @@ export default function GeographyGame() {
       }
       setLearnFeedbackLabelsById(labels);
       setLearnDistanceReveal({
+        questionId: question.id,
         targetId,
         clickedId,
         from: { lng: lngLat.lng, lat: lngLat.lat },
@@ -2606,6 +2637,7 @@ export default function GeographyGame() {
         timedOut: false,
         selectedValue: clicked?.id ?? null,
         distanceKm: guess.distanceKm,
+        inside: guess.inside,
       });
     },
     [activeCountries, addRoundWrongCountry, allCountriesById]
@@ -2619,6 +2651,7 @@ export default function GeographyGame() {
         return;
       }
       if (!gameActiveRef.current || learnLockRef.current) return;
+      if (learnAwaitingContinueRef.current) return;
 
       const question = currentLearnQuestionRef.current;
       const emit = learnMapEmitRef.current;
@@ -2631,10 +2664,7 @@ export default function GeographyGame() {
         lngLat: context.lngLat,
         regionId: session?.region,
       });
-      if (territoryNote) {
-        showWrongContinentFeedback(feature, context);
-        return;
-      }
+      if (territoryNote) return;
 
       const borderless = isBorderlessMapQuestion(question);
       if (context.inactive && !borderless) {
@@ -2721,6 +2751,7 @@ export default function GeographyGame() {
         return;
       }
       if (learnLockRef.current) return;
+      if (learnAwaitingContinueRef.current) return;
 
       const question = currentLearnQuestionRef.current;
       const emit = learnMapEmitRef.current;
@@ -3328,10 +3359,7 @@ export default function GeographyGame() {
         lngLat: context.lngLat,
         regionId: session?.region,
       });
-      if (territoryNote) {
-        showWrongContinentFeedback(feature, context);
-        return;
-      }
+      if (territoryNote) return;
 
       if (context.inactive) {
         showWrongContinentFeedback(feature, context);
@@ -3856,14 +3884,35 @@ export default function GeographyGame() {
     Boolean(isLearnBorderlessQuestion) || Boolean(isNeighborBackdrop);
   const allowEmptyMapClicks =
     isLearnBorderlessQuestion && isLearnMapClickQuestion && !learnDistanceRevealActive;
-  const distanceFeedback = learnDistanceReveal
-    ? {
-        from: learnDistanceReveal.from,
-        to: learnDistanceReveal.to,
-        label: learnDistanceReveal.label,
-        correct: learnDistanceReveal.correct,
-      }
-    : null;
+  const distanceFeedback = useMemo(() => {
+    if (!learnDistanceReveal?.from || !learnDistanceReveal?.to) return null;
+    if (learnDistanceReveal.correct) return null;
+    const questionId = currentLearnQuestion?.id;
+    if (
+      learnDistanceReveal.questionId &&
+      questionId &&
+      learnDistanceReveal.questionId !== questionId
+    ) {
+      return null;
+    }
+    if (
+      !isLearnBorderlessQuestion &&
+      currentLearnQuestion?.answerType !== "shape_drop"
+    ) {
+      return null;
+    }
+    return {
+      from: learnDistanceReveal.from,
+      to: learnDistanceReveal.to,
+      label: learnDistanceReveal.label,
+      correct: false,
+    };
+  }, [
+    learnDistanceReveal,
+    currentLearnQuestion?.id,
+    currentLearnQuestion?.answerType,
+    isLearnBorderlessQuestion,
+  ]);
 
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card

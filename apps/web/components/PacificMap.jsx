@@ -30,6 +30,7 @@ import {
   CIRCLE_STROKE_WIDTH,
   getBboxScreenSizePx,
   getCountryMeasureBbox,
+  getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
@@ -404,27 +405,36 @@ export default function PacificMap({
         };
       },
       projectBoundsClient(country) {
-        const svgBounds = projectMeasureBboxToSvg(country, PACIFIC_GAME_VIEW);
-        if (!svgBounds) return null;
-
         const svgRect = svg.getBoundingClientRect();
         const currentViewBox = viewBoxRef.current;
-        const toClient = (svgX, svgY) => ({
-          x:
-            ((svgX - currentViewBox.x) / currentViewBox.width) * svgRect.width +
-            svgRect.left,
-          y:
-            ((svgY - currentViewBox.y) / currentViewBox.height) * svgRect.height +
-            svgRect.top,
-        });
-        const nw = toClient(svgBounds.minX, svgBounds.minY);
-        const se = toClient(svgBounds.maxX, svgBounds.maxY);
-        const left = Math.min(nw.x, se.x);
-        const top = Math.min(nw.y, se.y);
-        const width = Math.abs(se.x - nw.x);
-        const height = Math.abs(se.y - nw.y);
+        const projectToClient = (lng, lat) => {
+          const point = PACIFIC_GAME_VIEW.project(
+            lng,
+            lat,
+            PACIFIC_GAME_VIEW.width,
+            PACIFIC_GAME_VIEW.height
+          );
+          if (!point) return null;
+          return {
+            x:
+              ((point[0] - currentViewBox.x) / currentViewBox.width) * svgRect.width +
+              svgRect.left,
+            y:
+              ((point[1] - currentViewBox.y) / currentViewBox.height) * svgRect.height +
+              svgRect.top,
+          };
+        };
+        const bounds = getCountryFillScreenBounds(country, projectToClient);
+        if (!bounds) return null;
+        const width = bounds.right - bounds.left;
+        const height = bounds.bottom - bounds.top;
         if (!(width > 2) || !(height > 2)) return null;
-        return { left, top, width, height };
+        return {
+          left: bounds.left,
+          top: bounds.top,
+          width,
+          height,
+        };
       },
       projectDiscoverAnchor(country, viewportRect) {
         return getCountryVisibleScreenAnchor(
@@ -642,8 +652,8 @@ export default function PacificMap({
 
         <g
           className="pacific-map-inactive"
-          stroke={hideCountryBorders ? "none" : colors.inactiveBorder}
-          strokeWidth="0.6"
+          stroke={hideCountryBorders ? colors.inactiveLand : colors.inactiveBorder}
+          strokeWidth={hideCountryBorders ? "0.4" : "0.6"}
         >
           {inactivePaths.map((country) => (
             <path
@@ -671,8 +681,8 @@ export default function PacificMap({
 
         <g
           className="pacific-map-active"
-          stroke={hideCountryBorders ? "none" : colors.levelBorder}
-          strokeWidth="0.75"
+          stroke={hideCountryBorders ? landColor : colors.levelBorder}
+          strokeWidth={hideCountryBorders ? "0.4" : "0.75"}
           strokeLinejoin="round"
         >
           {activePaths.map((country) => {
@@ -705,9 +715,7 @@ export default function PacificMap({
                 ? WRONG_COUNTRY_COLOR
                 : isCorrectHighlight
                   ? CORRECT_COUNTRY_COLOR
-                  : hideCountryBorders
-                    ? "none"
-                    : undefined;
+                  : undefined;
 
             return (
               <path

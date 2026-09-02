@@ -283,6 +283,45 @@ export function getCountryScreenBounds(country, projectLngLat) {
   };
 }
 
+/**
+ * Pixel AABB of the country as it is drawn on the map (mainland / metropolitan
+ * rings), not the compact circle-marker bbox. Used to size shape-drop ghosts.
+ */
+export function getCountryFillScreenBounds(country, projectLngLat) {
+  if (!country?.feature?.geometry || typeof projectLngLat !== "function") return null;
+
+  const mainland = getMainlandPolygons(country.feature.geometry, country.id);
+  if (mainland.length === 0) return getCountryScreenBounds(country, projectLngLat);
+
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  let count = 0;
+
+  for (const polygon of mainland) {
+    walkCoords(polygon, (lng, lat) => {
+      const point = projectLngLat(lng, lat);
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+      left = Math.min(left, point.x);
+      top = Math.min(top, point.y);
+      right = Math.max(right, point.x);
+      bottom = Math.max(bottom, point.y);
+      count += 1;
+    });
+  }
+
+  if (count === 0 || !(right > left) || !(bottom > top)) return null;
+
+  return {
+    countryId: country.id,
+    left,
+    top,
+    right,
+    bottom,
+  };
+}
+
 const VISIBLE_ANCHOR_MAX_SAMPLES = 320;
 /** Use the precomputed visual center only when most of the mainland is in view. */
 const VISIBLE_ANCHOR_MOSTLY_ONSCREEN = 0.45;

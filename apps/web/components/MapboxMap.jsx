@@ -18,6 +18,7 @@ import {
   CIRCLE_CLICK_RADIUS_PX,
   CIRCLE_STROKE_WIDTH,
   getCountryScreenBounds,
+  getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
@@ -631,6 +632,29 @@ function applyMapView(map, mapView, { onSettled } = {}) {
   }
 }
 
+function isBasemapBoundaryLayer(layer) {
+  const id = layer?.id ?? "";
+  if (
+    id.startsWith("country-") ||
+    id.startsWith("inactive-") ||
+    id.startsWith("small-") ||
+    id.startsWith("learn-") ||
+    id.startsWith("base-land")
+  ) {
+    return false;
+  }
+  return /admin|boundary|disputed/i.test(id);
+}
+
+function hideBasemapBoundaryLayers(map) {
+  const layers = map.getStyle()?.layers ?? [];
+  for (const layer of layers) {
+    if (!isBasemapBoundaryLayer(layer)) continue;
+    if (!map.getLayer(layer.id)) continue;
+    map.setLayoutProperty(layer.id, "visibility", "none");
+  }
+}
+
 function configureBaseStyle(map, theme) {
   const colors = getMapThemeColors(theme);
   const layers = map.getStyle()?.layers ?? [];
@@ -643,11 +667,6 @@ function configureBaseStyle(map, theme) {
       continue;
     }
 
-    if (type === "line" && (id.includes("admin-1") || id.includes("admin-2"))) {
-      map.setLayoutProperty(id, "visibility", "none");
-      continue;
-    }
-
     if (colors.ocean) {
       if (type === "background") {
         map.setPaintProperty(id, "background-color", colors.ocean);
@@ -656,6 +675,11 @@ function configureBaseStyle(map, theme) {
       }
     }
   }
+
+  // Hide Mapbox admin-0/1/2 (+ disputed) lines. Custom GeoJSON borders are
+  // the only outlines the game should ever show; style country boundaries
+  // leak through country-fill (opacity 0.92) as faint grey seams when zoomed.
+  hideBasemapBoundaryLayers(map);
 }
 
 const BASE_LAND_HATCH_ID = "base-land-hatch";
@@ -1003,6 +1027,8 @@ function syncLearnDistanceOverlay(map, overlay) {
 function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
   const borderOpacity = hide ? 0 : 1;
   const borderVisibility = hide ? "none" : "visible";
+  const landColor = circleOpts.landColor ?? mapColors.inactiveLand;
+  hideBasemapBoundaryLayers(map);
   if (map.getLayer("country-borders")) {
     map.setLayoutProperty("country-borders", "visibility", borderVisibility);
     map.setPaintProperty("country-borders", "line-opacity", borderOpacity);
@@ -1011,18 +1037,24 @@ function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
     map.setLayoutProperty("inactive-country-borders", "visibility", borderVisibility);
     map.setPaintProperty("inactive-country-borders", "line-opacity", hide ? 0 : 0.85);
   }
+  if (map.getLayer("country-click-expand")) {
+    map.setLayoutProperty("country-click-expand", "visibility", borderVisibility);
+  }
   if (map.getLayer("country-fill")) {
+    // Transparent fill-outline-color still antialiases into a hairline at high
+    // zoom. Match the land fill instead so internal seams disappear.
     map.setPaintProperty(
       "country-fill",
       "fill-outline-color",
-      hide ? "rgba(0,0,0,0)" : mapColors.levelBorder
+      hide ? landColor : mapColors.levelBorder
     );
+    map.setPaintProperty("country-fill", "fill-opacity", hide ? 1 : 0.92);
   }
   if (map.getLayer("inactive-country-fill")) {
     map.setPaintProperty(
       "inactive-country-fill",
       "fill-outline-color",
-      hide ? "rgba(0,0,0,0)" : mapColors.inactiveBorder
+      hide ? mapColors.inactiveLand : mapColors.inactiveBorder
     );
   }
   if (map.getLayer("country-feedback-outline")) {
@@ -1119,6 +1151,7 @@ export default function MapboxMap({
   const allowInactiveCountryClicksRef = useRef(allowInactiveCountryClicks);
   const hideCountryBordersRef = useRef(hideCountryBorders);
   const allowEmptyMapClicksRef = useRef(allowEmptyMapClicks);
+  const distanceFeedbackRef = useRef(distanceFeedback);
 
   onCountryClickRef.current = onCountryClick;
   onCountryHoverRef.current = onCountryHover;
@@ -1130,6 +1163,7 @@ export default function MapboxMap({
   allowInactiveCountryClicksRef.current = allowInactiveCountryClicks;
   hideCountryBordersRef.current = hideCountryBorders;
   allowEmptyMapClicksRef.current = allowEmptyMapClicks;
+  distanceFeedbackRef.current = distanceFeedback;
   highlightCountryIdRef.current = highlightCountryId;
   highlightToneRef.current = highlightTone;
   boardPaintRef.current = {
@@ -1457,11 +1491,6 @@ export default function MapboxMap({
 
     if (map.getLayer("inactive-country-fill")) {
       map.setPaintProperty("inactive-country-fill", "fill-color", mapColors.inactiveLand);
-      map.setPaintProperty(
-        "inactive-country-fill",
-        "fill-outline-color",
-        mapColors.inactiveBorder
-      );
     }
 
     if (map.getLayer("inactive-country-borders")) {
@@ -1470,7 +1499,6 @@ export default function MapboxMap({
 
     if (map.getLayer("country-fill")) {
       map.setPaintProperty("country-fill", "fill-color", getLevelFillColorExpression(level, landColor));
-      map.setPaintProperty("country-fill", "fill-outline-color", mapColors.levelBorder);
       map.setPaintProperty("country-borders", "line-color", mapColors.levelBorder);
     }
 
@@ -1517,6 +1545,7 @@ export default function MapboxMap({
       forceShow: forceShowSmallCountryCircles,
     });
     addLearnDistanceLayers(map);
+    syncLearnDistanceOverlay(map, distanceFeedbackRef.current);
     applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
       forceShow: forceShowSmallCountryCircles,
       level,
@@ -1545,9 +1574,19 @@ export default function MapboxMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
-    addLearnDistanceLayers(map);
-    syncLearnDistanceOverlay(map, distanceFeedback);
+    if (!map) return undefined;
+    const apply = () => {
+      if (!map.getStyle?.()) return;
+      addLearnDistanceLayers(map);
+      syncLearnDistanceOverlay(map, distanceFeedback);
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("idle", apply);
+    return () => {
+      map.off("idle", apply);
+      const source = map.getSource?.("learn-distance");
+      if (source) source.setData(EMPTY_GEOJSON);
+    };
   }, [distanceFeedback]);
 
   // Camera-only updates: never setData here — GeoJSON setData clears feature-state
@@ -2141,7 +2180,7 @@ export default function MapboxMap({
               y: point.y + mapRect.top,
             };
           };
-          const bounds = getCountryScreenBounds(country, projectToClient);
+          const bounds = getCountryFillScreenBounds(country, projectToClient);
           if (!bounds) return null;
           const width = bounds.right - bounds.left;
           const height = bounds.bottom - bounds.top;
