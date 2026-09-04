@@ -36,7 +36,12 @@ import {
   slotIndexFromY,
   slotsWithPlaceholder,
 } from "@/lib/learn/rankList";
-import { buildLearnWrongReveal, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
+import {
+  buildLearnWrongReveal,
+  classifyNeighborTeachPaint,
+  getNeighborIdsForQuestion,
+  getNeighborTeachExtraCountries,
+} from "@/lib/learn/wrongReveal";
 import { buildLearnStatPayloads } from "@/lib/learn/emaIntegration";
 import {
   distancePenaltyScale,
@@ -847,6 +852,30 @@ test("neighbor select-all is a 9-option grid of neighbors plus nearby distractor
   for (const id of germanyNeighbors) {
     assert.ok(germanyIds.includes(id));
   }
+});
+
+test("neighbor teach promotes out-of-region borders onto the map", () => {
+  const europe = ENABLED.filter((country) => country.region === "europe").map(
+    (country) => ({ ...country, id: country.iso3 })
+  );
+  const question = { countryId: "BGR", type: "neighbor_recall_all" };
+  const neighborIds = getNeighborIdsForQuestion(question, ENABLED_BY_ID);
+  assert.ok(neighborIds.includes("TUR"), "Bulgaria's neighbor list includes Turkey");
+  assert.equal(ENABLED_BY_ID.get("TUR").region, "asia");
+
+  const extra = getNeighborTeachExtraCountries(
+    neighborIds,
+    europe,
+    ENABLED_BY_ID
+  );
+  assert.deepEqual(
+    extra.map((country) => country.id),
+    ["TUR"]
+  );
+
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID);
+  assert.match(reveal.message, /Turkey/);
+  assert.ok(reveal.neighborReveal?.neighborIds.includes("TUR"));
 });
 
 test("neighbor teach paints found green, missed orange, and extra guesses red", () => {

@@ -68,6 +68,32 @@ export function getNeighborIdsForQuestion(question, allCountriesById) {
   );
 }
 
+/**
+ * Neighbors (and optional extra paint ids) that sit outside the current
+ * regional map filter. Promote these onto the active map so a teach step can
+ * still fill and label a border like Turkey when Europe is in play.
+ */
+export function getNeighborTeachExtraCountries(
+  neighborIds,
+  activeCountries,
+  allCountriesById,
+  extraIds = []
+) {
+  const activeIds = new Set(
+    (activeCountries ?? []).map((country) => country.id).filter(Boolean)
+  );
+  const extra = [];
+  const seen = new Set();
+  for (const id of [...(neighborIds ?? []), ...(extraIds ?? [])]) {
+    if (!id || seen.has(id) || activeIds.has(id)) continue;
+    seen.add(id);
+    const country = allCountriesById?.get(id);
+    if (!country) continue;
+    extra.push(country);
+  }
+  return extra;
+}
+
 function collectAnswerValues(selectedValue, wrongValues) {
   const values = [];
   if (Array.isArray(selectedValue)) values.push(...selectedValue);

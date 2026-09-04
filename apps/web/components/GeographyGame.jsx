@@ -16,7 +16,7 @@ import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import { ShapeDropPlacement, DistanceRevealOverlay } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
-import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
+import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, getNeighborTeachExtraCountries, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import {
   getOutOfRegionClickFeedback,
@@ -677,13 +677,56 @@ export default function GeographyGame() {
 
   const isOceaniaRegion = session?.region === "oceania";
 
+  // Neighbor teach may need a country that isn't in the session region
+  // (Bulgaria → Turkey). Pull those onto the active map so they can be filled
+  // and labeled instead of staying merged into borderless other-region land.
+  const neighborTeachExtraCountries = useMemo(() => {
+    if (!learnNeighborMapVisible || !Array.isArray(learnQuestions)) return [];
+    const question = learnQuestions[learnIndex];
+    if (!isNeighborLearnQuestion(question)) return [];
+    return getNeighborTeachExtraCountries(
+      getNeighborIdsForQuestion(question, allCountriesById),
+      activeCountries,
+      allCountriesById,
+      learnNeighborPaint.wrongIds
+    );
+  }, [
+    learnNeighborMapVisible,
+    learnQuestions,
+    learnIndex,
+    allCountriesById,
+    activeCountries,
+    learnNeighborPaint.wrongIds,
+  ]);
+  const neighborTeachExtraIds = useMemo(
+    () => new Set(neighborTeachExtraCountries.map((country) => country.id)),
+    [neighborTeachExtraCountries]
+  );
+  const mapFillCountries = useMemo(
+    () =>
+      neighborTeachExtraCountries.length === 0
+        ? activeCountries
+        : [...activeCountries, ...neighborTeachExtraCountries],
+    [activeCountries, neighborTeachExtraCountries]
+  );
+
   const inactiveCountries = useMemo(() => {
     if (!isOceaniaRegion) return [];
     return [
-      ...allCountries.filter((country) => country.region !== "oceania"),
-      ...displayMapCountries,
+      ...allCountries.filter(
+        (country) =>
+          country.region !== "oceania" && !neighborTeachExtraIds.has(country.id)
+      ),
+      ...displayMapCountries.filter(
+        (country) => !neighborTeachExtraIds.has(country.id)
+      ),
     ];
-  }, [allCountries, displayMapCountries, isOceaniaRegion]);
+  }, [
+    allCountries,
+    displayMapCountries,
+    isOceaniaRegion,
+    neighborTeachExtraIds,
+  ]);
 
   const countryColorMap = useMemo(
     () => getCountryColorMap(activeCountries),
@@ -691,9 +734,11 @@ export default function GeographyGame() {
   );
 
   const activeGeojson = useMemo(() => {
-    const base = buildGameGeojson(activeCountries);
+    const base = buildGameGeojson(
+      mapFillCountries.filter((country) => country?.feature)
+    );
     return enrichGeojsonWithColors(base, countryColorMap);
-  }, [activeCountries, countryColorMap]);
+  }, [mapFillCountries, countryColorMap]);
 
   const activeSmallCountriesGeojson = useMemo(() => {
     // Territory rings are Discover-only so Test/Learn doesn't treat them as
@@ -706,19 +751,26 @@ export default function GeographyGame() {
           return country.region === session.region || country.region === "world";
         })
       : [];
-    const base = buildSmallCountriesGeoJSON([...activeCountries, ...regionTerritories]);
+    const base = buildSmallCountriesGeoJSON([
+      ...mapFillCountries,
+      ...regionTerritories,
+    ]);
     return enrichGeojsonWithColors(base, countryColorMap);
-  }, [activeCountries, countryColorMap, displayMapCountries, session?.gameType, session?.region]);
+  }, [mapFillCountries, countryColorMap, displayMapCountries, session?.gameType, session?.region]);
 
   const inactiveGeojson = useMemo(() => {
-    const inactive = buildInactiveGeojson(allCountries, session?.region);
+    const roster =
+      neighborTeachExtraIds.size === 0
+        ? allCountries
+        : allCountries.filter((country) => !neighborTeachExtraIds.has(country.id));
+    const inactive = buildInactiveGeojson(roster, session?.region);
     const territoryFeatures = territoryGeojson?.features ?? [];
     if (territoryFeatures.length === 0) return inactive;
     return {
       type: "FeatureCollection",
       features: [...inactive.features, ...territoryFeatures],
     };
-  }, [allCountries, session?.region, territoryGeojson]);
+  }, [allCountries, session?.region, territoryGeojson, neighborTeachExtraIds]);
 
   const mapWrongCountryIds = useMemo(() => {
     if (roundWrongCountryIds.length === 0) return wrongCountryIds;
@@ -2012,18 +2064,30 @@ export default function GeographyGame() {
       } = {}
     ) => {
       const { mainId, neighborIds } = neighborReveal;
-      const visibleNeighborIds = neighborIds.filter((id) =>
-        activeCountries.some((country) => country.id === id)
-      );
-      const resolveId = (value) =>
-        resolveGuessedCountryInRegion(value, {
+      const neighborIdSet = new Set(neighborIds);
+      const resolveId = (value) => {
+        if (typeof value === "string" && neighborIdSet.has(value)) return value;
+        const inRegion = resolveGuessedCountryInRegion(value, {
           allCountriesById,
           activeCountries,
           excludeIds: [mainId],
-        })?.id ?? (typeof value === "string" && visibleNeighborIds.includes(value) ? value : null);
+        })?.id;
+        if (inRegion) return inRegion;
+        // Real land neighbors still count when they sit outside the region
+        // filter (Turkey for Bulgaria in Europe).
+        const worldwide = resolveGuessedCountry(value, { allCountriesById });
+        if (
+          worldwide &&
+          neighborIdSet.has(worldwide.id) &&
+          worldwide.id !== mainId
+        ) {
+          return worldwide.id;
+        }
+        return null;
+      };
 
       const paint = classifyNeighborTeachPaint({
-        neighborIds: visibleNeighborIds,
+        neighborIds,
         mainId,
         selectedValue,
         wrongValues,
@@ -2046,7 +2110,7 @@ export default function GeographyGame() {
         };
       }
       for (const id of [
-        ...visibleNeighborIds,
+        ...neighborIds,
         ...paint.wrongIds,
       ]) {
         if (labels[id]) continue;
@@ -3724,14 +3788,11 @@ export default function GeographyGame() {
   // & co. unlabeled-only gray while Bangladesh stays white.
   const learnNeighborPaintIds = useMemo(() => {
     if (!learnNeighborRevealActive || !currentLearnQuestion?.countryId) return [];
-    return getNeighborIdsForQuestion(currentLearnQuestion, allCountriesById).filter((id) =>
-      activeCountries.some((country) => country.id === id)
-    );
+    return getNeighborIdsForQuestion(currentLearnQuestion, allCountriesById);
   }, [
     learnNeighborRevealActive,
     currentLearnQuestion,
     allCountriesById,
-    activeCountries,
   ]);
   const mapNeighborPaint = useMemo(() => {
     if (!learnNeighborRevealActive) {
@@ -4450,7 +4511,7 @@ export default function GeographyGame() {
               <div className={mapStageFill}>
               {isOceaniaRegion ? (
                 <PacificMap
-                  activeCountries={activeCountries}
+                  activeCountries={mapFillCountries}
                   inactiveCountries={inactiveCountries}
                   countryColorMap={countryColorMap}
                   gameActive={mapInteractionEnabled}
