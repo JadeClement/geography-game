@@ -648,7 +648,7 @@ function generateNumericRank(type, country, allCountries, { field, prompt }) {
 
   return baseQuestion(type, country, {
     prompt,
-    promptSubtext: "Largest at the top. Drag to reorder.",
+    promptSubtext: "Largest at the top.",
     answerType: "drag_to_rank",
     correctAnswer,
     options,

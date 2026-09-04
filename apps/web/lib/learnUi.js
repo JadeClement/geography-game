@@ -134,6 +134,7 @@ export function learnBinaryCard({ state = "idle", locked = false } = {}) {
     state === "idle" &&
       "border-border bg-surface enabled:hover:-translate-y-0.5 enabled:hover:border-border-subtle enabled:hover:bg-surface-hover enabled:hover:shadow-md",
     state === "winner" && cn("border-success shadow-md", SUCCESS_BG),
+    state === "wrong" && cn("border-error shadow-md", ERROR_BG),
     state === "loser" && "border-border bg-surface opacity-60",
     locked && "cursor-default"
   );
@@ -221,27 +222,71 @@ export const learnFactCategory =
 
 export const learnRankList = "m-0 flex w-full list-none flex-col gap-2 p-0";
 
-export function learnRankRow({ state = "idle", locked = false, dragging = false } = {}) {
+export function learnRankRow({
+  state = "idle",
+  locked = false,
+  selected = false,
+  dropTarget = false,
+} = {}) {
   return cn(
-    "flex min-h-[3.25rem] w-full cursor-grab touch-none items-center gap-2.5 rounded-md border px-3 py-2",
+    "flex min-h-[3.5rem] w-full cursor-grab touch-none items-center gap-2.5 rounded-md border px-3 py-2",
     "text-left shadow-sm transition-[border-color,background,box-shadow,transform] duration-150 ease-out",
     "select-none active:cursor-grabbing",
     state === "idle" &&
+      !selected &&
+      !dropTarget &&
       "border-border bg-surface text-text hover:border-border-subtle hover:bg-surface-hover",
     state === "correct" && cn("border-success text-success", SUCCESS_BG),
     state === "wrong" && cn("border-error text-error", ERROR_BG),
-    dragging && "z-10 scale-[1.02] border-accent shadow-md",
+    selected &&
+      "z-10 cursor-pointer border-accent bg-surface-selected shadow-[0_0_0_3px_var(--color-accent-ring),var(--shadow-md)]",
+    dropTarget &&
+      "cursor-pointer border-dashed border-accent bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))]",
     locked && "cursor-default"
   );
 }
 
 export const learnRankHandle =
-  "shrink-0 text-xs font-bold tracking-[0.15em] text-text-muted";
+  "flex h-8 w-6 shrink-0 items-center justify-center text-text-muted";
 export const learnRankIndex =
-  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-meta text-xs font-bold tabular-nums text-text-secondary";
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-meta text-xs font-bold tabular-nums text-text-secondary";
 export const learnRankName = "min-w-0 flex-1 truncate text-sm font-semibold text-text";
 export const learnRankStat = "shrink-0 text-xs font-bold tabular-nums text-text-secondary";
-export const learnRankStatHidden = "shrink-0 text-xs font-bold text-text-muted";
+
+export const learnRankPlaceholder = cn(
+  "flex min-h-[3.5rem] w-full items-center gap-2.5 rounded-md border-2 border-dashed border-accent px-3 py-2",
+  "bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
+);
+
+export const learnRankGhost = cn(
+  "pointer-events-none fixed z-[80] flex min-h-[3.5rem] items-center gap-2.5 rounded-md border border-accent bg-surface px-3 py-2",
+  "shadow-xl"
+);
+
+export const learnRankPositionBar =
+  "flex flex-col items-center gap-2 rounded-md border border-border bg-inset px-3 py-2.5";
+export const learnRankPositionLabel = "m-0 text-center text-sm text-text-muted";
+export const learnRankPositionRow = "flex flex-wrap items-center justify-center gap-1.5";
+
+export function learnRankPositionBtn({ current = false } = {}) {
+  return cn(
+    "flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border text-sm font-bold tabular-nums",
+    "transition-[border-color,background,box-shadow,transform] duration-150 ease-out",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+    current
+      ? "cursor-default border-accent bg-surface-selected text-text shadow-[0_0_0_2px_var(--color-accent-ring)]"
+      : "border-border bg-surface text-text enabled:hover:-translate-y-px enabled:hover:border-accent enabled:hover:bg-surface-hover enabled:hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+  );
+}
+
+export const learnRankMoveGroup = "flex shrink-0 flex-col";
+export const learnRankMoveBtn = cn(
+  "flex h-7 w-8 cursor-pointer items-center justify-center rounded-sm text-text-muted",
+  "transition-[background,color] duration-150 ease-out",
+  "enabled:hover:bg-meta enabled:hover:text-text",
+  "disabled:cursor-not-allowed disabled:opacity-25",
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+);
 
 // ── session summary (appended to GameCompleteModal) ────────────────────────────
 

@@ -747,7 +747,7 @@ export const promptWithPronunciation =
 export const mapStage = "relative min-h-0 flex-1";
 
 /** Pins the GL/SVG map to the stage so overlay chrome cannot displace it. */
-export const mapStageFill = "absolute inset-0";
+export const mapStageFill = "absolute inset-0 z-0";
 
 export const discoverMapLabelLayer = "pointer-events-none absolute inset-0 z-[2] overflow-visible";
 

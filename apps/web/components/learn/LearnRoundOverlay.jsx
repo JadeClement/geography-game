@@ -87,7 +87,7 @@ export default function LearnRoundOverlay({
         isTop
           ? "pointer-events-none items-start justify-center pt-3"
           : heavierMapBlur
-            ? "pointer-events-auto items-center justify-center bg-surface/60 py-4 backdrop-blur-[16px]"
+            ? "pointer-events-auto items-center justify-center bg-surface/50 py-4 backdrop-blur-[8px]"
             : "pointer-events-auto items-center justify-center bg-surface/20 py-4 backdrop-blur-[2px]"
       )}
     >

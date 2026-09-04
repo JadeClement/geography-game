@@ -31,6 +31,11 @@ import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
+import {
+  reorder,
+  slotIndexFromY,
+  slotsWithPlaceholder,
+} from "@/lib/learn/rankList";
 import { buildLearnWrongReveal, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { buildLearnStatPayloads } from "@/lib/learn/emaIntegration";
 import {
@@ -974,5 +979,29 @@ test("shape name miss compares against the guessed country's outline", () => {
       allCountriesById: ENABLED_BY_ID,
     }),
     null
+  );
+});
+
+test("rank list slot targeting stays stable across the full height", () => {
+  assert.deepEqual(reorder(["a", "b", "c", "d", "e"], 4, 0), [
+    "e",
+    "a",
+    "b",
+    "c",
+    "d",
+  ]);
+  assert.deepEqual(reorder(["a", "b", "c"], 0, 2), ["b", "c", "a"]);
+  assert.equal(slotIndexFromY(10, 0, 100, 5), 0);
+  assert.equal(slotIndexFromY(39, 0, 100, 5), 1);
+  assert.equal(slotIndexFromY(99, 0, 100, 5), 4);
+  assert.equal(slotIndexFromY(-8, 0, 100, 5), 0);
+  assert.equal(slotIndexFromY(140, 0, 100, 5), 4);
+
+  const slots = slotsWithPlaceholder(["a", "b", "c", "d", "e"], 4, 0);
+  assert.equal(slots[0].kind, "placeholder");
+  assert.equal(slots[0].id, "e");
+  assert.deepEqual(
+    slots.slice(1).map((slot) => slot.id),
+    ["a", "b", "c", "d"]
   );
 });

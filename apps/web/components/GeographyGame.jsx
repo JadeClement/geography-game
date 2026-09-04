@@ -883,15 +883,17 @@ export default function GeographyGame() {
         : view;
 
     // Frame subject (+ land neighbors) at ~3× combined land area — for teach
-    // steps that paint the whole border cluster on the map.
-    const focusPadding =
-      learnMapOnlyContinue && !learnMapContinueTopPrompt ? 88 : 140;
+    // steps that paint the whole border cluster on the map. Cover-fit with no
+    // chrome padding: Correct/Continue overlay the map instead of shoving it
+    // down (fitBounds padding used to reserve a header band for those controls).
+    const coverFocus = (view) =>
+      view ? { ...view, padding: 0, fit: "cover" } : view;
     const focusCluster = (countryId) => {
       const subject = allCountriesById.get(countryId);
       if (!subject) return null;
       return getLearnFocusMapView(getCountryWithNeighbors(subject, allCountriesById), {
         regionId: session?.region,
-        padding: focusPadding,
+        padding: 0,
       });
     };
 
@@ -902,15 +904,15 @@ export default function GeographyGame() {
       if (pair.length > 0) {
         const pairView = getLearnFocusMapView(pair, {
           regionId: session?.region,
-          padding: focusPadding,
+          padding: 0,
         });
-        if (pairView) return withLearnKey(pairView);
+        if (pairView) return withLearnKey(coverFocus(pairView));
       }
     }
     // Neighbor teach: subject + every land neighbor (what's painted on the map).
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       const view = focusCluster(currentLearnQuestion.countryId);
-      if (view) return withLearnKey(view);
+      if (view) return withLearnKey(coverFocus(view));
     }
     // Highlight / language / choice questions: full session region only — zoom
     // all the way out from any prior teach close-up (e.g. Balkans → all Europe).
@@ -939,7 +941,7 @@ export default function GeographyGame() {
           clampToMaxZoom: true,
         });
       }
-      if (isHighlightPrompt) {
+      if (isHighlightPrompt && !learnMapOnlyContinue) {
         return withLearnKey({
           ...mapView,
           // Slightly roomier padding so the top card doesn't hide northern land,
@@ -953,7 +955,9 @@ export default function GeographyGame() {
       }
       // Centered cards blur the region map behind the prompt. Cover-fit so
       // land fills the stage instead of sitting in a letterboxed strip.
-      if (!isLearnMapClickQuestion && !learnMapOnlyContinue) {
+      // Same after answer: Correct/Continue overlay the map rather than
+      // reserving a padded header band.
+      if (!isLearnMapClickQuestion) {
         return withLearnKey({
           ...mapView,
           padding: 0,
@@ -973,7 +977,6 @@ export default function GeographyGame() {
     isNeighborBackdrop,
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
-    learnMapContinueTopPrompt,
     isLearnMapClickQuestion,
     isLearnShapeDropQuestion,
     allCountriesById,

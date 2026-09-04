@@ -87,7 +87,9 @@ export default function BinaryChoiceQuestion({
 
   const cardState = (countryId) => {
     if (!locked) return "idle";
-    return countryId === question.correctAnswer ? "winner" : "loser";
+    if (countryId === question.correctAnswer) return "winner";
+    if (countryId === selected) return "wrong";
+    return "loser";
   };
 
   return (
