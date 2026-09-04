@@ -575,6 +575,38 @@ function pickClickedFeature(map, features) {
   return circleFeature ?? fillFeature ?? features[0];
 }
 
+/**
+ * Keep fitBounds padding inside the viewport. A top inset larger than the map
+ * (or most of it) makes Mapbox fail or crop the region.
+ */
+function clampFitPadding(map, padding) {
+  const viewW = map.getContainer?.()?.clientWidth ?? 0;
+  const viewH = map.getContainer?.()?.clientHeight ?? 0;
+  if (!(viewW > 0 && viewH > 0) || padding == null) return padding;
+
+  // Always leave most of the stage for geography. A large top inset on a short
+  // map makes Europe fit into a sliver and the camera zooms out to the world.
+  const maxTop = Math.max(48, Math.min(Math.floor(viewH * 0.34), viewH - 180));
+  const maxBottom = Math.max(24, Math.floor(viewH * 0.22));
+  const maxSide = Math.max(24, Math.floor(viewW * 0.22));
+
+  if (typeof padding === "number") {
+    return Math.min(padding, Math.min(maxTop, maxSide));
+  }
+  if (typeof padding !== "object") return padding;
+  return {
+    top: Math.min(Number(padding.top) || 0, maxTop),
+    bottom: Math.min(Number(padding.bottom) || 0, maxBottom),
+    left: Math.min(Number(padding.left) || 0, maxSide),
+    right: Math.min(Number(padding.right) || 0, maxSide),
+  };
+}
+
+function resolveFitPadding(map, mapView) {
+  if (mapView?.fit === "cover") return 0;
+  return clampFitPadding(map, mapView?.padding ?? 48);
+}
+
 /** Extra zoom so a contain-fitted bbox covers the map stage (object-fit: cover). */
 function applyCoverFit(map, geoBounds, { bleed = 1.08, maxExtraZoom = 3 } = {}) {
   if (typeof map.project !== "function" || typeof map.getZoom !== "function") {
@@ -662,6 +694,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
 
     const coverFit = mapView.fit === "cover";
     let coverBounds = null;
+    const fitPadding = resolveFitPadding(map, mapView);
 
     if (mapView.type === "camera") {
       // jumpTo padding writes transform.padding, which on globe punches a
@@ -669,7 +702,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       map.jumpTo({
         center: mapView.center,
         zoom: mapView.zoom + (Number(mapView.zoomDelta) || 0),
-        ...(useGlobe ? { pitch: 0 } : { padding: coverFit ? 0 : (mapView.padding ?? 48) }),
+        ...(useGlobe ? { pitch: 0 } : { padding: fitPadding }),
         duration: 0,
         retainPadding: false,
       });
@@ -693,7 +726,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       ];
       try {
         map.fitBounds(safeBounds, {
-          padding: coverFit ? 0 : (mapView.padding ?? 48),
+          padding: fitPadding,
           duration: 0,
           maxZoom: coverFit ? Math.max(mapView.maxZoom ?? 5, 8) : (mapView.maxZoom ?? 5),
           retainPadding: false,

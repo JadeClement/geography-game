@@ -999,6 +999,66 @@ export function getLearnFocusMapView(
 }
 
 /**
+ * Pixel insets for Learn "what/which country is highlighted?" prompts.
+ * The question card is pinned over the top of the map; top padding keeps the
+ * fitted region — including northern land like Sweden — in the visible band
+ * below the card. Never pair this with fit: "cover": cover-fit zooms back in
+ * and hides that same northern land under the overlay.
+ */
+export const LEARN_HIGHLIGHT_MAP_PADDING = {
+  top: 136,
+  bottom: 56,
+  left: 48,
+  right: 48,
+};
+
+/**
+ * Region camera for highlight-map Learn prompts. Keeps the session region in
+ * view (no subject close-up), expands bounds so the highlighted country's full
+ * shape is inside the frame, and insets the top for the prompt card.
+ *
+ * @param {object|null} regionMapView
+ * @param {{ country?: object|null }} [opts]
+ * @returns {object|null}
+ */
+export function getLearnHighlightMapView(regionMapView, { country = null } = {}) {
+  if (!regionMapView) return null;
+
+  if (regionMapView.type === "camera" || !regionMapView.bounds) {
+    return {
+      ...regionMapView,
+      padding: LEARN_HIGHLIGHT_MAP_PADDING,
+    };
+  }
+
+  let bounds = regionMapView.bounds;
+  if (country) {
+    const subject = getGeographicBoundsFromCountries([country]);
+    if (subject) {
+      bounds = [
+        [
+          Math.min(bounds[0][0], subject[0][0]),
+          Math.min(bounds[0][1], subject[0][1]),
+        ],
+        [
+          Math.max(bounds[1][0], subject[1][0]),
+          Math.max(bounds[1][1], subject[1][1]),
+        ],
+      ];
+    }
+  }
+
+  return {
+    ...regionMapView,
+    bounds,
+    padding: LEARN_HIGHLIGHT_MAP_PADDING,
+    maxZoom: Math.min(regionMapView.maxZoom ?? 5, 4.5),
+    // Contain-fit only. Cover-fit would undo the top inset.
+    fit: undefined,
+  };
+}
+
+/**
  * Soft Learn highlight camera (language + "which country is highlighted"):
  * Nepal-sized and larger keep the session region view (no zoom). Smaller
  * countries get a light close-up — enough to spot the yellow fill, not a tight crop.

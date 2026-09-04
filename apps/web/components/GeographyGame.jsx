@@ -47,7 +47,7 @@ import {
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap, CORRECT_COUNTRY_COLOR, MISSED_COUNTRY_COLOR, WRONG_COUNTRY_COLOR } from "@/lib/countryColors";
-import { getMapViewForRegion, getLearnFocusMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
+import { getMapViewForRegion, getLearnFocusMapView, getLearnHighlightMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
 import {
@@ -868,9 +868,10 @@ export default function GeographyGame() {
     learnLandlockedRevealActive ||
     learnDistanceRevealActive;
   // Highlight prompts paint their subject yellow on the region backdrop. The
-  // question card is top-pinned (see LearnRoundOverlay) so the full region stays
-  // in view — we intentionally do NOT zoom to the subject or use asymmetric
-  // fitBounds padding (that cropped Europe down to the Mediterranean).
+  // question card is top-pinned (see LearnRoundOverlay). We keep the region
+  // camera (no subject close-up) and inset the top so northern land isn't
+  // hidden under the card — without cover-fit, which used to crop Europe to
+  // the Mediterranean after a large top pad.
   const learnHighlightRevealsAnchor =
     learnEngineActive &&
     currentLearnQuestion?.mapConfig?.display === "highlight" &&
@@ -994,16 +995,10 @@ export default function GeographyGame() {
         });
       }
       if (isHighlightPrompt && !learnMapOnlyContinue) {
-        return withLearnKey({
-          ...mapView,
-          // Slightly roomier padding so the top card doesn't hide northern land,
-          // without the old asymmetric pad that cropped Europe to the Med.
-          padding:
-            typeof mapView.padding === "number"
-              ? Math.max(mapView.padding, 56)
-              : 56,
-          maxZoom: Math.min(mapView.maxZoom ?? 5, 4.5),
-        });
+        const subject = mapHighlightCountryId
+          ? allCountriesById.get(mapHighlightCountryId)
+          : null;
+        return withLearnKey(getLearnHighlightMapView(mapView, { country: subject }));
       }
       // Centered cards blur the region map behind the prompt. Cover-fit so
       // land fills the stage instead of sitting in a letterboxed strip.
@@ -1033,6 +1028,7 @@ export default function GeographyGame() {
     isLearnShapeDropQuestion,
     allCountriesById,
     activeCountries,
+    mapHighlightCountryId,
     session?.region,
   ]);
 

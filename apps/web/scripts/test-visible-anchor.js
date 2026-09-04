@@ -7,6 +7,9 @@ import {
   getCountryVisibleScreenAnchor,
   getGeographicBoundsFromCountries,
   getLearnFocusMapView,
+  getLearnHighlightMapView,
+  getMapViewForRegion,
+  LEARN_HIGHLIGHT_MAP_PADDING,
   getMainlandPolygons,
   RUS_EUROPE_MAX_LNG,
 } from "../lib/geometry.js";
@@ -318,5 +321,55 @@ test("Croatia Dalmatia zoom does not pin the label at off-screen Zagreb", () => 
       anchor.y >= dalmatiaViewport.top &&
       anchor.y <= dalmatiaViewport.bottom,
     `clipped-view anchor must stay on-screen, got ${JSON.stringify(anchor)}`
+  );
+});
+
+test("highlight-map camera insets the top so the prompt card cannot cover northern land", () => {
+  const regionView = getMapViewForRegion(
+    [
+      { id: "ESP", centroid: [-3.7, 40.4] },
+      { id: "GRC", centroid: [23.7, 38.0] },
+      { id: "SWE", centroid: [15.0, 62.0] },
+    ],
+    "europe"
+  );
+  const view = getLearnHighlightMapView(regionView);
+  assert.ok(view);
+  assert.equal(view.fit, undefined, "must contain-fit; cover-fit would hide Scandinavia");
+  assert.equal(view.padding.top, LEARN_HIGHLIGHT_MAP_PADDING.top);
+  assert.ok(
+    view.padding.top > view.padding.bottom,
+    "top inset must be larger than the bottom so the overlay sits over empty map, not land"
+  );
+});
+
+test("highlight-map camera expands region bounds to include Sweden's full shape", () => {
+  const sweFeature = featureByIso3("SWE");
+  assert.ok(sweFeature, "Sweden feature present");
+  const sweden = { id: "SWE", centroid: [15.0, 62.0], feature: sweFeature };
+  const swedenBounds = getGeographicBoundsFromCountries([sweden]);
+  assert.ok(swedenBounds);
+  const [, [, swedenNorth]] = swedenBounds;
+
+  const regionView = getMapViewForRegion(
+    [
+      { id: "ESP", centroid: [-3.7, 40.4] },
+      { id: "GRC", centroid: [23.7, 38.0] },
+      // Centroid-only Sweden understates the northern coast — the bug in the screenshot.
+      { id: "SWE", centroid: [15.0, 62.0] },
+    ],
+    "europe"
+  );
+  const [, [, regionNorth]] = regionView.bounds;
+  const view = getLearnHighlightMapView(regionView, { country: sweden });
+  const [, [, viewNorth]] = view.bounds;
+
+  assert.ok(
+    viewNorth >= swedenNorth - 0.01,
+    `highlighted Sweden must fit, got viewNorth=${viewNorth} swedenNorth=${swedenNorth}`
+  );
+  assert.ok(
+    viewNorth >= regionNorth,
+    "subject geometry must not shrink the region frame"
   );
 });
