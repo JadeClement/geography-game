@@ -33,7 +33,6 @@ import {
   getCountryMeasureBbox,
   getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
-  projectMainlandRings,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
@@ -461,28 +460,6 @@ export default function PacificMap({
           width,
           height,
         };
-      },
-      projectMainlandRingsClient(country) {
-        const svgRect = svg.getBoundingClientRect();
-        const currentViewBox = viewBoxRef.current;
-        const projectToClient = (lng, lat) => {
-          const point = PACIFIC_GAME_VIEW.project(
-            lng,
-            lat,
-            PACIFIC_GAME_VIEW.width,
-            PACIFIC_GAME_VIEW.height
-          );
-          if (!point) return null;
-          return {
-            x:
-              ((point[0] - currentViewBox.x) / currentViewBox.width) * svgRect.width +
-              svgRect.left,
-            y:
-              ((point[1] - currentViewBox.y) / currentViewBox.height) * svgRect.height +
-              svgRect.top,
-          };
-        };
-        return projectMainlandRings(country, projectToClient);
       },
       projectDiscoverAnchor(country, viewportRect) {
         return getCountryVisibleScreenAnchor(
@@ -981,7 +958,9 @@ export default function PacificMap({
                     fill={highlightColor}
                     fillOpacity={
                       solidFill
-                        ? 0.95
+                        ? highlightTone === "correct"
+                          ? 0.55
+                          : 0.95
                         : pulseOn
                           ? 0.75
                           : 0.15

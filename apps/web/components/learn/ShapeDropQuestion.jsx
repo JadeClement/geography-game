@@ -15,9 +15,7 @@ import CountrySilhouette from "./CountrySilhouette";
 /**
  * Viewport-fixed country silhouette. Portaled to `document.body` so
  * `position: fixed` is not trapped by the Learn card's `backdrop-filter`.
- *
- * `excludeRings` punches a country-shaped hole (viewport coords) so the map's
- * true-country fill can show through when a dropped shape overlaps it.
+ * Fill is translucent so the true-location map paint shows through on overlap.
  */
 export function ShapeDropPlacement({
   rect,
@@ -25,15 +23,12 @@ export function ShapeDropPlacement({
   countryId,
   tone = "idle",
   className,
-  excludeRings = null,
 }) {
   if (!rect || typeof document === "undefined") return null;
   const left = rect.left ?? rect.x;
   const top = rect.top ?? rect.y;
   if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
   if (!(rect.width > 0) || !(rect.height > 0)) return null;
-
-  const clipPath = clipPathExcludingRings(rect, excludeRings);
 
   return createPortal(
     <div
@@ -43,7 +38,6 @@ export function ShapeDropPlacement({
         top,
         width: rect.width,
         height: rect.height,
-        ...(clipPath ? { clipPath } : {}),
       }}
     >
       <CountrySilhouette
@@ -53,6 +47,7 @@ export function ShapeDropPlacement({
         padding={0}
         preserveAspectRatio="none"
         tone={tone}
+        fillOpacity={0.55}
         className="h-full w-full"
         label=""
       />
@@ -160,34 +155,6 @@ export function DistanceRevealOverlay({
     </div>,
     document.body
   );
-}
-
-function clipPathExcludingRings(rect, rings) {
-  if (!Array.isArray(rings) || rings.length === 0) return null;
-  const left = rect.left ?? rect.x;
-  const top = rect.top ?? rect.y;
-  const width = rect.width;
-  const height = rect.height;
-  if (!(width > 0) || !(height > 0)) return null;
-
-  const parts = [
-    `0px 0px, ${width}px 0px, ${width}px ${height}px, 0px ${height}px, 0px 0px`,
-  ];
-  let holes = 0;
-  for (const ring of rings) {
-    if (!Array.isArray(ring) || ring.length < 3) continue;
-    const local = [];
-    for (const point of ring) {
-      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
-      local.push(`${(point.x - left).toFixed(1)}px ${(point.y - top).toFixed(1)}px`);
-    }
-    if (local.length < 3) continue;
-    if (local[0] !== local[local.length - 1]) local.push(local[0]);
-    parts.push(local.join(", "));
-    holes += 1;
-  }
-  if (holes === 0) return null;
-  return `polygon(evenodd, ${parts.join(", ")})`;
 }
 
 /**

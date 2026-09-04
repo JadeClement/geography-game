@@ -21,7 +21,6 @@ import {
   getCountryScreenBounds,
   getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
-  projectMainlandRings,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
@@ -1936,7 +1935,7 @@ export default function MapboxMap({
       map.setPaintProperty(
         "country-highlight",
         "fill-opacity",
-        shouldFlash ? 0.75 : 0.95
+        shouldFlash ? 0.75 : highlightTone === "correct" ? 0.55 : 0.95
       );
     }
     if (map.getLayer("small-country-circles") && !forceShowSmallCountryCircles) {
@@ -2139,6 +2138,9 @@ export default function MapboxMap({
           highlightTone === "success" ? 2 : 3
         );
         map.setPaintProperty("country-target-outline", "line-opacity", 1);
+        // Borderless Learn maps hide this layer with the other outlines;
+        // keep the subject rim visible so green/red overlap still reads.
+        map.setLayoutProperty("country-target-outline", "visibility", "visible");
         // Draw above the thin country borders so the outline reads clearly.
         if (map.getLayer("country-borders")) {
           map.moveLayer("country-target-outline");
@@ -2351,18 +2353,6 @@ export default function MapboxMap({
             width,
             height,
           };
-        },
-        projectMainlandRingsClient(country) {
-          const projectToClient = (lng, lat) => {
-            if (isLngLatBehindGlobe(map, lng, lat)) return null;
-            const point = map.project([lng, lat]);
-            const mapRect = container.getBoundingClientRect();
-            return {
-              x: point.x + mapRect.left,
-              y: point.y + mapRect.top,
-            };
-          };
-          return projectMainlandRings(country, projectToClient);
         },
         projectDiscoverAnchor(country, viewportRect) {
           return getCountryVisibleScreenAnchor(country, projectToOverlay, viewportRect);

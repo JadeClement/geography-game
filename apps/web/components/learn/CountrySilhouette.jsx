@@ -31,6 +31,7 @@ export default function CountrySilhouette({
   fit = "square",
   padding,
   preserveAspectRatio = "xMidYMid meet",
+  fillOpacity = 1,
   className,
   style,
   label,
@@ -75,6 +76,7 @@ export default function CountrySilhouette({
         <path
           d={fitted.d}
           fill={FILL[tone] ?? FILL.idle}
+          fillOpacity={fillOpacity}
           fillRule="evenodd"
           stroke={STROKE[tone] ?? STROKE.idle}
           strokeWidth="1.5"

@@ -4030,15 +4030,6 @@ export default function GeographyGame() {
     }
     return learnDistanceReveal;
   }, [learnDistanceReveal, currentLearnQuestion?.id]);
-  const droppedShapeExcludeRings = useMemo(() => {
-    if (!droppedShapeReveal?.targetId) return null;
-    const country = allCountriesById.get(droppedShapeReveal.targetId);
-    if (!country) return null;
-    const api = mapProjectRef.current;
-    if (!api || typeof api === "function") return null;
-    const rings = api.projectMainlandRingsClient?.(country);
-    return Array.isArray(rings) && rings.length > 0 ? rings : null;
-  }, [allCountriesById, droppedShapeReveal, mapViewRevision]);
 
   // Learn: map-click, neighbor/area teach steps, and highlight prompts may
   // pan/zoom so small yellow countries stay inspectable. Centered-card
@@ -4538,7 +4529,6 @@ export default function GeographyGame() {
                   }
                   countryId={droppedShapeReveal.targetId}
                   tone="wrong"
-                  excludeRings={droppedShapeExcludeRings}
                 />
               )}
               {distanceFeedback && (
