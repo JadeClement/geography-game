@@ -23,6 +23,7 @@ import {
 } from "@/lib/countryColors";
 import {
   geometryToPathData,
+  MIN_PACIFIC_ISLAND_PATH_SPAN,
   PACIFIC_GAME_VIEW,
   unprojectPacificSvg,
 } from "@/lib/globeProjection";
@@ -33,6 +34,7 @@ import {
   getCountryMeasureBbox,
   getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
+  getCountryVisualCenter,
   MIN_CLICK_TARGET_PX,
   SMALL_COUNTRY_FLASH_RADIUS_PX,
   TUTORIAL_CIRCLE_RADIUS_PX,
@@ -80,7 +82,9 @@ const MAP_THEME_COLORS = {
 };
 
 function getPacificCentroid(country) {
-  return country.centroid;
+  return (
+    getCountryVisualCenter(country.feature, country.id) ?? country.centroid
+  );
 }
 
 function projectMeasureBboxToSvg(country, mapView) {
@@ -117,7 +121,8 @@ function buildCountryPaths(countries, mapView, colorMap, landColor) {
       const path = geometryToPathData(
         country.feature.geometry,
         PATH_TOLERANCE,
-        mapView
+        mapView,
+        country.isSmall ? { minIslandSpan: MIN_PACIFIC_ISLAND_PATH_SPAN } : undefined
       );
       if (!path) return null;
 
@@ -751,10 +756,6 @@ export default function PacificMap({
           strokeLinejoin="round"
         >
           {activePaths.map((country) => {
-            if (showCountryCircle(country)) {
-              return null;
-            }
-
             const fill = getPacificCountryFill({
               countryId: country.id,
               level,
@@ -794,7 +795,13 @@ export default function PacificMap({
                 fill={fill ?? landColor}
                 fillRule="evenodd"
                 stroke={outline}
-                strokeWidth={outline && outline !== "none" ? 1.75 : undefined}
+                strokeWidth={
+                  outline && outline !== "none"
+                    ? 1.75
+                    : country.isSmall
+                      ? 1.4
+                      : undefined
+                }
                 className={cn(
                   "pacific-map-country",
                   gameActive && pacificMapCountryClickable,

@@ -17,7 +17,8 @@
     "test:recency": "node --import ./scripts/register-alias.mjs --test scripts/test-recency.js",
     "test:labels": "node --test scripts/test-discover-label-visibility.js scripts/test-discover-label-layout.js",
     "test:territories": "node --import ./scripts/register-alias.mjs --test scripts/test-discover-territories.js",
-    "test": "npm run test:learn && npm run test:recency && npm run test:labels && npm run test:territories"
+    "test:pacific": "node --test scripts/test-pacific-islands.js",
+    "test": "npm run test:learn && npm run test:recency && npm run test:labels && npm run test:territories && npm run test:pacific"
   },
   "dependencies": {
     "@worldly/api-client": "*",

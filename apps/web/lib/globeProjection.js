@@ -217,11 +217,52 @@ function resolveMapView(widthOrView, height) {
   return REGION_MAP_VIEWS.world;
 }
 
-function resolveDimensions(mapView, widthOrView, height) {
-  if (typeof widthOrView === "number") {
-    return { width: widthOrView, height };
+/** Click-target rings are r=8; keep atolls at least this large in SVG units. */
+export const MIN_PACIFIC_ISLAND_PATH_SPAN = 5;
+
+function projectedSpan(points) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const point of points) {
+    const [x, y] = Array.isArray(point) ? point : point.proj;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
   }
-  return { width: mapView.width, height: mapView.height };
+  return Math.max(maxX - minX, maxY - minY);
+}
+
+/** Scale a projected ring around its centroid so tiny atolls stay visible. */
+export function expandProjectedRing(commands, minSpan) {
+  if (!minSpan || commands.length < 3) return commands;
+
+  const xs = commands.map((point) => point[0]);
+  const ys = commands.map((point) => point[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const span = Math.max(maxX - minX, maxY - minY);
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  if (!(span > 0)) {
+    const half = minSpan / 2;
+    return [
+      [cx - half, cy - half],
+      [cx + half, cy - half],
+      [cx + half, cy + half],
+      [cx - half, cy + half],
+    ];
+  }
+
+  if (span >= minSpan) return commands;
+
+  const scale = minSpan / span;
+  return commands.map(([x, y]) => [(x - cx) * scale + cx, (y - cy) * scale + cy]);
 }
 
 export function simplifyRing(ring, tolerance, mapView = REGION_MAP_VIEWS.world) {
@@ -238,6 +279,11 @@ export function simplifyRing(ring, tolerance, mapView = REGION_MAP_VIEWS.world) 
   }
 
   if (points.length < 3) return [];
+
+  // Douglas-Peucker would collapse sub-tolerance atolls to 2 points (dropped).
+  if (projectedSpan(points) <= tolerance * 2) {
+    return points.map((point) => [point.lng, point.lat]);
+  }
 
   const keep = new Array(points.length).fill(false);
   keep[0] = true;
@@ -283,12 +329,13 @@ export function simplifyRing(ring, tolerance, mapView = REGION_MAP_VIEWS.world) 
   return points.filter((_, index) => keep[index]).map((point) => [point.lng, point.lat]);
 }
 
-export function ringToPath(ring, mapView = REGION_MAP_VIEWS.world) {
+export function ringToPath(ring, mapView = REGION_MAP_VIEWS.world, options = {}) {
   if (ring.length < 2) return "";
 
   const { width, height } = mapView;
   const isPacific = mapView.id === "pacific";
   const maxEdgeDx = isPacific ? width * 0.2 : width;
+  const minIslandSpan = options.minIslandSpan ?? 0;
   const subpaths = [];
   let commands = [];
   let prevPoint = null;
@@ -302,8 +349,9 @@ export function ringToPath(ring, mapView = REGION_MAP_VIEWS.world) {
       return;
     }
 
-    const parts = commands.map((point, index) =>
-      `${index === 0 ? "M" : "L"}${point[0].toFixed(1)},${point[1].toFixed(1)}`
+    const pts = expandProjectedRing(commands, minIslandSpan);
+    const parts = pts.map((point, index) =>
+      `${index === 0 ? "M" : "L"}${point[0].toFixed(2)},${point[1].toFixed(2)}`
     );
     subpaths.push(`${parts.join(" ")} Z`);
     commands = [];
@@ -337,9 +385,13 @@ export function ringToPath(ring, mapView = REGION_MAP_VIEWS.world) {
   return subpaths.join(" ");
 }
 
-export function geometryToPathData(geometry, tolerance, widthOrView, height) {
+export function geometryToPathData(geometry, tolerance, widthOrView, heightOrOptions) {
+  const options =
+    typeof heightOrOptions === "object" && heightOrOptions !== null
+      ? heightOrOptions
+      : {};
+  const height = typeof heightOrOptions === "number" ? heightOrOptions : undefined;
   const mapView = resolveMapView(widthOrView, height);
-  const { width, height: mapHeight } = resolveDimensions(mapView, widthOrView, height);
 
   const rings =
     geometry.type === "Polygon"
@@ -352,9 +404,13 @@ export function geometryToPathData(geometry, tolerance, widthOrView, height) {
     .flatMap((ring) =>
       mapView.id === "pacific" ? splitRingForPacificProjection(ring, mapView) : [ring]
     )
-    .map((ring) => simplifyRing(ring, tolerance, mapView))
+    .map((ring) => {
+      const simplified = simplifyRing(ring, tolerance, mapView);
+      if (simplified.length >= 3) return simplified;
+      return ring.length >= 3 ? ring : [];
+    })
     .filter((ring) => ring.length >= 3)
-    .map((ring) => ringToPath(ring, mapView))
+    .map((ring) => ringToPath(ring, mapView, options))
     .filter(Boolean);
 
   return parts.join(" ");
