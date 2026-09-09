@@ -166,6 +166,7 @@ async function main() {
         area: existing?.area ?? null,
         landlocked: existing?.landlocked ?? null,
         languages,
+        religions: existing?.religions ?? [],
         neighbors,
         enabled: existing?.enabled ?? true,
         region: existing?.region ?? "world",
@@ -206,6 +207,16 @@ async function main() {
     console.warn(
       `Warning: ${missingGdp.length} enabled countries missing gdp:`,
       missingGdp.map((c) => c.iso3).join(", ")
+    );
+  }
+
+  const missingReligions = countries.filter(
+    (c) => c.enabled && (!Array.isArray(c.religions) || c.religions.length === 0)
+  );
+  if (missingReligions.length > 0) {
+    console.warn(
+      `Warning: ${missingReligions.length} enabled countries missing religions:`,
+      missingReligions.map((c) => c.iso3).join(", ")
     );
   }
 

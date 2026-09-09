@@ -37,6 +37,12 @@ import {
   slotsWithPlaceholder,
 } from "@/lib/learn/rankList";
 import {
+  buildReligionPieSlices,
+  movePieBoundary,
+  scoreReligionPie,
+  startingPercentsForSlices,
+} from "@/lib/learn/religionPie";
+import {
   buildLearnWrongReveal,
   classifyNeighborTeachPaint,
   getNeighborIdsForQuestion,
@@ -1033,4 +1039,86 @@ test("rank list slot targeting stays stable across the full height", () => {
     slots.slice(1).map((slot) => slot.id),
     ["a", "b", "c", "d"]
   );
+});
+
+test("religion pie questions skip one-religion countries and score with tolerance", () => {
+  const nigeria = ENABLED_BY_ID.get("NGA");
+  const korea = ENABLED_BY_ID.get("KOR");
+  const afghanistan = ENABLED_BY_ID.get("AFG");
+  const china = ENABLED_BY_ID.get("CHN");
+  const singapore = ENABLED_BY_ID.get("SGP");
+
+  assert.equal(buildReligionPieSlices(afghanistan), null);
+  assert.equal(buildReligionPieSlices(china), null);
+  assert.equal(generateQuestion("religion_pie", afghanistan, ENABLED_BY_ID), null);
+  assert.equal(generateQuestion("religion_pie", china, ENABLED_BY_ID), null);
+
+  const nigeriaSlices = buildReligionPieSlices(nigeria);
+  assert.equal(nigeriaSlices?.length, 2);
+  assert.equal(nigeriaSlices[0].name, "Islam");
+  assert.equal(nigeriaSlices[1].name, "Christianity");
+  const nigeriaSum = nigeriaSlices.reduce((sum, slice) => sum + slice.percent, 0);
+  assert.ok(Math.abs(nigeriaSum - 100) < 0.05);
+
+  const nigeriaQ = generateQuestion("religion_pie", nigeria, ENABLED_BY_ID);
+  assert.equal(nigeriaQ?.type, "religion_pie");
+  assert.equal(nigeriaQ?.tier, QUESTION_TIERS.TIER_1);
+  assert.equal(nigeriaQ?.answerType, "drag_pie");
+  assert.equal(nigeriaQ?.mapConfig, null);
+  assert.match(nigeriaQ.prompt, /Nigeria/);
+  assert.deepEqual(nigeriaQ.correctAnswer, nigeriaSlices);
+  assert.ok(nigeriaQ.startingPercents.length === 2);
+  assert.equal(
+    scoreReligionPie(
+      nigeriaSlices.map((slice, index) => ({
+        name: slice.name,
+        percent: nigeriaQ.startingPercents[index],
+      })),
+      nigeriaSlices
+    ),
+    false
+  );
+
+  const koreaQ = generateQuestion("religion_pie", korea, ENABLED_BY_ID);
+  assert.equal(koreaQ?.correctAnswer.length, 3);
+  assert.deepEqual(
+    koreaQ.correctAnswer.map((slice) => slice.name),
+    ["No religion", "Christianity", "Buddhism"]
+  );
+
+  const singaporeQ = generateQuestion("religion_pie", singapore, ENABLED_BY_ID);
+  assert.equal(singaporeQ?.correctAnswer.length, 4);
+
+  const closeGuess = nigeriaSlices.map((slice) => ({
+    name: slice.name,
+    percent: slice.percent + 5,
+  }));
+  closeGuess[1] = {
+    name: closeGuess[1].name,
+    percent: nigeriaSlices[1].percent - 5,
+  };
+  assert.equal(scoreReligionPie(closeGuess, nigeriaSlices), true);
+  assert.equal(
+    scoreReligionPie(
+      [
+        { name: "Islam", percent: 25 },
+        { name: "Christianity", percent: 75 },
+      ],
+      nigeriaSlices
+    ),
+    false
+  );
+
+  const moved = movePieBoundary([25, 75], 0, 56);
+  assert.equal(moved[0], 56);
+  assert.equal(moved[1], 44);
+
+  const start = startingPercentsForSlices(nigeriaSlices);
+  assert.equal(start.length, 2);
+
+  const reveal = buildLearnWrongReveal(nigeriaQ, ENABLED_BY_ID);
+  assert.equal(reveal.message, null);
+
+  const t1 = getEligibleQuestionTypes(0.95, "countries");
+  assert.ok(t1.some((type) => type.id === "religion_pie"));
 });

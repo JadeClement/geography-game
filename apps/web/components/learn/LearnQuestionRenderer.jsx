@@ -31,6 +31,7 @@ import BinaryChoiceQuestion from "./BinaryChoiceQuestion";
 import MultiTextEntryQuestion from "./MultiTextEntryQuestion";
 import ShapeDropQuestion from "./ShapeDropQuestion";
 import RankQuestion from "./RankQuestion";
+import ReligionPieQuestion from "./ReligionPieQuestion";
 
 function defaultMatch(input, correctAnswer) {
   const normalized = normalizeName(String(input ?? ""));
@@ -520,6 +521,15 @@ export default function LearnQuestionRenderer({
           question={question}
           onAnswer={emit}
           resolveCountry={resolveCountry}
+        />
+      );
+    case "drag_pie":
+      return (
+        <ReligionPieQuestion
+          key={question.id}
+          question={question}
+          onAnswer={emit}
+          clues={clues}
         />
       );
     default:

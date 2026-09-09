@@ -33,13 +33,14 @@
  * }
  * answerType ∈ 'map_click' | 'text_entry' | 'multiple_choice' | 'multi_select'
  *              | 'yes_no' | 'binary_choice' | 'multi_text_entry' | 'shape_drop'
- *              | 'drag_to_rank'
+ *              | 'drag_to_rank' | 'drag_pie'
  * emaMultiplierKey is the question tier; resolve to a number at answer time via
  * resolveLearnEmaMultiplier(tier, outcome, { fast }).
  */
 
 import { QUESTION_TIERS, QUESTION_TYPES } from "./questionTypes.js";
 import { applyContinueNote } from "./continueNotes.js";
+import { buildReligionPieSlices, startingPercentsForSlices } from "./religionPie.js";
 import {
   getAreaPeers,
   getGdpPeers,
@@ -837,6 +838,19 @@ export function generateLanguageFamily(country, allCountries) {
   });
 }
 
+export function generateReligionPie(country) {
+  const slices = buildReligionPieSlices(country);
+  if (!slices) return null;
+
+  return baseQuestion(QUESTION_TYPES.RELIGION_PIE, country, {
+    prompt: `Match the religious makeup of ${country.name}.`,
+    promptSubtext: "Drag the slices to set each group's share of the population.",
+    answerType: "drag_pie",
+    correctAnswer: slices,
+    startingPercents: startingPercentsForSlices(slices),
+  });
+}
+
 // ── dispatch ──────────────────────────────────────────────────────────────────
 
 export const QUESTION_GENERATORS = {
@@ -863,6 +877,7 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.LANDLOCKED_CHECK.id]: generateLandlockedCheck,
   [QUESTION_TYPES.NEIGHBOR_IDENTIFICATION.id]: generateNeighborIdentification,
   [QUESTION_TYPES.LANGUAGE_FAMILY.id]: generateLanguageFamily,
+  [QUESTION_TYPES.RELIGION_PIE.id]: generateReligionPie,
   [QUESTION_TYPES.BRAZIL_NON_NEIGHBORS.id]: generateBrazilNonNeighbors,
 };
 

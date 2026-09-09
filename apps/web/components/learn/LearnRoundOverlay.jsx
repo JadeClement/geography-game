@@ -98,7 +98,9 @@ export default function LearnRoundOverlay({
             ? question.answerType === "shape_drop"
               ? "max-w-[min(100%,42rem)]"
               : "max-w-md"
-            : "max-h-full max-w-lg",
+            : question.answerType === "drag_pie"
+              ? "max-h-full max-w-xl"
+              : "max-h-full max-w-lg",
           shapeDragging && "invisible pointer-events-none"
         )}
       >

@@ -289,6 +289,12 @@ export const QUESTION_TYPES = {
     categories: ALL_CATEGORIES,
     requires: ["languages"],
   },
+  RELIGION_PIE: {
+    tier: QUESTION_TIERS.TIER_1,
+    id: "religion_pie",
+    categories: ALL_CATEGORIES,
+    requires: ["religions"],
+  },
   BRAZIL_NON_NEIGHBORS: {
     tier: QUESTION_TIERS.TIER_3,
     id: "brazil_non_neighbors",
@@ -329,6 +335,7 @@ export const TYPE_DISPLAY_NAMES = {
   binary_map_choice: "Map A/B",
   landlocked_check: "Landlocked?",
   language_family: "Language",
+  religion_pie: "Religion pie",
   brazil_non_neighbors: "Brazil non-neighbors",
 };
 
@@ -342,6 +349,7 @@ export const TYPE_GROUPS = {
     "shape_name_entry",
     "capital_free_recall",
     "neighbor_recall_all",
+    "religion_pie",
   ],
   [QUESTION_TIERS.TIER_2]: [
     "neighbor_free_recall",

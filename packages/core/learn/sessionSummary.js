@@ -37,6 +37,7 @@ export const LEARN_TYPE_LABELS = {
   gdp_rank: ["ranking", "rankings"],
   landlocked_check: ["landlocked check", "landlocked checks"],
   language_family: ["language", "languages"],
+  religion_pie: ["religion pie", "religion pies"],
   brazil_non_neighbors: ["Brazil borders quiz", "Brazil borders quizzes"],
 };
 

@@ -262,8 +262,8 @@ export function buildLearnWrongReveal(
     };
   }
 
-  // Ranking cards already mark each row green/red.
-  if (question.answerType === "drag_to_rank") {
+  // Ranking / pie cards already mark each slice or row green/red.
+  if (question.answerType === "drag_to_rank" || question.answerType === "drag_pie") {
     return {
       message: null,
       neighborReveal: null,

@@ -192,6 +192,7 @@ async function fetchCountriesGeoJSON() {
         landlocked:
           typeof manifest.landlocked === "boolean" ? manifest.landlocked : null,
         languages: Array.isArray(manifest.languages) ? manifest.languages : [],
+        religions: Array.isArray(manifest.religions) ? manifest.religions : [],
         neighbors: Array.isArray(manifest.neighbors) ? manifest.neighbors : [],
         facts: buildCountryFacts(manifest.facts, iso3),
         iso2,

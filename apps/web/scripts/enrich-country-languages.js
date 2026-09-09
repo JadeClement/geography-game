@@ -30,6 +30,7 @@ const KEY_ORDER = [
   "area",
   "landlocked",
   "languages",
+  "religions",
   "neighbors",
   "enabled",
   "region",

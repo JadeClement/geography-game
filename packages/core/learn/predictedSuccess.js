@@ -355,6 +355,11 @@ export function predictedSuccess({
     score += fame * 0.06 - 0.02;
   }
 
+  if (type === "religion_pie") {
+    // Quantitative pie is a bit harder than naming the majority religion.
+    score += fame * 0.06 - 0.07;
+  }
+
   if (type === "flag_identification" || type === "capital_matching") {
     score += fameBoost * 0.9;
   }

@@ -35,7 +35,8 @@
     "./learn/sessionSummary": "./learn/sessionSummary.js",
     "./learn/continueNotes": "./learn/continueNotes.js",
     "./learn/wrongReveal": "./learn/wrongReveal.js",
-    "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js"
+    "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js",
+    "./learn/religionPie": "./learn/religionPie.js"
   },
   "dependencies": {
     "@worldly/constants": "*"

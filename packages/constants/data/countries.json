@@ -14,6 +14,12 @@
         "Dari",
         "Pashto"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.9
+        }
+      ],
       "neighbors": [
         "IRN",
         "PAK",
@@ -54,6 +60,7 @@
       "languages": [
         "Swedish"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "europe"
@@ -68,6 +75,20 @@
       "landlocked": false,
       "languages": [
         "Albanian"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 74.5
+        },
+        {
+          "name": "Christianity",
+          "percent": 17.8
+        },
+        {
+          "name": "No religion",
+          "percent": 7.7
+        }
       ],
       "neighbors": [
         "MNE",
@@ -107,6 +128,16 @@
       "languages": [
         "Arabic",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 98.4
+        },
+        {
+          "name": "No religion",
+          "percent": 1.3
+        }
       ],
       "neighbors": [
         "TUN",
@@ -150,6 +181,7 @@
         "Samoan",
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -164,6 +196,12 @@
       "landlocked": true,
       "languages": [
         "Catalan"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90
+        }
       ],
       "neighbors": [
         "FRA",
@@ -200,6 +238,16 @@
       "landlocked": false,
       "languages": [
         "Portuguese"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93
+        },
+        {
+          "name": "No religion",
+          "percent": 6.1
+        }
       ],
       "neighbors": [
         "COG",
@@ -239,6 +287,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -253,6 +302,12 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 92
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -286,6 +341,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.5
+        },
+        {
+          "name": "No religion",
+          "percent": 9.2
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "BOL",
@@ -326,6 +395,20 @@
       "languages": [
         "Armenian"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.2
+        },
+        {
+          "name": "No religion",
+          "percent": 1.2
+        }
+      ],
       "neighbors": [
         "AZE",
         "GEO",
@@ -365,6 +448,20 @@
         "Dutch",
         "Papiamento"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 81.4
+        },
+        {
+          "name": "Other",
+          "percent": 11.2
+        },
+        {
+          "name": "No religion",
+          "percent": 5.9
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -379,6 +476,28 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 46.8
+        },
+        {
+          "name": "No religion",
+          "percent": 42.3
+        },
+        {
+          "name": "Islam",
+          "percent": 3.5
+        },
+        {
+          "name": "Hinduism",
+          "percent": 3
+        },
+        {
+          "name": "Buddhism",
+          "percent": 2.6
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -413,6 +532,20 @@
       "languages": [
         "German",
         "Croatian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 68.2
+        },
+        {
+          "name": "No religion",
+          "percent": 22.4
+        },
+        {
+          "name": "Islam",
+          "percent": 8.3
+        }
       ],
       "neighbors": [
         "CZE",
@@ -456,6 +589,16 @@
       "languages": [
         "Azerbaijani"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.7
+        },
+        {
+          "name": "No religion",
+          "percent": 4.8
+        }
+      ],
       "neighbors": [
         "ARM",
         "GEO",
@@ -495,6 +638,20 @@
       "languages": [
         "Arabic"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 74
+        },
+        {
+          "name": "Christianity",
+          "percent": 13.7
+        },
+        {
+          "name": "Hinduism",
+          "percent": 11.2
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "asia",
@@ -527,6 +684,16 @@
       "landlocked": false,
       "languages": [
         "Bangla"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 91.1
+        },
+        {
+          "name": "Hinduism",
+          "percent": 7.9
+        }
       ],
       "neighbors": [
         "MMR",
@@ -564,6 +731,20 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 77.3
+        },
+        {
+          "name": "No religion",
+          "percent": 20.1
+        },
+        {
+          "name": "Other",
+          "percent": 1.2
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -597,6 +778,16 @@
       "languages": [
         "Russian",
         "Belarusian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.1
+        },
+        {
+          "name": "No religion",
+          "percent": 13.8
+        }
       ],
       "neighbors": [
         "LVA",
@@ -638,6 +829,24 @@
         "Dutch",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 51
+        },
+        {
+          "name": "No religion",
+          "percent": 39
+        },
+        {
+          "name": "Islam",
+          "percent": 6.8
+        },
+        {
+          "name": "Other",
+          "percent": 2.6
+        }
+      ],
       "neighbors": [
         "FRA",
         "DEU",
@@ -676,6 +885,20 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 74.4
+        },
+        {
+          "name": "No religion",
+          "percent": 15.6
+        },
+        {
+          "name": "Other",
+          "percent": 9.2
+        }
+      ],
       "neighbors": [
         "GTM",
         "MEX"
@@ -711,6 +934,24 @@
       "landlocked": false,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 53.2
+        },
+        {
+          "name": "Islam",
+          "percent": 31.4
+        },
+        {
+          "name": "Other",
+          "percent": 10.5
+        },
+        {
+          "name": "No religion",
+          "percent": 4.9
+        }
       ],
       "neighbors": [
         "BFA",
@@ -750,6 +991,12 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 75
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -782,6 +1029,20 @@
       "landlocked": true,
       "languages": [
         "Dzongkha"
+      ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 74.7
+        },
+        {
+          "name": "Hinduism",
+          "percent": 22.5
+        },
+        {
+          "name": "Other",
+          "percent": 1.9
+        }
       ],
       "neighbors": [
         "CHN",
@@ -819,6 +1080,20 @@
       "languages": [
         "Spanish",
         "Quechua"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.9
+        },
+        {
+          "name": "No religion",
+          "percent": 9.5
+        },
+        {
+          "name": "Other",
+          "percent": 1.5
+        }
       ],
       "neighbors": [
         "ARG",
@@ -860,6 +1135,20 @@
         "Bosnian",
         "Croatian"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 53.6
+        },
+        {
+          "name": "Christianity",
+          "percent": 44.7
+        },
+        {
+          "name": "No religion",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "HRV",
         "MNE",
@@ -897,6 +1186,20 @@
       "languages": [
         "English",
         "Tswana"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 82.3
+        },
+        {
+          "name": "No religion",
+          "percent": 14.7
+        },
+        {
+          "name": "Other",
+          "percent": 2.3
+        }
       ],
       "neighbors": [
         "NAM",
@@ -936,6 +1239,20 @@
       "languages": [
         "Portuguese",
         "Venetian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 80.7
+        },
+        {
+          "name": "No religion",
+          "percent": 13.5
+        },
+        {
+          "name": "Other",
+          "percent": 5.7
+        }
       ],
       "neighbors": [
         "ARG",
@@ -981,6 +1298,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "africa"
@@ -996,6 +1314,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -1010,6 +1329,28 @@
       "landlocked": false,
       "languages": [
         "Malay"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 82.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 6.7
+        },
+        {
+          "name": "Buddhism",
+          "percent": 6.3
+        },
+        {
+          "name": "Other",
+          "percent": 3.4
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.3
+        }
       ],
       "neighbors": [
         "MYS"
@@ -1045,6 +1386,20 @@
       "landlocked": false,
       "languages": [
         "Bulgarian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 79.5
+        },
+        {
+          "name": "Islam",
+          "percent": 10.3
+        },
+        {
+          "name": "No religion",
+          "percent": 10
+        }
       ],
       "neighbors": [
         "GRC",
@@ -1084,6 +1439,20 @@
       "landlocked": true,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 67.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 28
+        },
+        {
+          "name": "Other",
+          "percent": 4
+        }
       ],
       "neighbors": [
         "BEN",
@@ -1126,6 +1495,20 @@
         "Rundi",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 95
+        },
+        {
+          "name": "Islam",
+          "percent": 3
+        },
+        {
+          "name": "No religion",
+          "percent": 1.3
+        }
+      ],
       "neighbors": [
         "COD",
         "RWA",
@@ -1162,6 +1545,16 @@
       "landlocked": false,
       "languages": [
         "Khmer"
+      ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 97.1
+        },
+        {
+          "name": "Islam",
+          "percent": 2
+        }
       ],
       "neighbors": [
         "LAO",
@@ -1200,6 +1593,24 @@
       "languages": [
         "French",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 69.8
+        },
+        {
+          "name": "Islam",
+          "percent": 25.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.9
+        },
+        {
+          "name": "No religion",
+          "percent": 2.1
+        }
       ],
       "neighbors": [
         "CAF",
@@ -1242,6 +1653,28 @@
         "English",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 53.3
+        },
+        {
+          "name": "No religion",
+          "percent": 34.6
+        },
+        {
+          "name": "Islam",
+          "percent": 4.9
+        },
+        {
+          "name": "Other",
+          "percent": 3
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.7
+        }
+      ],
       "neighbors": [
         "USA"
       ],
@@ -1277,6 +1710,16 @@
       "languages": [
         "Portuguese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 78.3
+        },
+        {
+          "name": "No religion",
+          "percent": 20.6
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "africa",
@@ -1310,6 +1753,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -1325,6 +1769,20 @@
       "languages": [
         "Sango",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90.7
+        },
+        {
+          "name": "Islam",
+          "percent": 6.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.6
+        }
       ],
       "neighbors": [
         "CMR",
@@ -1367,6 +1825,24 @@
         "Arabic",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 56.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 38.9
+        },
+        {
+          "name": "No religion",
+          "percent": 3.1
+        },
+        {
+          "name": "Other",
+          "percent": 1.6
+        }
+      ],
       "neighbors": [
         "CMR",
         "CAF",
@@ -1407,6 +1883,20 @@
       "languages": [
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 68.3
+        },
+        {
+          "name": "No religion",
+          "percent": 30.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.2
+        }
+      ],
       "neighbors": [
         "ARG",
         "BOL",
@@ -1444,6 +1934,28 @@
       "languages": [
         "Chinese",
         "Uyghur"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 89.6
+        },
+        {
+          "name": "Buddhism",
+          "percent": 3.7
+        },
+        {
+          "name": "Other",
+          "percent": 3
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.8
+        },
+        {
+          "name": "Islam",
+          "percent": 1.8
+        }
       ],
       "neighbors": [
         "AFG",
@@ -1495,6 +2007,20 @@
       "languages": [
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 86.2
+        },
+        {
+          "name": "No religion",
+          "percent": 9.9
+        },
+        {
+          "name": "Other",
+          "percent": 3.8
+        }
+      ],
       "neighbors": [
         "BRA",
         "ECU",
@@ -1535,6 +2061,16 @@
         "Arabic",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 98.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.1
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "africa",
@@ -1568,6 +2104,12 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 96
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -1600,6 +2142,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.9
+        },
+        {
+          "name": "No religion",
+          "percent": 10.1
+        },
+        {
+          "name": "Other",
+          "percent": 1.9
+        }
       ],
       "neighbors": [
         "NIC",
@@ -1637,6 +2193,24 @@
       "languages": [
         "Croatian",
         "Italian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90.9
+        },
+        {
+          "name": "No religion",
+          "percent": 6.7
+        },
+        {
+          "name": "Islam",
+          "percent": 1.4
+        },
+        {
+          "name": "Other",
+          "percent": 1.1
+        }
       ],
       "neighbors": [
         "BIH",
@@ -1677,6 +2251,20 @@
       "languages": [
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 60.7
+        },
+        {
+          "name": "No religion",
+          "percent": 21.6
+        },
+        {
+          "name": "Other",
+          "percent": 17.4
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -1711,6 +2299,20 @@
         "Papiamento",
         "Dutch"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90.6
+        },
+        {
+          "name": "No religion",
+          "percent": 5.9
+        },
+        {
+          "name": "Hinduism",
+          "percent": 2
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -1726,6 +2328,20 @@
       "languages": [
         "Greek",
         "Turkish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 67.7
+        },
+        {
+          "name": "Islam",
+          "percent": 24.4
+        },
+        {
+          "name": "No religion",
+          "percent": 6.6
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -1759,6 +2375,16 @@
       "landlocked": true,
       "languages": [
         "Czech"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 72.8
+        },
+        {
+          "name": "Christianity",
+          "percent": 26.4
+        }
       ],
       "neighbors": [
         "AUT",
@@ -1798,6 +2424,24 @@
       "languages": [
         "French",
         "Swahili"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 96.3
+        },
+        {
+          "name": "Islam",
+          "percent": 1.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.3
+        },
+        {
+          "name": "No religion",
+          "percent": 1.2
+        }
       ],
       "neighbors": [
         "AGO",
@@ -1843,6 +2487,24 @@
         "Danish",
         "German"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 76.9
+        },
+        {
+          "name": "No religion",
+          "percent": 16.6
+        },
+        {
+          "name": "Islam",
+          "percent": 4.2
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "DEU"
       ],
@@ -1878,6 +2540,20 @@
       "languages": [
         "French",
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 97.7
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.1
+        },
+        {
+          "name": "No religion",
+          "percent": 1.1
+        }
       ],
       "neighbors": [
         "ERI",
@@ -1916,6 +2592,12 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 94
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -1948,6 +2630,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 77.6
+        },
+        {
+          "name": "No religion",
+          "percent": 19.6
+        },
+        {
+          "name": "Other",
+          "percent": 2.7
+        }
       ],
       "neighbors": [
         "HTI"
@@ -1985,6 +2681,12 @@
         "Tetum",
         "Portuguese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 99.5
+        }
+      ],
       "neighbors": [
         "IDN"
       ],
@@ -2021,6 +2723,20 @@
         "Spanish",
         "Quechua"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.5
+        },
+        {
+          "name": "No religion",
+          "percent": 8.4
+        },
+        {
+          "name": "Other",
+          "percent": 3
+        }
+      ],
       "neighbors": [
         "COL",
         "PER"
@@ -2056,6 +2772,16 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 95.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 4.8
+        }
       ],
       "neighbors": [
         "ISR",
@@ -2095,6 +2821,20 @@
       "languages": [
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.1
+        },
+        {
+          "name": "No religion",
+          "percent": 11.9
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "GTM",
         "HND"
@@ -2131,6 +2871,24 @@
       "languages": [
         "Spanish",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.7
+        },
+        {
+          "name": "No religion",
+          "percent": 5
+        },
+        {
+          "name": "Islam",
+          "percent": 4
+        },
+        {
+          "name": "Other",
+          "percent": 2.1
+        }
       ],
       "neighbors": [
         "CMR",
@@ -2169,6 +2927,20 @@
         "Tigrinya",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 51.7
+        },
+        {
+          "name": "Christianity",
+          "percent": 46.7
+        },
+        {
+          "name": "No religion",
+          "percent": 1.1
+        }
+      ],
       "neighbors": [
         "DJI",
         "ETH",
@@ -2205,6 +2977,20 @@
       "landlocked": false,
       "languages": [
         "Estonian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 52.6
+        },
+        {
+          "name": "No religion",
+          "percent": 43.6
+        },
+        {
+          "name": "Other",
+          "percent": 2.8
+        }
       ],
       "neighbors": [
         "LVA",
@@ -2243,6 +3029,16 @@
         "English",
         "Swati"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93.2
+        },
+        {
+          "name": "No religion",
+          "percent": 6.2
+        }
+      ],
       "neighbors": [
         "MOZ",
         "ZAF"
@@ -2278,6 +3074,20 @@
       "landlocked": true,
       "languages": [
         "Amharic"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 61.6
+        },
+        {
+          "name": "Islam",
+          "percent": 36.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.1
+        }
       ],
       "neighbors": [
         "DJI",
@@ -2319,6 +3129,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "southAmerica"
@@ -2334,6 +3145,7 @@
       "languages": [
         "Faroese"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "europe"
@@ -2348,6 +3160,12 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 98.8
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -2383,6 +3201,20 @@
         "English",
         "Fiji Hindi"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 69.5
+        },
+        {
+          "name": "Hinduism",
+          "percent": 24.1
+        },
+        {
+          "name": "Islam",
+          "percent": 5.8
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -2416,6 +3248,20 @@
       "languages": [
         "Finnish",
         "Swedish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 72.3
+        },
+        {
+          "name": "No religion",
+          "percent": 25
+        },
+        {
+          "name": "Islam",
+          "percent": 1.6
+        }
       ],
       "neighbors": [
         "NOR",
@@ -2453,6 +3299,20 @@
       "landlocked": false,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 46.5
+        },
+        {
+          "name": "No religion",
+          "percent": 42.6
+        },
+        {
+          "name": "Islam",
+          "percent": 9.1
+        }
       ],
       "neighbors": [
         "AND",
@@ -2497,6 +3357,20 @@
         "French",
         "Tahitian"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93.4
+        },
+        {
+          "name": "No religion",
+          "percent": 5
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -2512,6 +3386,7 @@
       "languages": [
         "French"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "africa"
@@ -2526,6 +3401,24 @@
       "landlocked": false,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 83.7
+        },
+        {
+          "name": "Islam",
+          "percent": 8.6
+        },
+        {
+          "name": "No religion",
+          "percent": 5.8
+        },
+        {
+          "name": "Other",
+          "percent": 1.9
+        }
       ],
       "neighbors": [
         "CMR",
@@ -2564,6 +3457,16 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 97
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.9
+        }
+      ],
       "neighbors": [
         "SEN"
       ],
@@ -2599,6 +3502,20 @@
       "languages": [
         "Georgian",
         "Abkhazian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.2
+        },
+        {
+          "name": "Islam",
+          "percent": 10.5
+        },
+        {
+          "name": "No religion",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "ARM",
@@ -2638,6 +3555,20 @@
       "languages": [
         "German",
         "Northern Frisian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 56.2
+        },
+        {
+          "name": "No religion",
+          "percent": 36.1
+        },
+        {
+          "name": "Islam",
+          "percent": 6.5
+        }
       ],
       "neighbors": [
         "AUT",
@@ -2683,6 +3614,24 @@
         "Akan",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 71.3
+        },
+        {
+          "name": "Islam",
+          "percent": 19.9
+        },
+        {
+          "name": "Other",
+          "percent": 7.8
+        },
+        {
+          "name": "No religion",
+          "percent": 1.1
+        }
+      ],
       "neighbors": [
         "BFA",
         "CIV",
@@ -2720,6 +3669,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [
         "ESP"
       ],
@@ -2736,6 +3686,20 @@
       "landlocked": false,
       "languages": [
         "Greek"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 89.5
+        },
+        {
+          "name": "Islam",
+          "percent": 5.1
+        },
+        {
+          "name": "No religion",
+          "percent": 4.7
+        }
       ],
       "neighbors": [
         "ALB",
@@ -2775,6 +3739,7 @@
       "languages": [
         "Kalaallisut"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica",
@@ -2807,6 +3772,20 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.5
+        },
+        {
+          "name": "Other",
+          "percent": 6.2
+        },
+        {
+          "name": "No religion",
+          "percent": 5.8
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -2842,6 +3821,24 @@
         "English",
         "Chamorro"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 94
+        },
+        {
+          "name": "Other",
+          "percent": 3.1
+        },
+        {
+          "name": "No religion",
+          "percent": 1.8
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.1
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -2857,6 +3854,20 @@
       "languages": [
         "Spanish",
         "Kʼicheʼ"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 92
+        },
+        {
+          "name": "No religion",
+          "percent": 6
+        },
+        {
+          "name": "Other",
+          "percent": 2
+        }
       ],
       "neighbors": [
         "BLZ",
@@ -2896,6 +3907,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "europe"
@@ -2910,6 +3922,20 @@
       "landlocked": false,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 86.8
+        },
+        {
+          "name": "Christianity",
+          "percent": 11.7
+        },
+        {
+          "name": "No religion",
+          "percent": 1.3
+        }
       ],
       "neighbors": [
         "CIV",
@@ -2951,6 +3977,24 @@
       "languages": [
         "Portuguese"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 56
+        },
+        {
+          "name": "Christianity",
+          "percent": 21.7
+        },
+        {
+          "name": "No religion",
+          "percent": 11.6
+        },
+        {
+          "name": "Other",
+          "percent": 10.7
+        }
+      ],
       "neighbors": [
         "GIN",
         "SEN"
@@ -2986,6 +4030,28 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 65.9
+        },
+        {
+          "name": "Hinduism",
+          "percent": 23.4
+        },
+        {
+          "name": "Islam",
+          "percent": 6.5
+        },
+        {
+          "name": "No religion",
+          "percent": 2.9
+        },
+        {
+          "name": "Other",
+          "percent": 1.2
+        }
       ],
       "neighbors": [
         "BRA",
@@ -3025,6 +4091,20 @@
         "Haitian Creole",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.7
+        },
+        {
+          "name": "No religion",
+          "percent": 9.4
+        },
+        {
+          "name": "Other",
+          "percent": 1.8
+        }
+      ],
       "neighbors": [
         "DOM"
       ],
@@ -3060,6 +4140,7 @@
       "languages": [
         "Unknown language"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "world"
@@ -3074,6 +4155,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.5
+        },
+        {
+          "name": "No religion",
+          "percent": 9.7
+        },
+        {
+          "name": "Other",
+          "percent": 1.8
+        }
       ],
       "neighbors": [
         "GTM",
@@ -3113,6 +4208,20 @@
         "Chinese",
         "English"
       ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 71.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 18.7
+        },
+        {
+          "name": "Buddhism",
+          "percent": 8.4
+        }
+      ],
       "neighbors": [
         "CHN"
       ],
@@ -3129,6 +4238,16 @@
       "landlocked": true,
       "languages": [
         "Hungarian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 72.4
+        },
+        {
+          "name": "No religion",
+          "percent": 27
+        }
       ],
       "neighbors": [
         "AUT",
@@ -3171,6 +4290,28 @@
       "languages": [
         "Icelandic"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 74.9
+        },
+        {
+          "name": "No religion",
+          "percent": 19.8
+        },
+        {
+          "name": "Other",
+          "percent": 2.4
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.3
+        },
+        {
+          "name": "Islam",
+          "percent": 1.2
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "europe",
@@ -3204,6 +4345,24 @@
       "languages": [
         "Hindi",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Hinduism",
+          "percent": 79.4
+        },
+        {
+          "name": "Islam",
+          "percent": 15.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.5
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.2
+        }
       ],
       "neighbors": [
         "BGD",
@@ -3245,6 +4404,20 @@
       "languages": [
         "Indonesian"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 87
+        },
+        {
+          "name": "Christianity",
+          "percent": 10.3
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.6
+        }
+      ],
       "neighbors": [
         "TLS",
         "MYS",
@@ -3281,6 +4454,12 @@
       "landlocked": false,
       "languages": [
         "Persian"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.8
+        }
       ],
       "neighbors": [
         "AFG",
@@ -3324,6 +4503,12 @@
         "Arabic",
         "Central Kurdish"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.5
+        }
+      ],
       "neighbors": [
         "IRN",
         "JOR",
@@ -3365,6 +4550,20 @@
         "English",
         "Irish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 81.2
+        },
+        {
+          "name": "No religion",
+          "percent": 15.6
+        },
+        {
+          "name": "Islam",
+          "percent": 1.7
+        }
+      ],
       "neighbors": [
         "GBR"
       ],
@@ -3401,6 +4600,7 @@
         "English",
         "Manx"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "europe"
@@ -3416,6 +4616,28 @@
       "languages": [
         "Hebrew",
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Judaism",
+          "percent": 77
+        },
+        {
+          "name": "Islam",
+          "percent": 14.7
+        },
+        {
+          "name": "No religion",
+          "percent": 4.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.9
+        },
+        {
+          "name": "Other",
+          "percent": 1.8
+        }
       ],
       "neighbors": [
         "EGY",
@@ -3457,6 +4679,20 @@
         "Italian",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 80.5
+        },
+        {
+          "name": "No religion",
+          "percent": 13.3
+        },
+        {
+          "name": "Islam",
+          "percent": 4.4
+        }
+      ],
       "neighbors": [
         "AUT",
         "FRA",
@@ -3497,6 +4733,24 @@
       "languages": [
         "French"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 46.3
+        },
+        {
+          "name": "Christianity",
+          "percent": 44.9
+        },
+        {
+          "name": "No religion",
+          "percent": 5.6
+        },
+        {
+          "name": "Other",
+          "percent": 3.2
+        }
+      ],
       "neighbors": [
         "BFA",
         "GHA",
@@ -3536,6 +4790,20 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 68.6
+        },
+        {
+          "name": "No religion",
+          "percent": 23.7
+        },
+        {
+          "name": "Other",
+          "percent": 7.6
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -3568,6 +4836,24 @@
       "landlocked": false,
       "languages": [
         "Japanese"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 57.5
+        },
+        {
+          "name": "Buddhism",
+          "percent": 37.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.2
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -3602,6 +4888,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "europe"
@@ -3616,6 +4903,16 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 97.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.8
+        }
       ],
       "neighbors": [
         "IRQ",
@@ -3657,6 +4954,20 @@
         "Russian",
         "Kazakh"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 77.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 19.3
+        },
+        {
+          "name": "No religion",
+          "percent": 2.5
+        }
+      ],
       "neighbors": [
         "CHN",
         "KGZ",
@@ -3696,6 +5007,24 @@
       "languages": [
         "Swahili",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.7
+        },
+        {
+          "name": "Islam",
+          "percent": 10.9
+        },
+        {
+          "name": "Other",
+          "percent": 1.7
+        },
+        {
+          "name": "No religion",
+          "percent": 1.6
+        }
       ],
       "neighbors": [
         "ETH",
@@ -3737,6 +5066,16 @@
         "English",
         "Gilbertese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.6
+        },
+        {
+          "name": "Other",
+          "percent": 2.2
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -3770,6 +5109,16 @@
       "languages": [
         "Albanian",
         "Serbian"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.3
+        },
+        {
+          "name": "Christianity",
+          "percent": 5.6
+        }
       ],
       "neighbors": [
         "ALB",
@@ -3809,6 +5158,20 @@
       "languages": [
         "Arabic"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 80.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 10.5
+        },
+        {
+          "name": "Hinduism",
+          "percent": 8.5
+        }
+      ],
       "neighbors": [
         "IRQ",
         "SAU"
@@ -3845,6 +5208,24 @@
       "languages": [
         "Kyrgyz",
         "Russian"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 91.7
+        },
+        {
+          "name": "Christianity",
+          "percent": 5.8
+        },
+        {
+          "name": "Other",
+          "percent": 1.3
+        },
+        {
+          "name": "No religion",
+          "percent": 1.2
+        }
       ],
       "neighbors": [
         "CHN",
@@ -3883,6 +5264,20 @@
       "landlocked": true,
       "languages": [
         "Lao"
+      ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 64.2
+        },
+        {
+          "name": "Other",
+          "percent": 34.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.5
+        }
       ],
       "neighbors": [
         "MMR",
@@ -3923,6 +5318,20 @@
       "languages": [
         "Latvian"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 77.3
+        },
+        {
+          "name": "No religion",
+          "percent": 17
+        },
+        {
+          "name": "Other",
+          "percent": 4.7
+        }
+      ],
       "neighbors": [
         "BLR",
         "EST",
@@ -3961,6 +5370,20 @@
       "languages": [
         "Arabic"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 67.8
+        },
+        {
+          "name": "Christianity",
+          "percent": 27.9
+        },
+        {
+          "name": "Other",
+          "percent": 4.3
+        }
+      ],
       "neighbors": [
         "ISR",
         "SYR"
@@ -3998,6 +5421,16 @@
         "Southern Sotho",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.3
+        },
+        {
+          "name": "No religion",
+          "percent": 1.7
+        }
+      ],
       "neighbors": [
         "ZAF"
       ],
@@ -4032,6 +5465,24 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.2
+        },
+        {
+          "name": "Islam",
+          "percent": 12.7
+        },
+        {
+          "name": "No religion",
+          "percent": 1.1
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "GIN",
@@ -4069,6 +5520,12 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99
+        }
       ],
       "neighbors": [
         "DZA",
@@ -4110,6 +5567,16 @@
       "languages": [
         "German"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 83
+        },
+        {
+          "name": "No religion",
+          "percent": 7
+        }
+      ],
       "neighbors": [
         "AUT",
         "CHE"
@@ -4145,6 +5612,16 @@
       "landlocked": false,
       "languages": [
         "Lithuanian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 92.2
+        },
+        {
+          "name": "No religion",
+          "percent": 7.1
+        }
       ],
       "neighbors": [
         "BLR",
@@ -4185,6 +5662,24 @@
         "Luxembourgish",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 65.9
+        },
+        {
+          "name": "No religion",
+          "percent": 25.3
+        },
+        {
+          "name": "Other",
+          "percent": 5.7
+        },
+        {
+          "name": "Islam",
+          "percent": 1.8
+        }
+      ],
       "neighbors": [
         "BEL",
         "FRA",
@@ -4223,6 +5718,24 @@
         "Chinese",
         "Cantonese"
       ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 67.6
+        },
+        {
+          "name": "Buddhism",
+          "percent": 19.6
+        },
+        {
+          "name": "Christianity",
+          "percent": 10.1
+        },
+        {
+          "name": "Other",
+          "percent": 2.2
+        }
+      ],
       "neighbors": [
         "CHN"
       ],
@@ -4240,6 +5753,24 @@
       "languages": [
         "Malagasy",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 74.2
+        },
+        {
+          "name": "No religion",
+          "percent": 22.3
+        },
+        {
+          "name": "Other",
+          "percent": 2.2
+        },
+        {
+          "name": "Islam",
+          "percent": 1.2
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -4274,6 +5805,16 @@
       "languages": [
         "English",
         "Nyanja"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.4
+        },
+        {
+          "name": "Islam",
+          "percent": 11.6
+        }
       ],
       "neighbors": [
         "MOZ",
@@ -4312,6 +5853,24 @@
       "languages": [
         "Malay"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 64.1
+        },
+        {
+          "name": "Buddhism",
+          "percent": 18.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 9.2
+        },
+        {
+          "name": "Hinduism",
+          "percent": 6.1
+        }
+      ],
       "neighbors": [
         "BRN",
         "IDN",
@@ -4349,6 +5908,24 @@
       "languages": [
         "Divehi"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.1
+        },
+        {
+          "name": "Hinduism",
+          "percent": 2.5
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.6
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.3
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "asia",
@@ -4381,6 +5958,20 @@
       "landlocked": true,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.6
+        },
+        {
+          "name": "No religion",
+          "percent": 2.5
+        }
       ],
       "neighbors": [
         "DZA",
@@ -4424,6 +6015,24 @@
         "Maltese",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.6
+        },
+        {
+          "name": "No religion",
+          "percent": 5.2
+        },
+        {
+          "name": "Islam",
+          "percent": 3.6
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.4
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "europe",
@@ -4458,6 +6067,12 @@
         "English",
         "Marshallese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -4490,6 +6105,12 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.2
+        }
       ],
       "neighbors": [
         "DZA",
@@ -4530,6 +6151,20 @@
         "French",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Hinduism",
+          "percent": 48.3
+        },
+        {
+          "name": "Christianity",
+          "percent": 32.9
+        },
+        {
+          "name": "Islam",
+          "percent": 17.5
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "africa",
@@ -4562,6 +6197,16 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 89.2
+        },
+        {
+          "name": "No religion",
+          "percent": 10.6
+        }
       ],
       "neighbors": [
         "BLZ",
@@ -4600,6 +6245,12 @@
       "languages": [
         "Romanian"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 99.5
+        }
+      ],
       "neighbors": [
         "ROU",
         "UKR"
@@ -4636,6 +6287,12 @@
       "languages": [
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90
+        }
+      ],
       "neighbors": [
         "FRA"
       ],
@@ -4670,6 +6327,28 @@
       "landlocked": true,
       "languages": [
         "Mongolian"
+      ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 51.1
+        },
+        {
+          "name": "No religion",
+          "percent": 40.8
+        },
+        {
+          "name": "Islam",
+          "percent": 3.5
+        },
+        {
+          "name": "Other",
+          "percent": 3.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.3
+        }
       ],
       "neighbors": [
         "CHN",
@@ -4706,6 +6385,24 @@
       "landlocked": false,
       "languages": [
         "Serbian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 76
+        },
+        {
+          "name": "Islam",
+          "percent": 21.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.5
+        },
+        {
+          "name": "No religion",
+          "percent": 1.1
+        }
       ],
       "neighbors": [
         "ALB",
@@ -4746,6 +6443,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -4761,6 +6459,12 @@
       "languages": [
         "Arabic",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.7
+        }
       ],
       "neighbors": [
         "DZA",
@@ -4798,6 +6502,24 @@
       "landlocked": false,
       "languages": [
         "Portuguese"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 61.3
+        },
+        {
+          "name": "Islam",
+          "percent": 19.4
+        },
+        {
+          "name": "No religion",
+          "percent": 14.3
+        },
+        {
+          "name": "Other",
+          "percent": 4.9
+        }
       ],
       "neighbors": [
         "MWI",
@@ -4839,6 +6561,24 @@
       "languages": [
         "Burmese"
       ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 89.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 6.1
+        },
+        {
+          "name": "Islam",
+          "percent": 3.3
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "BGD",
         "CHN",
@@ -4877,6 +6617,20 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 90.5
+        },
+        {
+          "name": "No religion",
+          "percent": 5.6
+        },
+        {
+          "name": "Other",
+          "percent": 3.6
+        }
       ],
       "neighbors": [
         "AGO",
@@ -4917,6 +6671,12 @@
         "English",
         "Nauru"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -4949,6 +6709,28 @@
       "landlocked": true,
       "languages": [
         "Nepali"
+      ],
+      "religions": [
+        {
+          "name": "Hinduism",
+          "percent": 81.2
+        },
+        {
+          "name": "Buddhism",
+          "percent": 8.2
+        },
+        {
+          "name": "Islam",
+          "percent": 5.1
+        },
+        {
+          "name": "Other",
+          "percent": 3.8
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.8
+        }
       ],
       "neighbors": [
         "CHN",
@@ -4987,6 +6769,24 @@
         "Dutch",
         "Western Frisian"
       ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 54.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 35.1
+        },
+        {
+          "name": "Islam",
+          "percent": 5.5
+        },
+        {
+          "name": "Other",
+          "percent": 4.2
+        }
+      ],
       "neighbors": [
         "BEL",
         "DEU"
@@ -5023,6 +6823,24 @@
       "languages": [
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.1
+        },
+        {
+          "name": "No religion",
+          "percent": 10.5
+        },
+        {
+          "name": "Islam",
+          "percent": 2.8
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -5038,6 +6856,28 @@
       "languages": [
         "English",
         "Māori"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 51.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 40.3
+        },
+        {
+          "name": "Other",
+          "percent": 2.9
+        },
+        {
+          "name": "Hinduism",
+          "percent": 2.8
+        },
+        {
+          "name": "Islam",
+          "percent": 1.4
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -5071,6 +6911,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 84.8
+        },
+        {
+          "name": "No religion",
+          "percent": 13.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.9
+        }
       ],
       "neighbors": [
         "CRI",
@@ -5107,6 +6961,16 @@
       "landlocked": true,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 98.1
+        },
+        {
+          "name": "No religion",
+          "percent": 1.2
+        }
       ],
       "neighbors": [
         "DZA",
@@ -5150,6 +7014,16 @@
         "English",
         "Yoruba"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 56.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 43.4
+        }
+      ],
       "neighbors": [
         "BEN",
         "CMR",
@@ -5189,6 +7063,12 @@
         "English",
         "Niuean"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 96
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -5222,6 +7102,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -5236,6 +7117,20 @@
       "landlocked": false,
       "languages": [
         "Korean"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 72.9
+        },
+        {
+          "name": "Other",
+          "percent": 25.2
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.5
+        }
       ],
       "neighbors": [
         "CHN",
@@ -5274,6 +7169,16 @@
       "languages": [
         "Macedonian",
         "Albanian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 64.7
+        },
+        {
+          "name": "Islam",
+          "percent": 34.7
+        }
       ],
       "neighbors": [
         "ALB",
@@ -5314,6 +7219,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -5329,6 +7235,24 @@
       "languages": [
         "Norwegian Bokmål",
         "Norwegian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 71.4
+        },
+        {
+          "name": "No religion",
+          "percent": 22.5
+        },
+        {
+          "name": "Islam",
+          "percent": 4.1
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "FIN",
@@ -5367,6 +7291,20 @@
       "languages": [
         "Arabic"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 81.8
+        },
+        {
+          "name": "Hinduism",
+          "percent": 9.5
+        },
+        {
+          "name": "Christianity",
+          "percent": 8.1
+        }
+      ],
       "neighbors": [
         "SAU",
         "ARE",
@@ -5404,6 +7342,20 @@
       "languages": [
         "Urdu",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 96.5
+        },
+        {
+          "name": "Hinduism",
+          "percent": 2.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 1.3
+        }
       ],
       "neighbors": [
         "AFG",
@@ -5444,6 +7396,12 @@
         "Palauan",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -5476,6 +7434,16 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99
+        },
+        {
+          "name": "Christianity",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "ISR",
@@ -5514,6 +7482,20 @@
       "languages": [
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 91.2
+        },
+        {
+          "name": "No religion",
+          "percent": 6.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.1
+        }
+      ],
       "neighbors": [
         "COL",
         "CRI"
@@ -5551,6 +7533,12 @@
         "Tok Pisin",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 99.1
+        }
+      ],
       "neighbors": [
         "IDN"
       ],
@@ -5586,6 +7574,20 @@
       "languages": [
         "Guarani",
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 93.5
+        },
+        {
+          "name": "No religion",
+          "percent": 4.2
+        },
+        {
+          "name": "Other",
+          "percent": 2.2
+        }
       ],
       "neighbors": [
         "ARG",
@@ -5624,6 +7626,16 @@
       "languages": [
         "Spanish",
         "Quechua"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 94.5
+        },
+        {
+          "name": "No religion",
+          "percent": 5.1
+        }
       ],
       "neighbors": [
         "BOL",
@@ -5665,6 +7677,20 @@
         "Filipino",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 91.5
+        },
+        {
+          "name": "Islam",
+          "percent": 6.5
+        },
+        {
+          "name": "Other",
+          "percent": 2
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "asia",
@@ -5698,6 +7724,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -5713,6 +7740,16 @@
       "languages": [
         "Polish",
         "German"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 91.2
+        },
+        {
+          "name": "No religion",
+          "percent": 8.6
+        }
       ],
       "neighbors": [
         "BLR",
@@ -5755,6 +7792,16 @@
       "languages": [
         "Portuguese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.1
+        },
+        {
+          "name": "No religion",
+          "percent": 13.8
+        }
+      ],
       "neighbors": [
         "ESP"
       ],
@@ -5791,6 +7838,16 @@
         "Spanish",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.8
+        },
+        {
+          "name": "No religion",
+          "percent": 10.4
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -5805,6 +7862,20 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 75.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 12.5
+        },
+        {
+          "name": "Hinduism",
+          "percent": 10.6
+        }
       ],
       "neighbors": [
         "SAU"
@@ -5841,6 +7912,20 @@
       "languages": [
         "Serbian",
         "Hungarian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 91.5
+        },
+        {
+          "name": "Islam",
+          "percent": 4.4
+        },
+        {
+          "name": "No religion",
+          "percent": 4
+        }
       ],
       "neighbors": [
         "BIH",
@@ -5884,6 +7969,24 @@
       "languages": [
         "French"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 92.2
+        },
+        {
+          "name": "No religion",
+          "percent": 5.2
+        },
+        {
+          "name": "Islam",
+          "percent": 1.5
+        },
+        {
+          "name": "Other",
+          "percent": 1.1
+        }
+      ],
       "neighbors": [
         "AGO",
         "CMR",
@@ -5922,6 +8025,12 @@
       "landlocked": false,
       "languages": [
         "Romanian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 98.5
+        }
       ],
       "neighbors": [
         "BGR",
@@ -5962,6 +8071,24 @@
       "languages": [
         "Russian",
         "Tatar"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 69.9
+        },
+        {
+          "name": "No religion",
+          "percent": 20.2
+        },
+        {
+          "name": "Islam",
+          "percent": 8.2
+        },
+        {
+          "name": "Other",
+          "percent": 1.2
+        }
       ],
       "neighbors": [
         "AZE",
@@ -6012,6 +8139,20 @@
         "Kinyarwanda",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97
+        },
+        {
+          "name": "Islam",
+          "percent": 1.8
+        },
+        {
+          "name": "No religion",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "BDI",
         "COD",
@@ -6050,6 +8191,7 @@
       "languages": [
         "French"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -6065,6 +8207,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "africa"
@@ -6080,6 +8223,7 @@
       "languages": [
         "French"
       ],
+      "religions": [],
       "neighbors": [
         "SXM"
       ],
@@ -6097,6 +8241,7 @@
       "languages": [
         "French"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -6112,6 +8257,16 @@
       "languages": [
         "Samoan",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.6
+        },
+        {
+          "name": "Other",
+          "percent": 2.2
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -6145,6 +8300,12 @@
       "landlocked": true,
       "languages": [
         "Italian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97
+        }
       ],
       "neighbors": [
         "ITA"
@@ -6181,6 +8342,20 @@
       "languages": [
         "Portuguese"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 84.4
+        },
+        {
+          "name": "No religion",
+          "percent": 9.7
+        },
+        {
+          "name": "Other",
+          "percent": 5.8
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "africa",
@@ -6213,6 +8388,20 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 92.7
+        },
+        {
+          "name": "Christianity",
+          "percent": 4.4
+        },
+        {
+          "name": "Hinduism",
+          "percent": 2.6
+        }
       ],
       "neighbors": [
         "IRQ",
@@ -6256,6 +8445,16 @@
         "Wolof",
         "French"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 97.6
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.4
+        }
+      ],
       "neighbors": [
         "GMB",
         "GIN",
@@ -6296,6 +8495,20 @@
         "French",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 94
+        },
+        {
+          "name": "No religion",
+          "percent": 2.4
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.4
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "africa",
@@ -6328,6 +8541,16 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 80.1
+        },
+        {
+          "name": "Christianity",
+          "percent": 19.8
+        }
       ],
       "neighbors": [
         "GIN",
@@ -6366,6 +8589,28 @@
         "English",
         "Chinese"
       ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 30.8
+        },
+        {
+          "name": "No religion",
+          "percent": 19.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 18.8
+        },
+        {
+          "name": "Islam",
+          "percent": 16.1
+        },
+        {
+          "name": "Other",
+          "percent": 9.1
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "asia",
@@ -6400,6 +8645,7 @@
         "English",
         "Dutch"
       ],
+      "religions": [],
       "neighbors": [
         "MAF"
       ],
@@ -6416,6 +8662,16 @@
       "landlocked": true,
       "languages": [
         "Slovak"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 73.7
+        },
+        {
+          "name": "No religion",
+          "percent": 25.3
+        }
       ],
       "neighbors": [
         "AUT",
@@ -6457,6 +8713,20 @@
         "Slovenian",
         "Venetian"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 65.4
+        },
+        {
+          "name": "No religion",
+          "percent": 32.3
+        },
+        {
+          "name": "Islam",
+          "percent": 1.6
+        }
+      ],
       "neighbors": [
         "AUT",
         "HRV",
@@ -6495,6 +8765,16 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 95
+        },
+        {
+          "name": "Other",
+          "percent": 4
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -6528,6 +8808,12 @@
       "languages": [
         "Somali",
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.8
+        }
       ],
       "neighbors": [
         "DJI",
@@ -6566,6 +8852,28 @@
       "languages": [
         "Zulu",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 85.3
+        },
+        {
+          "name": "Other",
+          "percent": 8.9
+        },
+        {
+          "name": "No religion",
+          "percent": 3.1
+        },
+        {
+          "name": "Islam",
+          "percent": 1.6
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.1
+        }
       ],
       "neighbors": [
         "BWA",
@@ -6607,6 +8915,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "southAmerica"
@@ -6621,6 +8930,20 @@
       "landlocked": false,
       "languages": [
         "Korean"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 48.3
+        },
+        {
+          "name": "Christianity",
+          "percent": 32
+        },
+        {
+          "name": "Buddhism",
+          "percent": 19
+        }
       ],
       "neighbors": [
         "PRK"
@@ -6656,6 +8979,20 @@
       "landlocked": true,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 60.5
+        },
+        {
+          "name": "Other",
+          "percent": 32.8
+        },
+        {
+          "name": "Islam",
+          "percent": 6.2
+        }
       ],
       "neighbors": [
         "CAF",
@@ -6698,6 +9035,20 @@
         "Spanish",
         "Catalan"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 69.5
+        },
+        {
+          "name": "No religion",
+          "percent": 26.4
+        },
+        {
+          "name": "Islam",
+          "percent": 3.6
+        }
+      ],
       "neighbors": [
         "AND",
         "FRA",
@@ -6738,6 +9089,24 @@
         "Sinhala",
         "Tamil"
       ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 69.6
+        },
+        {
+          "name": "Hinduism",
+          "percent": 14.5
+        },
+        {
+          "name": "Islam",
+          "percent": 10.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 5.6
+        }
+      ],
       "neighbors": [
         "IND"
       ],
@@ -6773,6 +9142,12 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 92
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -6805,6 +9180,20 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 91.7
+        },
+        {
+          "name": "No religion",
+          "percent": 5.9
+        },
+        {
+          "name": "Other",
+          "percent": 2
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -6839,6 +9228,20 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 86.3
+        },
+        {
+          "name": "No religion",
+          "percent": 7.9
+        },
+        {
+          "name": "Other",
+          "percent": 5.6
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -6872,6 +9275,12 @@
       "languages": [
         "Arabic",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 98.9
+        }
       ],
       "neighbors": [
         "CAF",
@@ -6914,6 +9323,28 @@
       "languages": [
         "Dutch"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 52.8
+        },
+        {
+          "name": "Hinduism",
+          "percent": 22.5
+        },
+        {
+          "name": "Islam",
+          "percent": 13.1
+        },
+        {
+          "name": "No religion",
+          "percent": 8.1
+        },
+        {
+          "name": "Other",
+          "percent": 3.1
+        }
+      ],
       "neighbors": [
         "BRA",
         "GUF",
@@ -6952,6 +9383,20 @@
         "Swedish",
         "Finnish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 60.8
+        },
+        {
+          "name": "No religion",
+          "percent": 28.9
+        },
+        {
+          "name": "Islam",
+          "percent": 8.1
+        }
+      ],
       "neighbors": [
         "FIN",
         "NOR"
@@ -6988,6 +9433,20 @@
       "languages": [
         "German",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 61.6
+        },
+        {
+          "name": "No religion",
+          "percent": 30.8
+        },
+        {
+          "name": "Islam",
+          "percent": 6.1
+        }
       ],
       "neighbors": [
         "AUT",
@@ -7027,6 +9486,20 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 3.8
+        },
+        {
+          "name": "No religion",
+          "percent": 2
+        }
       ],
       "neighbors": [
         "IRQ",
@@ -7068,6 +9541,24 @@
         "Chinese",
         "Min Nan Chinese"
       ],
+      "religions": [
+        {
+          "name": "Other",
+          "percent": 51.7
+        },
+        {
+          "name": "No religion",
+          "percent": 23.1
+        },
+        {
+          "name": "Buddhism",
+          "percent": 19.2
+        },
+        {
+          "name": "Christianity",
+          "percent": 5.5
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "asia",
@@ -7100,6 +9591,16 @@
       "landlocked": true,
       "languages": [
         "Tajik"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 98.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "AFG",
@@ -7139,6 +9640,20 @@
       "languages": [
         "Thai"
       ],
+      "religions": [
+        {
+          "name": "Buddhism",
+          "percent": 94.4
+        },
+        {
+          "name": "Islam",
+          "percent": 4.5
+        },
+        {
+          "name": "Christianity",
+          "percent": 1
+        }
+      ],
       "neighbors": [
         "MMR",
         "KHM",
@@ -7177,6 +9692,16 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.6
+        },
+        {
+          "name": "No religion",
+          "percent": 1.9
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "northAmerica",
@@ -7209,6 +9734,24 @@
       "landlocked": false,
       "languages": [
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 56.9
+        },
+        {
+          "name": "Other",
+          "percent": 19
+        },
+        {
+          "name": "Islam",
+          "percent": 16.1
+        },
+        {
+          "name": "No religion",
+          "percent": 8
+        }
       ],
       "neighbors": [
         "BEN",
@@ -7248,6 +9791,16 @@
         "Tongan",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97.8
+        },
+        {
+          "name": "Other",
+          "percent": 1.5
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -7280,6 +9833,28 @@
       "landlocked": false,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 70
+        },
+        {
+          "name": "Hinduism",
+          "percent": 20.6
+        },
+        {
+          "name": "Islam",
+          "percent": 5.5
+        },
+        {
+          "name": "No religion",
+          "percent": 2.4
+        },
+        {
+          "name": "Other",
+          "percent": 1.4
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -7314,6 +9889,12 @@
       "languages": [
         "Arabic",
         "French"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.3
+        }
       ],
       "neighbors": [
         "DZA",
@@ -7350,6 +9931,16 @@
       "landlocked": false,
       "languages": [
         "Turkish"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 97.1
+        },
+        {
+          "name": "No religion",
+          "percent": 2.5
+        }
       ],
       "neighbors": [
         "ARM",
@@ -7393,6 +9984,16 @@
       "languages": [
         "Turkmen"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 94.3
+        },
+        {
+          "name": "Christianity",
+          "percent": 5.6
+        }
+      ],
       "neighbors": [
         "AFG",
         "IRN",
@@ -7431,6 +10032,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -7446,6 +10048,12 @@
       "languages": [
         "Tuvalu",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 97
+        }
       ],
       "neighbors": [],
       "enabled": true,
@@ -7480,6 +10088,16 @@
       "languages": [
         "Swahili",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.7
+        },
+        {
+          "name": "Islam",
+          "percent": 11.4
+        }
       ],
       "neighbors": [
         "COD",
@@ -7520,6 +10138,16 @@
       "languages": [
         "Ukrainian",
         "Russian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 83.4
+        },
+        {
+          "name": "No religion",
+          "percent": 15.1
+        }
       ],
       "neighbors": [
         "BLR",
@@ -7562,6 +10190,20 @@
       "languages": [
         "Arabic"
       ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 72.9
+        },
+        {
+          "name": "Christianity",
+          "percent": 14.3
+        },
+        {
+          "name": "Hinduism",
+          "percent": 11.8
+        }
+      ],
       "neighbors": [
         "OMN",
         "SAU"
@@ -7599,6 +10241,28 @@
         "English",
         "Welsh"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 49.4
+        },
+        {
+          "name": "No religion",
+          "percent": 40.2
+        },
+        {
+          "name": "Islam",
+          "percent": 6.4
+        },
+        {
+          "name": "Hinduism",
+          "percent": 1.7
+        },
+        {
+          "name": "Other",
+          "percent": 1.4
+        }
+      ],
       "neighbors": [
         "IRL"
       ],
@@ -7634,6 +10298,24 @@
       "languages": [
         "Swahili",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 64.7
+        },
+        {
+          "name": "Islam",
+          "percent": 29.9
+        },
+        {
+          "name": "No religion",
+          "percent": 3.5
+        },
+        {
+          "name": "Other",
+          "percent": 2
+        }
       ],
       "neighbors": [
         "BDI",
@@ -7678,6 +10360,28 @@
         "English",
         "Spanish"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 64
+        },
+        {
+          "name": "No religion",
+          "percent": 29.7
+        },
+        {
+          "name": "Judaism",
+          "percent": 1.7
+        },
+        {
+          "name": "Buddhism",
+          "percent": 1.3
+        },
+        {
+          "name": "Islam",
+          "percent": 1.2
+        }
+      ],
       "neighbors": [
         "CAN",
         "MEX"
@@ -7714,6 +10418,7 @@
       "languages": [
         "English"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -7729,6 +10434,16 @@
       "languages": [
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 94.5
+        },
+        {
+          "name": "No religion",
+          "percent": 4
+        }
+      ],
       "neighbors": [],
       "enabled": false,
       "region": "northAmerica"
@@ -7743,6 +10458,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 52.4
+        },
+        {
+          "name": "Christianity",
+          "percent": 44.5
+        },
+        {
+          "name": "Other",
+          "percent": 2.5
+        }
       ],
       "neighbors": [
         "ARG",
@@ -7779,6 +10508,20 @@
       "landlocked": true,
       "languages": [
         "Uzbek"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 95.6
+        },
+        {
+          "name": "Christianity",
+          "percent": 2.8
+        },
+        {
+          "name": "Other",
+          "percent": 1
+        }
       ],
       "neighbors": [
         "AFG",
@@ -7820,6 +10563,20 @@
         "Bislama",
         "English"
       ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 83.5
+        },
+        {
+          "name": "Other",
+          "percent": 15.1
+        },
+        {
+          "name": "No religion",
+          "percent": 1.4
+        }
+      ],
       "neighbors": [],
       "enabled": true,
       "region": "oceania",
@@ -7852,6 +10609,12 @@
       "landlocked": true,
       "languages": [
         "Italian"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 100
+        }
       ],
       "neighbors": [
         "ITA"
@@ -7887,6 +10650,20 @@
       "landlocked": false,
       "languages": [
         "Spanish"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 88.1
+        },
+        {
+          "name": "No religion",
+          "percent": 9.7
+        },
+        {
+          "name": "Other",
+          "percent": 2.1
+        }
       ],
       "neighbors": [
         "BRA",
@@ -7925,6 +10702,20 @@
       "languages": [
         "Vietnamese"
       ],
+      "religions": [
+        {
+          "name": "No religion",
+          "percent": 67.7
+        },
+        {
+          "name": "Buddhism",
+          "percent": 23
+        },
+        {
+          "name": "Christianity",
+          "percent": 8.3
+        }
+      ],
       "neighbors": [
         "KHM",
         "CHN",
@@ -7962,6 +10753,7 @@
       "languages": [
         "French"
       ],
+      "religions": [],
       "neighbors": [],
       "enabled": false,
       "region": "oceania"
@@ -7976,6 +10768,12 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.6
+        }
       ],
       "neighbors": [
         "DZA",
@@ -7995,6 +10793,12 @@
       "landlocked": false,
       "languages": [
         "Arabic"
+      ],
+      "religions": [
+        {
+          "name": "Islam",
+          "percent": 99.9
+        }
       ],
       "neighbors": [
         "OMN",
@@ -8031,6 +10835,16 @@
       "landlocked": true,
       "languages": [
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 98.3
+        },
+        {
+          "name": "Other",
+          "percent": 1.1
+        }
       ],
       "neighbors": [
         "AGO",
@@ -8074,6 +10888,20 @@
       "languages": [
         "Shona",
         "English"
+      ],
+      "religions": [
+        {
+          "name": "Christianity",
+          "percent": 87.2
+        },
+        {
+          "name": "No religion",
+          "percent": 10.5
+        },
+        {
+          "name": "Other",
+          "percent": 1.7
+        }
       ],
       "neighbors": [
         "BWA",

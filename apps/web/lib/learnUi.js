@@ -288,6 +288,35 @@ export const learnRankMoveBtn = cn(
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
 );
 
+// ── religion pie ─────────────────────────────────────────────────────────────
+
+export const learnPieChartWrap =
+  "mx-auto flex w-full max-w-[13.5rem] shrink-0 touch-none select-none items-center justify-center sm:max-w-[14rem]";
+
+export const learnPieLegend = "m-0 flex w-full list-none flex-col gap-2 p-0";
+
+export function learnPieLegendRow({ state = "idle" } = {}) {
+  return cn(
+    "flex min-h-[2.5rem] items-center gap-2.5 rounded-md border px-3 py-1.5",
+    state === "idle" && "border-border bg-surface",
+    state === "correct" && cn("border-success text-success", SUCCESS_BG),
+    state === "wrong" && cn("border-error text-error", ERROR_BG)
+  );
+}
+
+export const learnPieSwatch = "h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-black/20";
+export const learnPieName = "min-w-0 flex-1 truncate text-sm font-semibold text-text";
+export const learnPieValue = "shrink-0 text-sm font-bold tabular-nums text-text-secondary";
+export const learnPieCorrectValue = "shrink-0 text-xs font-bold tabular-nums";
+export const learnPieNudgeGroup = "flex shrink-0 items-center gap-0.5";
+export const learnPieNudgeBtn = cn(
+  "flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-lg font-semibold leading-none text-text-muted",
+  "transition-[background,color] duration-150 ease-out",
+  "enabled:hover:bg-meta enabled:hover:text-text",
+  "disabled:cursor-not-allowed disabled:opacity-25",
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+);
+
 // ── session summary (appended to GameCompleteModal) ────────────────────────────
 
 export const learnSummary = "flex flex-col gap-4 border-t border-border pt-4";
