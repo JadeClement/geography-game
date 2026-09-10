@@ -422,11 +422,11 @@ Weights sum to 1.0. Missing domains score 0. Average is over **all** countries, 
 
 ### 4. `LEARN_CONTRIBUTION_RATE`
 
-Applied **at write time**, Learn only, as an extra multiplier on the existing Learn EMA multiplier. Test writes stay 1.0×. The 0.5× is **not** applied again at score time (that would double-penalize).
+Applied **at write time**, Learn only, as an extra multiplier on the existing Learn EMA multiplier. Test writes stay 1.0×. The 0.8× is **not** applied again at score time (that would double-penalize).
 
 | Domain | Rate | Logic |
 |---|---|---|
-| location, capital, flag, neighbors | 0.5 | These have a Test mode; Learn should not farm %Worldly as fast as Test. |
+| location, capital, flag, neighbors | 0.8 | These have a Test mode; Learn should not farm %Worldly as fast as Test. |
 | statistics, facts | 1.0 | No Test mode; Learn is the only way they move. |
 
 `DOMAINS_WITH_TEST_MODE` is `location`, `capital`, `flag`, `neighbors`.
@@ -475,14 +475,87 @@ Every live `QUESTION_TYPES` id is in `QUESTION_TYPE_TO_DOMAIN`. Extra aliases (`
 - No Test — Statistics or Test — Facts modes.
 - Neighbors Test skips Discover, Learn, and the F1/F2/N2 level picker (free recall only; starts at N1).
 - Mobile has `GAME_MODES.NEIGHBORS` in shared constants but no Neighbors Test UI of its own.
-- Go! session building is unchanged; Go! answers dual-write location + general at Learn’s 0.5× rate as a side effect.
+- Go! session building is unchanged; Go! answers dual-write location + general at Learn’s 0.8× rate as a side effect.
 - Worldly region milestone headline is **“Truly Worldly!”** (id `region-worldly`), not “Region Worldly!”.
 
 ### 10. Assumptions needing human verification
 
 - Islands (0 neighbors) counting as Worldly-eligible without a neighbors score, and as pre-credited correct in Neighbors Test.
 - Dual-write using the **same** applied multiplier on the domain row and the `general` row (so Test location mastery still lives on `general`).
-- Learn 0.5× only at write time, not in `computeWorldlyScore`.
+- Learn 0.8× only at write time, not in `computeWorldlyScore`.
 - AppHeader % Worldly uses the API’s curved `percent` and refetches on route change; staying on the in-game header until Home still shows the pre-session value until that remount.
 - Extra wrong guesses on `neighbor_recall_all` still fail the round even if every neighbor is later named (existing MultiTextEntry behavior).
 - `db:setup` remains idempotent; `graduated` column was not renamed.
+
+---
+
+## Neighbors — Reverted to Learn Only
+
+Test — Neighbors is removed. Neighbor knowledge stays a Learn skill domain
+(`skill_domain = 'neighbors'`). Existing `country_stats` rows are untouched.
+
+### Audit (before the revert)
+
+**1. Every place `'neighbors'` was added as a playable mode value**
+
+| File | Where |
+|---|---|
+| `packages/constants/index.js` | `GAME_MODES.NEIGHBORS = "neighbors"` |
+| `packages/core/regions.js` | `getModeLabel` branch for `GAME_MODES.NEIGHBORS` |
+| `packages/core/learn/questionTypes.js` | `DOMAINS_WITH_TEST_MODE` included `SKILL_DOMAINS.NEIGHBORS`; `inferDomainFromMode` mapped the game mode |
+| `packages/core/mastery.js` | `groupMasteryEntriesByMode` `neighbors: []` bucket |
+| `packages/core/worldlyScore.js` | `flattenMastery` added `mastery.neighbors` |
+| `apps/web/lib/startNavigation.js` | `VALID_MODES` from `GAME_MODES`; LEVEL step redirected neighbors to choose-type |
+| `apps/web/lib/masteryMap.js` | `MASTERY_MODES`, `DOMAIN_TAB_TO_DOMAIN`, `MODE_VISUALS` |
+| `apps/web/lib/countryStats.js` | `EMPTY_MASTERY_BY_MODE.neighbors` |
+| `apps/web/lib/gameModeIntro.js` | Welcome / goal copy |
+| `apps/web/lib/gameTutorial.js` | `getModeGoalLabel` → `"neighbor set"` |
+| `apps/web/components/StartScreen.jsx` | Explore card, Discover/Learn hidden, Test starts at N1 |
+| `apps/web/components/MasteryPage.jsx` | Neighbors tab + map |
+| `apps/web/components/GeographyGame.jsx` | `startNeighborsTestGame` + Test intercept |
+| `apps/web/components/ResultsPage.jsx` | Best-scores / mastery tables |
+| `apps/web/components/GameCompleteModal.jsx` | `MASTERED_NOUNS.neighbors` |
+| `apps/web/app/api/scores/route.js` | `VALID_MODES = Object.values(GAME_MODES)` (no hardcoded list) |
+| `apps/web/app/api/country-stats/route.js` | same allowlist |
+| `apps/web/app/api/learn-challenge/route.js` | same allowlist |
+| `apps/web/app/api/mastery/all/route.js` | empty fallback `{ neighbors: [] }` |
+
+`lib/levels.js` and `scripts/setup-db.js` never registered a neighbors mode (`mode` is unconstrained TEXT).
+
+**2. `game_scores` with `mode='neighbors'`:** COUNT = **0**. Not deleted.
+
+Related (not deleted): `country_stats` has **28** rows with `mode='neighbors'` and **14** with `skill_domain='neighbors'`. **0** neighbors-domain rows have `graduated = true`.
+
+**3. URL / start navigation:** `parseStartScreenSearchParams` accepted `mode=neighbors` via `GAME_MODES`. `normalizeStartScreenRoute` sent neighbors LEVEL URLs back to choose-type. After this revert, `mode=neighbors` is not in `VALID_MODES`, so it parses as `null` and choose-type without a mode redirects home. No crash.
+
+**4. `DOMAINS_WITH_TEST_MODE`:** previously included `SKILL_DOMAINS.NEIGHBORS`. Removed.
+
+**5. API allowlists:** scores, country-stats, and learn-challenge all used `Object.values(GAME_MODES)`, so `neighbors` was allowed. After removing `GAME_MODES.NEIGHBORS`, `POST /api/scores` with `mode='neighbors'` returns 400.
+
+### Files changed in this revert
+
+- `packages/constants/index.js` — removed `GAME_MODES.NEIGHBORS`; `LEARN_CONTRIBUTION_RATE.neighbors` is **1.0**.
+- `packages/core/learn/questionTypes.js` — removed neighbors from `DOMAINS_WITH_TEST_MODE`. `SKILL_DOMAINS.NEIGHBORS` kept. `inferDomainFromMode("neighbors")` still maps leftover Test rows to the neighbors skill, not location.
+- `packages/core/regions.js` — removed Neighbors label branch.
+- `packages/core/worldlyScore.js` — still flattens leftover `mastery.neighbors` rows for % Worldly (string `"neighbors"`, not a game mode).
+- `apps/web/lib/startNavigation.js` — removed neighbors LEVEL redirect.
+- `apps/web/lib/masteryMap.js` — Neighbors tab visuals / `MASTERY_MODES` entry removed.
+- `apps/web/lib/gameModeIntro.js` / `gameTutorial.js` — Test-Neighbors copy removed.
+- `apps/web/components/StartScreen.jsx` — Explore is Countries / Capitals / Flags only.
+- `apps/web/components/MasteryPage.jsx` — tabs are Countries / Capitals / Flags / All. Leftover `mode=neighbors` stats still feed country-tap domain scores.
+- `apps/web/components/GeographyGame.jsx` — `startNeighborsTestGame` and Test intercept removed. Learn neighbor questions unchanged.
+- `apps/web/components/ResultsPage.jsx` — Neighbors score/mastery tables removed.
+- `apps/web/components/GameCompleteModal.jsx` — `MASTERED_NOUNS.neighbors` removed.
+- `apps/web/components/HowItWorksPage.jsx` — neighbors listed as Learn-only (1.0×).
+- `apps/web/scripts/test-worldly-score.js` — contribution-rate assertions updated.
+
+### Confirmations
+
+- `skill_domain='neighbors'` data in `country_stats` is untouched (no DELETE).
+- `LEARN_CONTRIBUTION_RATE.neighbors` is **1.0** (`getLearnContributionRate` reads the hardcoded map, not `DOMAINS_WITH_TEST_MODE`).
+- `game_scores` `mode='neighbors'` count: **0**.
+- Domain weights unchanged (neighbors still 0.25 in `WORLDLY_DOMAIN_WEIGHTS`; the spec’s “0.20” was not the implemented value).
+
+### Places the previous delivery notes did not list
+
+`gameModeIntro.js`, `gameTutorial.js`, Results page tables, `GameCompleteModal` nouns, `startNavigation` LEVEL redirect, `masteryMap.js` tab palette, StartScreen Explore/home copy, `GeographyGame` Learn-engine hijack for Test, `generateNeighborRecallAll({ minNeighbors: 1, clueEligible: false })` Test options (generator itself kept for Learn).

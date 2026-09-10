@@ -41,7 +41,6 @@ const MASTERED_NOUNS = {
   countries: ["country", "countries"],
   capitals: ["capital", "capitals"],
   flags: ["flag", "flags"],
-  neighbors: ["neighbor set", "neighbor sets"],
 };
 
 function flattenMasteryByCountry(mastery) {

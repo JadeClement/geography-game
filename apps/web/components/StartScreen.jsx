@@ -9,7 +9,7 @@ import StartBackButton from "@/components/StartBackButton";
 import SpaceBackground from "@/components/SpaceBackground";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { GAME_TYPES } from "@/lib/gameTypes";
-import { GAME_LEVELS, LEVEL_SECTIONS } from "@/lib/levels";
+import { LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
 import {
   DEFAULT_LEARN_LEVEL,
@@ -319,16 +319,11 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
       <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBackToExplore} />
         <StartStepHeader
-          title={
-            selectedMode === GAME_MODES.NEIGHBORS
-              ? "Test neighbors?"
-              : "Discover, Test, or Learn?"
-          }
+          title="Discover, Test, or Learn?"
           subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
         />
 
         <div className={cn(startSection, startGameTypeList)}>
-          {selectedMode !== GAME_MODES.NEIGHBORS && (
           <button
             type="button"
             className={choiceBtnLevel({ disabled: !gameReady, className: gameTypeBtnDiscover })}
@@ -338,22 +333,10 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             <span className={choiceBtnLevelTitle}>Discover</span>
             <span className={choiceBtnLevelDesc}>Tap countries to see their names. No score.</span>
           </button>
-          )}
           <button
             type="button"
             className={choiceBtnLevel({ className: gameTypeBtnTest })}
             onClick={() => {
-              if (selectedMode === GAME_MODES.NEIGHBORS) {
-                if (selectedMode && selectedRegion && gameReady) {
-                  onStart({
-                    gameType: GAME_TYPES.TEST,
-                    mode: selectedMode,
-                    region: selectedRegion,
-                    level: GAME_LEVELS.NAME_FILL,
-                  });
-                }
-                return;
-              }
               navigate({
                 step: START_STEPS.LEVEL,
                 mode: selectedMode,
@@ -364,12 +347,9 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           >
             <span className={choiceBtnLevelTitle}>Test</span>
             <span className={choiceBtnLevelDesc}>
-              {selectedMode === GAME_MODES.NEIGHBORS
-                ? "Name every country that borders each country."
-                : "Full quiz — track mastery for every country."}
+              Full quiz — track mastery for every country.
             </span>
           </button>
-          {selectedMode !== GAME_MODES.NEIGHBORS && (
           <div className="flex w-full flex-col items-center gap-2">
             <button
               type="button"
@@ -399,7 +379,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
               </button>
             )}
           </div>
-          )}
         </div>
 
         {learnStartError && (
@@ -457,7 +436,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           title="Explore"
           subtitle={
             exploreRegion
-              ? "Choose Countries, Capitals, Flags, or Neighbors."
+              ? "Choose Countries, Capitals, or Flags."
               : "Pick a region on the map."
           }
         />
@@ -485,14 +464,6 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
                 onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
               >
                 Flags
-              </button>
-              <button
-                type="button"
-                className={startModeBtn({ selected: exploreMode === GAME_MODES.NEIGHBORS })}
-                onClick={() => handleModeSelect(GAME_MODES.NEIGHBORS)}
-                title="Name every country that borders each country"
-              >
-                🗺 Neighbors
               </button>
             </div>
           )}
@@ -545,7 +516,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           >
             <span className={choiceBtnLevelTitle}>Explore</span>
             <span className={exploreBtnDesc}>
-              Choose countries, capitals, flags, or neighbors by region.
+              Choose countries, capitals, or flags by region.
             </span>
           </button>
         </div>

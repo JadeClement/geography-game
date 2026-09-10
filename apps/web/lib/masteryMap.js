@@ -21,14 +21,12 @@ export const MASTERY_MODES = [
   GAME_MODES.COUNTRIES,
   GAME_MODES.CAPITALS,
   GAME_MODES.FLAGS,
-  GAME_MODES.NEIGHBORS,
 ];
 
 export const DOMAIN_TAB_TO_DOMAIN = {
   [GAME_MODES.COUNTRIES]: "location",
   [GAME_MODES.CAPITALS]: "capital",
   [GAME_MODES.FLAGS]: "flag",
-  [GAME_MODES.NEIGHBORS]: "neighbors",
 };
 
 // Per-mode glow palette for intensity (domain) tabs.
@@ -47,11 +45,6 @@ export const MODE_VISUALS = {
     label: "Flags",
     accent: "#fbbf24",
     soft: "rgba(251, 191, 36, 0.16)",
-  },
-  [GAME_MODES.NEIGHBORS]: {
-    label: "Neighbors",
-    accent: "#38bdf8",
-    soft: "rgba(56, 189, 248, 0.16)",
   },
 };
 

@@ -2,12 +2,6 @@ import { GAME_MODES } from "@/lib/regions";
 import { getModeGoalLabel } from "@/lib/gameTutorial";
 
 export function getWelcomeCopy(ctx) {
-  if (ctx.mode === GAME_MODES.NEIGHBORS) {
-    return {
-      title: "Welcome to Neighbors",
-      body: "Name every country that shares a land border. All-or-nothing — miss one and the round is incomplete.",
-    };
-  }
   const kind =
     ctx.mode === GAME_MODES.CAPITALS
       ? "capitals"
@@ -26,13 +20,6 @@ export function getWelcomeCopy(ctx) {
 }
 
 export function getGoalCopy(ctx) {
-  if (ctx.mode === GAME_MODES.NEIGHBORS) {
-    return {
-      title: "Your goal",
-      body: "Type every bordering country, one name at a time. Give up if you are stuck — there are no hints.",
-    };
-  }
-
   const item = getModeGoalLabel(ctx.mode);
 
   if (ctx.isDiscover) {

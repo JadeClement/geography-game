@@ -43,7 +43,7 @@
  *    Dual-write: one domain row (from questionType, or inferred from mode)
  *    plus the legacy `general` row. Domain is resolved SERVER-SIDE — never
  *    from a client skillDomain field. Learn applies LEARN_CONTRIBUTION_RATE
- *    (0.5x on Test-mode domains) on top of the question-type multiplier.
+ *    (0.8x on Test-mode domains) on top of the question-type multiplier.
  *    Also INSERTs one country_attempts row per answer.
  *
  * 4. Read path for Learn session building

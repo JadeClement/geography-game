@@ -99,9 +99,6 @@ export function normalizeStartScreenRoute(parsed) {
         level: null,
       };
     }
-    if (mode === GAME_MODES.NEIGHBORS) {
-      return { step: START_STEPS.CHOOSE_TYPE, mode, region, gameType: null, level: null };
-    }
     return { step, mode, region, gameType, level: null };
   }
 

@@ -117,22 +117,23 @@ test("legacy general rows fill the matching Test domain", () => {
   assert.equal(scores.flag, 0);
 });
 
-test("Learn contribution rate is 0.5 on Test-mode domains and 1.0 on Learn-only", () => {
+test("Learn contribution rate is 0.8 on Test-mode domains and 1.0 on Learn-only", () => {
   assert.deepEqual(
     [...DOMAINS_WITH_TEST_MODE].sort(),
-    ["capital", "flag", "location", "neighbors"].sort()
+    ["capital", "flag", "location"].sort()
   );
-  assert.equal(getLearnContributionRate(SKILL_DOMAINS.LOCATION), 0.5);
+  assert.equal(getLearnContributionRate(SKILL_DOMAINS.LOCATION), 0.8);
   assert.equal(getLearnContributionRate(SKILL_DOMAINS.STATISTICS), 1);
   assert.equal(getLearnContributionRate(SKILL_DOMAINS.FACTS), 1);
-  assert.equal(LEARN_CONTRIBUTION_RATE.neighbors, 0.5);
+  assert.equal(getLearnContributionRate(SKILL_DOMAINS.NEIGHBORS), 1);
+  assert.equal(LEARN_CONTRIBUTION_RATE.neighbors, 1);
 });
 
 test("resolveSkillDomain infers from mode when questionType is missing", () => {
   assert.equal(inferDomainFromMode(GAME_MODES.COUNTRIES), SKILL_DOMAINS.LOCATION);
   assert.equal(inferDomainFromMode(GAME_MODES.CAPITALS), SKILL_DOMAINS.CAPITAL);
   assert.equal(inferDomainFromMode(GAME_MODES.FLAGS), SKILL_DOMAINS.FLAG);
-  assert.equal(inferDomainFromMode(GAME_MODES.NEIGHBORS), SKILL_DOMAINS.NEIGHBORS);
+  assert.equal(inferDomainFromMode("neighbors"), SKILL_DOMAINS.NEIGHBORS);
   assert.equal(resolveSkillDomain({ mode: GAME_MODES.FLAGS }), SKILL_DOMAINS.FLAG);
   assert.equal(
     resolveSkillDomain({ questionType: "capital_free_recall", mode: GAME_MODES.COUNTRIES }),

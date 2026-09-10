@@ -509,7 +509,7 @@ export default function HowItWorksPage() {
           </p>
           <p>
             Learn answers still count, but domains that also have a Test mode (location,
-            capital, flag, neighbors) move at half speed in Learn. Statistics and facts
+            capital, flag) move at 80% speed in Learn. Neighbors, statistics, and facts
             have no Test, so Learn is how they grow.
           </p>
           <p>

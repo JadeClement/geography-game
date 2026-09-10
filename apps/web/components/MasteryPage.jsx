@@ -167,7 +167,7 @@ export default function MasteryPage() {
         addRows(mastery.countries, GAME_MODES.COUNTRIES);
         addRows(mastery.capitals, GAME_MODES.CAPITALS);
         addRows(mastery.flags, GAME_MODES.FLAGS);
-        addRows(mastery.neighbors, GAME_MODES.NEIGHBORS);
+        addRows(mastery.neighbors, "neighbors");
 
         const worldly = computeWorldlyScoreFromMastery(
           mastery,
@@ -187,7 +187,6 @@ export default function MasteryPage() {
             [GAME_MODES.COUNTRIES]: buildModeMasteryMap(mastery.countries ?? []),
             [GAME_MODES.CAPITALS]: buildModeMasteryMap(mastery.capitals ?? []),
             [GAME_MODES.FLAGS]: buildModeMasteryMap(mastery.flags ?? []),
-            [GAME_MODES.NEIGHBORS]: buildModeMasteryMap(mastery.neighbors ?? []),
           },
         });
         setLoading(false);

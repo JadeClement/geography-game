@@ -272,7 +272,6 @@ export default function ResultsPage() {
       countries: build(mastery.countries),
       capitals: build(mastery.capitals),
       flags: build(mastery.flags),
-      neighbors: build(mastery.neighbors),
     };
   }, [mastery]);
 
@@ -328,11 +327,6 @@ export default function ResultsPage() {
               mode={GAME_MODES.FLAGS}
               scoreMap={scoreMap}
             />
-            <ScoreTable
-              title={getModeLabel(GAME_MODES.NEIGHBORS)}
-              mode={GAME_MODES.NEIGHBORS}
-              scoreMap={scoreMap}
-            />
 
             <h2 className={resultsGroupTitle}>Mastery</h2>
             <p className={resultsGroupNote}>
@@ -342,7 +336,6 @@ export default function ResultsPage() {
             <MasteryTable title={getModeLabel(GAME_MODES.COUNTRIES)} lookup={masteryLookups.countries} />
             <MasteryTable title={getModeLabel(GAME_MODES.CAPITALS)} lookup={masteryLookups.capitals} />
             <MasteryTable title={getModeLabel(GAME_MODES.FLAGS)} lookup={masteryLookups.flags} />
-            <MasteryTable title={getModeLabel(GAME_MODES.NEIGHBORS)} lookup={masteryLookups.neighbors} />
           </div>
         )}
       </main>

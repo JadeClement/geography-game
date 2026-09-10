@@ -19,6 +19,5 @@ export function getGameTourId(session) {
 export function getModeGoalLabel(mode) {
   if (mode === GAME_MODES.CAPITALS) return "capital";
   if (mode === GAME_MODES.FLAGS) return "flag";
-  if (mode === GAME_MODES.NEIGHBORS) return "neighbor set";
   return "country";
 }

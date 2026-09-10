@@ -139,7 +139,7 @@ function flattenMastery(mastery) {
   add(mastery?.countries, GAME_MODES.COUNTRIES);
   add(mastery?.capitals, GAME_MODES.CAPITALS);
   add(mastery?.flags, GAME_MODES.FLAGS);
-  add(mastery?.neighbors, GAME_MODES.NEIGHBORS);
+  add(mastery?.neighbors, "neighbors");
   return rows;
 }
 
@@ -156,7 +156,7 @@ function groupStatsByCountry(stats = []) {
 
 /**
  * Weighted domain mix for one country. Stored EMA already includes the Learn
- * 0.5x write-rate on Test-mode domains, so this is a straight weight blend.
+ * 0.8x write-rate on Test-mode domains, so this is a straight weight blend.
  */
 export function computeCountryDomainScore(domainScores) {
   let total = 0;

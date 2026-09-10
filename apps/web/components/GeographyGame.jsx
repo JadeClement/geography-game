@@ -64,7 +64,6 @@ import {
 import { buildGoQueue, buildFullRegionLearningQueue } from "@/lib/learning";
 import { clampLearnSessionSize, getLearnSessionSize } from "@/lib/learnSessionSize";
 import { buildLearnSession } from "@/lib/learn/sessionSequencer";
-import { generateNeighborRecallAll } from "@/lib/learn/questionGenerator";
 import { buildDomainMasteryMap, getOverallMastery } from "@/lib/learn/domainMastery";
 import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
 import {
@@ -854,10 +853,9 @@ export default function GeographyGame() {
   const isGoGame = Boolean(session?.go);
   // Discover on phone uses DiscoverCountrySheet instead of the Learn More panel.
   const showLearnMorePanel =
-    ((isDiscoverGame && !isMobile) ||
-      isLearningGame ||
-      Boolean(session?.review)) &&
-    session?.mode !== GAME_MODES.NEIGHBORS;
+    (isDiscoverGame && !isMobile) ||
+    isLearningGame ||
+    Boolean(session?.review);
   const isFindGame = Boolean(
     session?.level && isFindLevel(session.level) && !isDiscoverGame
   );
@@ -865,13 +863,8 @@ export default function GeographyGame() {
   // The mixed-question engine runs for wizard Learn sessions only (Go stays
   // find-only, so it keeps the classic loop). `learnQuestions` is only populated
   // by the engine start path, so this is false for every other game type.
-  const neighborsTestActive =
-    isTestGame &&
-    session?.mode === GAME_MODES.NEIGHBORS &&
-    Array.isArray(learnQuestions);
   const learnEngineActive =
-    (isLearningGame && !isGoGame && Array.isArray(learnQuestions)) ||
-    neighborsTestActive;
+    isLearningGame && !isGoGame && Array.isArray(learnQuestions);
   const currentLearnQuestion = learnEngineActive
     ? (learnQuestions[learnIndex] ?? null)
     : null;
@@ -3175,71 +3168,11 @@ export default function GeographyGame() {
     setHighlightCountryId,
   ]);
 
-  const startNeighborsTestGame = useCallback(
-    ({ region, level, masteredIds = [] }) => {
-      const regionPool = filterCountriesByRegion(allCountries, region);
-      if (regionPool.length === 0) return { ok: false, reason: "no-eligible" };
-
-      const preCredited = new Set(masteredIds ?? []);
-      for (const country of regionPool) {
-        if (!Array.isArray(country.neighbors) || country.neighbors.length === 0) {
-          preCredited.add(country.id);
-        }
-      }
-      const quizPool = regionPool.filter((country) => !preCredited.has(country.id));
-      const questions = [];
-      for (const country of shuffleCountries(quizPool)) {
-        const question = generateNeighborRecallAll(country, allCountries, null, {
-          minNeighbors: 1,
-          clueEligible: false,
-        });
-        if (question) questions.push({ ...question, clueEligible: false });
-      }
-
-      startLearnEngineGame({
-        gameType: GAME_TYPES.TEST,
-        mode: GAME_MODES.NEIGHBORS,
-        region,
-        level: level ?? GAME_LEVELS.NAME_FILL,
-        learningSessionSize: questions.length,
-        preCreditedCountryIds: [...preCredited],
-        learn: {
-          questions,
-          queueIds: questions.map((question) => question.countryId),
-          sampled: questions.map((question) => ({
-            countryId: question.countryId,
-            mastery: 0,
-          })),
-          masteryStats: new Map(),
-          masteryBefore: new Map(),
-        },
-      });
-      return { ok: true };
-    },
-    [allCountries, startLearnEngineGame]
-  );
-
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.go) {
         await startGoSession(config.region ?? "world");
         return { ok: true };
-      }
-
-      if (config.gameType === GAME_TYPES.TEST && config.mode === GAME_MODES.NEIGHBORS) {
-        let masteredIds = [];
-        if (config.region === "world" && signedIn) {
-          const world = await buildWorldTestCountries({
-            mode: config.mode,
-            level: config.level ?? GAME_LEVELS.NAME_FILL,
-          });
-          masteredIds = world.preCreditedCountryIds ?? [];
-        }
-        return startNeighborsTestGame({
-          region: config.region,
-          level: config.level ?? GAME_LEVELS.NAME_FILL,
-          masteredIds,
-        });
       }
 
       if (config.gameType === GAME_TYPES.DISCOVER) {
@@ -3343,7 +3276,6 @@ export default function GeographyGame() {
       startGame,
       startGoSession,
       startLearnEngineGame,
-      startNeighborsTestGame,
       userIdRef,
     ]
   );

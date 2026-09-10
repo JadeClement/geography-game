@@ -15,7 +15,6 @@ export const GAME_MODES = {
   COUNTRIES: "countries",
   CAPITALS: "capitals",
   FLAGS: "flags",
-  NEIGHBORS: "neighbors",
 };
 
 export const REGIONS = [
@@ -154,13 +153,13 @@ export const WORLDLY_DOMAIN_WEIGHTS = {
 
 /**
  * Extra Learn write-rate for domains that also have a Test mode.
- * Statistics and facts have no Test, so Learn is the only way they move (1.0x).
+ * Neighbors, statistics, and facts have no Test, so Learn is the only way they move (1.0x).
  */
 export const LEARN_CONTRIBUTION_RATE = {
-  location: 0.5,
-  neighbors: 0.5,
-  capital: 0.5,
-  flag: 0.5,
+  location: 0.8,
+  neighbors: 1,
+  capital: 0.8,
+  flag: 0.8,
   statistics: 1,
   facts: 1,
 };

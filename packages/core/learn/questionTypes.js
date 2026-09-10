@@ -34,18 +34,18 @@ export const SKILL_DOMAINS = {
 
 export const DEFAULT_SKILL_DOMAIN = SKILL_DOMAINS.LOCATION;
 
-/** Domains that have a dedicated Test mode (Learn writes at 0.5x). */
+/** Domains that have a dedicated Test mode (Learn writes at 0.8x). */
 export const DOMAINS_WITH_TEST_MODE = [
   SKILL_DOMAINS.LOCATION,
   SKILL_DOMAINS.CAPITAL,
   SKILL_DOMAINS.FLAG,
-  SKILL_DOMAINS.NEIGHBORS,
 ];
 
 export function inferDomainFromMode(mode) {
   if (mode === GAME_MODES.CAPITALS) return SKILL_DOMAINS.CAPITAL;
   if (mode === GAME_MODES.FLAGS) return SKILL_DOMAINS.FLAG;
-  if (mode === GAME_MODES.NEIGHBORS) return SKILL_DOMAINS.NEIGHBORS;
+  // Leftover Test-neighbors rows (mode text, not a playable GAME_MODES value).
+  if (mode === SKILL_DOMAINS.NEIGHBORS) return SKILL_DOMAINS.NEIGHBORS;
   return SKILL_DOMAINS.LOCATION;
 }
 
