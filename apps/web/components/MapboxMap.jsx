@@ -18,6 +18,7 @@ import {
 import {
   CIRCLE_CLICK_RADIUS_PX,
   CIRCLE_STROKE_WIDTH,
+  HIGHLIGHT_CIRCLE_STROKE_WIDTH,
   getCountryScreenBounds,
   getCountryFillScreenBounds,
   getCountryVisibleScreenAnchor,
@@ -146,6 +147,19 @@ function highlightKindFromTone(tone) {
   if (tone === "success") return 3;
   if (tone === "correct") return 4;
   return 1;
+}
+
+function highlightColorFromTone(tone) {
+  if (tone === "error") return WRONG_COUNTRY_COLOR;
+  if (tone === "success") return SUBJECT_COUNTRY_COLOR;
+  if (tone === "correct") return CORRECT_COUNTRY_COLOR;
+  return TARGET_HIGHLIGHT_COLOR;
+}
+
+/** Paint by feature property so a Learn highlight survives setData wiping feature-state. */
+function withCountryIdHighlight(highlightCountryId, highlightValue, rest) {
+  if (!highlightCountryId) return rest;
+  return ["case", ["==", ["get", "id"], highlightCountryId], highlightValue, rest];
 }
 
 function uniquePaintIds(...lists) {
@@ -313,9 +327,12 @@ function updateSmallCountryCircles(map, smallCountriesGeojson, { forceShow = fal
   }
 }
 
-function smallCircleFeedbackOnlyOpacity({ fill = false } = {}) {
+function smallCircleFeedbackOnlyOpacity({
+  fill = false,
+  highlightCountryId = null,
+} = {}) {
   const on = fill ? 0.92 : 1;
-  return [
+  return withCountryIdHighlight(highlightCountryId, on, [
     "case",
     ["==", ["feature-state", "wrong"], true],
     on,
@@ -330,12 +347,20 @@ function smallCircleFeedbackOnlyOpacity({ fill = false } = {}) {
     [">", ["coalesce", ["feature-state", "highlightKind"], 0], 0],
     on,
     0,
-  ];
+  ]);
 }
 
 function applySmallCountryCirclePaintMode(
   map,
-  { forceShow, level, strokeColor, landColor, hideUntilFeedback = false }
+  {
+    forceShow,
+    level,
+    strokeColor,
+    landColor,
+    hideUntilFeedback = false,
+    highlightCountryId = null,
+    highlightColor = TARGET_HIGHLIGHT_COLOR,
+  }
 ) {
   if (!map.getLayer("small-country-circles")) return;
 
@@ -347,66 +372,89 @@ function applySmallCountryCirclePaintMode(
     return;
   }
 
-  map.setPaintProperty("small-country-circles", "circle-radius", [
-    "coalesce",
-    ["feature-state", "radius"],
-    0,
-  ]);
-  map.setPaintProperty("small-country-circles", "circle-stroke-width", CIRCLE_STROKE_WIDTH);
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-radius",
+    withCountryIdHighlight(
+      highlightCountryId,
+      CIRCLE_CLICK_RADIUS_PX,
+      ["coalesce", ["feature-state", "radius"], 0]
+    )
+  );
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-stroke-width",
+    withCountryIdHighlight(
+      highlightCountryId,
+      HIGHLIGHT_CIRCLE_STROKE_WIDTH,
+      CIRCLE_STROKE_WIDTH
+    )
+  );
   map.setPaintProperty(
     "small-country-circles",
     "circle-stroke-color",
-    getSmallCircleStrokeColorExpression(level, strokeColor, landColor)
+    getSmallCircleStrokeColorExpression(
+      level,
+      strokeColor,
+      landColor,
+      highlightColor,
+      highlightCountryId
+    )
   );
   // Keep highlight/target fill paint — replacing only stroke-opacity used to
   // wipe these and leave tiny countries as a plain white ring (e.g. Brunei).
-  map.setPaintProperty("small-country-circles", "circle-color", [
-    "case",
-    ["==", ["feature-state", "highlight"], true],
-    TARGET_HIGHLIGHT_COLOR,
-    ["==", ["feature-state", "secondTry"], true],
-    TARGET_HIGHLIGHT_COLOR,
-    ["==", ["feature-state", "target"], true],
-    TARGET_HIGHLIGHT_COLOR,
-    ["==", ["feature-state", "filled"], true],
-    ["coalesce", ["get", "assignedColor"], landColor],
-    ["==", ["feature-state", "showColor"], true],
-    ["coalesce", ["get", "assignedColor"], landColor],
-    "transparent",
-  ]);
-  map.setPaintProperty("small-country-circles", "circle-opacity", [
-    "case",
-    ["==", ["feature-state", "highlight"], true],
-    ["coalesce", ["feature-state", "highlightPulse"], 0.55],
-    ["==", ["feature-state", "secondTry"], true],
-    0.92,
-    ["==", ["feature-state", "target"], true],
-    0.85,
-    ["==", ["feature-state", "filled"], true],
-    0.92,
-    ["==", ["feature-state", "showColor"], true],
-    0.92,
-    0,
-  ]);
+  // Match `["get", "id"]` first: feature-state is cleared by GeoJSON setData,
+  // which left São Tomé-style islands as a white click-target ring.
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-color",
+    withCountryIdHighlight(highlightCountryId, highlightColor, [
+      "case",
+      ["==", ["feature-state", "highlight"], true],
+      highlightColor,
+      ["==", ["feature-state", "secondTry"], true],
+      TARGET_HIGHLIGHT_COLOR,
+      ["==", ["feature-state", "target"], true],
+      TARGET_HIGHLIGHT_COLOR,
+      ["==", ["feature-state", "filled"], true],
+      ["coalesce", ["get", "assignedColor"], landColor],
+      ["==", ["feature-state", "showColor"], true],
+      ["coalesce", ["get", "assignedColor"], landColor],
+      "transparent",
+    ])
+  );
+  map.setPaintProperty(
+    "small-country-circles",
+    "circle-opacity",
+    hideUntilFeedback
+      ? smallCircleFeedbackOnlyOpacity({ fill: true, highlightCountryId })
+      : withCountryIdHighlight(highlightCountryId, 0.85, [
+          "case",
+          ["==", ["feature-state", "highlight"], true],
+          ["coalesce", ["feature-state", "highlightPulse"], 0.55],
+          ["==", ["feature-state", "secondTry"], true],
+          0.92,
+          ["==", ["feature-state", "target"], true],
+          0.85,
+          ["==", ["feature-state", "filled"], true],
+          0.92,
+          ["==", ["feature-state", "showColor"], true],
+          0.92,
+          0,
+        ])
+  );
   map.setPaintProperty(
     "small-country-circles",
     "circle-stroke-opacity",
     hideUntilFeedback
-      ? smallCircleFeedbackOnlyOpacity({ fill: false })
-      : [
+      ? smallCircleFeedbackOnlyOpacity({ fill: false, highlightCountryId })
+      : withCountryIdHighlight(highlightCountryId, 1, [
           "case",
           ["==", ["feature-state", "highlight"], true],
           ["coalesce", ["feature-state", "highlightPulse"], 1],
           ["coalesce", ["feature-state", "opacity"], 0],
-        ]
+        ])
   );
-  if (hideUntilFeedback) {
-    map.setPaintProperty(
-      "small-country-circles",
-      "circle-opacity",
-      smallCircleFeedbackOnlyOpacity({ fill: true })
-    );
-  }
 }
 
 function isCircleClickTarget(map, circleFeature) {
@@ -419,7 +467,8 @@ function getSmallCircleStrokeColorExpression(
   level,
   defaultStrokeColor,
   landColor,
-  highlightColor = TARGET_HIGHLIGHT_COLOR
+  highlightColor = TARGET_HIGHLIGHT_COLOR,
+  highlightCountryId = null
 ) {
   let base;
   if (!isProgressiveFillLevel(level)) {
@@ -454,15 +503,15 @@ function getSmallCircleStrokeColorExpression(
     ];
   }
 
-  // A "highlight" (Learn "which country is highlighted") flashes the circle's
-  // border so a circled small country is easy to spot without filling it.
-  // Prompt tone = yellow; reveal/error tone = red.
-  return [
+  // A "highlight" (Learn "which country is highlighted") paints the circle's
+  // border so a circled small country is easy to spot. Prompt tone = yellow.
+  // Match the feature property first — feature-state is wiped by setData.
+  return withCountryIdHighlight(highlightCountryId, highlightColor, [
     "case",
     ["==", ["feature-state", "highlight"], true],
     highlightColor,
     base,
-  ];
+  ]);
 }
 
 function addSmallCountryLayers(map, smallCountriesGeojson, strokeColor, level, landColor) {
@@ -1248,6 +1297,8 @@ function applyHideCountryBorders(map, hide, mapColors, circleOpts = {}) {
       strokeColor: mapColors.smallCountryStroke,
       landColor: circleOpts.landColor,
       hideUntilFeedback: hide,
+      highlightCountryId: circleOpts.highlightCountryId ?? null,
+      highlightColor: circleOpts.highlightColor ?? TARGET_HIGHLIGHT_COLOR,
     });
   }
 }
@@ -1348,6 +1399,11 @@ export default function MapboxMap({
     missedCountryIds,
     neighborWrongIds,
   };
+
+  const smallCircleHighlightPaint = () => ({
+    highlightCountryId: highlightCountryIdRef.current,
+    highlightColor: highlightColorFromTone(highlightToneRef.current),
+  });
 
   useEffect(() => {
     if (!containerRef.current || !geojson) return;
@@ -1471,11 +1527,13 @@ export default function MapboxMap({
         strokeColor: mapColors.smallCountryStroke,
         landColor,
         hideUntilFeedback: hideCountryBordersRef.current,
+        ...smallCircleHighlightPaint(),
       });
       applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
         forceShow: forceShowSmallCountryCirclesRef.current,
         level,
         landColor,
+        ...smallCircleHighlightPaint(),
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCirclesRef.current,
@@ -1519,6 +1577,7 @@ export default function MapboxMap({
         forceShow: forceShowSmallCountryCirclesRef.current,
         level,
         landColor,
+        ...smallCircleHighlightPaint(),
       });
       applyNeighborTeachOverlays(map, boardPaintRef.current);
 
@@ -1571,6 +1630,7 @@ export default function MapboxMap({
           strokeColor: getMapThemeColors(theme).smallCountryStroke,
           landColor: getActiveLandColor(theme),
           hideUntilFeedback: hideCountryBordersRef.current,
+          ...smallCircleHighlightPaint(),
         });
         updateSmallCountryCircles(mapRef.current, smallCountriesGeojsonRef.current, {
           forceShow: forceShowSmallCountryCirclesRef.current,
@@ -1697,6 +1757,7 @@ export default function MapboxMap({
         strokeColor: mapColors.smallCountryStroke,
         landColor,
         hideUntilFeedback: hideCountryBordersRef.current,
+        ...smallCircleHighlightPaint(),
       });
     }
 
@@ -1717,6 +1778,7 @@ export default function MapboxMap({
       strokeColor: mapColors.smallCountryStroke,
       landColor,
       hideUntilFeedback: hideCountryBordersRef.current,
+      ...smallCircleHighlightPaint(),
     });
     updateSmallCountryCircles(map, smallCountriesGeojson, {
       forceShow: forceShowSmallCountryCircles,
@@ -1727,6 +1789,7 @@ export default function MapboxMap({
       forceShow: forceShowSmallCountryCircles,
       level,
       landColor,
+      ...smallCircleHighlightPaint(),
     });
   }, [geojson, inactiveGeojson, baseLandGeojson, smallCountriesGeojson, theme, level, forceShowSmallCountryCircles]);
 
@@ -1740,6 +1803,7 @@ export default function MapboxMap({
         forceShow: forceShowSmallCountryCircles,
         level,
         landColor: getActiveLandColor(theme),
+        ...smallCircleHighlightPaint(),
       });
     };
     if (map.isStyleLoaded()) apply();
@@ -1828,6 +1892,7 @@ export default function MapboxMap({
         strokeColor: mapColors.smallCountryStroke,
         landColor,
         hideUntilFeedback: hideCountryBordersRef.current,
+        ...smallCircleHighlightPaint(),
       });
       updateSmallCountryCircles(map, smallCountriesGeojsonRef.current, {
         forceShow: forceShowSmallCountryCircles,
@@ -1972,16 +2037,15 @@ export default function MapboxMap({
       );
     }
     if (map.getLayer("small-country-circles") && !forceShowSmallCountryCircles) {
-      map.setPaintProperty(
-        "small-country-circles",
-        "circle-stroke-color",
-        getSmallCircleStrokeColorExpression(
-          level,
-          mapColors.smallCountryStroke,
-          landColor,
-          circleRevealOwnsFlash ? WRONG_COUNTRY_COLOR : highlightColor
-        )
-      );
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: false,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+        hideUntilFeedback: hideCountryBordersRef.current,
+        highlightCountryId,
+        highlightColor: circleRevealOwnsFlash ? WRONG_COUNTRY_COLOR : highlightColor,
+      });
     }
 
     // Mirror the highlight onto the small-country circle marker (if the target
@@ -2003,21 +2067,12 @@ export default function MapboxMap({
         // Map removed mid-update — ignore.
       }
     };
-    const isSmallCountryHighlight = Boolean(
-      highlightCountryId &&
-        smallCountriesGeojson?.features?.some(
-          (feature) => feature.properties?.id === highlightCountryId
-        )
-    );
     // Larger pulsing ring (same layer as wrong-answer flash) so tiny landmasses
-    // stay obvious at regional language-question zoom.
+    // stay obvious at regional zoom. Filter by feature id so it still shows
+    // after setData clears feature-state.
     const paintSmallHighlightRing = (visible) => {
       const activeMap = mapRef.current;
-      if (
-        !activeMap?.getLayer?.("small-country-flash") ||
-        !isSmallCountryHighlight ||
-        flashSmallCountryId
-      ) {
+      if (!activeMap?.getLayer?.("small-country-flash") || flashSmallCountryId) {
         return;
       }
       try {
@@ -2087,6 +2142,15 @@ export default function MapboxMap({
         map.setFilter("country-target-outline", ["==", ["get", "id"], ""]);
       }
       clearSmallHighlightRing();
+      applySmallCountryCirclePaintMode(map, {
+        forceShow: forceShowSmallCountryCircles,
+        level,
+        strokeColor: mapColors.smallCountryStroke,
+        landColor,
+        hideUntilFeedback: hideCountryBordersRef.current,
+        highlightCountryId: null,
+        highlightColor,
+      });
       return;
     }
 
@@ -2098,53 +2162,25 @@ export default function MapboxMap({
       ]);
     }
 
-    // Keep circle fill color in sync with prompt/error/success/correct tones.
-    if (map.getLayer("small-country-circles")) {
-      map.setPaintProperty("small-country-circles", "circle-color", [
-        "case",
-        ["==", ["feature-state", "highlight"], true],
-        highlightColor,
-        ["==", ["feature-state", "secondTry"], true],
-        TARGET_HIGHLIGHT_COLOR,
-        ["==", ["feature-state", "target"], true],
-        TARGET_HIGHLIGHT_COLOR,
-        "transparent",
-      ]);
-      const hideCircles = hideCountryBordersRef.current;
-      map.setPaintProperty(
-        "small-country-circles",
-        "circle-opacity",
-        hideCircles
-          ? smallCircleFeedbackOnlyOpacity({ fill: true })
-          : [
-              "case",
-              ["==", ["feature-state", "highlight"], true],
-              ["coalesce", ["feature-state", "highlightPulse"], 0.55],
-              ["==", ["feature-state", "secondTry"], true],
-              0.92,
-              ["==", ["feature-state", "target"], true],
-              0.85,
-              0,
-            ]
-      );
-      map.setPaintProperty(
-        "small-country-circles",
-        "circle-stroke-opacity",
-        hideCircles
-          ? smallCircleFeedbackOnlyOpacity({ fill: false })
-          : [
-              "case",
-              ["==", ["feature-state", "highlight"], true],
-              ["coalesce", ["feature-state", "highlightPulse"], 1],
-              ["coalesce", ["feature-state", "opacity"], 0],
-            ]
-      );
-    }
+    // Keep circle fill + stroke in sync with prompt/error/success/correct tones.
+    // Property-id paint (not only feature-state) so tiny islands stay yellow
+    // after GeoJSON setData.
+    applySmallCountryCirclePaintMode(map, {
+      forceShow: forceShowSmallCountryCircles,
+      level,
+      strokeColor: mapColors.smallCountryStroke,
+      landColor,
+      hideUntilFeedback: hideCountryBordersRef.current,
+      highlightCountryId,
+      highlightColor: circleRevealOwnsFlash ? WRONG_COUNTRY_COLOR : highlightColor,
+    });
 
     applyHideCountryBorders(map, hideCountryBordersRef.current, mapColors, {
       forceShow: forceShowSmallCountryCircles,
       level,
       landColor,
+      highlightCountryId,
+      highlightColor: circleRevealOwnsFlash ? WRONG_COUNTRY_COLOR : highlightColor,
     });
     applyNeighborTeachOverlays(map, boardPaintRef.current);
 

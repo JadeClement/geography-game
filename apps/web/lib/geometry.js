@@ -12,6 +12,9 @@ export const CIRCLE_CLICK_RADIUS_PX = 8;
 /** Stroke width for small-country marker rings. */
 export const CIRCLE_STROKE_WIDTH = 1;
 
+/** Thicker ring when a tiny country is the Learn highlight subject. */
+export const HIGHLIGHT_CIRCLE_STROKE_WIDTH = 2.5;
+
 /** Larger markers while the game tutorial is open. */
 export const TUTORIAL_CIRCLE_RADIUS_PX = 9;
 
@@ -530,6 +533,7 @@ export function buildSmallCountriesGeoJSON(countries) {
 
       return {
         type: "Feature",
+        id: country.id,
         properties: {
           id: country.id,
           name: country.name,
@@ -995,6 +999,36 @@ export function getLearnFocusMapView(
     bounds,
     padding,
     maxZoom,
+  };
+}
+
+/**
+ * Pixel insets for landlocked teach steps. Banner + Continue sit at the top of
+ * the map; top padding keeps the subject's northern edge out from under them.
+ * Contain-fit only — cover-fit of the region cropped Mauritania under chrome.
+ */
+export const LEARN_LANDLOCKED_MAP_PADDING = {
+  top: 168,
+  bottom: 56,
+  left: 48,
+  right: 48,
+};
+
+/**
+ * Frame the landlocked subject so its full shape (and nearby coast) is on
+ * screen. Does not cover-fit the session region.
+ */
+export function getLearnLandlockedMapView(country, { regionId } = {}) {
+  if (!country) return null;
+  const view = getLearnFocusMapView([country], {
+    regionId,
+    padding: LEARN_LANDLOCKED_MAP_PADDING,
+  });
+  if (!view) return null;
+  return {
+    ...view,
+    // Contain-fit only. Cover-fit would zoom back in and clip the north.
+    fit: undefined,
   };
 }
 

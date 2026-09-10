@@ -30,6 +30,7 @@ import {
 import {
   CIRCLE_CLICK_RADIUS_PX,
   CIRCLE_STROKE_WIDTH,
+  HIGHLIGHT_CIRCLE_STROKE_WIDTH,
   getBboxScreenSizePx,
   getCountryMeasureBbox,
   getCountryFillScreenBounds,
@@ -856,9 +857,7 @@ export default function PacificMap({
                   ? TARGET_HIGHLIGHT_COLOR
                   : colors.smallCountryStroke
                 : isHighlighted && !forceShowSmallCountryCircles
-                  ? flashVisible
-                    ? flashMarkerColor
-                    : colors.smallCountryStroke
+                  ? flashMarkerColor
                   : baseStroke;
             const showColor =
               showColorCountryIds.includes(country.id) ||
@@ -873,7 +872,9 @@ export default function PacificMap({
                   : null;
             const circleFill =
               teachFill ??
-              (isSecondTryCircle
+              (isHighlighted && !forceShowSmallCountryCircles
+                ? flashMarkerColor
+                : isSecondTryCircle
                 ? TARGET_HIGHLIGHT_COLOR
                 : isTargetCircle && !forceShowSmallCountryCircles && targetFlashVisible
                 ? TARGET_HIGHLIGHT_COLOR
@@ -888,7 +889,9 @@ export default function PacificMap({
               : stroke;
             const circleStrokeWidth = forceShowSmallCountryCircles
               ? TUTORIAL_CIRCLE_STROKE_WIDTH
-              : CIRCLE_STROKE_WIDTH;
+              : isHighlighted && !forceShowSmallCountryCircles
+                ? HIGHLIGHT_CIRCLE_STROKE_WIDTH
+                : CIRCLE_STROKE_WIDTH;
 
             return (
               <g key={`circle-${country.id}`} transform={`translate(${cx}, ${cy})`}>
@@ -898,6 +901,11 @@ export default function PacificMap({
                     cy={0}
                     r={circleRadius}
                     fill={circleFill}
+                    fillOpacity={
+                      isHighlighted && !forceShowSmallCountryCircles && !teachFill
+                        ? 0.85
+                        : 1
+                    }
                     stroke={circleStroke}
                     strokeWidth={circleStrokeWidth}
                     className={gameActive ? pacificMapCountryClickable : undefined}

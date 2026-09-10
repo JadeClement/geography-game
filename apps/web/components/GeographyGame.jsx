@@ -45,7 +45,7 @@ import {
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap, CORRECT_COUNTRY_COLOR, MISSED_COUNTRY_COLOR, WRONG_COUNTRY_COLOR } from "@/lib/countryColors";
-import { getMapViewForRegion, getLearnFocusMapView, getLearnHighlightMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
+import { getMapViewForRegion, getLearnFocusMapView, getLearnHighlightMapView, getLearnLandlockedMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
 import {
@@ -987,13 +987,15 @@ export default function GeographyGame() {
       ? "area"
       : learnNeighborRevealActive
         ? "neighbors"
-        : isLearnShapeDropQuestion
-          ? "shape-drop-region"
-          : isHighlightPrompt
-            ? "highlight-region"
-            : isNeighborBackdrop
-              ? "neighbor-region"
-              : "region";
+        : learnLandlockedRevealActive
+          ? "landlocked"
+          : isLearnShapeDropQuestion
+            ? "shape-drop-region"
+            : isHighlightPrompt
+              ? "highlight-region"
+              : isNeighborBackdrop
+                ? "neighbor-region"
+                : "region";
     const learnQuestionKey = learnEngineActive
       ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
       : null;
@@ -1033,6 +1035,13 @@ export default function GeographyGame() {
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       const view = focusCluster(currentLearnQuestion.countryId);
       if (view) return withLearnKey(coverFocus(view));
+    }
+    // Landlocked teach: frame the subject (not the whole region). Cover-fitting
+    // Africa cropped Mauritania's north under the header/banner.
+    if (learnLandlockedRevealActive && learnLandlockedReveal?.countryId) {
+      const subject = allCountriesById.get(learnLandlockedReveal.countryId);
+      const view = getLearnLandlockedMapView(subject, { regionId: session?.region });
+      if (view) return withLearnKey(view);
     }
     // Highlight / language / choice questions: full session region only — zoom
     // all the way out from any prior teach close-up (e.g. Balkans → all Europe).
@@ -1091,6 +1100,8 @@ export default function GeographyGame() {
     isNeighborBackdrop,
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
+    learnLandlockedRevealActive,
+    learnLandlockedReveal,
     isLearnMapClickQuestion,
     isLearnShapeDropQuestion,
     allCountriesById,

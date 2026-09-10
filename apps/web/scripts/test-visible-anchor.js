@@ -8,8 +8,10 @@ import {
   getGeographicBoundsFromCountries,
   getLearnFocusMapView,
   getLearnHighlightMapView,
+  getLearnLandlockedMapView,
   getMapViewForRegion,
   LEARN_HIGHLIGHT_MAP_PADDING,
+  LEARN_LANDLOCKED_MAP_PADDING,
   getMainlandPolygons,
   RUS_EUROPE_MAX_LNG,
 } from "../lib/geometry.js";
@@ -372,4 +374,28 @@ test("highlight-map camera expands region bounds to include Sweden's full shape"
     viewNorth >= regionNorth,
     "subject geometry must not shrink the region frame"
   );
+});
+
+test("landlocked camera contains Mauritania's full shape without cover-fit", () => {
+  const mrtFeature = featureByIso3("MRT");
+  assert.ok(mrtFeature, "Mauritania feature present");
+  const mauritania = { id: "MRT", feature: mrtFeature, area: 1030700 };
+  const tight = getGeographicBoundsFromCountries([mauritania]);
+  assert.ok(tight);
+  const [[tightWest, tightSouth], [tightEast, tightNorth]] = tight;
+
+  const view = getLearnLandlockedMapView(mauritania, { regionId: "africa" });
+  assert.ok(view?.bounds);
+  assert.equal(view.fit, undefined, "must contain-fit; cover-fit clipped Mauritania under chrome");
+  assert.equal(view.padding.top, LEARN_LANDLOCKED_MAP_PADDING.top);
+  assert.ok(
+    view.padding.top > view.padding.bottom,
+    "top inset must clear the landlocked banner and Continue button"
+  );
+
+  const [[west, south], [east, north]] = view.bounds;
+  assert.ok(west <= tightWest + 0.01, `west must include Mauritania, got ${west} vs ${tightWest}`);
+  assert.ok(south <= tightSouth + 0.01, `south must include Mauritania, got ${south} vs ${tightSouth}`);
+  assert.ok(east >= tightEast - 0.01, `east must include Mauritania, got ${east} vs ${tightEast}`);
+  assert.ok(north >= tightNorth - 0.01, `north must include Mauritania, got ${north} vs ${tightNorth}`);
 });
