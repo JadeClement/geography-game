@@ -24,6 +24,8 @@ function normalizeText(value) {
  * neighbor is accepted and shown as a chip. Extra (non-border) guesses stay as
  * red chips above the text box and mean the round is never marked fully correct.
  * The question resolves when every neighbor is found, or the learner gives up.
+ * The round is still all-or-nothing for the session score; mastery on the
+ * subject country gets partial credit for the share of neighbors found.
  *
  * question.options: [{ value: iso3, label: name }] — the neighbors to recall.
  * Emits the standard answer event via onEmit (supplied by LearnQuestionRenderer).

@@ -23,7 +23,7 @@ import {
   isTrivialPrediction,
   pickByPredictedSuccess,
 } from "@/lib/learn/predictedSuccess";
-import { resolveLearnEma } from "@/lib/learn/emaIntegration";
+import { resolveLearnEma, neighborSetCredit } from "@/lib/learn/emaIntegration";
 import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
@@ -617,6 +617,117 @@ test("population rank asks to order five same-region countries", () => {
   for (let i = 1; i < ordered.length; i += 1) {
     assert.ok(ordered[i - 1] > ordered[i], "correct order is descending population");
   }
+});
+
+test("neighbor set credit is hits over the true set, shrunk by extras", () => {
+  assert.equal(
+    neighborSetCredit({
+      correctIds: ["A", "B", "C", "D", "E", "F"],
+      selectedIds: ["A", "B", "C", "D"],
+      extraCount: 0,
+    }),
+    4 / 6
+  );
+  assert.equal(
+    neighborSetCredit({
+      correctIds: ["A", "B", "C", "D", "E", "F"],
+      selectedIds: ["A", "B", "C", "D", "E", "F"],
+      extraCount: 2,
+    }),
+    6 / 8
+  );
+  assert.equal(
+    neighborSetCredit({
+      correctIds: ["A", "B", "C"],
+      selectedIds: ["A", "B", "X"],
+    }),
+    (2 / 3) * (3 / 4)
+  );
+  assert.equal(
+    neighborSetCredit({
+      correctIds: ["A", "B"],
+      selectedIds: [],
+      extraCount: 0,
+    }),
+    0
+  );
+  assert.equal(
+    neighborSetCredit({
+      correctIds: ["A", "B"],
+      selectedIds: ["A", "B"],
+    }),
+    1
+  );
+});
+
+test("partial neighbor recall writes a scaled first-try, not a full miss", () => {
+  const partial = buildLearnStatPayloads(
+    {
+      countryId: "FRA",
+      questionType: "neighbor_recall_all",
+      tier: QUESTION_TIERS.TIER_1,
+      correct: false,
+      revealUsed: true,
+      correctAnswer: ["BEL", "DEU", "ITA", "ESP", "CHE", "AND"],
+      selectedValue: ["BEL", "DEU", "ITA", "ESP"],
+      wrongValues: [],
+    },
+    { mode: "countries", level: "F1" }
+  )[0];
+  assert.equal(partial.payload.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
+  assert.equal(partial.payload.learnModeMultiplier, 4 / 6);
+  assert.equal(partial.payload.responseTimeMs, null);
+
+  const none = buildLearnStatPayloads(
+    {
+      countryId: "FRA",
+      questionType: "neighbor_recall_all",
+      tier: QUESTION_TIERS.TIER_1,
+      correct: false,
+      revealUsed: true,
+      correctAnswer: ["BEL", "DEU"],
+      selectedValue: [],
+      wrongValues: [],
+    },
+    { mode: "countries", level: "F1" }
+  )[0];
+  assert.equal(none.payload.outcome, ROUND_OUTCOMES.NEEDED_REVEAL);
+
+  const perfect = buildLearnStatPayloads(
+    {
+      countryId: "FRA",
+      questionType: "neighbor_recall_all",
+      tier: QUESTION_TIERS.TIER_1,
+      correct: true,
+      correctAnswer: ["BEL", "DEU"],
+      selectedValue: ["BEL", "DEU"],
+      wrongValues: [],
+    },
+    { mode: "countries", level: "F1" }
+  )[0];
+  assert.equal(perfect.payload.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
+  assert.equal(perfect.payload.learnModeMultiplier, 1);
+});
+
+test("partial neighbor select-all scales the Tier 2 correct multiplier", () => {
+  const payloads = buildLearnStatPayloads(
+    {
+      countryId: "ALB",
+      questionType: "neighbor_select_all",
+      tier: QUESTION_TIERS.TIER_2,
+      correct: false,
+      correctAnswer: ["MNE", "XKX", "MKD", "GRC"],
+      selectedValue: ["MNE", "XKX", "ITA"],
+    },
+    { mode: "countries", level: "F1" }
+  );
+  assert.equal(payloads.length, 1);
+  const credit = neighborSetCredit({
+    correctIds: ["MNE", "XKX", "MKD", "GRC"],
+    selectedIds: ["MNE", "XKX", "ITA"],
+  });
+  assert.equal(payloads[0].payload.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
+  assert.equal(payloads[0].payload.learnModeMultiplier, 0.6 * credit);
 });
 
 test("ranking writes a weighted EMA update for every country in the set", () => {

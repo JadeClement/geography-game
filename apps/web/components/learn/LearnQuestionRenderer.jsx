@@ -398,6 +398,7 @@ export default function LearnQuestionRenderer({
         responseTimeMs,
         selectedValue: partial.selectedValue,
         wrongValues: partial.wrongValues,
+        correctAnswer: question?.correctAnswer,
         distanceKm: partial.distanceKm,
         inside: partial.inside,
         countryUpdates: partial.countryUpdates,

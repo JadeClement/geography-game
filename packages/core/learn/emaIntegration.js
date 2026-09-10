@@ -10,7 +10,10 @@
  *
  * IMPORTANT (Step 6.4): the PRIMARY `countryId` is recorded for most question
  * types. Ranking questions (`drag_to_rank`) also write a weighted update for
- * every country in the set via `event.countryUpdates`.
+ * every country in the set via `event.countryUpdates`. Neighbor set questions
+ * (`neighbor_recall_all`, `neighbor_select_all`, `brazil_non_neighbors`) keep
+ * a single primary write, with `learnModeMultiplier` scaled by how much of
+ * the set was right.
  *
  * The existing Test-mode EMA formula is untouched; `learnModeMultiplier` defaults
  * to 1 everywhere so Test-mode calls (which never pass it) are unaffected.
@@ -18,6 +21,43 @@
 
 import { ROUND_OUTCOMES, GAME_TYPE_FOR_STATS, LEARN_EMA_MULTIPLIERS } from "@worldly/constants";
 import { distancePenaltyScale } from "./mapGuess.js";
+
+/** Set-answer neighbor types: partial credit scales the subject's EMA. */
+export const NEIGHBOR_SET_QUESTION_TYPES = new Set([
+  "neighbor_recall_all",
+  "neighbor_select_all",
+  "brazil_non_neighbors",
+]);
+
+/**
+ * 0–1 credit for a neighbor set answer.
+ * Hits over the true set, with extras shrinking the score so "select everything"
+ * is not free. 4/6 with no extras → 2/3; 6/6 with 2 extras → 6/8.
+ */
+export function neighborSetCredit({
+  correctIds = [],
+  selectedIds = [],
+  extraCount = null,
+} = {}) {
+  const correct = [...new Set((correctIds ?? []).filter(Boolean))];
+  const total = correct.length;
+  if (total === 0) return 1;
+  const correctSet = new Set(correct);
+  const selected = [...new Set((selectedIds ?? []).filter(Boolean))];
+  let hits = 0;
+  let extrasFromSelected = 0;
+  for (const id of selected) {
+    if (correctSet.has(id)) hits += 1;
+    else extrasFromSelected += 1;
+  }
+  const extras = Math.max(
+    extrasFromSelected,
+    Number.isFinite(extraCount) ? Math.max(0, extraCount) : 0
+  );
+  let credit = hits / total;
+  if (extras > 0) credit *= total / (total + extras);
+  return Math.min(1, Math.max(0, credit));
+}
 
 /**
  * Maps a Learn answer event to a round outcome:
@@ -81,9 +121,24 @@ export function resolveLearnEma(event) {
  * @returns {{ payload: object, meta: { outcome, multiplierKey, multiplier } }}
  */
 export function buildLearnStatPayload(event, { mode, level }) {
-  const { outcome, multiplierKey, multiplier } = resolveLearnEma(event);
+  const questionType = event?.questionType ?? event?.type ?? null;
+  const setCredit = NEIGHBOR_SET_QUESTION_TYPES.has(questionType)
+    ? neighborSetCredit({
+        correctIds: Array.isArray(event?.correctAnswer) ? event.correctAnswer : [],
+        selectedIds: Array.isArray(event?.selectedValue) ? event.selectedValue : [],
+        extraCount: Array.isArray(event?.wrongValues) ? event.wrongValues.length : null,
+      })
+    : null;
+  const partialSet = setCredit != null && setCredit > 0 && setCredit < 1 - 1e-9 && !event?.correct;
+
+  const emaEvent = partialSet
+    ? { ...event, correct: true, revealUsed: false, priorMiss: false, fast: false }
+    : event;
+  const { outcome, multiplierKey, multiplier } = resolveLearnEma(emaEvent);
   let applied = multiplier;
-  if (
+  if (partialSet) {
+    applied = multiplier * setCredit;
+  } else if (
     !event?.correct &&
     !event?.revealUsed &&
     event?.distanceKm != null &&
@@ -97,16 +152,25 @@ export function buildLearnStatPayload(event, { mode, level }) {
     level,
     gameType: GAME_TYPE_FOR_STATS.LEARNING,
     outcome,
-    responseTimeMs: event.responseTimeMs ?? null,
+    // Partial set credit is a slow first-try so fast-streak does not advance.
+    responseTimeMs: partialSet ? null : event.responseTimeMs ?? null,
     learnModeMultiplier: applied,
     questionTier: event.tier ?? null,
-    questionType: event.questionType ?? event.type ?? null,
+    questionType,
     predictedSuccess:
       event.predictedSuccess != null && Number.isFinite(event.predictedSuccess)
         ? event.predictedSuccess
         : null,
   };
-  return { payload, meta: { outcome, multiplierKey, multiplier: applied } };
+  return {
+    payload,
+    meta: {
+      outcome,
+      multiplierKey,
+      multiplier: applied,
+      setCredit: partialSet ? setCredit : setCredit === 1 ? 1 : null,
+    },
+  };
 }
 
 /**

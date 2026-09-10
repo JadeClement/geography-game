@@ -29,9 +29,10 @@ function sameSet(a, b) {
  * question.options: [{ value, label, countryId? }]
  * question.correctAnswer: string[] — the exact set that must be selected.
  *
- * Learner toggles options, then submits. Correct only on an exact set match
- * (every bordering country, no distractors). Feedback paints correct / wrong /
- * missed before emitting the answer event.
+ * Learner toggles options, then submits. The round is correct only on an exact
+ * set match (every bordering country, no distractors). Mastery still gets
+ * partial credit for the share of the set that was right. Feedback paints
+ * correct / wrong / missed before emitting the answer event.
  */
 export default function MultiSelectQuestion({
   question,
