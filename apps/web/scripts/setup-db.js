@@ -66,7 +66,9 @@ CREATE TABLE IF NOT EXISTS country_attempts (
 CREATE INDEX IF NOT EXISTS country_attempts_user_lookup_idx
   ON country_attempts (user_id, country_id, mode, level, created_at DESC);
 
--- Learn adaptive challenge level per user × mode × region.
+-- deprecated — superseded by per-country EMA tier selection.
+-- Learn adaptive challenge level per user × mode × region. Do not drop;
+-- application code no longer reads or writes this table on the live path.
 CREATE TABLE IF NOT EXISTS learn_challenge (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   mode TEXT NOT NULL,
@@ -215,6 +217,7 @@ ALTER TABLE push_tokens
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS question_tier TEXT;
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS predicted_success REAL;
 
+-- deprecated — superseded by per-country EMA tier selection.
 CREATE TABLE IF NOT EXISTS learn_challenge (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   mode TEXT NOT NULL,
@@ -225,6 +228,25 @@ CREATE TABLE IF NOT EXISTS learn_challenge (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (user_id, mode, region)
 );
+
+-- Domain-level Learn mastery. Legacy rows stay skill_domain = 'general'.
+ALTER TABLE country_stats
+  ADD COLUMN IF NOT EXISTS skill_domain TEXT NOT NULL DEFAULT 'general';
+
+-- Convert the old 4-column unique so domain rows can coexist.
+ALTER TABLE country_stats
+  DROP CONSTRAINT IF EXISTS country_stats_user_id_country_id_mode_level_key;
+
+CREATE UNIQUE INDEX IF NOT EXISTS country_stats_general_unique_idx
+  ON country_stats (user_id, country_id, mode, level)
+  WHERE skill_domain = 'general';
+
+CREATE UNIQUE INDEX IF NOT EXISTS country_stats_domain_unique_idx
+  ON country_stats (user_id, country_id, mode, level, skill_domain)
+  WHERE skill_domain <> 'general';
+
+CREATE INDEX IF NOT EXISTS country_stats_domain_lookup_idx
+  ON country_stats (user_id, mode, level, skill_domain);
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted

@@ -22,6 +22,7 @@ export async function initialize() {
       area REAL,
       neighbors TEXT,
       languages TEXT,
+      religions TEXT,
       flag_url TEXT,
       facts TEXT,
       cached_at INTEGER NOT NULL
@@ -55,6 +56,11 @@ export async function initialize() {
       value TEXT NOT NULL
     );
   `);
+  try {
+    await db.execAsync(`ALTER TABLE cached_countries ADD COLUMN religions TEXT`);
+  } catch {
+    // Column already exists on upgraded installs.
+  }
 }
 
 export async function getMeta(key: string) {
@@ -83,8 +89,8 @@ export async function cacheCountriesFromJSON(countries: any[]) {
       if (!c.enabled) continue;
       await db.runAsync(
         `INSERT OR REPLACE INTO cached_countries
-         (id, name, capital, region, population, area, neighbors, languages, flag_url, facts, cached_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, name, capital, region, population, area, neighbors, languages, religions, flag_url, facts, cached_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           c.iso3,
           c.name,
@@ -94,6 +100,7 @@ export async function cacheCountriesFromJSON(countries: any[]) {
           c.area ?? null,
           JSON.stringify(c.neighbors ?? []),
           JSON.stringify(c.languages ?? []),
+          JSON.stringify(c.religions ?? []),
           null,
           JSON.stringify(c.facts ?? []),
           now,
@@ -117,6 +124,7 @@ export async function getCountriesFromCache() {
     area: r.area,
     neighbors: JSON.parse(r.neighbors || "[]"),
     languages: JSON.parse(r.languages || "[]"),
+    religions: JSON.parse(r.religions || "[]"),
     facts: JSON.parse(r.facts || "[]"),
   }));
 }

@@ -145,10 +145,13 @@ function SectionCard({ tone, icon, title, children }) {
   );
 }
 
-const MODE_WEIGHTS = [
-  { label: "Countries", pct: 50, bar: "bg-sky-500", swatch: "bg-sky-500" },
-  { label: "Capitals", pct: 35, bar: "bg-violet-500", swatch: "bg-violet-500" },
-  { label: "Flags", pct: 15, bar: "bg-amber-500", swatch: "bg-amber-500" },
+const DOMAIN_WEIGHTS = [
+  { label: "Location", pct: 35, bar: "bg-teal-500", swatch: "bg-teal-500" },
+  { label: "Neighbors", pct: 25, bar: "bg-sky-500", swatch: "bg-sky-500" },
+  { label: "Capital", pct: 15, bar: "bg-violet-500", swatch: "bg-violet-500" },
+  { label: "Flag", pct: 10, bar: "bg-amber-500", swatch: "bg-amber-500" },
+  { label: "Statistics", pct: 10, bar: "bg-emerald-500", swatch: "bg-emerald-500" },
+  { label: "Facts", pct: 5, bar: "bg-rose-400", swatch: "bg-rose-400" },
 ];
 
 const LEVEL_WEIGHTS = [
@@ -168,7 +171,7 @@ function WeightBreakdown({ items }) {
             className={infoWeightSegment(item.bar)}
             style={{ width: `${item.pct}%` }}
           >
-            {item.pct >= 15 ? `${item.pct}%` : ""}
+            {item.pct >= 10 ? `${item.pct}%` : ""}
           </span>
         ))}
       </div>
@@ -393,11 +396,11 @@ export default function HowItWorksPage() {
           </p>
         </SectionCard>
 
-        {/* 4. Graduation */}
-        <SectionCard tone="success" icon={<IconCap />} title="4. Mastering (graduating) a country">
+        {/* 4. Location mastery */}
+        <SectionCard tone="success" icon={<IconCap />} title="4. Locating a country">
           <p>
-            A country <strong>graduates</strong> — officially mastered — once you&apos;ve truly
-            locked it in. That takes two things happening together, in <strong>Test mode</strong>:
+            A country is <strong>located</strong> — officially locked in on the map — once you&apos;ve truly
+            proven it. That takes two things happening together, in <strong>Test mode</strong>:
           </p>
           <div className={infoSteps}>
             <div className={infoStep}>
@@ -415,10 +418,10 @@ export default function HowItWorksPage() {
             </div>
           </div>
           <div className={infoCallout("success")}>
-            <span className={infoCalloutIcon} aria-hidden="true">🎓</span>
+            <span className={infoCalloutIcon} aria-hidden="true">📍</span>
             <span>
-              Graduated countries leave the active practice pool, so your sessions focus on
-              places you haven&apos;t nailed yet. Missing a graduated country on the first try
+              Located countries leave the active practice pool, so your sessions focus on
+              places you haven&apos;t nailed yet. Missing a located country on the first try
               during a Test sends it right back to studying.
             </span>
           </div>
@@ -427,7 +430,7 @@ export default function HowItWorksPage() {
         {/* 5. Decay + spaced repetition */}
         <SectionCard tone="violet" icon={<IconRetry />} title="5. Memory fades — so mastery does too">
           <p>
-            Real memory decays without review, and Worldly models that. A graduated country
+            Real memory decays without review, and Worldly models that. A located country
             you never revisit slowly loses mastery on a <strong>30-day half-life</strong>:
             after about a month untouched, its stored mastery is halved; after two months,
             quartered, and so on.
@@ -491,25 +494,35 @@ export default function HowItWorksPage() {
         {/* 8. Worldly Score math */}
         <SectionCard tone="success" icon={<IconGlobe />} title="8. Rolling it all up into your %Worldly Score">
           <p>
-            Your Worldly Score combines everything above. First, each country&apos;s four
-            levels are blended — harder levels are worth more, because they prove deeper
-            knowledge:
+            Your Worldly Score is a skill mix for every country. Location is the spine of
+            the game; neighbors are the next hardest recall skill; capital and flag are the
+            classic Test modes; statistics and facts come from Learn:
           </p>
-          <WeightBreakdown items={LEVEL_WEIGHTS} />
+          <WeightBreakdown items={DOMAIN_WEIGHTS} />
 
           <p className="mt-5">
-            That gives a per-country score in each mode. Those are averaged across{" "}
+            Those per-country mixes are averaged across{" "}
             <strong>every country in the world</strong> (places you haven&apos;t touched count
-            as 0 — it&apos;s a true fraction of the whole world). Finally, the three modes are
-            blended, with countries weighted most heavily:
+            as 0 — it&apos;s a true fraction of the whole world). The number you see is then
+            curved so that a raw 0.75 — the located / worldly-domain bar — displays as{" "}
+            <strong>80%</strong>.
           </p>
-          <WeightBreakdown items={MODE_WEIGHTS} />
+          <p>
+            Learn answers still count, but domains that also have a Test mode (location,
+            capital, flag, neighbors) move at half speed in Learn. Statistics and facts
+            have no Test, so Learn is how they grow.
+          </p>
+          <p>
+            The Mastery page still shows the classic Countries / Capitals / Flags category
+            chips from Test mode, blended with the same level weights as before:
+          </p>
+          <WeightBreakdown items={LEVEL_WEIGHTS} />
 
           <div className={infoCallout("success")}>
             <span className={infoCalloutIcon} aria-hidden="true">🌍</span>
             <span>
               Because the denominator is the entire world, your Worldly Score climbs steadily
-              as you master more places — and it&apos;s directly comparable from one day to the
+              as you know more places — and it&apos;s directly comparable from one day to the
               next.
             </span>
           </div>

@@ -32,8 +32,6 @@ import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeName } from "@/lib/constants";
 import {
   fetchMasteryStats,
-  fetchLearnChallenge,
-  saveLearnChallenge,
   recordCountryStat,
   ROUND_OUTCOMES,
 } from "@/lib/countryStats";
@@ -57,14 +55,17 @@ import {
   setPendingGuestScore,
   syncPendingGuestGame,
 } from "@/lib/pendingGuestGame";
-import { buildGoQueue, buildFullRegionLearningQueue } from "@/lib/learning";
-import { buildLearnSession, rebuildQuestionsForCountries } from "@/lib/learn/sessionSequencer";
 import {
-  createDefaultChallenge,
-  normalizeChallenge,
-  updateChallengeLevel,
-  challengeOutcomeFromAnswer,
-} from "@/lib/learn/challengeLevel";
+  buildSavedLearnSession,
+  clearSavedLearnSession,
+  getSavedLearnSession,
+  saveLearnSession,
+} from "@/lib/savedLearnSession";
+import { buildGoQueue, buildFullRegionLearningQueue } from "@/lib/learning";
+import { clampLearnSessionSize, getLearnSessionSize } from "@/lib/learnSessionSize";
+import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import { generateNeighborRecallAll } from "@/lib/learn/questionGenerator";
+import { buildDomainMasteryMap, getOverallMastery } from "@/lib/learn/domainMastery";
 import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
 import {
   evaluateGeoGuess,
@@ -216,6 +217,7 @@ function getMasteredCountryIds(masteryRows, level) {
   const mastered = new Set();
   for (const row of masteryRows) {
     if (row.graduated && relevantLevels.has(row.level)) {
+      if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
       mastered.add(row.countryId);
     }
   }
@@ -373,7 +375,6 @@ export default function GeographyGame() {
   const [learnAwaitingRetry, setLearnAwaitingRetry] = useState(false);
   const [learnRetryMessage, setLearnRetryMessage] = useState(null);
   const learnMapMissedRef = useRef(false);
-  const learnChallengeRef = useRef(createDefaultChallenge());
   const learnSampledRef = useRef([]);
   const learnMasteryStatsRef = useRef(new Map());
   const learnCategoryRef = useRef("countries");
@@ -439,10 +440,12 @@ export default function GeographyGame() {
   const {
     elapsedMs,
     finalElapsedMs,
+    getElapsedMs,
     resetPause: resetTimerPause,
     pause: pauseGameTimer,
     resume: resumeGameTimer,
     start: startGameTimer,
+    restore: restoreGameTimer,
     stop: stopGameTimer,
     reset: resetGameTimer,
   } = timer;
@@ -457,6 +460,7 @@ export default function GeographyGame() {
     roundMarkedIncorrectRef,
     incorrectTargetsRef,
     reset: resetScoring,
+    restore: restoreScoring,
     beginRound: beginRoundScoring,
     markRoundCorrect,
     markRoundIncorrect,
@@ -541,6 +545,63 @@ export default function GeographyGame() {
   const signedIn = authStatus === "authenticated" && authSession?.user;
   const signedInRef = useSyncRef(signedIn);
   const sessionRef = useSyncRef(session);
+  const userIdRef = useSyncRef(authSession?.user?.id ?? null);
+  const gameCompleteRef = useSyncRef(gameComplete);
+  const learnSaveClosedRef = useRef(false);
+  const persistLearnProgressRef = useRef(() => {});
+
+  const persistLearnProgress = useCallback(
+    ({ leaving = false, resumeIndex, sessionOverride, questionsOverride } = {}) => {
+      if (learnSaveClosedRef.current) return;
+      const activeSession = sessionOverride ?? sessionRef.current;
+      if (!activeSession || activeSession.go) return;
+      if (activeSession.gameType !== GAME_TYPES.LEARNING) return;
+      if (gameCompleteRef.current && !sessionOverride) return;
+
+      const questions = questionsOverride ?? learnQuestionsRef.current;
+      if (!Array.isArray(questions) || questions.length === 0) return;
+
+      const userId = userIdRef.current;
+      if (!userId) return;
+
+      let index =
+        resumeIndex != null ? resumeIndex : learnIndexRef.current;
+      if (leaving && resumeIndex == null && learnAwaitingContinueRef.current) {
+        index += 1;
+      }
+      index = Math.max(0, Math.min(index, questions.length));
+
+      const snapshot = buildSavedLearnSession({
+        mode: activeSession.mode,
+        region: activeSession.region,
+        level: activeSession.level,
+        learningSessionSize: activeSession.learningSessionSize ?? getLearnSessionSize(),
+        questions,
+        index,
+        answers: learnAnswersRef.current,
+        rightCount: rightCountRef.current,
+        wrongCount: wrongCountRef.current,
+        elapsedMs: getElapsedMs(),
+        sampled: learnSampledRef.current,
+        masteryBefore: learnMasteryBeforeRef.current,
+        masteryAfter: learnMasteryAfterRef.current,
+        queueIds:
+          activeSession.learningCountryIds ??
+          (learnSampledRef.current ?? []).map((entry) => entry.countryId),
+        seenFacts: learnSeenFactsRef.current,
+      });
+      if (!snapshot) return;
+      saveLearnSession({ userId, snapshot });
+    },
+    [gameCompleteRef, getElapsedMs, rightCountRef, sessionRef, userIdRef, wrongCountRef]
+  );
+  persistLearnProgressRef.current = persistLearnProgress;
+
+  useEffect(() => {
+    const persistOnLeave = () => persistLearnProgressRef.current?.({ leaving: true });
+    window.addEventListener("pagehide", persistOnLeave);
+    return () => window.removeEventListener("pagehide", persistOnLeave);
+  }, []);
 
   // "Are you still there?" idle handling. onIdleReturn runs handleBackToMenu,
   // which is defined later, so we route it through a ref to break the cycle.
@@ -793,9 +854,10 @@ export default function GeographyGame() {
   const isGoGame = Boolean(session?.go);
   // Discover on phone uses DiscoverCountrySheet instead of the Learn More panel.
   const showLearnMorePanel =
-    (isDiscoverGame && !isMobile) ||
-    isLearningGame ||
-    Boolean(session?.review);
+    ((isDiscoverGame && !isMobile) ||
+      isLearningGame ||
+      Boolean(session?.review)) &&
+    session?.mode !== GAME_MODES.NEIGHBORS;
   const isFindGame = Boolean(
     session?.level && isFindLevel(session.level) && !isDiscoverGame
   );
@@ -803,8 +865,13 @@ export default function GeographyGame() {
   // The mixed-question engine runs for wizard Learn sessions only (Go stays
   // find-only, so it keeps the classic loop). `learnQuestions` is only populated
   // by the engine start path, so this is false for every other game type.
+  const neighborsTestActive =
+    isTestGame &&
+    session?.mode === GAME_MODES.NEIGHBORS &&
+    Array.isArray(learnQuestions);
   const learnEngineActive =
-    isLearningGame && !isGoGame && Array.isArray(learnQuestions);
+    (isLearningGame && !isGoGame && Array.isArray(learnQuestions)) ||
+    neighborsTestActive;
   const currentLearnQuestion = learnEngineActive
     ? (learnQuestions[learnIndex] ?? null)
     : null;
@@ -1886,27 +1953,29 @@ export default function GeographyGame() {
 
   // ── Learn mixed-question engine: build, start, answer, advance, finish ────────
 
-  // Fetch mastery (soft) + challenge level, then build a mixed-question session
-  // over EVERY country in the region — no weak-only "learning list" and no
-  // session-size cap. Challenge (mode×region) drives question tiers; mastery
-  // only weights country order and soft-bumps predictedSuccess.
+  // Fetch mastery for the whole mode, then sample a Learn session from the
+  // region. Size comes from Settings (default 20) and is capped at the
+  // number of countries. Per-country EMA (MASTERY_BANDS) drives question
+  // tiers; weaker EMA still weights which countries are drawn.
   const buildLearnEngineData = useCallback(
-    async ({ mode, level, region }) => {
+    async ({ mode, level, region, learningSessionSize } = {}) => {
       const regionPool = filterCountriesByRegion(allCountries, region);
       if (regionPool.length === 0) return null;
 
       const masteryById = new Map();
       const recencyById = new Map();
+      let masteryRows = [];
       try {
         const data = await fetchMasteryStats({ mode });
         const provingLevels = new Set(getMasteryProvingLevels(level));
-        for (const row of data.mastery ?? []) {
-          if (row.level !== level && !provingLevels.has(row.level)) continue;
-          const prev = masteryById.get(row.countryId) ?? 0;
-          masteryById.set(
-            row.countryId,
-            Math.max(prev, Number(row.masteryScore) || 0)
-          );
+        masteryRows = (data.mastery ?? []).filter(
+          (row) => row.level === level || provingLevels.has(row.level)
+        );
+        const domainMap = buildDomainMasteryMap(masteryRows);
+        for (const country of regionPool) {
+          masteryById.set(country.id, getOverallMastery(domainMap, country.id));
+        }
+        for (const row of masteryRows) {
           const prevRecency = recencyById.get(row.countryId);
           const rowAttempt = row.lastAttemptAt ? new Date(row.lastAttemptAt).getTime() : 0;
           const prevAttempt = prevRecency?.lastAttemptAt
@@ -1923,18 +1992,14 @@ export default function GeographyGame() {
         console.error("Learn: failed to load mastery for weighting", error);
       }
 
-      let challenge = createDefaultChallenge();
-      try {
-        const data = await fetchLearnChallenge({ mode, region });
-        challenge = normalizeChallenge(data.challenge);
-      } catch (error) {
-        console.error("Learn: failed to load challenge level", error);
-      }
-
+      const sessionSize = clampLearnSessionSize(
+        learningSessionSize ?? getLearnSessionSize()
+      );
       const queueIds = buildFullRegionLearningQueue(
         regionPool.map((country) => country.id),
         masteryById,
-        recencyById
+        recencyById,
+        sessionSize
       );
       const regionById = new Map(regionPool.map((country) => [country.id, country]));
       const countries = queueIds.map((id) => regionById.get(id)).filter(Boolean);
@@ -1943,12 +2008,17 @@ export default function GeographyGame() {
       const sampled = countries.map((country) => ({
         countryId: country.id,
         mastery: masteryById.get(country.id) ?? 0,
+        lastAttemptAt: recencyById.get(country.id)?.lastAttemptAt ?? null,
       }));
 
       const statsById = new Map(
         sampled.map((entry) => [
           entry.countryId,
-          { countryId: entry.countryId, masteryScore: entry.mastery },
+          {
+            countryId: entry.countryId,
+            masteryScore: entry.mastery,
+            lastAttemptAt: entry.lastAttemptAt,
+          },
         ])
       );
 
@@ -1956,9 +2026,8 @@ export default function GeographyGame() {
         countries: sampled,
         category: mode,
         allCountries,
-        masteryStats: statsById,
-        sessionSize: "all",
-        challenge,
+        masteryStats: masteryRows.length > 0 ? masteryRows : statsById,
+        sessionSize,
       });
       if (!Array.isArray(questions) || questions.length === 0) return null;
 
@@ -1969,7 +2038,7 @@ export default function GeographyGame() {
         sessionMeta,
         sampled,
         masteryStats: statsById,
-        challenge,
+        sessionSize,
         masteryBefore: new Map(sampled.map((entry) => [entry.countryId, entry.mastery])),
       };
     },
@@ -1977,6 +2046,21 @@ export default function GeographyGame() {
   );
 
   const finishLearnGame = useCallback(() => {
+    learnSaveClosedRef.current = true;
+    const activeSession = sessionRef.current;
+    const userId = userIdRef.current;
+    if (
+      userId &&
+      activeSession?.gameType === GAME_TYPES.LEARNING &&
+      activeSession?.mode &&
+      activeSession?.region
+    ) {
+      clearSavedLearnSession({
+        userId,
+        mode: activeSession.mode,
+        region: activeSession.region,
+      });
+    }
     stopGameTimer();
     setGameActive(false);
     setGameComplete(true);
@@ -1987,16 +2071,20 @@ export default function GeographyGame() {
     }
 
     const build = () => {
-      setLearnSummary(
-        buildLearnSessionSummary({
-          answers: learnAnswersRef.current,
-          masteryBefore: learnMasteryBeforeRef.current,
-          masteryAfter: learnMasteryAfterRef.current,
-          resolveCountry: resolveLearnCountry,
-          category: sessionRef.current?.mode,
-          seenByCountry: learnSeenFactsRef.current,
-        })
-      );
+      if (activeSession?.gameType !== GAME_TYPES.TEST) {
+        setLearnSummary(
+          buildLearnSessionSummary({
+            answers: learnAnswersRef.current,
+            masteryBefore: learnMasteryBeforeRef.current,
+            masteryAfter: learnMasteryAfterRef.current,
+            resolveCountry: resolveLearnCountry,
+            category: sessionRef.current?.mode ?? learnCategoryRef.current,
+            seenByCountry: learnSeenFactsRef.current,
+          })
+        );
+      } else {
+        setLearnSummary(null);
+      }
       buildMilestoneStats();
     };
 
@@ -2009,7 +2097,7 @@ export default function GeographyGame() {
       pendingStatPromisesRef.current = [];
       build();
     });
-  }, [buildMilestoneStats, finishGameBoard, resolveLearnCountry, sessionRef, stopGameTimer]);
+  }, [buildMilestoneStats, finishGameBoard, resolveLearnCountry, sessionRef, stopGameTimer, userIdRef]);
 
   // Advances to the next question after a brief pause so the answer feedback is
   // seen. (Between-question facts intentionally removed — facts stay in the Learn
@@ -2163,9 +2251,10 @@ export default function GeographyGame() {
         const nextIndex = idx + 1;
         learnIndexRef.current = nextIndex;
         setLearnIndex(nextIndex);
+        persistLearnProgress({ resumeIndex: nextIndex });
       }, delayMs);
     },
-    [clearLearnContinueState, finishLearnGame]
+    [clearLearnContinueState, finishLearnGame, persistLearnProgress]
   );
 
   const handleLearnContinue = useCallback(() => {
@@ -2189,7 +2278,8 @@ export default function GeographyGame() {
     const nextIndex = idx + 1;
     learnIndexRef.current = nextIndex;
     setLearnIndex(nextIndex);
-  }, [clearLearnContinueState, finishLearnGame]);
+    persistLearnProgress({ resumeIndex: nextIndex });
+  }, [clearLearnContinueState, finishLearnGame, persistLearnProgress]);
 
   const handleLearnTryAgain = useCallback(() => {
     setLearnAwaitingRetry(false);
@@ -2318,67 +2408,9 @@ export default function GeographyGame() {
           .filter((id) => id && id !== event.countryId),
       });
 
-      // Adaptive challenge: update mode×region pacing, then rebuild not-yet-shown
-      // questions so a hot T4 streak can harden mid-session.
-      const prevChallenge = normalizeChallenge(learnChallengeRef.current);
-      const outcomeRecord = challengeOutcomeFromAnswer({
-        tier: event.tier,
-        outcome: meta.outcome,
-        correct: event.correct,
-        revealUsed: event.revealUsed,
-        fast: event.fast,
-        predictedSuccess: event.predictedSuccess,
-      });
-      const nextChallenge = updateChallengeLevel(prevChallenge, outcomeRecord);
-      learnChallengeRef.current = nextChallenge;
-
-      if (nextChallenge.workingTier !== prevChallenge.workingTier) {
-        const idx = learnIndexRef.current;
-        const currentQuestions = learnQuestionsRef.current ?? [];
-        const remainingEntries = currentQuestions.slice(idx + 1).map((q) => {
-          const sampled = (learnSampledRef.current ?? []).find(
-            (entry) => entry.countryId === q.countryId
-          );
-          return {
-            countryId: q.countryId,
-            mastery: sampled?.mastery ?? 0,
-          };
-        });
-        if (remainingEntries.length > 0) {
-          const rebuilt = rebuildQuestionsForCountries({
-            countries: remainingEntries,
-            category: learnCategoryRef.current ?? activeSession.mode,
-            allCountries,
-            masteryStats: learnMasteryStatsRef.current,
-            challenge: nextChallenge,
-          });
-          const nextQuestions = [
-            ...currentQuestions.slice(0, idx + 1),
-            ...rebuilt,
-          ];
-          learnQuestionsRef.current = nextQuestions;
-          setLearnQuestions(nextQuestions);
-          setSession((prev) =>
-            prev ? { ...prev, totalRounds: nextQuestions.length } : prev
-          );
-        }
-      }
+      persistLearnProgress({ resumeIndex: learnIndexRef.current + 1 });
 
       if (signedInRef.current) {
-        const challengePromise = saveLearnChallenge({
-          mode: activeSession.mode,
-          region: activeSession.region,
-          outcome: meta.outcome,
-          tier: event.tier,
-          correct: event.correct,
-          revealUsed: event.revealUsed,
-          fast: event.fast,
-          predictedSuccess: event.predictedSuccess,
-        }).catch((error) => {
-          console.error("Failed to save learn challenge:", error);
-        });
-        pendingStatPromisesRef.current.push(challengePromise);
-
         const applyRecordedStat = (res) => {
           const stat = res?.stat;
           if (!stat?.countryId) return;
@@ -2399,7 +2431,15 @@ export default function GeographyGame() {
         };
 
         for (const { payload } of payloads) {
-          const promise = recordCountryStat(payload)
+          const nextPayload =
+            activeSession.gameType === GAME_TYPES.TEST
+              ? {
+                  ...payload,
+                  gameType: GAME_TYPE_FOR_STATS.TEST,
+                  learnModeMultiplier: 1,
+                }
+              : payload;
+          const promise = recordCountryStat(nextPayload)
             .then(applyRecordedStat)
             .catch((error) => {
               console.error("Failed to record learn stat:", error);
@@ -2408,7 +2448,15 @@ export default function GeographyGame() {
         }
       } else {
         for (const { payload } of payloads) {
-          appendGuestRound(payload);
+          appendGuestRound(
+            activeSession.gameType === GAME_TYPES.TEST
+              ? {
+                  ...payload,
+                  gameType: GAME_TYPE_FOR_STATS.TEST,
+                  learnModeMultiplier: 1,
+                }
+              : payload
+          );
         }
       }
 
@@ -2684,6 +2732,7 @@ export default function GeographyGame() {
       clearWrongFlash,
       markRoundCorrect,
       markRoundIncorrect,
+      persistLearnProgress,
       sessionRef,
       setFeedback,
       setHighlightCountryId,
@@ -2924,7 +2973,16 @@ export default function GeographyGame() {
   );
 
   const startLearnEngineGame = useCallback(
-    ({ mode, region, level, learningSessionSize, learn }) => {
+    ({
+      gameType = GAME_TYPES.LEARNING,
+      mode,
+      region,
+      level,
+      learningSessionSize,
+      learn,
+      resume = null,
+      preCreditedCountryIds = [],
+    }) => {
       clearPendingGuestGame();
       setMasteryLoadWarning(false);
 
@@ -2935,78 +2993,128 @@ export default function GeographyGame() {
       }
       clearColorFlash();
       clearWrongFlash();
+      clearLearnContinueState();
       resetIdleState();
 
       sessionStatRecordsRef.current = new Map();
       pendingStatPromisesRef.current = [];
-      preCreditedIdsRef.current = [];
+      preCreditedIdsRef.current = preCreditedCountryIds ?? [];
       setMilestoneStats(undefined);
 
+      const questions = learn.questions ?? [];
+      const resumeIndex = resume
+        ? Math.max(0, Math.min(Number(resume.index) || 0, questions.length))
+        : 0;
+      const questionIndex = Math.min(resumeIndex, Math.max(questions.length - 1, 0));
+      const masteryAfterEntries = resume?.masteryAfter ?? [];
+      const masteryStats = new Map(learn.masteryStats ?? []);
+      for (const [countryId, score] of masteryAfterEntries) {
+        masteryStats.set(countryId, { countryId, masteryScore: score });
+      }
+
+      learnSaveClosedRef.current = false;
       learnLockRef.current = false;
-      learnAnswersRef.current = [];
+      learnAnswersRef.current = resume?.answers ?? [];
       learnMasteryBeforeRef.current = new Map(learn.masteryBefore);
-      learnMasteryAfterRef.current = new Map();
-      learnSeenFactsRef.current = {};
+      learnMasteryAfterRef.current = new Map(masteryAfterEntries);
+      learnSeenFactsRef.current = resume?.seenFacts ?? {};
       learnMapEmitRef.current = null;
-      learnIndexRef.current = 0;
-      learnQuestionsRef.current = learn.questions;
+      learnIndexRef.current = questionIndex;
+      learnQuestionsRef.current = questions;
       learnQuestionStartRef.current = Date.now();
-      learnChallengeRef.current = normalizeChallenge(
-        learn.challenge ?? createDefaultChallenge()
-      );
       learnSampledRef.current = learn.sampled ?? [];
-      learnMasteryStatsRef.current = learn.masteryStats ?? new Map();
+      learnMasteryStatsRef.current = masteryStats;
       learnCategoryRef.current = mode;
       learnRegionRef.current = region;
       setLearnSummary(null);
-      setLearnIndex(0);
-      setLearnQuestions(learn.questions);
+      setLearnIndex(questionIndex);
+      setLearnQuestions(questions);
 
-      startGameTimer();
       resetQueue();
-      resetScoring();
+      if (resume) {
+        restoreScoring({
+          rightCount: resume.rightCount,
+          wrongCount: resume.wrongCount,
+        });
+        restoreGameTimer(resume.elapsedMs);
+      } else {
+        resetScoring();
+        startGameTimer();
+      }
       beginRoundScoring();
-      startGameBoard([]);
+      startGameBoard(preCreditedCountryIds ?? []);
 
-      setSession({
-        gameType: GAME_TYPES.LEARNING,
+      const nextSession = {
+        gameType,
         mode,
         region,
         level,
         review: false,
         go: false,
         learningSessionSize,
-        totalRounds: learn.questions.length,
-        preCreditedCount: 0,
+        totalRounds: questions.length + (preCreditedCountryIds?.length ?? 0),
+        preCreditedCount: preCreditedCountryIds?.length ?? 0,
         reviewCountryIds: null,
         learningCountryIds: learn.queueIds,
-      });
+      };
+      sessionRef.current = nextSession;
+      setSession(nextSession);
       setGameComplete(false);
       setGamePaused(false);
       setShowResumeConfirm(false);
       setGameActive(true);
-      pendingOnboardingPromptRef.current = true;
-      setOnboardingGateOpen(true);
+      pendingOnboardingPromptRef.current = !resume;
+      setOnboardingGateOpen(!resume);
       setLearnMorePanelOpen(false);
 
-      // Prefetch seen facts so "correct → show an unseen fact" works. Fails soft.
-      fetchSeenFacts(learn.queueIds).then((seen) => {
-        learnSeenFactsRef.current = seen ?? {};
-      });
+      if (gameType === GAME_TYPES.LEARNING) {
+        fetchSeenFacts(learn.queueIds ?? []).then((seen) => {
+          learnSeenFactsRef.current = {
+            ...(seen ?? {}),
+            ...learnSeenFactsRef.current,
+          };
+        });
+      }
+
+      if (resume && resumeIndex >= questions.length) {
+        finishLearnGame();
+        router.push(buildPlayingUrl());
+        gameInHistoryRef.current = true;
+        return;
+      }
+
+      if (!resume && gameType === GAME_TYPES.LEARNING) {
+        persistLearnProgress({
+          resumeIndex: 0,
+          sessionOverride: nextSession,
+          questionsOverride: questions,
+        });
+      }
 
       router.push(buildPlayingUrl());
       gameInHistoryRef.current = true;
+
+      if (!resume && questions.length === 0) {
+        finishLearnGame();
+      }
     },
     [
       beginRoundScoring,
       clearColorFlash,
+      clearLearnContinueState,
       clearWrongFlash,
+      finishLearnGame,
+      persistLearnProgress,
       resetIdleState,
       resetQueue,
       resetScoring,
+      restoreGameTimer,
+      restoreScoring,
       router,
+      sessionRef,
       startGameBoard,
       startGameTimer,
+      userIdRef,
     ]
   );
 
@@ -3056,11 +3164,71 @@ export default function GeographyGame() {
     setHighlightCountryId,
   ]);
 
+  const startNeighborsTestGame = useCallback(
+    ({ region, level, masteredIds = [] }) => {
+      const regionPool = filterCountriesByRegion(allCountries, region);
+      if (regionPool.length === 0) return { ok: false, reason: "no-eligible" };
+
+      const preCredited = new Set(masteredIds ?? []);
+      for (const country of regionPool) {
+        if (!Array.isArray(country.neighbors) || country.neighbors.length === 0) {
+          preCredited.add(country.id);
+        }
+      }
+      const quizPool = regionPool.filter((country) => !preCredited.has(country.id));
+      const questions = [];
+      for (const country of shuffleCountries(quizPool)) {
+        const question = generateNeighborRecallAll(country, allCountries, null, {
+          minNeighbors: 1,
+          clueEligible: false,
+        });
+        if (question) questions.push({ ...question, clueEligible: false });
+      }
+
+      startLearnEngineGame({
+        gameType: GAME_TYPES.TEST,
+        mode: GAME_MODES.NEIGHBORS,
+        region,
+        level: level ?? GAME_LEVELS.NAME_FILL,
+        learningSessionSize: questions.length,
+        preCreditedCountryIds: [...preCredited],
+        learn: {
+          questions,
+          queueIds: questions.map((question) => question.countryId),
+          sampled: questions.map((question) => ({
+            countryId: question.countryId,
+            mastery: 0,
+          })),
+          masteryStats: new Map(),
+          masteryBefore: new Map(),
+        },
+      });
+      return { ok: true };
+    },
+    [allCountries, startLearnEngineGame]
+  );
+
   const handleSessionStart = useCallback(
     async (config) => {
       if (config.go) {
         await startGoSession(config.region ?? "world");
         return { ok: true };
+      }
+
+      if (config.gameType === GAME_TYPES.TEST && config.mode === GAME_MODES.NEIGHBORS) {
+        let masteredIds = [];
+        if (config.region === "world" && signedIn) {
+          const world = await buildWorldTestCountries({
+            mode: config.mode,
+            level: config.level ?? GAME_LEVELS.NAME_FILL,
+          });
+          masteredIds = world.preCreditedCountryIds ?? [];
+        }
+        return startNeighborsTestGame({
+          region: config.region,
+          level: config.level ?? GAME_LEVELS.NAME_FILL,
+          masteredIds,
+        });
       }
 
       if (config.gameType === GAME_TYPES.DISCOVER) {
@@ -3070,6 +3238,49 @@ export default function GeographyGame() {
 
       if (config.gameType === GAME_TYPES.LEARNING) {
         try {
+          const userId = userIdRef.current;
+          if (!config.fresh && userId) {
+            const snapshot = getSavedLearnSession({
+              userId,
+              mode: config.mode,
+              region: config.region,
+            });
+            if (snapshot) {
+              const masteryBefore = new Map(snapshot.masteryBefore);
+              const masteryStats = new Map(
+                snapshot.sampled.map((entry) => [
+                  entry.countryId,
+                  { countryId: entry.countryId, masteryScore: entry.mastery },
+                ])
+              );
+              startLearnEngineGame({
+                mode: snapshot.mode,
+                region: snapshot.region,
+                level: snapshot.level ?? config.level ?? GAME_LEVELS.FIND_FILL,
+                learningSessionSize: snapshot.learningSessionSize ?? getLearnSessionSize(),
+                learn: {
+                  questions: snapshot.questions,
+                  queueIds: snapshot.queueIds,
+                  sampled: snapshot.sampled,
+                  masteryStats,
+                  challenge: snapshot.challenge,
+                  masteryBefore,
+                },
+                resume: {
+                  index: snapshot.index,
+                  answers: snapshot.answers,
+                  rightCount: snapshot.rightCount,
+                  wrongCount: snapshot.wrongCount,
+                  elapsedMs: snapshot.elapsedMs,
+                  challenge: snapshot.challenge,
+                  masteryAfter: snapshot.masteryAfter,
+                  seenFacts: snapshot.seenFacts,
+                },
+              });
+              return { ok: true };
+            }
+          }
+
           const learn = await buildLearnEngineData(config);
           if (!learn) {
             return { ok: false, reason: "no-eligible" };
@@ -3079,7 +3290,7 @@ export default function GeographyGame() {
             mode: config.mode,
             region: config.region,
             level: config.level ?? GAME_LEVELS.FIND_FILL,
-            learningSessionSize: "all",
+            learningSessionSize: learn.sessionSize,
             learn,
           });
           return { ok: true };
@@ -3121,11 +3332,15 @@ export default function GeographyGame() {
       startGame,
       startGoSession,
       startLearnEngineGame,
+      startNeighborsTestGame,
+      userIdRef,
     ]
   );
 
   const exitToStartScreen = useCallback(
     (url = "/") => {
+      persistLearnProgress({ leaving: true });
+      learnSaveClosedRef.current = true;
       resetIdleState();
       setShowMenuConfirm(false);
       setLeaveConfirmUrl(null);
@@ -3167,6 +3382,7 @@ export default function GeographyGame() {
       beginRoundScoring,
       clearColorFlash,
       clearWrongFlash,
+      persistLearnProgress,
       resetBoard,
       resetGameTimer,
       resetIdleState,
@@ -3310,7 +3526,6 @@ export default function GeographyGame() {
       mode: session.mode,
       level: session.level,
       region: session.region,
-      learningSessionSize: session.learningSessionSize,
     });
     if (!learn) return;
 
@@ -3318,7 +3533,7 @@ export default function GeographyGame() {
       mode: session.mode,
       region: session.region,
       level: session.level,
-      learningSessionSize: session.learningSessionSize,
+      learningSessionSize: learn.sessionSize,
       learn,
     });
   }, [buildLearnEngineData, isGoGame, isLearningGame, session, startLearnEngineGame]);
@@ -4887,11 +5102,13 @@ export default function GeographyGame() {
                   Leave this game?
                 </h2>
                 <p className={modalSubtitle}>
-                  {leaveConfirmUrl
-                    ? "Are you sure you want to leave this game? Your progress in this game will be lost."
-                    : isDiscoverGame
-                      ? "Jump into a Find it · Level 1 quiz, keep exploring, or return to the menu."
-                      : "Are you sure you want to go back to menu? Your progress in this game will be lost."}
+                  {learnEngineActive
+                    ? "Your Learn session will be saved. You can pick up where you left off."
+                    : leaveConfirmUrl
+                      ? "Are you sure you want to leave this game? Your progress in this game will be lost."
+                      : isDiscoverGame
+                        ? "Jump into a Find it · Level 1 quiz, keep exploring, or return to the menu."
+                        : "Are you sure you want to go back to menu? Your progress in this game will be lost."}
                 </p>
                 <div className={modalActions}>
                   {isDiscoverGame && !leaveConfirmUrl && (
@@ -4910,7 +5127,13 @@ export default function GeographyGame() {
                     }
                     onClick={handleConfirmLeave}
                   >
-                    {leaveConfirmUrl ? "Yes, go back" : "Yes, go to menu"}
+                    {learnEngineActive
+                      ? leaveConfirmUrl
+                        ? "Save and go back"
+                        : "Save and go to menu"
+                      : leaveConfirmUrl
+                        ? "Yes, go back"
+                        : "Yes, go to menu"}
                   </button>
                   <button
                     type="button"

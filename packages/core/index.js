@@ -20,6 +20,8 @@ export * from "./learn/questionTypes.js";
 export * from "./learn/questionGenerator.js";
 export * from "./learn/sessionSequencer.js";
 export * from "./learn/emaIntegration.js";
+export * from "./learn/domainMastery.js";
+export * from "./learn/masteryTiers.js";
 export * from "./learn/mapGuess.js";
 export * from "./learn/factSelection.js";
 export * from "./learn/sessionSummary.js";

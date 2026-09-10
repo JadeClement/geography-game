@@ -94,16 +94,19 @@ function lookupMapOrRecord(store, id) {
  *
  * Optional `recencyById` maps countryId → `{ lastAttemptAt, lastOutcome }` so
  * recent first-try corrects sink toward the end of the queue.
+ * `sessionSize` caps how many countries are drawn (`"all"` keeps the full region).
  *
  * @param {string[]} regionCountryIds
  * @param {Map<string, number>|Record<string, number>} masteryById - masteryScore 0–1
  * @param {Map<string, object>|Record<string, object>|null} [recencyById]
+ * @param {number|"all"} [sessionSize]
  * @returns {string[]}
  */
 export function buildFullRegionLearningQueue(
   regionCountryIds,
   masteryById = new Map(),
-  recencyById = null
+  recencyById = null,
+  sessionSize = "all"
 ) {
   const weighted = (regionCountryIds ?? []).map((countryId) => {
     const mastery = Math.min(
@@ -118,7 +121,15 @@ export function buildFullRegionLearningQueue(
     };
   });
 
-  return weightedSampleWithoutReplacement(weighted, weighted.length);
+  const requested =
+    sessionSize === "all" || sessionSize == null
+      ? weighted.length
+      : Math.floor(Number(sessionSize));
+  const count = Number.isFinite(requested)
+    ? Math.min(Math.max(0, requested), weighted.length)
+    : weighted.length;
+
+  return weightedSampleWithoutReplacement(weighted, count);
 }
 
 function pickUniform(ids, count) {

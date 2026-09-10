@@ -16,6 +16,13 @@ import {
   getCountryClickExpandEnabled,
   setCountryClickExpandEnabled,
 } from "@/lib/countryClickExpandPrefs";
+import {
+  DEFAULT_LEARN_SESSION_SIZE,
+  MAX_LEARN_SESSION_SIZE,
+  MIN_LEARN_SESSION_SIZE,
+  getLearnSessionSize,
+  setLearnSessionSize,
+} from "@/lib/learnSessionSize";
 import { previewCorrectSound } from "@/lib/sounds";
 import { cn } from "@/lib/cn";
 import {
@@ -47,6 +54,7 @@ export default function SettingsPage() {
   const signedIn = status === "authenticated";
   const [referenceDefaultOpen, setReferenceDefaultOpen] = useState(false);
   const [countryClickExpand, setCountryClickExpand] = useState(true);
+  const [learnSessionSize, setLearnSessionSizeState] = useState(DEFAULT_LEARN_SESSION_SIZE);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
@@ -58,6 +66,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setReferenceDefaultOpen(getReferencePanelDefaultOpen());
     setCountryClickExpand(getCountryClickExpandEnabled());
+    setLearnSessionSizeState(getLearnSessionSize());
   }, []);
 
   const handleVolumeChange = (event) => {
@@ -193,6 +202,29 @@ export default function SettingsPage() {
         <section className={settingsSection}>
           <h2 className={settingsSectionTitle}>Learning</h2>
           <p className={settingsSectionDescription}>
+            Each Learn game draws this many questions, weighted toward countries you know less
+            well. If the region is smaller, you get every country.
+          </p>
+          <div className={settingsVolumeControl}>
+            <div className={settingsVolumeRow}>
+              <input
+                id="learn-session-size"
+                type="range"
+                min={MIN_LEARN_SESSION_SIZE}
+                max={MAX_LEARN_SESSION_SIZE}
+                step={5}
+                value={learnSessionSize}
+                className={settingsVolumeSlider}
+                aria-label="Questions per Learn session"
+                onChange={(event) => {
+                  const next = setLearnSessionSize(Number(event.target.value));
+                  setLearnSessionSizeState(next);
+                }}
+              />
+              <span className={settingsVolumeValue}>{learnSessionSize}</span>
+            </div>
+          </div>
+          <p className={cn(settingsSectionDescription, "mt-4")}>
             Show the country reference panel automatically at the start of each learning round.
           </p>
           <label className={referenceDefaultSetting}>

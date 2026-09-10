@@ -96,12 +96,21 @@ export function detectMilestone({
 
   const averages = milestoneStats ? regionMasteryAverages(milestoneStats) : null;
 
+  if (milestoneStats?.allAfterWorldly && !milestoneStats?.allBeforeWorldly) {
+    return {
+      id: "region-worldly",
+      emoji: "🌍",
+      headline: "Truly Worldly!",
+      subtitle: `You know ${regionLabel} deeply — location, capitals, and neighbors.`,
+    };
+  }
+
   if (averages && averages.allAfterGraduated && !averages.allBeforeGraduated) {
     return {
-      id: "region-mastered",
-      emoji: "🏆",
-      headline: "Region Mastered!",
-      subtitle: `You've graduated every country in ${regionLabel}.`,
+      id: "region-located",
+      emoji: "📍",
+      headline: "Region Located!",
+      subtitle: `You've located every country in ${regionLabel} on the map.`,
     };
   }
 

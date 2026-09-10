@@ -8,7 +8,7 @@ import CelebrationOverlay from "@/components/CelebrationOverlay";
 import LearnSessionSummary from "@/components/learn/LearnSessionSummary";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { detectMilestone } from "@/lib/milestones";
-import { formatGameScore } from "@/lib/regions";
+import { formatGameScore, getCountryIdsForRegion } from "@/lib/regions";
 import { saveScore } from "@/lib/scores";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { loadCountriesGeoJSON } from "@/lib/countries";
@@ -17,6 +17,8 @@ import {
   computeWorldlyBeforeAfter,
   getCrossedWorldlyMilestone,
 } from "@/lib/worldlyScore";
+import { getMasteryTier, MASTERY_TIERS } from "@/lib/masteryTiers";
+import { inferDomainFromMode } from "@/lib/learn/questionTypes";
 import { formatElapsedTime } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import {
@@ -39,7 +41,66 @@ const MASTERED_NOUNS = {
   countries: ["country", "countries"],
   capitals: ["capital", "capitals"],
   flags: ["flag", "flags"],
+  neighbors: ["neighbor set", "neighbor sets"],
 };
+
+function flattenMasteryByCountry(mastery) {
+  const map = new Map();
+  const add = (rows, modeKey) => {
+    for (const row of rows ?? []) {
+      if (!row?.countryId) continue;
+      if (!map.has(row.countryId)) map.set(row.countryId, []);
+      map.get(row.countryId).push({ ...row, mode: row.mode ?? modeKey });
+    }
+  };
+  add(mastery?.countries, "countries");
+  add(mastery?.capitals, "capitals");
+  add(mastery?.flags, "flags");
+  add(mastery?.neighbors, "neighbors");
+  return map;
+}
+
+function regionWorldlyFlags({ mastery, countries, region, mode, statRecords }) {
+  const regionIds = getCountryIdsForRegion(region) ?? [];
+  if (regionIds.length === 0) {
+    return { allBefore: false, allAfter: false };
+  }
+  const byCountry = flattenMasteryByCountry(mastery);
+  const neighborCountById = new Map(
+    (countries ?? []).map((country) => [
+      country.id,
+      Array.isArray(country.neighbors) ? country.neighbors.length : 0,
+    ])
+  );
+  const playedDomain = inferDomainFromMode(mode);
+
+  const isWorldly = (id, rows) =>
+    getMasteryTier({
+      stats: rows,
+      neighborCount: neighborCountById.get(id),
+    }) === MASTERY_TIERS.WORLDLY;
+
+  let allAfter = true;
+  let allBefore = true;
+  for (const id of regionIds) {
+    const afterRows = byCountry.get(id) ?? [];
+    if (!isWorldly(id, afterRows)) allAfter = false;
+
+    const record = statRecords?.[id];
+    if (!record) {
+      if (!isWorldly(id, afterRows)) allBefore = false;
+      continue;
+    }
+    const beforeRows = afterRows.map((row) => {
+      const domain = row.skillDomain ?? row.skill_domain ?? "general";
+      const inferred = domain === "general" ? inferDomainFromMode(row.mode) : domain;
+      if (inferred !== playedDomain) return row;
+      return { ...row, masteryScore: record.beforeMastery ?? 0 };
+    });
+    if (!isWorldly(id, beforeRows)) allBefore = false;
+  }
+  return { allBefore, allAfter };
+}
 
 function buildGameContextSections({ isGo, isLearning, isReview, modeLabel, regionLabel, levelLabel }) {
   const sections = [];
@@ -93,6 +154,11 @@ export default function GameCompleteModal({
   const [streakMessage, setStreakMessage] = useState(null);
   const [milestone, setMilestone] = useState(null);
   const [worldly, setWorldly] = useState({ settled: false, crossing: null });
+  const [regionWorldly, setRegionWorldly] = useState({
+    settled: false,
+    allBefore: false,
+    allAfter: false,
+  });
   const milestoneResolvedRef = useRef(false);
   const dialogRef = useFocusTrap(open);
 
@@ -104,6 +170,7 @@ export default function GameCompleteModal({
       setStreakMessage(null);
       setMilestone(null);
       setWorldly({ settled: false, crossing: null });
+      setRegionWorldly({ settled: false, allBefore: false, allAfter: false });
       milestoneResolvedRef.current = false;
     }
   }, [open]);
@@ -121,12 +188,14 @@ export default function GameCompleteModal({
     if (!open) return undefined;
     if (!signedIn) {
       setWorldly({ settled: true, crossing: null });
+      setRegionWorldly({ settled: true, allBefore: false, allAfter: false });
       return undefined;
     }
     if (milestoneStats === undefined) return undefined;
 
     let cancelled = false;
     setWorldly({ settled: false, crossing: null });
+    setRegionWorldly({ settled: false, allBefore: false, allAfter: false });
 
     Promise.all([fetchAllMasteryStats(), loadCountriesGeoJSON()])
       .then(([masteryData, geo]) => {
@@ -143,15 +212,26 @@ export default function GameCompleteModal({
           settled: true,
           crossing: getCrossedWorldlyMilestone(beforePercent, afterPercent),
         });
+        const flags = regionWorldlyFlags({
+          mastery: masteryData.mastery ?? {},
+          countries: geo.countries,
+          region,
+          mode,
+          statRecords: milestoneStats?.statRecords ?? {},
+        });
+        setRegionWorldly({ settled: true, ...flags });
       })
       .catch(() => {
-        if (!cancelled) setWorldly({ settled: true, crossing: null });
+        if (!cancelled) {
+          setWorldly({ settled: true, crossing: null });
+          setRegionWorldly({ settled: true, allBefore: false, allAfter: false });
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [open, signedIn, milestoneStats, mode, level]);
+  }, [open, signedIn, milestoneStats, mode, level, region]);
 
   // Detect a milestone once both the score save and the mastery snapshot have
   // settled, so the priority ordering uses complete data.
@@ -168,7 +248,7 @@ export default function GameCompleteModal({
           (guestSyncState.synced || Boolean(guestSyncState.error))
         : saveState.result != null || saveState.error != null);
     const masterySettled = milestoneStats !== undefined;
-    if (!saveSettled || !masterySettled || !worldly.settled) return;
+    if (!saveSettled || !masterySettled || !worldly.settled || !regionWorldly.settled) return;
 
     const perfectGame =
       !isReview && !isLearning && total > 0 && rightCount === total && wrongCount === 0;
@@ -180,7 +260,11 @@ export default function GameCompleteModal({
       detectMilestone({
         saveResult,
         perfectGame,
-        milestoneStats,
+        milestoneStats: {
+          ...milestoneStats,
+          allAfterWorldly: regionWorldly.allAfter,
+          allBeforeWorldly: regionWorldly.allBefore,
+        },
         worldlyMilestone: worldly.crossing,
         regionLabel,
         modeLabel,
@@ -197,6 +281,9 @@ export default function GameCompleteModal({
     milestoneStats,
     worldly.settled,
     worldly.crossing,
+    regionWorldly.settled,
+    regionWorldly.allAfter,
+    regionWorldly.allBefore,
     total,
     rightCount,
     wrongCount,
@@ -325,7 +412,7 @@ export default function GameCompleteModal({
     const count = graduatedCountryNames.length;
     const [singular, plural] = MASTERED_NOUNS[mode] ?? MASTERED_NOUNS.countries;
     const noun = count === 1 ? singular : plural;
-    return `You mastered ${count} ${noun} this game!`;
+    return `You located ${count} ${noun} this game!`;
   }
 
   const contextSections = buildGameContextSections({
@@ -442,7 +529,7 @@ export default function GameCompleteModal({
 
           {graduatedCountryNames.length > 0 && (
             <p className={modalMessage({ success: true, className: "text-center font-semibold" })}>
-              🎓 {getMasteredAnnouncement()}
+              📍 {getMasteredAnnouncement()}
             </p>
           )}
 

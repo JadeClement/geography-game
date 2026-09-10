@@ -9,7 +9,7 @@ import StartBackButton from "@/components/StartBackButton";
 import SpaceBackground from "@/components/SpaceBackground";
 import SpinningGlobe from "@/components/SpinningGlobe";
 import { GAME_TYPES } from "@/lib/gameTypes";
-import { LEVEL_SECTIONS } from "@/lib/levels";
+import { GAME_LEVELS, LEVEL_SECTIONS } from "@/lib/levels";
 import { GAME_MODES, REGIONS, getModeLabel } from "@/lib/regions";
 import {
   DEFAULT_LEARN_LEVEL,
@@ -20,6 +20,16 @@ import {
 } from "@/lib/startNavigation";
 import { cn } from "@/lib/cn";
 import { buildHomeGreeting } from "@/lib/homeGreeting";
+import {
+  formatSavedLearnResumeLabel,
+  getSavedLearnSession,
+} from "@/lib/savedLearnSession";
+import {
+  DEFAULT_LEARN_SESSION_SIZE,
+  formatLearnSessionSizeLabel,
+  getLearnSessionSize,
+  subscribeLearnSessionSize,
+} from "@/lib/learnSessionSize";
 import {
   choiceBtnLevel,
   choiceBtnLevelDesc,
@@ -62,6 +72,7 @@ import {
   startSubtitle,
   startTitle,
   startTitleGlobe,
+  linkBtn,
 } from "@/lib/ui";
 
 function StartStepHeader({ title, subtitle }) {
@@ -81,6 +92,8 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   const [authPendingLearn, setAuthPendingLearn] = useState(false);
   const [starting, setStarting] = useState(false);
   const [learnStartError, setLearnStartError] = useState(null);
+  const [savedLearnPreview, setSavedLearnPreview] = useState(null);
+  const [learnSessionSize, setLearnSessionSize] = useState(DEFAULT_LEARN_SESSION_SIZE);
   const [exploreMode, setExploreMode] = useState(null);
   const [exploreRegion, setExploreRegion] = useState(null);
   const [homeGreeting, setHomeGreeting] = useState(null);
@@ -97,6 +110,26 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     }
     setHomeGreeting(buildHomeGreeting(session.user));
   }, [signedIn, session?.user?.name, session?.user?.username]);
+
+  useEffect(() => {
+    if (!signedIn || !session?.user?.id || !selectedMode || !selectedRegion) {
+      setSavedLearnPreview(null);
+      return;
+    }
+    setSavedLearnPreview(
+      getSavedLearnSession({
+        userId: session.user.id,
+        mode: selectedMode,
+        region: selectedRegion,
+      })
+    );
+  }, [signedIn, session?.user?.id, selectedMode, selectedRegion, step]);
+
+  useEffect(() => {
+    const syncSize = () => setLearnSessionSize(getLearnSessionSize());
+    syncSize();
+    return subscribeLearnSessionSize(syncSize);
+  }, []);
 
   const navigate = useCallback(
     (next, { replace = false } = {}) => {
@@ -165,7 +198,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
     }
   };
 
-  const startLearningSession = async () => {
+  const startLearningSession = async ({ fresh = false } = {}) => {
     if (!selectedMode || !selectedRegion || !gameReady || starting) return;
 
     setLearnStartError(null);
@@ -176,6 +209,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         mode: selectedMode,
         region: selectedRegion,
         level: DEFAULT_LEARN_LEVEL,
+        fresh,
       });
       if (result?.ok === false) {
         setLearnStartError(
@@ -285,11 +319,16 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
       <div className={cn(startScreen, startScreenSub)}>
         <StartBackButton onClick={goBackToExplore} />
         <StartStepHeader
-          title="Discover, Test, or Learn?"
+          title={
+            selectedMode === GAME_MODES.NEIGHBORS
+              ? "Test neighbors?"
+              : "Discover, Test, or Learn?"
+          }
           subtitle={`${getModeLabel(selectedMode)} · ${regionLabel}`}
         />
 
         <div className={cn(startSection, startGameTypeList)}>
+          {selectedMode !== GAME_MODES.NEIGHBORS && (
           <button
             type="button"
             className={choiceBtnLevel({ disabled: !gameReady, className: gameTypeBtnDiscover })}
@@ -299,10 +338,22 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             <span className={choiceBtnLevelTitle}>Discover</span>
             <span className={choiceBtnLevelDesc}>Tap countries to see their names. No score.</span>
           </button>
+          )}
           <button
             type="button"
             className={choiceBtnLevel({ className: gameTypeBtnTest })}
             onClick={() => {
+              if (selectedMode === GAME_MODES.NEIGHBORS) {
+                if (selectedMode && selectedRegion && gameReady) {
+                  onStart({
+                    gameType: GAME_TYPES.TEST,
+                    mode: selectedMode,
+                    region: selectedRegion,
+                    level: GAME_LEVELS.NAME_FILL,
+                  });
+                }
+                return;
+              }
               navigate({
                 step: START_STEPS.LEVEL,
                 mode: selectedMode,
@@ -312,22 +363,43 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             }}
           >
             <span className={choiceBtnLevelTitle}>Test</span>
-            <span className={choiceBtnLevelDesc}>Full quiz — track mastery for every country.</span>
-          </button>
-          <button
-            type="button"
-            className={choiceBtnLevel({
-              disabled: !gameReady || starting,
-              className: gameTypeBtnLearn,
-            })}
-            disabled={!gameReady || starting}
-            onClick={handleLearnSelect}
-          >
-            <span className={choiceBtnLevelTitle}>Learn</span>
             <span className={choiceBtnLevelDesc}>
-              {starting ? "Starting…" : "Practice every country in this region."}
+              {selectedMode === GAME_MODES.NEIGHBORS
+                ? "Name every country that borders each country."
+                : "Full quiz — track mastery for every country."}
             </span>
           </button>
+          {selectedMode !== GAME_MODES.NEIGHBORS && (
+          <div className="flex w-full flex-col items-center gap-2">
+            <button
+              type="button"
+              className={choiceBtnLevel({
+                disabled: !gameReady || starting,
+                className: cn(gameTypeBtnLearn, "w-full"),
+              })}
+              disabled={!gameReady || starting}
+              onClick={handleLearnSelect}
+            >
+              <span className={choiceBtnLevelTitle}>Learn</span>
+              <span className={choiceBtnLevelDesc}>
+                {starting
+                  ? "Starting…"
+                  : formatSavedLearnResumeLabel(savedLearnPreview) ??
+                    formatLearnSessionSizeLabel(learnSessionSize)}
+              </span>
+            </button>
+            {savedLearnPreview && !starting && (
+              <button
+                type="button"
+                className={cn(linkBtn, "text-sm text-text-muted")}
+                disabled={!gameReady}
+                onClick={() => startLearningSession({ fresh: true })}
+              >
+                Start over
+              </button>
+            )}
+          </div>
+          )}
         </div>
 
         {learnStartError && (
@@ -385,7 +457,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           title="Explore"
           subtitle={
             exploreRegion
-              ? "Choose Countries, Capitals, or Flags."
+              ? "Choose Countries, Capitals, Flags, or Neighbors."
               : "Pick a region on the map."
           }
         />
@@ -413,6 +485,14 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
                 onClick={() => handleModeSelect(GAME_MODES.FLAGS)}
               >
                 Flags
+              </button>
+              <button
+                type="button"
+                className={startModeBtn({ selected: exploreMode === GAME_MODES.NEIGHBORS })}
+                onClick={() => handleModeSelect(GAME_MODES.NEIGHBORS)}
+                title="Name every country that borders each country"
+              >
+                🗺 Neighbors
               </button>
             </div>
           )}
@@ -465,7 +545,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
           >
             <span className={choiceBtnLevelTitle}>Explore</span>
             <span className={exploreBtnDesc}>
-              Choose countries, capitals, or flags by region.
+              Choose countries, capitals, flags, or neighbors by region.
             </span>
           </button>
         </div>

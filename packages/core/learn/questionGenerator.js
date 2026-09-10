@@ -8,7 +8,8 @@
  *   (e.g. a landlocked check for an island, or a shape question for a speck).
  *   The sequencer treats null as "try a different type" and never drops the country.
  * - Country records are read from data/countries.json shape (iso3/name/capital/
- *   population/gdp/area/landlocked/languages (most common first)/neighbors[iso3]/region). `id` is
+ *   population/gdp/area/landlocked/languages (most common first)/religions
+ *   ([{name, percent}], largest first)/neighbors[iso3]/region). `id` is
  *   accepted as an alias for `iso3` so runtime map-country objects also work.
  *   Fields that only exist in the manifest (area, landlocked, gdp) simply make the
  *   dependent generators return null if absent.
@@ -77,6 +78,42 @@ function shuffle(array) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+const VAGUE_RELIGIONS = new Set(["Other"]);
+const RELIGION_SPLIT_GAP = 20;
+const RELIGION_SPLIT_MIN = 40;
+
+function religionEntries(country) {
+  if (!Array.isArray(country?.religions)) return [];
+  return country.religions
+    .map((entry) => {
+      if (typeof entry === "string") return { name: entry, percent: null };
+      const name = typeof entry?.name === "string" ? entry.name.trim() : "";
+      const percent = Number(entry?.percent);
+      if (!name) return null;
+      return { name, percent: Number.isFinite(percent) ? percent : null };
+    })
+    .filter(Boolean);
+}
+
+function majorityReligionNames(country) {
+  const entries = religionEntries(country).filter(
+    (entry) => !VAGUE_RELIGIONS.has(entry.name)
+  );
+  if (entries.length === 0) return [];
+  const top = entries[0];
+  const second = entries[1];
+  if (
+    second &&
+    top.percent != null &&
+    second.percent != null &&
+    top.percent - second.percent < RELIGION_SPLIT_GAP &&
+    second.percent >= RELIGION_SPLIT_MIN
+  ) {
+    return [top.name, second.name];
+  }
+  return [top.name];
 }
 
 // allCountries may be an array, a Map, or a plain object keyed by id. Index once
@@ -309,22 +346,24 @@ export function generateNeighborFreeRecall(country, allCountries) {
   });
 }
 
-export function generateNeighborRecallAll(country, allCountries) {
+export function generateNeighborRecallAll(country, allCountries, _masteryStats, options = {}) {
   const index = toCountryIndex(allCountries);
   const neighbors = (country.neighbors ?? [])
     .map((id) => index.get(id))
     .filter(Boolean);
-  // With a single neighbor this collapses into neighbor_free_recall, so it is not
-  // a meaningfully harder question — require at least two.
-  if (neighbors.length < 2) return null;
+  const minNeighbors = Number.isFinite(options.minNeighbors) ? options.minNeighbors : 2;
+  // With a single neighbor this collapses into neighbor_free_recall, so Learn
+  // requires at least two. Test — Neighbors allows one.
+  if (neighbors.length < minNeighbors) return null;
 
   return baseQuestion(QUESTION_TYPES.NEIGHBOR_RECALL_ALL, country, {
     prompt: `Name every country that borders ${country.name}.`,
-    promptSubtext: `${neighbors.length} bordering countries.`,
+    promptSubtext: `${neighbors.length} bordering ${neighbors.length === 1 ? "country" : "countries"}.`,
     answerType: "multi_text_entry",
     // The full set the learner must recall; the UI accepts them in any order.
     correctAnswer: neighbors.map((record) => cid(record)),
     options: neighbors.map(countryOption),
+    clueEligible: options.clueEligible !== false && isClueEligible(QUESTION_TYPES.NEIGHBOR_RECALL_ALL.tier),
     // No map — seeing the country would reveal its borders.
   });
 }
@@ -851,6 +890,48 @@ export function generateReligionPie(country) {
   });
 }
 
+export function generateReligionMajority(country, allCountries) {
+  const accepted = majorityReligionNames(country);
+  if (accepted.length === 0) return null;
+
+  const index = toCountryIndex(allCountries);
+  const distractors = [];
+  const seen = new Set(accepted);
+  for (const record of shuffle(sameRegionPool(country, index))) {
+    for (const name of majorityReligionNames(record)) {
+      if (seen.has(name) || VAGUE_RELIGIONS.has(name)) continue;
+      seen.add(name);
+      distractors.push(name);
+    }
+    if (distractors.length >= MAX_CHOICE_OPTIONS - 1) break;
+  }
+  if (distractors.length === 0) return null;
+
+  const distractorCount = Math.max(1, MAX_CHOICE_OPTIONS - accepted.length);
+  const options = shuffle([
+    ...accepted.map((name) => ({ value: name, label: name })),
+    ...distractors
+      .slice(0, distractorCount)
+      .map((name) => ({ value: name, label: name })),
+  ]);
+
+  const split = accepted.length > 1;
+  return baseQuestion(QUESTION_TYPES.RELIGION_MAJORITY, country, {
+    prompt: `What is the most common religion in ${country.name}?`,
+    promptSubtext: split
+      ? `${country.name} is closely split — either of the largest groups counts.`
+      : "",
+    answerType: "multiple_choice",
+    correctAnswer: split ? accepted : accepted[0],
+    options,
+    mapConfig: {
+      display: "highlight",
+      highlightIds: [cid(country)],
+      keepOverlay: true,
+    },
+  });
+}
+
 // ── dispatch ──────────────────────────────────────────────────────────────────
 
 export const QUESTION_GENERATORS = {
@@ -877,6 +958,7 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.LANDLOCKED_CHECK.id]: generateLandlockedCheck,
   [QUESTION_TYPES.NEIGHBOR_IDENTIFICATION.id]: generateNeighborIdentification,
   [QUESTION_TYPES.LANGUAGE_FAMILY.id]: generateLanguageFamily,
+  [QUESTION_TYPES.RELIGION_MAJORITY.id]: generateReligionMajority,
   [QUESTION_TYPES.RELIGION_PIE.id]: generateReligionPie,
   [QUESTION_TYPES.BRAZIL_NON_NEIGHBORS.id]: generateBrazilNonNeighbors,
 };

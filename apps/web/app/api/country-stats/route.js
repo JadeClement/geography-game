@@ -56,6 +56,7 @@ export async function GET(request) {
     const statsByCountry = new Map();
     for (const stat of stats) {
       if (!regionIds.has(stat.countryId)) continue;
+      if ((stat.skillDomain ?? "general") !== "general") continue;
       if (!statsByCountry.has(stat.countryId)) {
         statsByCountry.set(stat.countryId, []);
       }
@@ -101,7 +102,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier, questionTier, predictedSuccess } = body;
+    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier, questionTier, predictedSuccess, questionType } = body;
 
     if (
       !countryId ||
@@ -161,6 +162,7 @@ export async function POST(request) {
         typeof predictedSuccess === "number" && Number.isFinite(predictedSuccess)
           ? Math.min(1, Math.max(0, predictedSuccess))
           : null,
+      questionType: typeof questionType === "string" ? questionType : null,
     });
 
     // Idempotent per day (upsert), so recording on every round is safe and

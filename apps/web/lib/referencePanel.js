@@ -10,6 +10,7 @@ export const REFERENCE_FIELD_IDS = {
   POPULATION: "population",
   GDP: "gdp",
   LANGUAGES: "languages",
+  RELIGIONS: "religions",
 };
 
 const FIELD_LABELS = {
@@ -20,6 +21,7 @@ const FIELD_LABELS = {
   [REFERENCE_FIELD_IDS.POPULATION]: "Population",
   [REFERENCE_FIELD_IDS.GDP]: "GDP",
   [REFERENCE_FIELD_IDS.LANGUAGES]: "Languages",
+  [REFERENCE_FIELD_IDS.RELIGIONS]: "Religions",
 };
 
 function isFieldHidden(fieldId, mode, level) {
@@ -30,7 +32,8 @@ function isFieldHidden(fieldId, mode, level) {
     fieldId === REFERENCE_FIELD_IDS.REGION ||
     fieldId === REFERENCE_FIELD_IDS.POPULATION ||
     fieldId === REFERENCE_FIELD_IDS.GDP ||
-    fieldId === REFERENCE_FIELD_IDS.LANGUAGES
+    fieldId === REFERENCE_FIELD_IDS.LANGUAGES ||
+    fieldId === REFERENCE_FIELD_IDS.RELIGIONS
   ) {
     return false;
   }
@@ -117,6 +120,20 @@ export function formatLanguages(languages) {
   return languages.slice(0, 2).join(", ");
 }
 
+export function formatReligions(religions) {
+  if (!Array.isArray(religions) || religions.length === 0) return null;
+  const parts = religions.slice(0, 3).map((entry) => {
+    if (typeof entry === "string") return entry;
+    const name = entry?.name;
+    if (!name) return null;
+    const percent = Number(entry.percent);
+    if (!Number.isFinite(percent)) return name;
+    const rounded = Number.isInteger(percent) ? String(percent) : percent.toFixed(1).replace(/\.0$/, "");
+    return `${name} ${rounded}%`;
+  }).filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
 function getRegionLabel(regionId) {
   return REGIONS.find((region) => region.id === regionId)?.label ?? null;
 }
@@ -190,6 +207,16 @@ export function buildReferenceRows(country, visibility) {
       label: FIELD_LABELS[REFERENCE_FIELD_IDS.LANGUAGES],
       type: "text",
       value: languages,
+    });
+  }
+
+  const religions = formatReligions(country.religions);
+  if (visibility[REFERENCE_FIELD_IDS.RELIGIONS] === "visible" && religions) {
+    rows.push({
+      id: REFERENCE_FIELD_IDS.RELIGIONS,
+      label: FIELD_LABELS[REFERENCE_FIELD_IDS.RELIGIONS],
+      type: "text",
+      value: religions,
     });
   }
 

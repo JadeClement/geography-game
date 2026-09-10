@@ -49,6 +49,16 @@ export function useGameTimer(running) {
     setFinalElapsedMs(0);
   }, []);
 
+  // Continue a previous run, counting from the saved elapsed time.
+  const restore = useCallback((elapsedMsToRestore = 0) => {
+    const elapsed = Math.max(0, Number(elapsedMsToRestore) || 0);
+    startTimeRef.current = Date.now() - elapsed;
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
+    setElapsedMs(elapsed);
+    setFinalElapsedMs(0);
+  }, []);
+
   // Freeze the clock and remember the final time.
   const stop = useCallback(() => {
     const elapsed = getElapsedMs();
@@ -81,6 +91,7 @@ export function useGameTimer(running) {
     pause,
     resume,
     start,
+    restore,
     stop,
     reset,
   };

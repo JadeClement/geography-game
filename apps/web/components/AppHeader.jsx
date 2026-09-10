@@ -8,10 +8,8 @@ import AuthModal from "@/components/AuthModal";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
-import { loadCountriesGeoJSON } from "@/lib/countries";
 import { useUserProfile } from "@/lib/hooks/useUserProfile";
 import { cn } from "@/lib/cn";
-import { computeWorldlyScoreFromMastery } from "@/lib/worldlyScore";
 import {
   appHeader,
   appHeaderActions,
@@ -285,15 +283,14 @@ export default function AppHeader({ onHomeClick }) {
 
     let cancelled = false;
 
-    Promise.all([fetchAllMasteryStats(), loadCountriesGeoJSON()])
-      .then(([masteryData, geo]) => {
+    fetchAllMasteryStats()
+      .then((masteryData) => {
         if (cancelled) return;
-        const countryIds = geo.countries.map((country) => country.id);
-        const { percent } = computeWorldlyScoreFromMastery(
-          masteryData.mastery ?? {},
-          countryIds
-        );
-        setWorldlyPercent(Math.round(percent));
+        if (masteryData.unauthorized || typeof masteryData.percent !== "number") {
+          setWorldlyPercent(null);
+          return;
+        }
+        setWorldlyPercent(Math.round(masteryData.percent));
       })
       .catch(() => {
         // Network error — just don't show the indicator.
@@ -302,7 +299,7 @@ export default function AppHeader({ onHomeClick }) {
     return () => {
       cancelled = true;
     };
-  }, [signedIn]);
+  }, [signedIn, pathname]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;

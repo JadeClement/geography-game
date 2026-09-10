@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import MasteryMap from "@/components/MasteryMap";
+import CountryMasteryModal from "@/components/CountryMasteryModal";
 import { useTheme } from "@/components/ThemeProvider";
 import { loadCountriesGeoJSON } from "@/lib/countries";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
@@ -13,15 +14,24 @@ import { GAME_MODES, getModeLabel } from "@/lib/regions";
 import {
   ALL_MODE,
   buildModeMasteryMap,
-  buildTierMap,
   countMastered,
-  countTier,
+  countTierLabel,
+  DOMAIN_TAB_TO_DOMAIN,
   getModeVisual,
   getScore,
   isMastered,
   MASTERY_MODES,
   TIER_COLORS,
+  TIER_STATE,
 } from "@/lib/masteryMap";
+import {
+  domainScoresFromStats,
+  getMasteryTier,
+  MASTERY_TIER_LABELS,
+  MASTERY_TIERS,
+  SKILL_DOMAIN_LABELS,
+} from "@/lib/masteryTiers";
+import { applyWorldlyCurve, computeWorldlyScoreFromMastery } from "@/lib/worldlyScore";
 import { THEMES } from "@/lib/theme";
 import {
   masteryBack,
@@ -73,7 +83,7 @@ function ProgressRing({ pct, accent }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct / 100);
   return (
-    <svg className={masteryRing} viewBox="0 0 120 120" role="img" aria-label={`${pct}% mastered`}>
+    <svg className={masteryRing} viewBox="0 0 120 120" role="img" aria-label={`${pct}% located`}>
       <circle className={masteryRingTrack} cx="60" cy="60" r={radius} />
       <circle
         className={masteryRingFill}
@@ -88,7 +98,7 @@ function ProgressRing({ pct, accent }) {
         {pct}%
       </text>
       <text x="60" y="78" className={masteryRingLabel}>
-        mastered
+        located
       </text>
     </svg>
   );
@@ -106,6 +116,7 @@ export default function MasteryPage() {
   const [data, setData] = useState(null);
   const [mode, setMode] = useState(GAME_MODES.COUNTRIES);
   const [hover, setHover] = useState(null);
+  const [selectedCountryId, setSelectedCountryId] = useState(null);
 
   const mapRef = useRef(null);
 
@@ -145,16 +156,38 @@ export default function MasteryPage() {
         if (cancelled) return;
         const mastery = masteryData.mastery ?? {};
         const territoryFeatures = geo.territoryGeojson?.features ?? [];
+        const statsByCountry = new Map();
+        const addRows = (rows, modeKey) => {
+          for (const row of rows ?? []) {
+            if (!row?.countryId) continue;
+            if (!statsByCountry.has(row.countryId)) statsByCountry.set(row.countryId, []);
+            statsByCountry.get(row.countryId).push({ ...row, mode: row.mode ?? modeKey });
+          }
+        };
+        addRows(mastery.countries, GAME_MODES.COUNTRIES);
+        addRows(mastery.capitals, GAME_MODES.CAPITALS);
+        addRows(mastery.flags, GAME_MODES.FLAGS);
+        addRows(mastery.neighbors, GAME_MODES.NEIGHBORS);
+
+        const worldly = computeWorldlyScoreFromMastery(
+          mastery,
+          geo.countries.map((country) => country.id)
+        );
+
         setData({
           countries: geo.countries,
           geojson: {
             ...geo.geojson,
             features: [...geo.geojson.features, ...territoryFeatures],
           },
+          mastery,
+          statsByCountry,
+          worldly,
           maps: {
             [GAME_MODES.COUNTRIES]: buildModeMasteryMap(mastery.countries ?? []),
             [GAME_MODES.CAPITALS]: buildModeMasteryMap(mastery.capitals ?? []),
             [GAME_MODES.FLAGS]: buildModeMasteryMap(mastery.flags ?? []),
+            [GAME_MODES.NEIGHBORS]: buildModeMasteryMap(mastery.neighbors ?? []),
           },
         });
         setLoading(false);
@@ -182,34 +215,74 @@ export default function MasteryPage() {
     return map;
   }, [data]);
 
+  const neighborCountById = useMemo(() => {
+    const map = new Map();
+    if (data) {
+      for (const country of data.countries) {
+        map.set(country.id, Array.isArray(country.neighbors) ? country.neighbors.length : 0);
+      }
+    }
+    return map;
+  }, [data]);
+
+  const paintMode = mode === ALL_MODE || mode === GAME_MODES.COUNTRIES ? "tiers" : "score";
+
   const tierByCountry = useMemo(() => {
     if (!data) return new Map();
-    return buildTierMap(data.maps, countryIds);
-  }, [data, countryIds]);
+    const out = new Map();
+    for (const id of countryIds) {
+      const tier = getMasteryTier({
+        stats: data.statsByCountry.get(id) ?? [],
+        neighborCount: neighborCountById.get(id),
+      });
+      out.set(id, TIER_STATE[tier] ?? 0);
+    }
+    return out;
+  }, [data, countryIds, neighborCountById]);
+
+  const labelTierByCountry = useMemo(() => {
+    if (!data) return new Map();
+    const out = new Map();
+    for (const id of countryIds) {
+      out.set(
+        id,
+        getMasteryTier({
+          stats: data.statsByCountry.get(id) ?? [],
+          neighborCount: neighborCountById.get(id),
+        })
+      );
+    }
+    return out;
+  }, [data, countryIds, neighborCountById]);
 
   const scoreByCountry = useMemo(() => {
-    if (!data || mode === ALL_MODE) return new Map();
-    const modeMap = data.maps[mode];
+    if (!data || paintMode === "tiers") return new Map();
+    const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
     const out = new Map();
-    for (const id of countryIds) out.set(id, getScore(modeMap, id));
+    for (const id of countryIds) {
+      const scores = domainScoresFromStats(data.statsByCountry.get(id) ?? []);
+      out.set(id, scores[domainKey] ?? 0);
+    }
     return out;
-  }, [data, mode, countryIds]);
+  }, [data, mode, countryIds, paintMode]);
 
   const visual = getModeVisual(mode);
 
   const stats = useMemo(() => {
     if (!data) return null;
     const total = countryIds.length;
-    if (mode === ALL_MODE) {
-      const gold = countTier(tierByCountry, countryIds, 3);
+    const located = countTierLabel(labelTierByCountry, countryIds, MASTERY_TIERS.LOCATED);
+    const worldly = countTierLabel(labelTierByCountry, countryIds, MASTERY_TIERS.WORLDLY);
+    const spotted = countTierLabel(labelTierByCountry, countryIds, MASTERY_TIERS.SPOTTED);
+    if (paintMode === "tiers") {
       return {
         total,
-        mastered: gold,
-        pct: total ? Math.round((gold / total) * 100) : 0,
+        mastered: located + worldly,
+        pct: total ? Math.round(((located + worldly) / total) * 100) : 0,
         tiers: {
-          1: countTier(tierByCountry, countryIds, 1),
-          2: countTier(tierByCountry, countryIds, 2),
-          3: gold,
+          spotted,
+          located,
+          worldly,
         },
       };
     }
@@ -219,15 +292,15 @@ export default function MasteryPage() {
       mastered,
       pct: total ? Math.round((mastered / total) * 100) : 0,
     };
-  }, [data, mode, countryIds, tierByCountry]);
+  }, [data, mode, countryIds, labelTierByCountry, paintMode]);
 
   const handleShare = () => {
     if (!mapRef.current || !stats) return;
-    const title = mode === ALL_MODE ? "All Three Modes" : `${getModeLabel(mode)} Mastery`;
+    const title = mode === ALL_MODE ? "Worldly Map" : `${getModeLabel(mode)} Mastery`;
     const stat =
-      mode === ALL_MODE
-        ? `${stats.mastered} / ${stats.total} fully mastered`
-        : `${stats.mastered} / ${stats.total} countries mastered`;
+      paintMode === "tiers"
+        ? `${stats.mastered} / ${stats.total} located`
+        : `${stats.mastered} / ${stats.total} countries located`;
     mapRef.current.exportImage({ title, stat, accent: visual.accent });
   };
 
@@ -235,14 +308,28 @@ export default function MasteryPage() {
     if (!hover || !data) return null;
     const name = nameById.get(hover.id);
     if (!name) return null;
-    const rows = MASTERY_MODES.map((m) => ({
-      label: getModeLabel(m),
-      pct: Math.round(getScore(data.maps[m], hover.id) * 100),
-      mastered: isMastered(data.maps[m].get(hover.id)),
-      accent: getModeVisual(m).accent,
-    }));
+    const scores = domainScoresFromStats(data.statsByCountry.get(hover.id) ?? []);
+    const rows = MASTERY_MODES.map((m) => {
+      const domainKey = DOMAIN_TAB_TO_DOMAIN[m];
+      const raw = scores[domainKey] ?? getScore(data.maps[m], hover.id);
+      return {
+        label: getModeLabel(m),
+        pct: Math.round(applyWorldlyCurve(raw)),
+        mastered: isMastered(data.maps[m]?.get(hover.id)),
+        accent: getModeVisual(m).accent,
+      };
+    });
     return { name, rows, point: hover.point };
   }, [hover, data, nameById]);
+
+  const selectedCountry = useMemo(() => {
+    if (!selectedCountryId || !data) return null;
+    return {
+      id: selectedCountryId,
+      name: nameById.get(selectedCountryId) ?? selectedCountryId,
+      domainScores: domainScoresFromStats(data.statsByCountry.get(selectedCountryId) ?? []),
+    };
+  }, [selectedCountryId, data, nameById]);
 
   return (
     <div className={masteryPage}>
@@ -266,7 +353,7 @@ export default function MasteryPage() {
 
         {!signedIn && status !== "loading" && (
           <div className={masterySignIn}>
-            <p className={masteryMessage}>Sign in to see which countries you&apos;ve mastered.</p>
+            <p className={masteryMessage}>Sign in to see which countries you&apos;ve located.</p>
             <button type="button" className={primaryBtn} onClick={() => setAuthOpen(true)}>
               Sign in / Create account
             </button>
@@ -324,7 +411,9 @@ export default function MasteryPage() {
                   accent={visual.accent}
                   scoreByCountry={scoreByCountry}
                   tierByCountry={tierByCountry}
+                  paintMode={paintMode}
                   onHover={setHover}
+                  onSelect={({ id }) => setSelectedCountryId(id)}
                 />
 
                 {hoverInfo && (
@@ -354,24 +443,24 @@ export default function MasteryPage() {
                     <strong style={{ color: visual.accent }}>{stats.mastered}</strong>
                     <span> / {stats.total}</span>
                     <br />
-                    {mode === ALL_MODE ? "fully mastered" : "countries mastered"}
+                    {paintMode === "tiers" ? "located" : "countries located"}
                   </p>
                 )}
 
-                {mode === ALL_MODE ? (
+                {paintMode === "tiers" ? (
                   <div className={masteryLegend}>
-                    <span className={masteryLegendTitle}>Modes mastered</span>
+                    <span className={masteryLegendTitle}>Mastery tiers</span>
                     <span className={masteryLegendRow}>
                       <span className={masterySwatch} style={{ background: TIER_COLORS[1] }} />
-                      Bronze · 1 mode <em>{stats?.tiers?.[1] ?? 0}</em>
+                      {MASTERY_TIER_LABELS[MASTERY_TIERS.SPOTTED]} <em>{stats?.tiers?.spotted ?? 0}</em>
                     </span>
                     <span className={masteryLegendRow}>
                       <span className={masterySwatch} style={{ background: TIER_COLORS[2] }} />
-                      Silver · 2 modes <em>{stats?.tiers?.[2] ?? 0}</em>
+                      {MASTERY_TIER_LABELS[MASTERY_TIERS.LOCATED]} <em>{stats?.tiers?.located ?? 0}</em>
                     </span>
                     <span className={masteryLegendRow}>
                       <span className={masterySwatch} style={{ background: TIER_COLORS[3] }} />
-                      Gold · all 3 <em>{stats?.tiers?.[3] ?? 0}</em>
+                      {MASTERY_TIER_LABELS[MASTERY_TIERS.WORLDLY]} <em>{stats?.tiers?.worldly ?? 0}</em>
                     </span>
                   </div>
                 ) : (
@@ -385,8 +474,20 @@ export default function MasteryPage() {
                     />
                     <span className={masteryLegendScale}>
                       <span>Learning</span>
-                      <span>Mastered</span>
+                      <span>Located</span>
                     </span>
+                  </div>
+                )}
+
+                {data.worldly?.byDomainDisplay && (
+                  <div className={masteryLegend}>
+                    <span className={masteryLegendTitle}>Skills</span>
+                    {Object.entries(data.worldly.byDomainDisplay).map(([domain, pct]) => (
+                      <span key={domain} className={masteryLegendRow}>
+                        {SKILL_DOMAIN_LABELS[domain] ?? domain}
+                        <em>{Math.round(pct)}%</em>
+                      </span>
+                    ))}
                   </div>
                 )}
               </aside>
@@ -395,6 +496,12 @@ export default function MasteryPage() {
         )}
       </main>
 
+      <CountryMasteryModal
+        open={Boolean(selectedCountry)}
+        countryName={selectedCountry?.name}
+        domainScores={selectedCountry?.domainScores}
+        onClose={() => setSelectedCountryId(null)}
+      />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );

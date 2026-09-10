@@ -207,7 +207,7 @@ export default function ResultsPage() {
   const { status } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
   const [scores, setScores] = useState([]);
-  const [mastery, setMastery] = useState({ countries: [], capitals: [], flags: [] });
+  const [mastery, setMastery] = useState({ countries: [], capitals: [], flags: [], neighbors: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -216,7 +216,7 @@ export default function ResultsPage() {
   useEffect(() => {
     if (!signedIn) {
       setScores([]);
-      setMastery({ countries: [], capitals: [], flags: [] });
+      setMastery({ countries: [], capitals: [], flags: [], neighbors: [] });
       setLoading(false);
       setError(null);
       return;
@@ -235,6 +235,7 @@ export default function ResultsPage() {
           countries: masteryByMode.countries ?? [],
           capitals: masteryByMode.capitals ?? [],
           flags: masteryByMode.flags ?? [],
+          neighbors: masteryByMode.neighbors ?? [],
         });
         setLoading(false);
       })
@@ -262,6 +263,7 @@ export default function ResultsPage() {
     const build = (rows) => {
       const map = new Map();
       for (const row of rows) {
+        if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
         map.set(`${row.countryId}:${row.level}`, row.masteryScore);
       }
       return map;
@@ -270,6 +272,7 @@ export default function ResultsPage() {
       countries: build(mastery.countries),
       capitals: build(mastery.capitals),
       flags: build(mastery.flags),
+      neighbors: build(mastery.neighbors),
     };
   }, [mastery]);
 
@@ -325,6 +328,11 @@ export default function ResultsPage() {
               mode={GAME_MODES.FLAGS}
               scoreMap={scoreMap}
             />
+            <ScoreTable
+              title={getModeLabel(GAME_MODES.NEIGHBORS)}
+              mode={GAME_MODES.NEIGHBORS}
+              scoreMap={scoreMap}
+            />
 
             <h2 className={resultsGroupTitle}>Mastery</h2>
             <p className={resultsGroupNote}>
@@ -334,6 +342,7 @@ export default function ResultsPage() {
             <MasteryTable title={getModeLabel(GAME_MODES.COUNTRIES)} lookup={masteryLookups.countries} />
             <MasteryTable title={getModeLabel(GAME_MODES.CAPITALS)} lookup={masteryLookups.capitals} />
             <MasteryTable title={getModeLabel(GAME_MODES.FLAGS)} lookup={masteryLookups.flags} />
+            <MasteryTable title={getModeLabel(GAME_MODES.NEIGHBORS)} lookup={masteryLookups.neighbors} />
           </div>
         )}
       </main>

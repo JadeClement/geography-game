@@ -1,3 +1,8 @@
+/**
+ * deprecated — superseded by per-country EMA tier selection.
+ * Live Learn sessions no longer call this endpoint. Left in place for
+ * any leftover clients.
+ */
 import { auth } from "@/auth";
 import { getLearnChallenge, upsertLearnChallenge } from "@/lib/db";
 import { GAME_MODES, REGIONS } from "@/lib/regions";

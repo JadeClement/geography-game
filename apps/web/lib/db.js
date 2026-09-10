@@ -1,3 +1,73 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * AUDIT (domain-level mastery) — country_stats shape and I/O
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * 1. country_stats row (scripts/setup-db.js CREATE TABLE)
+ *    id                  TEXT PK
+ *    user_id             TEXT NOT NULL → users(id) ON DELETE CASCADE
+ *    country_id          TEXT NOT NULL  (ISO3)
+ *    mode                TEXT NOT NULL  (countries | capitals | flags)
+ *    level               TEXT NOT NULL  (F1/F2/N1/N2)
+ *    first_try_correct   INT  count of first-try corrects
+ *    second_try_correct  INT  count of second-try / miss path
+ *    needed_reveal       INT  count of reveal / clue outcomes
+ *    response_time_ms_sum BIGINT
+ *    response_time_count INT
+ *    mastery_score       REAL 0–1 EMA
+ *    fast_streak         INT
+ *    speed_baseline_ms   INT nullable
+ *    graduated           BOOLEAN (Test-mode graduation only)
+ *    last_attempt_at     TIMESTAMPTZ
+ *    last_outcome        TEXT (first_try_correct | second_try_correct | needed_reveal)
+ *    updated_at / created_at TIMESTAMPTZ
+ *    skill_domain        TEXT NOT NULL DEFAULT 'general'
+ *                        (added this change: location|neighbors|capital|flag|
+ *                        statistics|facts|general)
+ *
+ * 2. Unique key
+ *    Original: UNIQUE (user_id, country_id, mode, level)
+ *    After domain rows: that 4-tuple cannot stay as a full-table unique or
+ *    a second domain row for the same country is impossible. It is converted
+ *    to a PARTIAL unique index WHERE skill_domain = 'general' (legacy rows
+ *    stay unique on the old key). Domain rows use
+ *    UNIQUE (user_id, country_id, mode, level, skill_domain)
+ *    WHERE skill_domain <> 'general'.
+ *
+ * 3. Write path after each answer
+ *    LearnQuestionRenderer → GeographyGame.handleLearnAnswer
+ *      → buildLearnStatPayloads (packages/core/learn/emaIntegration.js)
+ *      → POST /api/country-stats
+ *      → recordCountryPerformance (this file)
+ *      → computeMasteryUpdate (packages/core/mastery.js)
+ *    Dual-write: one domain row (from questionType, or inferred from mode)
+ *    plus the legacy `general` row. Domain is resolved SERVER-SIDE — never
+ *    from a client skillDomain field. Learn applies LEARN_CONTRIBUTION_RATE
+ *    (0.5x on Test-mode domains) on top of the question-type multiplier.
+ *    Also INSERTs one country_attempts row per answer.
+ *
+ * 4. Read path for Learn session building
+ *    GET /api/mastery?mode= → getCountryStatsForUser → mapStatsToMasteryEntries
+ *    Columns used: countryId, level, masteryScore, graduated, lastAttemptAt,
+ *    lastOutcome, skillDomain. Sequencer builds a domain map; sampling uses
+ *    getOverallMastery; type selection uses getDomainMastery.
+ *
+ * 5. computeMasteryUpdate inputs
+ *    (stat, { outcome, responseTimeMs, gameType, learnModeMultiplier = 1 })
+ *    stat: country_stats-shaped object or null. Returns
+ *    { masteryScore, fastStreak, speedBaselineMs, graduated }.
+ *
+ * 6. QUESTION_TYPES ids (packages/constants QUESTION_TYPES):
+ *    blank_map_click, borderless_map_click, shape_drop, free_name_entry,
+ *    capital_free_recall, shape_name_entry, neighbor_recall_all,
+ *    neighbor_free_recall, shape_identification, flag_identification,
+ *    capital_matching, neighbor_confirm, neighbor_select_all,
+ *    population_compare, area_compare, gdp_compare, population_rank,
+ *    area_rank, gdp_rank, neighbor_identification, binary_map_choice,
+ *    landlocked_check, language_family, religion_majority, religion_pie,
+ *    brazil_non_neighbors.
+ */
+
 import { randomUUID } from "crypto";
 import pg from "pg";
 import {
@@ -10,6 +80,7 @@ import {
   getDecayAdjustedMastery,
   isEffectivelyGraduated,
 } from "./mastery.js";
+import { resolveSkillDomain, getLearnContributionRate } from "./learn/questionTypes.js";
 
 const { Pool } = pg;
 
@@ -425,7 +496,8 @@ export async function getCountryStatsForUsers(userIds) {
             mastery_score AS "masteryScore",
             graduated,
             last_attempt_at AS "lastAttemptAt",
-            last_outcome AS "lastOutcome"
+            last_outcome AS "lastOutcome",
+            skill_domain AS "skillDomain"
      FROM country_stats
      WHERE user_id = ANY($1)`,
     [userIds]
@@ -587,7 +659,8 @@ const STAT_RETURNING = `
   speed_baseline_ms AS "speedBaselineMs",
   graduated,
   last_attempt_at AS "lastAttemptAt",
-  last_outcome AS "lastOutcome"
+  last_outcome AS "lastOutcome",
+  skill_domain AS "skillDomain"
 `;
 
 export async function getCountryStatsForUser(userId, { mode, level } = {}) {
@@ -625,6 +698,7 @@ export async function recordCountryPerformance({
   learnModeMultiplier = 1,
   questionTier = null,
   predictedSuccess = null,
+  questionType = null,
 }) {
   // Whitelist the outcome before using it as a column name, since it is
   // interpolated into the SQL below rather than passed as a bound parameter.
@@ -632,6 +706,13 @@ export async function recordCountryPerformance({
     throw new Error(`Invalid outcome: ${outcome}`);
   }
   const column = outcome;
+  const skillDomain = resolveSkillDomain({ questionType, mode });
+  const isLearn = gameType === "learning";
+  const contributionRate = isLearn ? getLearnContributionRate(skillDomain) : 1;
+  const appliedMultiplier =
+    Number.isFinite(learnModeMultiplier) && learnModeMultiplier >= 0
+      ? learnModeMultiplier * contributionRate
+      : contributionRate;
 
   if (!pool) {
     throw new Error("DATABASE_URL is not configured.");
@@ -640,9 +721,7 @@ export async function recordCountryPerformance({
   const client = await pool.connect();
   const trackResponseTime = responseTimeMs != null && outcome !== "needed_reveal";
 
-  try {
-    await client.query("BEGIN");
-
+  async function upsertStatRow(rowId, domain, multiplier) {
     const existingResult = await client.query(
       `SELECT country_id AS "countryId",
               first_try_correct AS "firstTryCorrect",
@@ -653,11 +732,13 @@ export async function recordCountryPerformance({
               mastery_score AS "masteryScore",
               fast_streak AS "fastStreak",
               speed_baseline_ms AS "speedBaselineMs",
-              graduated
+              graduated,
+              skill_domain AS "skillDomain"
        FROM country_stats
        WHERE user_id = $1 AND country_id = $2 AND mode = $3 AND level = $4
+         AND skill_domain = $5
        FOR UPDATE`,
-      [userId, countryId, mode, level]
+      [userId, countryId, mode, level, domain]
     );
 
     const existing = existingResult.rows[0] ?? null;
@@ -667,8 +748,86 @@ export async function recordCountryPerformance({
       outcome,
       responseTimeMs: trackResponseTime ? responseTimeMs : null,
       gameType,
-      learnModeMultiplier,
+      learnModeMultiplier: multiplier,
     });
+
+    const params = [
+      rowId,
+      userId,
+      countryId,
+      mode,
+      level,
+      masteryFields.masteryScore,
+      masteryFields.fastStreak,
+      masteryFields.speedBaselineMs,
+      masteryFields.graduated,
+      outcome,
+      domain,
+    ];
+
+    let responseTimeSumValue = "0";
+    let responseTimeCountValue = "0";
+    let responseTimeUpdate = "";
+
+    if (trackResponseTime) {
+      params.push(responseTimeMs);
+      responseTimeSumValue = `$${params.length}`;
+      responseTimeCountValue = "1";
+      responseTimeUpdate = `,
+        response_time_ms_sum = country_stats.response_time_ms_sum + $${params.length},
+        response_time_count = country_stats.response_time_count + 1`;
+    }
+
+    const isLegacyGeneral = domain === "general";
+    const conflictTarget = isLegacyGeneral
+      ? `(user_id, country_id, mode, level) WHERE skill_domain = 'general'`
+      : `(user_id, country_id, mode, level, skill_domain) WHERE skill_domain <> 'general'`;
+
+    const result = await client.query(
+      `INSERT INTO country_stats (
+         id, user_id, country_id, mode, level,
+         ${column},
+         response_time_ms_sum,
+         response_time_count,
+         mastery_score,
+         fast_streak,
+         speed_baseline_ms,
+         graduated,
+         last_attempt_at,
+         last_outcome,
+         skill_domain
+       )
+       VALUES (
+         $1, $2, $3, $4, $5,
+         1,
+         ${responseTimeSumValue},
+         ${responseTimeCountValue},
+         $6, $7, $8, $9, NOW(), $10, $11
+       )
+       ON CONFLICT ${conflictTarget}
+       DO UPDATE SET
+         ${column} = country_stats.${column} + 1
+         ${responseTimeUpdate},
+         mastery_score = $6,
+         fast_streak = $7,
+         speed_baseline_ms = $8,
+         graduated = $9,
+         last_attempt_at = NOW(),
+         last_outcome = $10,
+         updated_at = NOW()
+       RETURNING ${STAT_RETURNING}`,
+      params
+    );
+
+    return {
+      ...result.rows[0],
+      previousMasteryScore,
+      previousGraduated,
+    };
+  }
+
+  try {
+    await client.query("BEGIN");
 
     await client.query(
       `INSERT INTO country_attempts (
@@ -692,69 +851,18 @@ export async function recordCountryPerformance({
       ]
     );
 
-    const params = [
-      statId,
-      userId,
-      countryId,
-      mode,
-      level,
-      masteryFields.masteryScore,
-      masteryFields.fastStreak,
-      masteryFields.speedBaselineMs,
-      masteryFields.graduated,
-      outcome,
-    ];
-
-    let responseTimeSumValue = "0";
-    let responseTimeCountValue = "0";
-    let responseTimeUpdate = "";
-
-    if (trackResponseTime) {
-      params.push(responseTimeMs);
-      responseTimeSumValue = `$${params.length}`;
-      responseTimeCountValue = "1";
-      responseTimeUpdate = `,
-        response_time_ms_sum = country_stats.response_time_ms_sum + $${params.length},
-        response_time_count = country_stats.response_time_count + 1`;
-    }
-
-    const result = await client.query(
-      `INSERT INTO country_stats (
-         id, user_id, country_id, mode, level,
-         ${column},
-         response_time_ms_sum,
-         response_time_count,
-         mastery_score,
-         fast_streak,
-         speed_baseline_ms,
-         graduated,
-         last_attempt_at,
-         last_outcome
-       )
-       VALUES (
-         $1, $2, $3, $4, $5,
-         1,
-         ${responseTimeSumValue},
-         ${responseTimeCountValue},
-         $6, $7, $8, $9, NOW(), $10
-       )
-       ON CONFLICT (user_id, country_id, mode, level)
-       DO UPDATE SET
-         ${column} = country_stats.${column} + 1
-         ${responseTimeUpdate},
-         mastery_score = $6,
-         fast_streak = $7,
-         speed_baseline_ms = $8,
-         graduated = $9,
-         last_attempt_at = NOW(),
-         last_outcome = $10,
-         updated_at = NOW()
-       RETURNING ${STAT_RETURNING}`,
-      params
-    );
+    const domainStat = await upsertStatRow(statId, skillDomain, appliedMultiplier);
+    const generalStat =
+      skillDomain === "general"
+        ? domainStat
+        : await upsertStatRow(randomUUID(), "general", appliedMultiplier);
 
     await client.query("COMMIT");
-    return { ...result.rows[0], previousMasteryScore, previousGraduated };
+    return {
+      ...generalStat,
+      domainStat,
+      skillDomain,
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -827,6 +935,7 @@ export async function deleteUserPracticeData(userId) {
 }
 
 /**
+ * deprecated — superseded by per-country EMA tier selection.
  * @returns {{ workingTier: number, momentum: number, recentOutcomes: object[] }}
  */
 export async function getLearnChallenge(userId, { mode, region }) {
@@ -857,6 +966,7 @@ export async function getLearnChallenge(userId, { mode, region }) {
 }
 
 /**
+ * deprecated — superseded by per-country EMA tier selection.
  * Upsert adaptive Learn challenge for a user × mode × region.
  */
 export async function upsertLearnChallenge(

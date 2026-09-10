@@ -131,6 +131,16 @@ test("Learn queue still includes every country when recency is 0", () => {
   assert.deepEqual([...queue].sort(), ids);
 });
 
+test("Learn queue honors a session size cap", () => {
+  const ids = ["AAA", "BBB", "CCC", "DDD", "EEE"];
+  const queue = buildFullRegionLearningQueue(ids, {}, null, 2);
+  assert.equal(queue.length, 2);
+  assert.equal(new Set(queue).size, 2);
+  for (const id of queue) {
+    assert.ok(ids.includes(id));
+  }
+});
+
 function inPlayStat(countryId, mastery, extra = {}) {
   return {
     countryId,

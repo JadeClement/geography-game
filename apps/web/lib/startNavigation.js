@@ -88,8 +88,8 @@ export function normalizeStartScreenRoute(parsed) {
     if (!mode || !region || !gameType) {
       return { step: START_STEPS.HOME, mode: null, region: null, gameType: null, level: null };
     }
-    // Learn has no level or session-size step — return to choose-type so the
-    // player can start Learn (full region) from there.
+    // Learn has no level step — return to choose-type so the player can start
+    // Learn from there. Question count lives in Settings.
     if (gameType === GAME_TYPES.LEARNING) {
       return {
         step: START_STEPS.CHOOSE_TYPE,
@@ -99,11 +99,14 @@ export function normalizeStartScreenRoute(parsed) {
         level: null,
       };
     }
+    if (mode === GAME_MODES.NEIGHBORS) {
+      return { step: START_STEPS.CHOOSE_TYPE, mode, region, gameType: null, level: null };
+    }
     return { step, mode, region, gameType, level: null };
   }
 
   if (step === START_STEPS.LEARNING_SIZE) {
-    // Session-size picker removed — Learn always covers the full region.
+    // Session-size picker removed — count is a Settings preference.
     if (!mode || !region) {
       return { step: START_STEPS.HOME, mode: null, region: null, gameType: null, level: null };
     }

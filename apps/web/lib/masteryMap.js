@@ -1,19 +1,42 @@
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
 import { buildLevelScoreMap, computeCountryScore } from "@/lib/worldlyScore";
+import {
+  MASTERY_TIERS,
+  MASTERY_TIER_COLORS,
+  MASTERY_TIER_LABELS,
+} from "@worldly/constants";
 
-// A country counts as "mastered" in a mode once its weighted blend across all
-// four levels (same formula as %Worldly) clears the graduation bar.
+export {
+  MASTERY_TIERS,
+  MASTERY_TIER_COLORS,
+  MASTERY_TIER_LABELS,
+};
+
+// A country counts as "located" in a mode once its weighted blend across all
+// four levels (same formula as the category header) clears the graduation bar.
 export const MASTERY_MODE_THRESHOLD = MASTERY_GRADUATION_THRESHOLD;
 
-export const MASTERY_MODES = [GAME_MODES.COUNTRIES, GAME_MODES.CAPITALS, GAME_MODES.FLAGS];
+export const MASTERY_MODES = [
+  GAME_MODES.COUNTRIES,
+  GAME_MODES.CAPITALS,
+  GAME_MODES.FLAGS,
+  GAME_MODES.NEIGHBORS,
+];
 
-// Per-mode glow palette for the Conquest map. Each mode owns a hue.
+export const DOMAIN_TAB_TO_DOMAIN = {
+  [GAME_MODES.COUNTRIES]: "location",
+  [GAME_MODES.CAPITALS]: "capital",
+  [GAME_MODES.FLAGS]: "flag",
+  [GAME_MODES.NEIGHBORS]: "neighbors",
+};
+
+// Per-mode glow palette for intensity (domain) tabs.
 export const MODE_VISUALS = {
   [GAME_MODES.COUNTRIES]: {
     label: "Countries",
-    accent: "#22d3ee",
-    soft: "rgba(34, 211, 238, 0.16)",
+    accent: MASTERY_TIER_COLORS.worldly,
+    soft: "rgba(45, 212, 191, 0.16)",
   },
   [GAME_MODES.CAPITALS]: {
     label: "Capitals",
@@ -25,21 +48,33 @@ export const MODE_VISUALS = {
     accent: "#fbbf24",
     soft: "rgba(251, 191, 36, 0.16)",
   },
+  [GAME_MODES.NEIGHBORS]: {
+    label: "Neighbors",
+    accent: "#38bdf8",
+    soft: "rgba(56, 189, 248, 0.16)",
+  },
 };
 
 export const ALL_MODE = "all";
 
 export const ALL_VISUAL = {
-  label: "All three",
-  accent: "#4ade80",
-  soft: "rgba(74, 222, 128, 0.16)",
+  label: "All",
+  accent: MASTERY_TIER_COLORS.worldly,
+  soft: "rgba(94, 234, 212, 0.16)",
 };
 
-// Tier colors for the combined "All" view: how many of the 3 modes are mastered.
+/** Numeric feature-state for map paint: 0 unseen, 1 spotted, 2 located, 3 worldly. */
+export const TIER_STATE = {
+  [MASTERY_TIERS.NONE]: 0,
+  [MASTERY_TIERS.SPOTTED]: 1,
+  [MASTERY_TIERS.LOCATED]: 2,
+  [MASTERY_TIERS.WORLDLY]: 3,
+};
+
 export const TIER_COLORS = {
-  1: "#c2763b", // bronze
-  2: "#cbd5e1", // silver
-  3: "#fcd34d", // gold
+  1: MASTERY_TIER_COLORS.spotted,
+  2: MASTERY_TIER_COLORS.located,
+  3: MASTERY_TIER_COLORS.worldly,
 };
 
 export function getModeVisual(mode) {
@@ -49,7 +84,7 @@ export function getModeVisual(mode) {
 
 /**
  * Collapse per-level mastery rows into a weighted per-country score, using
- * the same level weights and cascade rules as %Worldly.
+ * the same level weights and cascade rules as the category header.
  * @param {{countryId:string, level:string, masteryScore:number}[]} rows
  * @returns {Map<string,{score:number}>}
  */
@@ -79,17 +114,22 @@ export function countMastered(modeMap, countryIds) {
   return count;
 }
 
-/**
- * Per-country tier 0..3 = number of modes mastered.
- * @param {{countries:Map,capitals:Map,flags:Map}} maps
- */
+export function countTierLabel(tierMap, countryIds, tier) {
+  let count = 0;
+  for (const id of countryIds) {
+    if ((tierMap.get(id) ?? MASTERY_TIERS.NONE) === tier) count += 1;
+  }
+  return count;
+}
+
+/** @deprecated bronze/silver/gold helper — kept for share-image fallbacks */
 export function buildTierMap(maps, countryIds) {
   const tiers = new Map();
   for (const id of countryIds) {
     let tier = 0;
-    if (isMastered(maps[GAME_MODES.COUNTRIES].get(id))) tier += 1;
-    if (isMastered(maps[GAME_MODES.CAPITALS].get(id))) tier += 1;
-    if (isMastered(maps[GAME_MODES.FLAGS].get(id))) tier += 1;
+    if (isMastered(maps[GAME_MODES.COUNTRIES]?.get(id))) tier += 1;
+    if (isMastered(maps[GAME_MODES.CAPITALS]?.get(id))) tier += 1;
+    if (isMastered(maps[GAME_MODES.FLAGS]?.get(id))) tier += 1;
     tiers.set(id, tier);
   }
   return tiers;

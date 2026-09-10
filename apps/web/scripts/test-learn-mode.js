@@ -10,12 +10,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  QUESTION_TIERS,
-  getEligibleQuestionTypes,
-  getEligibleQuestionTypesForChallenge,
-} from "@/lib/learn/questionTypes";
-import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import { QUESTION_TIERS, getEligibleQuestionTypes, getEligibleQuestionTypesForChallenge, getPrimaryTierForMastery, QUESTION_TYPES, getDomainForQuestionType, SKILL_DOMAINS, QUESTION_TYPE_TO_DOMAIN } from "@/lib/learn/questionTypes";
+import { buildLearnSession, getTierForCountry, selectQuestionForCountry } from "@/lib/learn/sessionSequencer";
+import { buildDomainMasteryMap, getDomainMastery, getOverallMastery } from "@/lib/learn/domainMastery";
 import {
   createDefaultChallenge,
   updateChallengeLevel,
@@ -135,6 +132,20 @@ test("mastery 0.0 yields only Tier 4 types", () => {
   assert.ok(eligible.every((t) => t.tier === QUESTION_TIERS.TIER_4));
 });
 
+test("MASTERY_BANDS primary tier matches EMA cutovers", () => {
+  assert.equal(getPrimaryTierForMastery(0), QUESTION_TIERS.TIER_4);
+  assert.equal(getPrimaryTierForMastery(0.15), QUESTION_TIERS.TIER_4);
+  assert.equal(getPrimaryTierForMastery(0.45), QUESTION_TIERS.TIER_3);
+  assert.equal(getPrimaryTierForMastery(0.65), QUESTION_TIERS.TIER_2);
+  assert.equal(getPrimaryTierForMastery(0.82), QUESTION_TIERS.TIER_1);
+  assert.equal(getPrimaryTierForMastery(0.95), QUESTION_TIERS.TIER_1);
+});
+
+test("unseen countries (mastery 0, 0 attempts) are Tier 4 first-exposure", () => {
+  assert.equal(getTierForCountry(0, 0), QUESTION_TIERS.TIER_4);
+  assert.equal(getTierForCountry(0, 4), QUESTION_TIERS.TIER_4);
+});
+
 test("challenge workingTier 4 yields Tier 4 (+ adjacent) types", () => {
   const eligible = getEligibleQuestionTypesForChallenge(4, "countries");
   assert.ok(eligible.length > 0);
@@ -149,53 +160,49 @@ test("challenge workingTier 1 yields Tier 1 (+ adjacent) types", () => {
 
 // ── Session building rules (Steps 3–4) ────────────────────────────────────────
 
-test("mixed-challenge 12-country sessions honor opening / variety / tier rules", () => {
+test("mixed-mastery 12-country sessions honor opening / variety / tier rules", () => {
   for (let iter = 0; iter < 300; iter += 1) {
     const ids = sample(ENABLED_IDS, 12);
-    const countries = ids.map((id) => ({
+    const countries = ids.map((id, i) => ({
       countryId: id,
-      mastery: 0.1 + Math.random() * 0.85,
+      mastery: [0.1, 0.45, 0.65, 0.82][i % 4],
+      lastAttemptAt: i % 4 === 0 ? null : "2026-01-01",
     }));
-    const workingTier = 1 + Math.floor(Math.random() * 4);
-    const { questions } = buildLearnSession({
+    const { questions, sessionMeta } = buildLearnSession({
       countries,
       category: "countries",
       allCountries: ENABLED,
-      challenge: { workingTier, momentum: 0, recentOutcomes: [] },
     });
 
     assert.ok(questions.length >= 12, "no country dropped");
-    // Rule 3 / checklist: never open with a Tier 1 free-recall question.
     assert.notEqual(questions[0].tier, QUESTION_TIERS.TIER_1, "opened with Tier 1");
-    // Rule 2: avoid long same-type runs when the type mix allows it. The
-    // sequencer documents that thin catalogs can force residual streaks.
     const typeCount = new Set(questions.map((q) => q.type)).size;
     const longest = longestSameTypeRun(questions);
     if (typeCount >= 4) {
       assert.ok(longest <= 5, `long same-type run (${longest}) despite type mix`);
     }
-    // Rule 4: 10+ question sessions include at least 2 tiers.
     assert.ok(tiersOf(questions).size >= 2, "fewer than 2 tiers in a 10+ session");
     assert.ok(
       questions.every((q) => typeof q.predictedSuccess === "number"),
       "predictedSuccess attached"
     );
+    assert.equal(sessionMeta.workingTier, undefined);
   }
 });
 
 test("Rule 5: no back-to-back comparatives whenever spacers can separate them", () => {
-  // workingTier 2 → primarily T1/T2 with adjacent T3 — plenty of spacers.
+  // Mix of high-mastery (T1/T2 spacers) and low-mastery (T3/T4) countries.
   for (let iter = 0; iter < 500; iter += 1) {
     const ids = sample(ENABLED_IDS, 12);
-    const countries = ids.map((id) => ({
+    const countries = ids.map((id, i) => ({
       countryId: id,
-      mastery: Math.random(),
+      mastery: i < 6 ? 0.8 : 0.2,
+      lastAttemptAt: "2026-01-01",
     }));
     const { questions } = buildLearnSession({
       countries,
       category: "countries",
       allCountries: ENABLED,
-      challenge: { workingTier: 2, momentum: 0, recentOutcomes: [] },
     });
     const comparative = questions.filter((q) => isComparative(q.tier)).length;
     const spacers = questions.length - comparative;
@@ -211,29 +218,149 @@ test("Rule 5: no back-to-back comparatives whenever spacers can separate them", 
   }
 });
 
-test("edge case: brand new challenge (tier 4) builds without error and has >=2 tiers", () => {
+test("edge case: brand new learner (all EMA 0) builds and has >=2 tiers", () => {
   const ids = sample(ENABLED_IDS, 12);
   const countries = ids.map((id) => ({ countryId: id, mastery: 0 }));
   const { questions } = buildLearnSession({
     countries,
     category: "countries",
     allCountries: ENABLED,
-    challenge: createDefaultChallenge(),
   });
   assert.ok(questions.length >= 12);
+  const sampledIds = new Set(ids);
+  assert.ok(
+    questions.filter((q) => sampledIds.has(q.countryId)).every((q) => q.firstExposure === true)
+  );
   assert.ok(tiersOf(questions).size >= 2, "bonus comparative injection should add a 2nd tier");
 });
 
-test("edge case: workingTier 1 capitals builds without error", () => {
+test("edge case: high-mastery capitals builds without error", () => {
   const ids = sample(ENABLED_IDS, 12);
-  const countries = ids.map((id) => ({ countryId: id, mastery: 0.97 }));
+  const countries = ids.map((id) => ({
+    countryId: id,
+    mastery: 0.97,
+    lastAttemptAt: "2026-01-01",
+  }));
   const { questions } = buildLearnSession({
     countries,
     category: "capitals",
     allCountries: ENABLED,
-    challenge: { workingTier: 1, momentum: 0, recentOutcomes: [] },
   });
   assert.ok(questions.length >= 12);
+});
+
+test("per-country EMA selects different tiers in one session", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const germany = ENABLED_BY_ID.get("DEU");
+  const italy = ENABLED_BY_ID.get("ITA");
+  const spain = ENABLED_BY_ID.get("ESP");
+  const { questions } = buildLearnSession({
+    countries: [
+      { countryId: "FRA", mastery: 0.15, lastAttemptAt: "2026-01-01" },
+      { countryId: "DEU", mastery: 0.45, lastAttemptAt: "2026-01-01" },
+      { countryId: "ITA", mastery: 0.65, lastAttemptAt: "2026-01-01" },
+      { countryId: "ESP", mastery: 0.82, lastAttemptAt: "2026-01-01" },
+    ],
+    category: "countries",
+    allCountries: ENABLED,
+  });
+  const byId = Object.fromEntries(questions.map((q) => [q.countryId, q]));
+  assert.equal(byId.FRA?.tier, QUESTION_TIERS.TIER_4);
+  assert.equal(byId.DEU?.tier, QUESTION_TIERS.TIER_3);
+  assert.equal(byId.ITA?.tier, QUESTION_TIERS.TIER_2);
+  assert.equal(byId.ESP?.tier, QUESTION_TIERS.TIER_1);
+  assert.ok(france && germany && italy && spain);
+  assert.ok(questions.every((q) => typeof q.skillDomain === "string"));
+});
+
+test("every QUESTION_TYPES id is mapped to a skill domain", () => {
+  for (const type of Object.values(QUESTION_TYPES)) {
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(QUESTION_TYPE_TO_DOMAIN, type.id),
+      true,
+      `unmapped type ${type.id}`
+    );
+    assert.ok(Object.values(SKILL_DOMAINS).includes(getDomainForQuestionType(type.id)));
+  }
+});
+
+test("domain mastery map falls back to general and weights overall", () => {
+  const map = buildDomainMasteryMap([
+    { countryId: "FRA", skillDomain: "general", masteryScore: 0.4 },
+    { countryId: "DEU", skillDomain: "location", masteryScore: 0.8 },
+    { countryId: "DEU", skillDomain: "statistics", masteryScore: 0.2 },
+  ]);
+  assert.equal(getDomainMastery(map, "FRA", SKILL_DOMAINS.LOCATION), 0.4);
+  assert.equal(getDomainMastery(map, "ISL", SKILL_DOMAINS.LOCATION), 0);
+  assert.equal(getDomainMastery(map, "DEU", SKILL_DOMAINS.STATISTICS), 0.2);
+  assert.equal(
+    getDomainMastery(map, "DEU", SKILL_DOMAINS.FACTS, 0.99),
+    0,
+    "missing domain is unseen (0), not the overall-mastery fallback"
+  );
+  assert.equal(getOverallMastery(map, "FRA"), 0.4);
+  const deu = getOverallMastery(map, "DEU");
+  assert.ok(deu > 0.2 && deu < 0.8, `weighted overall ${deu}`);
+});
+
+test("firstExposure is true only with mastery 0 and zero attempts", () => {
+  const unseen = selectQuestionForCountry({
+    category: "countries",
+    record: ENABLED_BY_ID.get("FRA"),
+    allCountries: ENABLED,
+    mastery: 0,
+    attempts: 0,
+  });
+  const seenZero = selectQuestionForCountry({
+    category: "countries",
+    record: ENABLED_BY_ID.get("FRA"),
+    allCountries: ENABLED,
+    mastery: 0,
+    attempts: 3,
+  });
+  assert.equal(unseen.firstExposure, true);
+  assert.equal(unseen.tier, QUESTION_TIERS.TIER_4);
+  assert.equal(seenZero.firstExposure, false);
+  assert.equal(seenZero.tier, QUESTION_TIERS.TIER_4);
+});
+
+test("unseen skill domain on a known country is firstExposure", () => {
+  const question = selectQuestionForCountry({
+    category: "countries",
+    record: ENABLED_BY_ID.get("DEU"),
+    allCountries: ENABLED,
+    mastery: 0.8,
+    attempts: 6,
+    masteryStats: [
+      {
+        countryId: "DEU",
+        skillDomain: "location",
+        masteryScore: 0.8,
+        lastAttemptAt: "2026-01-01",
+      },
+    ],
+  });
+  if (question.skillDomain === SKILL_DOMAINS.LOCATION) {
+    assert.equal(question.firstExposure, false);
+    assert.ok(question.domainMasteryScore > 0.7);
+  } else {
+    assert.equal(question.firstExposure, true);
+    assert.equal(question.domainMasteryScore, 0);
+  }
+});
+
+test("island with no neighbors is never dropped", () => {
+  const iceland = ENABLED_BY_ID.get("ISL");
+  assert.ok(iceland);
+  const question = selectQuestionForCountry({
+    category: "countries",
+    record: iceland,
+    allCountries: ENABLED,
+    mastery: 0.65,
+    attempts: 4,
+  });
+  assert.ok(question);
+  assert.equal(question.countryId, "ISL");
 });
 
 // ── Adaptive challenge + predictedSuccess ─────────────────────────────────────
@@ -310,23 +437,24 @@ test("Russia landlocked predictedSuccess is trivial vs Serbia at workingTier 3",
   assert.equal(picked.id, "rs");
 });
 
-test("workingTier 2 sessions lean harder than workingTier 4", () => {
+test("high-mastery sessions lean harder than unseen sessions", () => {
   const ids = sample(
     ENABLED.filter((c) => c.region === "europe").map((c) => c.iso3),
     12
   );
-  const countries = ids.map((id) => ({ countryId: id, mastery: 0 }));
   const easy = buildLearnSession({
-    countries,
+    countries: ids.map((id) => ({ countryId: id, mastery: 0 })),
     category: "countries",
     allCountries: ENABLED,
-    challenge: { workingTier: 4, momentum: 0, recentOutcomes: [] },
   });
   const hard = buildLearnSession({
-    countries,
+    countries: ids.map((id) => ({
+      countryId: id,
+      mastery: 0.82,
+      lastAttemptAt: "2026-01-01",
+    })),
     category: "countries",
     allCountries: ENABLED,
-    challenge: { workingTier: 2, momentum: 0, recentOutcomes: [] },
   });
   const easyHardShare =
     easy.questions.filter(
@@ -338,7 +466,7 @@ test("workingTier 2 sessions lean harder than workingTier 4", () => {
     ).length / hard.questions.length;
   assert.ok(
     hardHardShare > easyHardShare,
-    `expected hard session harder (${hardHardShare} vs ${easyHardShare})`
+    `expected high-mastery session harder (${hardHardShare} vs ${easyHardShare})`
   );
 });
 
@@ -1038,6 +1166,36 @@ test("rank list slot targeting stays stable across the full height", () => {
   assert.deepEqual(
     slots.slice(1).map((slot) => slot.id),
     ["a", "b", "c", "d"]
+  );
+});
+
+test("religion majority questions use Pew breakdowns", () => {
+  const saudi = ENABLED_BY_ID.get("SAU");
+  const india = ENABLED_BY_ID.get("IND");
+  const nigeria = ENABLED_BY_ID.get("NGA");
+  const czechia = ENABLED_BY_ID.get("CZE");
+  assert.ok(saudi?.religions?.length > 0);
+  assert.equal(saudi.religions[0].name, "Islam");
+
+  const saudiQ = generateQuestion("religion_majority", saudi, ENABLED_BY_ID);
+  assert.equal(saudiQ?.type, "religion_majority");
+  assert.equal(saudiQ?.correctAnswer, "Islam");
+  assert.ok(saudiQ.options.some((option) => option.value === "Islam"));
+
+  const indiaQ = generateQuestion("religion_majority", india, ENABLED_BY_ID);
+  assert.equal(indiaQ?.correctAnswer, "Hinduism");
+
+  const nigeriaQ = generateQuestion("religion_majority", nigeria, ENABLED_BY_ID);
+  assert.deepEqual(nigeriaQ?.correctAnswer, ["Islam", "Christianity"]);
+  assert.ok(nigeriaQ.options.some((option) => option.value === "Islam"));
+  assert.ok(nigeriaQ.options.some((option) => option.value === "Christianity"));
+
+  const czechiaQ = generateQuestion("religion_majority", czechia, ENABLED_BY_ID);
+  assert.equal(czechiaQ?.correctAnswer, "No religion");
+
+  assert.equal(
+    generateQuestion("religion_majority", { ...saudi, religions: [] }, ENABLED_BY_ID),
+    null
   );
 });
 

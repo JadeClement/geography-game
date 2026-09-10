@@ -1,9 +1,10 @@
 /**
- * Learn challenge level — adaptive format difficulty per mode × region.
+ * Learn challenge level — DEPRECATED.
+ * Superseded by per-country EMA tier selection (MASTERY_BANDS in the sequencer).
+ * Harden/ease ticks are unused by the live Learn path. Left in place because
+ * GET/POST /api/learn-challenge still exist.
  *
  * workingTier: 4 (easiest association formats) … 1 (hardest free recall).
- * Tiers still drive EMA multipliers elsewhere; this module only decides which
- * formats to serve so learners stay between boredom and frustration.
  */
 
 import { LEARN_CHALLENGE, QUESTION_TIERS, ROUND_OUTCOMES } from "@worldly/constants";

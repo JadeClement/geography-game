@@ -4,7 +4,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import { ALL_MODE, TIER_COLORS } from "@/lib/masteryMap";
+import { TIER_COLORS } from "@/lib/masteryMap";
 import { THEMES } from "@/lib/theme";
 import { masteryMapCanvas } from "@/lib/ui";
 
@@ -108,10 +108,10 @@ function tierLineOpacity() {
   ];
 }
 
-function applyModePaint(map, mode, accent) {
+function applyModePaint(map, paintMode, accent) {
   if (!map.getLayer("mastery-glow")) return;
 
-  if (mode === ALL_MODE) {
+  if (paintMode === "tiers") {
     map.setPaintProperty("mastery-glow", "fill-color", tierFillColor());
     map.setPaintProperty("mastery-glow", "fill-opacity", tierFillOpacity());
     map.setPaintProperty("mastery-glow-line", "line-color", TIER_COLORS[3]);
@@ -140,7 +140,7 @@ function applyValues(map, geojson, scoreByCountry, tierByCountry) {
 }
 
 export default forwardRef(function MasteryMap(
-  { countries, geojson, mode, accent, scoreByCountry, tierByCountry, onHover },
+  { countries, geojson, mode, accent, scoreByCountry, tierByCountry, paintMode = "tiers", onHover, onSelect },
   ref
 ) {
   const { theme } = useTheme();
@@ -149,11 +149,13 @@ export default forwardRef(function MasteryMap(
   const readyRef = useRef(false);
   const igniteRafRef = useRef(null);
   const onHoverRef = useRef(onHover);
-  const propsRef = useRef({ mode, accent, scoreByCountry, tierByCountry });
+  const onSelectRef = useRef(onSelect);
+  const propsRef = useRef({ mode, accent, scoreByCountry, tierByCountry, paintMode });
   const themeRef = useRef(theme);
 
   onHoverRef.current = onHover;
-  propsRef.current = { mode, accent, scoreByCountry, tierByCountry };
+  onSelectRef.current = onSelect;
+  propsRef.current = { mode, accent, scoreByCountry, tierByCountry, paintMode };
   themeRef.current = theme;
 
   const orderedIds = useRef([]);
@@ -187,9 +189,9 @@ export default forwardRef(function MasteryMap(
   const applyAll = () => {
     const map = mapRef.current;
     if (!map) return;
-    const { mode: m, accent: a, scoreByCountry: s, tierByCountry: t } = propsRef.current;
+    const { mode: m, accent: a, scoreByCountry: s, tierByCountry: t, paintMode: p } = propsRef.current;
     applyValues(map, geojson, s, t);
-    applyModePaint(map, m, a);
+    applyModePaint(map, p ?? "tiers", a);
     runIgnite();
   };
 
@@ -339,7 +341,13 @@ export default forwardRef(function MasteryMap(
 
       map.on("mousemove", "mastery-base", handleMove);
       map.on("mouseleave", "mastery-base", handleLeave);
-      map.on("click", "mastery-base", handleMove);
+      map.on("click", "mastery-base", (event) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
+        const id = feature.properties?.id;
+        if (!id) return;
+        onSelectRef.current?.({ id, point: event.point });
+      });
       map.on("click", (event) => {
         const features = map.queryRenderedFeatures(event.point, { layers: ["mastery-base"] });
         if (!features.length) {
@@ -369,7 +377,7 @@ export default forwardRef(function MasteryMap(
     if (!readyRef.current) return;
     applyAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, accent, scoreByCountry, tierByCountry]);
+  }, [mode, accent, scoreByCountry, tierByCountry, paintMode]);
 
   return <div ref={containerRef} className={masteryMapCanvas} />;
 });

@@ -100,6 +100,7 @@ export function buildLearnStatPayload(event, { mode, level }) {
     responseTimeMs: event.responseTimeMs ?? null,
     learnModeMultiplier: applied,
     questionTier: event.tier ?? null,
+    questionType: event.questionType ?? event.type ?? null,
     predictedSuccess:
       event.predictedSuccess != null && Number.isFinite(event.predictedSuccess)
         ? event.predictedSuccess

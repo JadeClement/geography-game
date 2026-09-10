@@ -36,6 +36,7 @@ const EMPTY_MASTERY_BY_MODE = {
   countries: [],
   capitals: [],
   flags: [],
+  neighbors: [],
 };
 
 export async function fetchAllMasteryStats() {
@@ -55,6 +56,12 @@ export async function fetchAllMasteryStats() {
       ...EMPTY_MASTERY_BY_MODE,
       ...data.mastery,
     },
+    score: data.score,
+    percent: data.percent,
+    rawPercent: data.rawPercent,
+    categories: data.categories,
+    byDomain: data.byDomain,
+    byDomainDisplay: data.byDomainDisplay,
   };
 }
 
@@ -74,6 +81,7 @@ export async function fetchWeakCountryStats({ mode, level, region }) {
   return data;
 }
 
+/** deprecated — superseded by per-country EMA tier selection. */
 export async function fetchLearnChallenge({ mode, region }) {
   const params = new URLSearchParams({ mode, region });
   const response = await fetch(`/api/learn-challenge?${params}`);
@@ -97,6 +105,7 @@ export async function fetchLearnChallenge({ mode, region }) {
   return data;
 }
 
+/** deprecated — superseded by per-country EMA tier selection. */
 export async function saveLearnChallenge(body) {
   const response = await fetch("/api/learn-challenge", {
     method: "POST",

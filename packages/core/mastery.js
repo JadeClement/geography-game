@@ -325,6 +325,7 @@ export function mapStatToMasteryEntry(stat) {
     graduated: isEffectivelyGraduated(stat),
     lastAttemptAt: stat.lastAttemptAt ?? null,
     lastOutcome: stat.lastOutcome ?? null,
+    skillDomain: stat.skillDomain ?? stat.skill_domain ?? "general",
   };
 }
 
@@ -337,6 +338,7 @@ export function groupMasteryEntriesByMode(stats) {
     countries: [],
     capitals: [],
     flags: [],
+    neighbors: [],
   };
 
   for (const stat of stats) {

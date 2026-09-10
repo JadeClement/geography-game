@@ -24,6 +24,16 @@ export function useRoundScoring() {
     setWrongCount(0);
   }, []);
 
+  const restore = useCallback(({ rightCount: nextRight = 0, wrongCount: nextWrong = 0 } = {}) => {
+    const right = Math.max(0, Number(nextRight) || 0);
+    const wrong = Math.max(0, Number(nextWrong) || 0);
+    rightCountRef.current = right;
+    wrongCountRef.current = wrong;
+    incorrectTargetsRef.current = [];
+    setRightCount(right);
+    setWrongCount(wrong);
+  }, []);
+
   // Mark the start of a round so it can be scored at most once.
   const beginRound = useCallback(() => {
     roundMarkedIncorrectRef.current = false;
@@ -57,6 +67,7 @@ export function useRoundScoring() {
     roundMarkedIncorrectRef,
     incorrectTargetsRef,
     reset,
+    restore,
     beginRound,
     markRoundCorrect,
     markRoundIncorrect,

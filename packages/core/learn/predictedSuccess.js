@@ -351,7 +351,7 @@ export function predictedSuccess({
     score += fameBoost * 0.3;
   }
 
-  if (type === "language_family") {
+  if (type === "language_family" || type === "religion_majority") {
     score += fame * 0.06 - 0.02;
   }
 

@@ -6,6 +6,7 @@ export { GAME_MODES, REGIONS };
 export function getModeLabel(mode) {
   if (mode === GAME_MODES.CAPITALS) return "Capitals";
   if (mode === GAME_MODES.FLAGS) return "Flags";
+  if (mode === GAME_MODES.NEIGHBORS) return "Neighbors";
   return "Countries";
 }
 

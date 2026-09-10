@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { DEFAULT_LEARN_LEVEL } from "@worldly/constants";
+import { DEFAULT_LEARN_LEVEL, DEFAULT_LEARN_SESSION_SIZE } from "@worldly/constants";
 import { buildFullRegionLearningQueue } from "@worldly/core/learning";
 import { buildLearnSession } from "@worldly/core/learn/sessionSequencer";
 import { buildLearnStatPayload } from "@worldly/core/learn/emaIntegration";
@@ -135,12 +135,12 @@ export default function GameSessionScreen() {
           const queueIds = buildFullRegionLearningQueue(
             regionCountries.map((c) => c.id || c.iso3),
             masteryById,
-            recencyById
+            recencyById,
+            DEFAULT_LEARN_SESSION_SIZE
           );
           const queued = queueIds
             .map((id) => byId.get(id))
-            .filter(Boolean)
-            .slice(0, 12);
+            .filter(Boolean);
           const { questions: built } = buildLearnSession({
             countries: queued,
             category: mode,

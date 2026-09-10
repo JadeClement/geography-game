@@ -15,6 +15,7 @@ export const GAME_MODES = {
   COUNTRIES: "countries",
   CAPITALS: "capitals",
   FLAGS: "flags",
+  NEIGHBORS: "neighbors",
 };
 
 export const REGIONS = [
@@ -106,6 +107,10 @@ export const GO_RECENCY_HALF_LIFE_HOURS = 8;
 export const LEARN_RECENCY_HALF_LIFE_HOURS = 24;
 /** Countries in a Go! session. */
 export const GO_SESSION_SIZE = 10;
+/** Default questions in a Learn session (capped at the region size). */
+export const DEFAULT_LEARN_SESSION_SIZE = 20;
+export const MIN_LEARN_SESSION_SIZE = 5;
+export const MAX_LEARN_SESSION_SIZE = 100;
 export const GO_MIX_WEAK = 4;
 export const GO_MIX_MIDDLE = 2;
 export const GO_MIX_NEAR = 2;
@@ -131,6 +136,78 @@ export const WORLDLY_WEIGHTS = {
   [GAME_MODES.COUNTRIES]: 0.5,
   [GAME_MODES.CAPITALS]: 0.35,
   [GAME_MODES.FLAGS]: 0.15,
+};
+
+/**
+ * Domain mix for the domain-weighted % Worldly score.
+ * Location is the spine of the game; neighbors are the next hardest recall
+ * skill; capital/flag are classic Test modes; statistics/facts are Learn-only.
+ */
+export const WORLDLY_DOMAIN_WEIGHTS = {
+  location: 0.35,
+  neighbors: 0.25,
+  capital: 0.15,
+  flag: 0.1,
+  statistics: 0.1,
+  facts: 0.05,
+};
+
+/**
+ * Extra Learn write-rate for domains that also have a Test mode.
+ * Statistics and facts have no Test, so Learn is the only way they move (1.0x).
+ */
+export const LEARN_CONTRIBUTION_RATE = {
+  location: 0.5,
+  neighbors: 0.5,
+  capital: 0.5,
+  flag: 0.5,
+  statistics: 1,
+  facts: 1,
+};
+
+/**
+ * Piecewise display curve. Raw 0.75 (the “located / worldly-domain” bar)
+ * maps to 80 on the header so that milestone feels earned but visible.
+ */
+export const WORLDLY_CURVE_BREAKPOINTS = [
+  { raw: 0, display: 0, label: "Unseen" },
+  { raw: 0.25, display: 20, label: "Getting started" },
+  { raw: 0.5, display: 45, label: "Developing" },
+  { raw: 0.75, display: 80, label: "Located" },
+  { raw: 1, display: 100, label: "Worldly" },
+];
+
+/** Raw domain scores at or above this count toward the Worldly map tier. */
+export const WORLDLY_DOMAIN_THRESHOLD = 0.75;
+
+export const MASTERY_TIERS = {
+  NONE: "none",
+  SPOTTED: "spotted",
+  LOCATED: "located",
+  WORLDLY: "worldly",
+};
+
+export const MASTERY_TIER_COLORS = {
+  none: "#1a2740",
+  spotted: "#0f766e",
+  located: "#2dd4bf",
+  worldly: "#5eead4",
+};
+
+export const MASTERY_TIER_LABELS = {
+  none: "Unseen",
+  spotted: "Spotted",
+  located: "Located",
+  worldly: "Worldly",
+};
+
+export const SKILL_DOMAIN_LABELS = {
+  location: "Location",
+  neighbors: "Neighbors",
+  capital: "Capital",
+  flag: "Flag",
+  statistics: "Statistics",
+  facts: "Facts",
 };
 
 export const LEVEL_WEIGHTS = {
@@ -189,7 +266,7 @@ export const QUESTION_TYPES = {
     categories: ["countries"],
   },
   CAPITAL_FREE_RECALL: {
-    tier: QUESTION_TIERS.TIER_1,
+    tier: QUESTION_TIERS.TIER_2,
     id: "capital_free_recall",
     categories: ["capitals"],
   },
@@ -216,17 +293,17 @@ export const QUESTION_TYPES = {
     categories: ["countries"],
   },
   FLAG_IDENTIFICATION: {
-    tier: QUESTION_TIERS.TIER_2,
+    tier: QUESTION_TIERS.TIER_3,
     id: "flag_identification",
     categories: ["flags"],
   },
   CAPITAL_MATCHING: {
-    tier: QUESTION_TIERS.TIER_2,
+    tier: QUESTION_TIERS.TIER_3,
     id: "capital_matching",
     categories: ["capitals"],
   },
   NEIGHBOR_CONFIRM: {
-    tier: QUESTION_TIERS.TIER_2,
+    tier: QUESTION_TIERS.TIER_3,
     id: "neighbor_confirm",
     categories: ["countries"],
     requires: ["neighbors"],
@@ -284,10 +361,16 @@ export const QUESTION_TYPES = {
     categories: ALL_CATEGORIES,
   },
   LANGUAGE_FAMILY: {
-    tier: QUESTION_TIERS.TIER_4,
+    tier: QUESTION_TIERS.TIER_2,
     id: "language_family",
     categories: ALL_CATEGORIES,
     requires: ["languages"],
+  },
+  RELIGION_MAJORITY: {
+    tier: QUESTION_TIERS.TIER_2,
+    id: "religion_majority",
+    categories: ALL_CATEGORIES,
+    requires: ["religions"],
   },
   RELIGION_PIE: {
     tier: QUESTION_TIERS.TIER_1,
@@ -335,6 +418,7 @@ export const TYPE_DISPLAY_NAMES = {
   binary_map_choice: "Map A/B",
   landlocked_check: "Landlocked?",
   language_family: "Language",
+  religion_majority: "Religion",
   religion_pie: "Religion pie",
   brazil_non_neighbors: "Brazil non-neighbors",
 };
@@ -347,17 +431,16 @@ export const TYPE_GROUPS = {
     "shape_drop",
     "free_name_entry",
     "shape_name_entry",
-    "capital_free_recall",
     "neighbor_recall_all",
     "religion_pie",
   ],
   [QUESTION_TIERS.TIER_2]: [
     "neighbor_free_recall",
     "shape_identification",
-    "flag_identification",
-    "capital_matching",
-    "neighbor_confirm",
+    "capital_free_recall",
     "neighbor_select_all",
+    "language_family",
+    "religion_majority",
   ],
   [QUESTION_TIERS.TIER_3]: [
     "population_compare",
@@ -368,11 +451,13 @@ export const TYPE_GROUPS = {
     "gdp_rank",
     "neighbor_identification",
     "brazil_non_neighbors",
+    "flag_identification",
+    "capital_matching",
+    "neighbor_confirm",
   ],
   [QUESTION_TIERS.TIER_4]: [
     "binary_map_choice",
     "landlocked_check",
-    "language_family",
   ],
 };
 
@@ -383,6 +468,7 @@ export const LEARN_SESSION_WEIGHTS = {
 
 /**
  * Adaptive Learn difficulty (challenge level + predictedSuccess).
+ * deprecated — superseded by per-country EMA tier selection.
  * workingTier: 4 = easiest formats … 1 = hardest (free recall).
  */
 export const LEARN_CHALLENGE = {
