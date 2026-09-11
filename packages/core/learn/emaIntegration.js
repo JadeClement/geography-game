@@ -61,16 +61,16 @@ export function neighborSetCredit({
 
 /**
  * Maps a Learn answer event to a round outcome:
- * - correct, no clue / prior miss    → first_try_correct
+ * - correct, no prior miss           → first_try_correct
  * - correct after a soft miss        → second_try_correct
  * - a clue/reveal was used (any)     → needed_reveal
- * - wrong, no clue used              → second_try_correct (the "miss" penalty path)
+ * - wrong, no clue used              → incorrect (complete miss)
  */
 export function outcomeFromEvent({ correct, revealUsed, priorMiss } = {}) {
   if (revealUsed) return ROUND_OUTCOMES.NEEDED_REVEAL;
   if (correct && priorMiss) return ROUND_OUTCOMES.SECOND_TRY_CORRECT;
   if (correct) return ROUND_OUTCOMES.FIRST_TRY_CORRECT;
-  return ROUND_OUTCOMES.SECOND_TRY_CORRECT;
+  return ROUND_OUTCOMES.INCORRECT;
 }
 
 /**
@@ -120,7 +120,7 @@ export function resolveLearnEma(event) {
  * @param {{ mode: string, level: string }} session
  * @returns {{ payload: object, meta: { outcome, multiplierKey, multiplier } }}
  */
-export function buildLearnStatPayload(event, { mode, level }) {
+export function buildLearnStatPayload(event, { mode, level, currentSessionNumber } = {}) {
   const questionType = event?.questionType ?? event?.type ?? null;
   const setCredit = NEIGHBOR_SET_QUESTION_TYPES.has(questionType)
     ? neighborSetCredit({
@@ -161,6 +161,10 @@ export function buildLearnStatPayload(event, { mode, level }) {
       event.predictedSuccess != null && Number.isFinite(event.predictedSuccess)
         ? event.predictedSuccess
         : null,
+    currentSessionNumber:
+      Number.isInteger(currentSessionNumber) && currentSessionNumber >= 0
+        ? currentSessionNumber
+        : undefined,
   };
   return {
     payload,

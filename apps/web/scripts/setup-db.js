@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS country_stats (
   first_try_correct INT NOT NULL DEFAULT 0,
   second_try_correct INT NOT NULL DEFAULT 0,
   needed_reveal INT NOT NULL DEFAULT 0,
+  incorrect INT NOT NULL DEFAULT 0,
   response_time_ms_sum BIGINT NOT NULL DEFAULT 0,
   response_time_count INT NOT NULL DEFAULT 0,
   mastery_score REAL NOT NULL DEFAULT 0,
@@ -158,6 +159,7 @@ ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS speed_baseline_ms INT;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS graduated BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ;
 ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS last_outcome TEXT;
+ALTER TABLE country_stats ADD COLUMN IF NOT EXISTS incorrect INT NOT NULL DEFAULT 0;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type TEXT NOT NULL DEFAULT 'color';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT;
@@ -247,6 +249,30 @@ CREATE UNIQUE INDEX IF NOT EXISTS country_stats_domain_unique_idx
 
 CREATE INDEX IF NOT EXISTS country_stats_domain_lookup_idx
   ON country_stats (user_id, mode, level, skill_domain);
+
+-- Global session counter on users.
+-- Increments every time any session
+-- completes regardless of mode or region.
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS total_sessions
+    INTEGER NOT NULL DEFAULT 0;
+
+-- Recency tracking on country_stats.
+-- last_correct_at / last_correct_session are new.
+-- last_outcome already existed (skip recreate).
+ALTER TABLE country_stats
+  ADD COLUMN IF NOT EXISTS last_correct_at
+    TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_correct_session
+    INTEGER;
+
+-- Index for efficient session building queries
+-- that filter by last_correct_session
+CREATE INDEX IF NOT EXISTS
+  country_stats_recency_idx
+  ON country_stats (user_id, mode, level,
+    last_correct_session)
+  WHERE last_correct_session IS NOT NULL;
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted

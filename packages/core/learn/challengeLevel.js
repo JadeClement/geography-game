@@ -97,9 +97,9 @@ export function orderedTiersForChallenge(workingTier) {
 /**
  * Build a rolling-window outcome record from a Learn answer.
  *
- * Prefer explicit `correct` / `revealUsed` from the UI event — Learn maps some
- * wrong answers to `second_try_correct` for EMA, which must not count as success
- * for challenge pacing.
+ * Prefer explicit `correct` / `revealUsed` from the UI event — a complete miss
+ * is stored as `incorrect`, and a second-try success as `second_try_correct`.
+ * Neither of those must count as a first-try success for challenge pacing.
  *
  * @param {{ tier: string, outcome?: string, correct?: boolean, revealUsed?: boolean, fast?: boolean, predictedSuccess?: number|null }} args
  */

@@ -29,3 +29,4 @@ export * from "./learn/continueNotes.js";
 export * from "./learn/wrongReveal.js";
 export * from "./learn/resolveGuessedCountry.js";
 export * from "./learn/religionPie.js";
+export * from "./learn/recencySuppression.js";

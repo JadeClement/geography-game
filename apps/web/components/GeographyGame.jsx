@@ -33,6 +33,7 @@ import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeN
 import {
   fetchMasteryStats,
   recordCountryStat,
+  completeSession,
   ROUND_OUTCOMES,
 } from "@/lib/countryStats";
 import {
@@ -548,6 +549,47 @@ export default function GeographyGame() {
   const gameCompleteRef = useSyncRef(gameComplete);
   const learnSaveClosedRef = useRef(false);
   const persistLearnProgressRef = useRef(() => {});
+  const currentSessionNumberRef = useRef(0);
+  const sessionCountedRef = useRef(false);
+  const [currentSessionNumber, setCurrentSessionNumber] = useState(0);
+
+  useEffect(() => {
+    if (!signedIn) {
+      currentSessionNumberRef.current = 0;
+      setCurrentSessionNumber(0);
+      return undefined;
+    }
+    let cancelled = false;
+    fetch("/api/streak")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || data?.totalSessions == null) return;
+        const next = Number(data.totalSessions) || 0;
+        currentSessionNumberRef.current = next;
+        setCurrentSessionNumber(next);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
+  const markSessionComplete = useCallback(() => {
+    if (!signedInRef.current) return;
+    if (sessionCountedRef.current) return;
+    sessionCountedRef.current = true;
+    completeSession()
+      .then((data) => {
+        if (data?.totalSessions == null) return;
+        const next = Number(data.totalSessions) || 0;
+        currentSessionNumberRef.current = next;
+        setCurrentSessionNumber(next);
+      })
+      .catch((error) => {
+        sessionCountedRef.current = false;
+        console.error("Failed to increment session count:", error);
+      });
+  }, [signedInRef]);
 
   const persistLearnProgress = useCallback(
     ({ leaving = false, resumeIndex, sessionOverride, questionsOverride } = {}) => {
@@ -1409,6 +1451,7 @@ export default function GeographyGame() {
   }, []);
 
   const finishGame = useCallback(() => {
+    markSessionComplete();
     stopGameTimer();
     setGameActive(false);
     setGameComplete(true);
@@ -1440,7 +1483,7 @@ export default function GeographyGame() {
       pendingStatPromisesRef.current = [];
       buildMilestoneStats();
     });
-  }, [buildMilestoneStats, finishGameBoard, stopGameTimer]);
+  }, [buildMilestoneStats, finishGameBoard, markSessionComplete, stopGameTimer]);
 
   const finishRound = useCallback(() => {
     const total = countryQueueRef.current.length;
@@ -1486,6 +1529,7 @@ export default function GeographyGame() {
         outcome,
         responseTimeMs,
         gameType,
+        currentSessionNumber: currentSessionNumberRef.current,
       })
         .then((res) => {
           const stat = res?.stat;
@@ -1716,6 +1760,7 @@ export default function GeographyGame() {
 
       clearPendingGuestGame();
       setMasteryLoadWarning(showMasteryLoadWarning);
+      sessionCountedRef.current = false;
 
       if (nextRoundTimeoutRef.current) {
         clearTimeout(nextRoundTimeoutRef.current);
@@ -1813,6 +1858,7 @@ export default function GeographyGame() {
       if (pool.length === 0) return;
 
       clearPendingGuestGame();
+      sessionCountedRef.current = false;
 
       if (nextRoundTimeoutRef.current) {
         clearTimeout(nextRoundTimeoutRef.current);
@@ -1892,9 +1938,14 @@ export default function GeographyGame() {
     if (signedIn) {
       try {
         const data = await fetchMasteryStats({ mode: GAME_MODES.COUNTRIES });
+        if (Number.isInteger(data.totalSessions)) {
+          currentSessionNumberRef.current = data.totalSessions;
+          setCurrentSessionNumber(data.totalSessions);
+        }
         const regionIds = new Set(regionPool.map((country) => country.id));
         for (const row of data.mastery ?? []) {
           if (row.level !== GAME_LEVELS.FIND_FILL) continue;
+          if ((row.skillDomain ?? "general") !== "general") continue;
           if (!regionIds.has(row.countryId)) continue;
           if (row.graduated) continue;
           if (!row.lastAttemptAt) continue;
@@ -1904,6 +1955,9 @@ export default function GeographyGame() {
             graduated: false,
             lastAttemptAt: row.lastAttemptAt,
             lastOutcome: row.lastOutcome,
+            lastCorrectAt: row.lastCorrectAt ?? null,
+            lastCorrectSession:
+              row.lastCorrectSession == null ? null : Number(row.lastCorrectSession),
           });
         }
       } catch (error) {
@@ -1915,6 +1969,8 @@ export default function GeographyGame() {
       regionCountryIds: regionPool.map((country) => country.id),
       inPlayStats,
       sessionSize: GO_SESSION_SIZE,
+      currentSessionNumber: currentSessionNumberRef.current,
+      now: Date.now(),
     });
     const regionById = new Map(regionPool.map((country) => [country.id, country]));
     const chosen = ids.map((id) => regionById.get(id)).filter(Boolean);
@@ -1971,6 +2027,10 @@ export default function GeographyGame() {
       let masteryRows = [];
       try {
         const data = await fetchMasteryStats({ mode });
+        if (Number.isInteger(data.totalSessions)) {
+          currentSessionNumberRef.current = data.totalSessions;
+          setCurrentSessionNumber(data.totalSessions);
+        }
         const provingLevels = new Set(getMasteryProvingLevels(level));
         masteryRows = (data.mastery ?? []).filter(
           (row) => row.level === level || provingLevels.has(row.level)
@@ -1989,6 +2049,12 @@ export default function GeographyGame() {
             recencyById.set(row.countryId, {
               lastAttemptAt: row.lastAttemptAt,
               lastOutcome: row.lastOutcome,
+              lastCorrectAt: row.lastCorrectAt ?? null,
+              lastCorrectSession:
+                row.lastCorrectSession == null
+                  ? null
+                  : Number(row.lastCorrectSession),
+              masteryScore: Number(row.masteryScore) || 0,
             });
           }
         }
@@ -1999,11 +2065,15 @@ export default function GeographyGame() {
       const sessionSize = clampLearnSessionSize(
         learningSessionSize ?? getLearnSessionSize()
       );
+      const now = Date.now();
+      const sessionNumber = currentSessionNumberRef.current;
       const queueIds = buildFullRegionLearningQueue(
         regionPool.map((country) => country.id),
         masteryById,
         recencyById,
-        sessionSize
+        sessionSize,
+        sessionNumber,
+        now
       );
       const regionById = new Map(regionPool.map((country) => [country.id, country]));
       const countries = queueIds.map((id) => regionById.get(id)).filter(Boolean);
@@ -2032,6 +2102,8 @@ export default function GeographyGame() {
         allCountries,
         masteryStats: masteryRows.length > 0 ? masteryRows : statsById,
         sessionSize,
+        currentSessionNumber: sessionNumber,
+        now,
       });
       if (!Array.isArray(questions) || questions.length === 0) return null;
 
@@ -2050,6 +2122,7 @@ export default function GeographyGame() {
   );
 
   const finishLearnGame = useCallback(() => {
+    markSessionComplete();
     learnSaveClosedRef.current = true;
     const activeSession = sessionRef.current;
     const userId = userIdRef.current;
@@ -2101,7 +2174,7 @@ export default function GeographyGame() {
       pendingStatPromisesRef.current = [];
       build();
     });
-  }, [buildMilestoneStats, finishGameBoard, resolveLearnCountry, sessionRef, stopGameTimer, userIdRef]);
+  }, [buildMilestoneStats, finishGameBoard, markSessionComplete, resolveLearnCountry, sessionRef, stopGameTimer, userIdRef]);
 
   // Advances to the next question after a brief pause so the answer feedback is
   // seen. (Between-question facts intentionally removed — facts stay in the Learn
@@ -2376,6 +2449,8 @@ export default function GeographyGame() {
 
   // Unified answer handler for every Learn question type. Records the primary
   // country, plus every country in a ranking set (weighted per placement).
+  // Outcomes come from outcomeFromEvent: first_try_correct, second_try_correct
+  // (correct after a miss), needed_reveal, or incorrect (complete miss, no reveal).
   const handleLearnAnswer = useCallback(
     (event) => {
       if (learnLockRef.current) return;
@@ -2397,6 +2472,7 @@ export default function GeographyGame() {
       const payloads = buildLearnStatPayloads(event, {
         mode: activeSession.mode,
         level: activeSession.level,
+        currentSessionNumber: currentSessionNumberRef.current,
       });
       const meta = payloads[0]?.meta ?? {
         outcome: null,
@@ -3064,6 +3140,7 @@ export default function GeographyGame() {
       sessionRef.current = nextSession;
       setSession(nextSession);
       setGameComplete(false);
+      sessionCountedRef.current = false;
       setGamePaused(false);
       setShowResumeConfirm(false);
       setGameActive(true);
@@ -3528,6 +3605,8 @@ export default function GeographyGame() {
   const handleCorrectRound = useCallback(
     (target) => {
       const attemptsBeforeCorrect = wrongAttemptsRef.current;
+      // second_try_correct only when they actually got it right after a miss.
+      // A second miss with no correct answer uses handleRevealRound → needed_reveal.
       const outcome =
         attemptsBeforeCorrect === 0
           ? ROUND_OUTCOMES.FIRST_TRY_CORRECT
@@ -4049,9 +4128,10 @@ export default function GeographyGame() {
     if (!allDiscovered) return;
 
     discoverCompleteShownRef.current = true;
+    markSessionComplete();
     setDiscoverCompleteModalOpen(true);
     setDiscoverCountrySheetOpen(false);
-  }, [activeCountries, filledCountryIdSet, gameActive, isDiscoverGame]);
+  }, [activeCountries, filledCountryIdSet, gameActive, isDiscoverGame, markSessionComplete]);
 
   const handleKeepDiscovering = useCallback(() => {
     setDiscoverCompleteModalOpen(false);

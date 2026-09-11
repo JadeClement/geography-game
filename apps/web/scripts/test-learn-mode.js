@@ -23,7 +23,7 @@ import {
   isTrivialPrediction,
   pickByPredictedSuccess,
 } from "@/lib/learn/predictedSuccess";
-import { resolveLearnEma, neighborSetCredit } from "@/lib/learn/emaIntegration";
+import { resolveLearnEma, neighborSetCredit, outcomeFromEvent } from "@/lib/learn/emaIntegration";
 import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
@@ -619,6 +619,29 @@ test("population rank asks to order five same-region countries", () => {
   }
 });
 
+test("outcomeFromEvent distinguishes second-try correct from a complete miss", () => {
+  assert.equal(
+    outcomeFromEvent({ correct: true, revealUsed: false, priorMiss: false }),
+    ROUND_OUTCOMES.FIRST_TRY_CORRECT
+  );
+  assert.equal(
+    outcomeFromEvent({ correct: true, revealUsed: false, priorMiss: true }),
+    ROUND_OUTCOMES.SECOND_TRY_CORRECT
+  );
+  assert.equal(
+    outcomeFromEvent({ correct: false, revealUsed: false, priorMiss: true }),
+    ROUND_OUTCOMES.INCORRECT
+  );
+  assert.equal(
+    outcomeFromEvent({ correct: false, revealUsed: true, priorMiss: false }),
+    ROUND_OUTCOMES.NEEDED_REVEAL
+  );
+  assert.equal(
+    outcomeFromEvent({ correct: true, revealUsed: true, priorMiss: false }),
+    ROUND_OUTCOMES.NEEDED_REVEAL
+  );
+});
+
 test("neighbor set credit is hits over the true set, shrunk by extras", () => {
   assert.equal(
     neighborSetCredit({
@@ -749,7 +772,7 @@ test("ranking writes a weighted EMA update for every country in the set", () => 
     payloads.map(({ payload }) => [payload.countryId, payload])
   );
   assert.equal(byId.DEU.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
-  assert.equal(byId.FRA.outcome, ROUND_OUTCOMES.SECOND_TRY_CORRECT);
+  assert.equal(byId.FRA.outcome, ROUND_OUTCOMES.INCORRECT);
   assert.equal(byId.POL.outcome, ROUND_OUTCOMES.FIRST_TRY_CORRECT);
   assert.ok(byId.DEU.learnModeMultiplier > byId.FRA.learnModeMultiplier);
 });

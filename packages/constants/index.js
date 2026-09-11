@@ -85,6 +85,7 @@ export const ROUND_OUTCOMES = {
   FIRST_TRY_CORRECT: "first_try_correct",
   SECOND_TRY_CORRECT: "second_try_correct",
   NEEDED_REVEAL: "needed_reveal",
+  INCORRECT: "incorrect",
 };
 
 export const GAME_TYPE_FOR_STATS = {

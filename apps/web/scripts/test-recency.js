@@ -14,7 +14,8 @@ import {
   LEARN_RECENCY_HALF_LIFE_HOURS,
   MASTERY_MIN_WEIGHT,
 } from "@/lib/mastery";
-import { buildFullRegionLearningQueue, buildGoQueue } from "@/lib/learning";
+import { buildFullRegionLearningQueue, buildGoQueue, buildSampledPool } from "@/lib/learning";
+import { getRecencyModifier, getSamplingWeight } from "@/lib/learn/recencySuppression";
 
 const MS_PER_HOUR = 3_600_000;
 const NOW = Date.parse("2026-09-01T12:00:00Z");
@@ -22,6 +23,15 @@ const NOW = Date.parse("2026-09-01T12:00:00Z");
 function firstTryHoursAgo(hours) {
   return {
     lastAttemptAt: new Date(NOW - hours * MS_PER_HOUR).toISOString(),
+    lastOutcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+  };
+}
+
+function firstTryCorrectNow(session = 0) {
+  return {
+    lastAttemptAt: new Date(NOW).toISOString(),
+    lastCorrectAt: new Date(NOW).toISOString(),
+    lastCorrectSession: session,
     lastOutcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
   };
 }
@@ -80,16 +90,19 @@ test("first-try at one Learn half-life has recency 0.5", () => {
   assert.equal(recency, 0.5);
 });
 
-test("Go weight for a recent first-try is floored, not dropped", () => {
+test("recent first-try at low mastery is not suppressed", () => {
+  const mastery = 0.2;
+  const expected = (1 - mastery) ** 2 + MASTERY_MIN_WEIGHT;
   const weight = getLearningWeight(
     {
-      masteryScore: 0.2,
+      masteryScore: mastery,
       graduated: false,
-      ...firstTryHoursAgo(0),
+      ...firstTryCorrectNow(),
     },
-    NOW
+    NOW,
+    0
   );
-  assert.equal(weight, 0.01);
+  assert.equal(weight, expected);
 });
 
 test("Go weight ignores recency on a miss", () => {
@@ -212,8 +225,10 @@ test("a fully cooled weak third donates slots instead of repeating", () => {
   const unseen = Array.from({ length: 9 }, (_, i) => `U${i}`);
   const inPlayStats = [
     ...weak.map((id) =>
-      inPlayStat(id, 0.05, {
+      inPlayStat(id, 0.55, {
         lastAttemptAt: new Date(NOW).toISOString(),
+        lastCorrectAt: new Date(NOW).toISOString(),
+        lastCorrectSession: 0,
         lastOutcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
       })
     ),
@@ -240,8 +255,10 @@ test("Go mix still prefers other weak countries when only some of the third is c
   const near = Array.from({ length: 9 }, (_, i) => `H${i}`);
   const inPlayStats = [
     ...cooled.map((id) =>
-      inPlayStat(id, 0.05, {
+      inPlayStat(id, 0.55, {
         lastAttemptAt: new Date(NOW).toISOString(),
+        lastCorrectAt: new Date(NOW).toISOString(),
+        lastCorrectSession: 0,
         lastOutcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
       })
     ),
@@ -259,4 +276,135 @@ test("Go mix still prefers other weak countries when only some of the third is c
 
   assert.equal(queue.filter((id) => cooled.includes(id)).length, 0);
   assert.ok(queue.some((id) => hotWeak.includes(id)));
+});
+
+function suppressedStat(overrides = {}) {
+  return {
+    masteryScore: 0.7,
+    lastOutcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+    lastCorrectAt: new Date(NOW).toISOString(),
+    lastCorrectSession: 0,
+    ...overrides,
+  };
+}
+
+test("getRecencyModifier returns 1.0 when lastOutcome is needed_reveal", () => {
+  assert.equal(
+    getRecencyModifier(suppressedStat({ lastOutcome: ROUND_OUTCOMES.NEEDED_REVEAL }), 0, NOW),
+    1
+  );
+});
+
+test("getRecencyModifier returns 1.0 when lastOutcome is incorrect", () => {
+  assert.equal(
+    getRecencyModifier(suppressedStat({ lastOutcome: ROUND_OUTCOMES.INCORRECT }), 0, NOW),
+    1
+  );
+});
+
+test("getRecencyModifier returns 0.50 for second_try_correct at t=0 mastery 0.70", () => {
+  const modifier = getRecencyModifier(
+    suppressedStat({ lastOutcome: ROUND_OUTCOMES.SECOND_TRY_CORRECT }),
+    0,
+    NOW
+  );
+  assert.equal(modifier, 0.5);
+});
+
+test("getRecencyModifier weak-correct is between 0.50 and 1.0 when partially cleared", () => {
+  const modifier = getRecencyModifier(
+    suppressedStat({
+      lastOutcome: ROUND_OUTCOMES.SECOND_TRY_CORRECT,
+      lastCorrectAt: new Date(NOW - 12 * MS_PER_HOUR).toISOString(),
+      lastCorrectSession: 0,
+    }),
+    1,
+    NOW
+  );
+  assert.ok(modifier >= 0.5 && modifier < 1);
+});
+
+test("first_try_correct is more suppressed than second_try_correct at the same recency", () => {
+  const strong = getRecencyModifier(suppressedStat(), 0, NOW);
+  const weak = getRecencyModifier(
+    suppressedStat({ lastOutcome: ROUND_OUTCOMES.SECOND_TRY_CORRECT }),
+    0,
+    NOW
+  );
+  assert.ok(strong < weak);
+});
+
+test("getRecencyModifier returns 1.0 when lastCorrectAt is null", () => {
+  assert.equal(
+    getRecencyModifier(suppressedStat({ lastCorrectAt: null }), 0, NOW),
+    1
+  );
+});
+
+test("getRecencyModifier returns 0.05 when fully suppressed at mastery 0.70", () => {
+  assert.equal(getRecencyModifier(suppressedStat(), 0, NOW), 0.05);
+});
+
+test("getRecencyModifier returns 1.0 when sessions cleared even if hours remain", () => {
+  assert.equal(
+    getRecencyModifier(
+      suppressedStat({
+        lastCorrectAt: new Date(NOW).toISOString(),
+        lastCorrectSession: 0,
+      }),
+      3,
+      NOW
+    ),
+    1
+  );
+});
+
+test("getRecencyModifier returns 1.0 when hours cleared even if sessions remain", () => {
+  assert.equal(
+    getRecencyModifier(
+      suppressedStat({
+        lastCorrectAt: new Date(NOW - 24 * MS_PER_HOUR).toISOString(),
+        lastCorrectSession: 0,
+      }),
+      0,
+      NOW
+    ),
+    1
+  );
+});
+
+test("getSamplingWeight returns 0 for mastery 0.92 with a recent correct", () => {
+  assert.equal(
+    getSamplingWeight(suppressedStat({ masteryScore: 0.92 }), 0, NOW),
+    0
+  );
+});
+
+test("getSamplingWeight for a suppressed country is between base*0.05 and base", () => {
+  const mastery = 0.7;
+  const base = (1 - mastery) ** 2 + 0.05;
+  const weight = getSamplingWeight(suppressedStat({ masteryScore: mastery }), 0, NOW);
+  assert.ok(weight >= base * 0.05 - 1e-12);
+  assert.ok(weight <= base);
+  assert.equal(weight, base * 0.05);
+});
+
+test("buildSampledPool excludes graduated-territory countries", () => {
+  const stats = [
+    { countryId: "HIGH", masteryScore: 0.92, ...firstTryCorrectNow() },
+    { countryId: "LOW", masteryScore: 0.1, lastOutcome: ROUND_OUTCOMES.NEEDED_REVEAL },
+  ];
+  const pool = buildSampledPool(stats, 2, 0, NOW);
+  assert.deepEqual(pool.map((stat) => stat.countryId), ["LOW"]);
+});
+
+test("buildSampledPool backfills to sessionSize from remaining eligible", () => {
+  const stats = Array.from({ length: 5 }, (_, i) => ({
+    countryId: `C${i}`,
+    masteryScore: 0.1,
+    lastAttemptAt: new Date(NOW - (5 - i) * MS_PER_HOUR).toISOString(),
+    lastOutcome: ROUND_OUTCOMES.NEEDED_REVEAL,
+  }));
+  const pool = buildSampledPool(stats, 5, 0, NOW);
+  assert.equal(pool.length, 5);
 });

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getCountryStatsForUser } from "@/lib/db";
+import { getCountryStatsForUser, getUserTotalSessions } from "@/lib/db";
 import { groupMasteryEntriesByMode } from "@/lib/mastery";
 import { computeWorldlyScoreFromMastery } from "@/lib/worldlyScore";
 import { getCountryIdsForRegion } from "@/lib/regions";
@@ -14,10 +14,12 @@ export async function GET() {
 
   try {
     const stats = await getCountryStatsForUser(session.user.id);
+    const totalSessions = await getUserTotalSessions(session.user.id);
     const mastery = groupMasteryEntriesByMode(stats);
     const worldly = computeWorldlyScoreFromMastery(mastery, WORLD_COUNTRY_IDS);
     return Response.json({
       mastery,
+      totalSessions,
       score: worldly.score,
       percent: worldly.percent,
       rawPercent: worldly.rawPercent,
@@ -36,6 +38,7 @@ export async function GET() {
         categories: { countries: 0, capitals: 0, flags: 0 },
         byDomain: {},
         byDomainDisplay: {},
+        totalSessions: 0,
       });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });

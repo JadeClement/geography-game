@@ -22,6 +22,7 @@ import {
   MASTERY_REVEAL_PENALTY,
   GAME_TYPE_FOR_STATS,
 } from "@worldly/constants";
+import { getSamplingWeight } from "./learn/recencySuppression.js";
 
 export {
   MASTERY_GRADUATION_THRESHOLD,
@@ -99,7 +100,8 @@ export function deriveMasteryFromAggregates(stat) {
   const firstTry = stat.firstTryCorrect ?? 0;
   const secondTry = stat.secondTryCorrect ?? 0;
   const reveal = stat.neededReveal ?? 0;
-  const total = firstTry + secondTry + reveal;
+  const incorrect = stat.incorrect ?? 0;
+  const total = firstTry + secondTry + reveal + incorrect;
 
   if (total === 0) return 0;
 
@@ -134,7 +136,8 @@ export function computeMasteryUpdate(
   const hadHistory =
     (stat?.firstTryCorrect ?? 0) +
       (stat?.secondTryCorrect ?? 0) +
-      (stat?.neededReveal ?? 0) >
+      (stat?.neededReveal ?? 0) +
+      (stat?.incorrect ?? 0) >
     0;
 
   // Seed mastery from historical aggregates for rows that predate EMA tracking
@@ -164,6 +167,11 @@ export function computeMasteryUpdate(
   } else if (outcome === ROUND_OUTCOMES.SECOND_TRY_CORRECT) {
     mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_SECOND);
     fastStreak = 0;
+  } else if (outcome === ROUND_OUTCOMES.INCORRECT) {
+    // Complete miss (never got it right). Same EMA miss penalty as the old
+    // collapsed path; last_outcome is distinct so recency does not suppress.
+    mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_SECOND);
+    fastStreak = 0;
   } else if (outcome === ROUND_OUTCOMES.NEEDED_REVEAL) {
     mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_REVEAL);
     fastStreak = 0;
@@ -173,6 +181,7 @@ export function computeMasteryUpdate(
 
   const missedFirstTry =
     outcome === ROUND_OUTCOMES.SECOND_TRY_CORRECT ||
+    outcome === ROUND_OUTCOMES.INCORRECT ||
     outcome === ROUND_OUTCOMES.NEEDED_REVEAL;
 
   if (missedFirstTry && gameType === GAME_TYPE_FOR_STATS.TEST) {
@@ -251,20 +260,18 @@ export function getRecencyMultiplier(stat, halfLifeHours, now = Date.now()) {
 }
 
 /** Higher = more likely to appear in a learning session. */
-export function getLearningWeight(stat, now = Date.now()) {
+export function getLearningWeight(stat, now = Date.now(), currentSessionNumber = 0) {
   if (stat.graduated) return 0;
-
-  const mastery = stat.masteryScore ?? getDecayAdjustedMastery(stat, now);
-  const base = (1 - mastery) ** 2 + MASTERY_MIN_WEIGHT;
-  const recency = getRecencyMultiplier(stat, GO_RECENCY_HALF_LIFE_HOURS, now);
-  // Keep a tiny floor so a just-nailed country can still fill a short Go
-  // session; graduated countries stay at 0 and are filtered out.
-  return Math.max(base * recency, 0.01);
+  return getSamplingWeight(stat, currentSessionNumber, now);
 }
 
 export function hasEverStruggled(stat) {
   if (!stat) return false;
-  return (stat.secondTryCorrect ?? 0) > 0 || (stat.neededReveal ?? 0) > 0;
+  return (
+    (stat.secondTryCorrect ?? 0) > 0 ||
+    (stat.neededReveal ?? 0) > 0 ||
+    (stat.incorrect ?? 0) > 0
+  );
 }
 
 /** Eligible for learning: struggled before and not effectively graduated. */
@@ -325,6 +332,9 @@ export function mapStatToMasteryEntry(stat) {
     graduated: isEffectivelyGraduated(stat),
     lastAttemptAt: stat.lastAttemptAt ?? null,
     lastOutcome: stat.lastOutcome ?? null,
+    lastCorrectAt: stat.lastCorrectAt ?? null,
+    lastCorrectSession:
+      stat.lastCorrectSession == null ? null : Number(stat.lastCorrectSession),
     skillDomain: stat.skillDomain ?? stat.skill_domain ?? "general",
   };
 }

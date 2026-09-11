@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getCountryStatsForUser } from "@/lib/db";
+import { getCountryStatsForUser, getUserTotalSessions } from "@/lib/db";
 import { mapStatsToMasteryEntries } from "@/lib/mastery";
 
 export async function GET(request) {
@@ -16,12 +16,18 @@ export async function GET(request) {
       return Response.json({ error: "Invalid query parameters." }, { status: 400 });
     }
 
-    const stats = await getCountryStatsForUser(session.user.id, { mode });
-    return Response.json({ mastery: mapStatsToMasteryEntries(stats) });
+    const [stats, totalSessions] = await Promise.all([
+      getCountryStatsForUser(session.user.id, { mode }),
+      getUserTotalSessions(session.user.id),
+    ]);
+    return Response.json({
+      mastery: mapStatsToMasteryEntries(stats),
+      totalSessions,
+    });
   } catch (error) {
     console.error("Mastery fetch error:", error);
     if (error?.code === "42P01") {
-      return Response.json({ mastery: [] });
+      return Response.json({ mastery: [], totalSessions: 0 });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }

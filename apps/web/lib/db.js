@@ -9,9 +9,10 @@
  *    country_id          TEXT NOT NULL  (ISO3)
  *    mode                TEXT NOT NULL  (countries | capitals | flags)
  *    level               TEXT NOT NULL  (F1/F2/N1/N2)
- *    first_try_correct   INT  count of first-try corrects
- *    second_try_correct  INT  count of second-try / miss path
+    *    first_try_correct   INT  count of first-try corrects
+ *    second_try_correct  INT  count of second-try corrects (got it right after a miss)
  *    needed_reveal       INT  count of reveal / clue outcomes
+ *    incorrect           INT  count of complete misses (never got it right, no reveal)
  *    response_time_ms_sum BIGINT
  *    response_time_count INT
  *    mastery_score       REAL 0–1 EMA
@@ -19,7 +20,7 @@
  *    speed_baseline_ms   INT nullable
  *    graduated           BOOLEAN (Test-mode graduation only)
  *    last_attempt_at     TIMESTAMPTZ
- *    last_outcome        TEXT (first_try_correct | second_try_correct | needed_reveal)
+ *    last_outcome        TEXT (first_try_correct | second_try_correct | needed_reveal | incorrect)
  *    updated_at / created_at TIMESTAMPTZ
  *    skill_domain        TEXT NOT NULL DEFAULT 'general'
  *                        (added this change: location|neighbors|capital|flag|
@@ -493,10 +494,13 @@ export async function getCountryStatsForUsers(userIds) {
             first_try_correct AS "firstTryCorrect",
             second_try_correct AS "secondTryCorrect",
             needed_reveal AS "neededReveal",
+            incorrect,
             mastery_score AS "masteryScore",
             graduated,
             last_attempt_at AS "lastAttemptAt",
             last_outcome AS "lastOutcome",
+            last_correct_at AS "lastCorrectAt",
+            last_correct_session AS "lastCorrectSession",
             skill_domain AS "skillDomain"
      FROM country_stats
      WHERE user_id = ANY($1)`,
@@ -600,6 +604,31 @@ export async function recordPracticeSession(userId) {
   return { recorded: result.rowCount > 0 };
 }
 
+export async function getUserTotalSessions(userId) {
+  const result = await query(
+    `SELECT COALESCE(total_sessions, 0) AS "totalSessions"
+     FROM users
+     WHERE id = $1`,
+    [userId]
+  );
+  return Number(result.rows[0]?.totalSessions) || 0;
+}
+
+// incrementSessionCount(userId)
+// Increments users.total_sessions by 1
+// atomically and returns the new value.
+// Returns: number (the new total_sessions)
+export async function incrementSessionCount(userId) {
+  const result = await query(
+    `UPDATE users
+     SET total_sessions = total_sessions + 1
+     WHERE id = $1
+     RETURNING total_sessions`,
+    [userId]
+  );
+  return result.rows[0]?.total_sessions ?? 1;
+}
+
 export async function getStreakForUser(userId) {
   // Gaps-and-islands: each consecutive run of days collapses to a single
   // group because (practiced_at - row_number) stays constant within a run.
@@ -643,6 +672,7 @@ const OUTCOME_COLUMNS = new Set([
   "first_try_correct",
   "second_try_correct",
   "needed_reveal",
+  "incorrect",
 ]);
 
 const STAT_RETURNING = `
@@ -652,6 +682,7 @@ const STAT_RETURNING = `
   first_try_correct AS "firstTryCorrect",
   second_try_correct AS "secondTryCorrect",
   needed_reveal AS "neededReveal",
+  incorrect,
   response_time_ms_sum AS "responseTimeMsSum",
   response_time_count AS "responseTimeCount",
   mastery_score AS "masteryScore",
@@ -660,6 +691,8 @@ const STAT_RETURNING = `
   graduated,
   last_attempt_at AS "lastAttemptAt",
   last_outcome AS "lastOutcome",
+  last_correct_at AS "lastCorrectAt",
+  last_correct_session AS "lastCorrectSession",
   skill_domain AS "skillDomain"
 `;
 
@@ -699,6 +732,7 @@ export async function recordCountryPerformance({
   questionTier = null,
   predictedSuccess = null,
   questionType = null,
+  currentSessionNumber = null,
 }) {
   // Whitelist the outcome before using it as a column name, since it is
   // interpolated into the SQL below rather than passed as a bound parameter.
@@ -727,6 +761,7 @@ export async function recordCountryPerformance({
               first_try_correct AS "firstTryCorrect",
               second_try_correct AS "secondTryCorrect",
               needed_reveal AS "neededReveal",
+              incorrect,
               response_time_ms_sum AS "responseTimeMsSum",
               response_time_count AS "responseTimeCount",
               mastery_score AS "masteryScore",
@@ -751,6 +786,11 @@ export async function recordCountryPerformance({
       learnModeMultiplier: multiplier,
     });
 
+    const sessionNumber =
+      Number.isInteger(currentSessionNumber) && currentSessionNumber >= 0
+        ? currentSessionNumber
+        : null;
+
     const params = [
       rowId,
       userId,
@@ -763,6 +803,7 @@ export async function recordCountryPerformance({
       masteryFields.graduated,
       outcome,
       domain,
+      sessionNumber,
     ];
 
     let responseTimeSumValue = "0";
@@ -795,14 +836,18 @@ export async function recordCountryPerformance({
          graduated,
          last_attempt_at,
          last_outcome,
-         skill_domain
+         skill_domain,
+         last_correct_at,
+         last_correct_session
        )
        VALUES (
          $1, $2, $3, $4, $5,
          1,
          ${responseTimeSumValue},
          ${responseTimeCountValue},
-         $6, $7, $8, $9, NOW(), $10, $11
+         $6, $7, $8, $9, NOW(), $10, $11,
+         CASE WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN NOW() ELSE NULL END,
+         CASE WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN $12::integer ELSE NULL::integer END
        )
        ON CONFLICT ${conflictTarget}
        DO UPDATE SET
@@ -814,6 +859,14 @@ export async function recordCountryPerformance({
          graduated = $9,
          last_attempt_at = NOW(),
          last_outcome = $10,
+         last_correct_at = CASE
+           WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN NOW()
+           ELSE country_stats.last_correct_at
+         END,
+         last_correct_session = CASE
+           WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN $12::integer
+           ELSE country_stats.last_correct_session
+         END,
          updated_at = NOW()
        RETURNING ${STAT_RETURNING}`,
       params

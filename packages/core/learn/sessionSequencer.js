@@ -184,7 +184,8 @@ function attemptCountFromStat(stat, entry = {}) {
   const summed =
     (Number(stat.firstTryCorrect) || 0) +
     (Number(stat.secondTryCorrect) || 0) +
-    (Number(stat.neededReveal) || 0);
+    (Number(stat.neededReveal) || 0) +
+    (Number(stat.incorrect) || 0);
   if (summed > 0) return summed;
   if (stat.lastAttemptAt || entry.lastAttemptAt) return 1;
   return 0;
@@ -674,7 +675,8 @@ function buildSessionMeta(questions, sampled) {
  * @param {Array|Map|object} params.allCountries
  * @param {Map|Array|object} [params.masteryStats]
  * @param {number|"all"} [params.sessionSize]
- * @param {object} [params.challenge] deprecated — ignored
+ * @param {number} [params.currentSessionNumber] unused here — sampling happens before this call
+ * @param {number} [params.now] unused here — sampling happens before this call
  */
 export function buildLearnSession({
   countries,
@@ -682,8 +684,12 @@ export function buildLearnSession({
   allCountries,
   masteryStats,
   sessionSize,
+  currentSessionNumber,
+  now,
 }) {
   void sessionSize;
+  void currentSessionNumber;
+  void now;
   const index = indexCountries(allCountries);
   const domainMap = coerceDomainMasteryMap(masteryStats);
   const sampled = (Array.isArray(countries) ? countries : [])

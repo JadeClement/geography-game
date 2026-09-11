@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession, getStreakForUser } from "@/lib/db";
-import { buildCascadedStat, GAME_TYPE_FOR_STATS, hasEverStruggled } from "@/lib/mastery";
+import { GAME_TYPE_FOR_STATS, ROUND_OUTCOMES } from "@worldly/constants";
+import { buildCascadedStat, hasEverStruggled } from "@/lib/mastery";
 import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
 import { GAME_MODES } from "@/lib/regions";
 import { getMobileSession } from "@/lib/mobile-auth";
@@ -11,11 +12,7 @@ import {
 } from "@/lib/push-notifications";
 import countriesManifest from "@/data/countries.json";
 
-const VALID_OUTCOMES = new Set([
-  "first_try_correct",
-  "second_try_correct",
-  "needed_reveal",
-]);
+const VALID_OUTCOMES = new Set(Object.values(ROUND_OUTCOMES));
 
 const VALID_GAME_TYPES = new Set(Object.values(GAME_TYPE_FOR_STATS));
 const VALID_MODES = new Set(Object.values(GAME_MODES));
@@ -102,7 +99,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier, questionTier, predictedSuccess, questionType } = body;
+    const { countryId, mode, level, outcome, responseTimeMs, gameType, learnModeMultiplier, questionTier, predictedSuccess, questionType, currentSessionNumber } = body;
 
     if (
       !countryId ||
@@ -163,6 +160,10 @@ export async function POST(request) {
           ? Math.min(1, Math.max(0, predictedSuccess))
           : null,
       questionType: typeof questionType === "string" ? questionType : null,
+      currentSessionNumber:
+        Number.isInteger(currentSessionNumber) && currentSessionNumber >= 0
+          ? currentSessionNumber
+          : null,
     });
 
     // Idempotent per day (upsert), so recording on every round is safe and

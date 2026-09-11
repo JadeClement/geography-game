@@ -21,12 +21,31 @@ export async function fetchMasteryStats({ mode }) {
   const response = await fetch(`/api/mastery?${params}`);
 
   if (response.status === 401) {
-    return { mastery: [], unauthorized: true };
+    return { mastery: [], unauthorized: true, totalSessions: 0 };
   }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || "Failed to load mastery data.");
+  }
+
+  return data;
+}
+
+export async function completeSession() {
+  const response = await fetch("/api/streak", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+
+  if (response.status === 401) {
+    return { unauthorized: true, totalSessions: 0 };
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to record session.");
   }
 
   return data;

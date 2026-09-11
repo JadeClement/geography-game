@@ -559,3 +559,71 @@ Related (not deleted): `country_stats` has **28** rows with `mode='neighbors'` a
 ### Places the previous delivery notes did not list
 
 `gameModeIntro.js`, `gameTutorial.js`, Results page tables, `GameCompleteModal` nouns, `startNavigation` LEVEL redirect, `masteryMap.js` tab palette, StartScreen Explore/home copy, `GeographyGame` Learn-engine hijack for Test, `generateNeighborRecallAll({ minNeighbors: 1, clueEligible: false })` Test options (generator itself kept for Learn).
+
+---
+
+## Hybrid Recency Suppression
+
+Learn (and Go!) country sampling now reduces a country's weight after a correct answer until **both** enough sessions **and** enough hours have passed. Either condition clearing returns full weight. EMA, graduation, Test session building, sequencer tier selection, and % Worldly are unchanged.
+
+### Files created
+
+- `packages/core/learn/recencySuppression.js` — `SUPPRESSION_THRESHOLDS`, `getRecencyModifier`, `getSamplingWeight`.
+- `apps/web/lib/learn/recencySuppression.js` — re-export.
+
+### Files modified
+
+- `packages/core/learning.js` — findings comment; `buildSampledPool`; Learn/Go sampling uses `getSamplingWeight`; backfill for small pools.
+- `packages/core/mastery.js` — `getLearningWeight` delegates to `getSamplingWeight`; mastery API entries include `lastCorrectAt` / `lastCorrectSession`.
+- `packages/core/learn/emaIntegration.js` — `currentSessionNumber` on the country-stats payload.
+- `packages/core/learn/sessionSequencer.js` — passes through `currentSessionNumber` / `now` (unused; sampling is earlier).
+- `packages/core/index.js` / `packages/core/package.json` — export the new module.
+- `apps/web/scripts/setup-db.js` — `users.total_sessions`; `country_stats.last_correct_at` / `last_correct_session`; recency index. **`last_outcome` already existed — not recreated.**
+- `apps/web/lib/db.js` — `incrementSessionCount`, `getUserTotalSessions`; upsert writes recency fields server-side (`last_correct_at = NOW()` on correct only).
+- `apps/web/app/api/streak/route.js` — GET returns `totalSessions`; POST increments `users.total_sessions` atomically (`UPDATE … RETURNING`).
+- `apps/web/app/api/mastery/route.js` and `mastery/all/route.js` — `totalSessions` on the Learn-start fetch.
+- `apps/web/app/api/country-stats/route.js` — accepts `currentSessionNumber`; GET returns recency columns via `STAT_RETURNING`.
+- `apps/web/lib/countryStats.js` — `completeSession()` POSTs `/api/streak`.
+- `apps/web/components/GeographyGame.jsx` — session number at Learn/Go start; writes it on each answer; increments on Learn/Test/Go/Discover completion (authenticated only).
+- `apps/web/scripts/test-recency.js` — hybrid suppression unit tests.
+
+### SUPPRESSION_THRESHOLDS
+
+```
+{ maxMastery: 0.30, sessions: 0,        hours: 0   }
+{ maxMastery: 0.50, sessions: 1,        hours: 8   }
+{ maxMastery: 0.65, sessions: 2,        hours: 16  }
+{ maxMastery: 0.75, sessions: 3,        hours: 24  }
+{ maxMastery: 0.85, sessions: 5,        hours: 48  }
+{ maxMastery: 0.90, sessions: 8,        hours: 96  }
+{ maxMastery: Infinity, sessions: Infinity, hours: Infinity }
+```
+
+Mastery ≥ 0.90 returns modifier `0` and is excluded from the Learn/Go sampling pool (this is sampling-only; `isEffectivelyGraduated()` and Test graduation are unchanged).
+
+### Hybrid sessions-AND-hours
+
+Suppression applies only while **both** `sessionsSince < threshold.sessions` **and** `hoursSince < threshold.hours`. If either has cleared, the modifier is `1.0`. That way a long break without playing still lifts cooldown (hours), and playing many sessions in a short time also lifts it (sessions) so a country is not buried for days of binge practice.
+
+Progress while both are active uses the **stricter** of the two ratios (`min(sessionProgress, hoursProgress)`), ramping `0.05 → 1.0` for `first_try_correct` and `0.50 → 1.0` for `second_try_correct`.
+
+### Backfill
+
+After sampling eligible (`weight > 0`) countries, if the pool is smaller than `sessionSize`, remaining eligible countries are appended oldest-`lastAttemptAt` first. Modifier `0` countries are never backfilled. If the whole region is in the ≥ 0.90 band, the session can be smaller than requested.
+
+### `total_sessions`
+
+Incremented once per completed session (`finishGame` / `finishLearnGame` / Discover complete on web; mobile Go already POSTs `/api/streak`). The SQL is `UPDATE users SET total_sessions = total_sessions + 1 … RETURNING total_sessions` so concurrent completions cannot lose updates. Guests skip the increment. The value used while answering is the count **at session start** (before this session is added).
+
+### Unchanged
+
+Test mode still quizzes the full remaining region with no sampling weight. EMA deltas, graduation, `isEffectivelyGraduated`, domain-weighted % Worldly, and sequencer tier selection are untouched. Discover question flow is unchanged (only the global session counter increments on Discover complete).
+
+### Edge cases / assumptions for human verification
+
+1. **ROUND_OUTCOMES** now include `incorrect`. A miss without reveal is `incorrect` (no suppression, no last-correct update). `second_try_correct` is only used when they get it right after a miss (light suppression). Historical `second_try_correct` rows may include old complete misses; those stay weakly suppressed.
+2. Learn previously included high-EMA countries at low weight. Sampling now **drops** the ≥ 0.90 band entirely.
+3. The previous hours-only `getRecencyMultiplier` (`lastAttemptAt` + first-try) remains in `mastery.js` for `pickRecencyWeightedIds` but is no longer used by Learn/Go queue builders.
+4. Mobile Learn does not call `POST /api/streak` today (only mobile Go does). Hours-based lifting still applies on mobile; session-based lifting depends on web (or Go) completions until mobile Learn posts the same endpoint.
+5. `practice_sessions` is still a **daily** streak table, not a per-game log.
+6. `last_outcome` was not added in this migration; it already existed.

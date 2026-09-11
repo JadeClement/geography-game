@@ -38,7 +38,8 @@
     "./learn/continueNotes": "./learn/continueNotes.js",
     "./learn/wrongReveal": "./learn/wrongReveal.js",
     "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js",
-    "./learn/religionPie": "./learn/religionPie.js"
+    "./learn/religionPie": "./learn/religionPie.js",
+    "./learn/recencySuppression": "./learn/recencySuppression.js"
   },
   "dependencies": {
     "@worldly/constants": "*"

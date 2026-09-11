@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getStreakForUser, recordPracticeSession } from "@/lib/db";
+import { getStreakForUser, recordPracticeSession, incrementSessionCount, getUserTotalSessions } from "@/lib/db";
 import { getMobileSession } from "@/lib/mobile-auth";
 import { checkAndNotifyStreakMilestone } from "@/lib/push-notifications";
 
@@ -11,11 +11,12 @@ export async function GET(request) {
 
   try {
     const streak = await getStreakForUser(session.user.id);
-    return Response.json(streak);
+    const totalSessions = await getUserTotalSessions(session.user.id);
+    return Response.json({ ...streak, totalSessions });
   } catch (error) {
     console.error("Streak fetch error:", error);
     if (error?.code === "42P01") {
-      return Response.json({ currentStreak: 0, longestStreak: 0 });
+      return Response.json({ currentStreak: 0, longestStreak: 0, totalSessions: 0 });
     }
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }
@@ -31,6 +32,7 @@ export async function POST(request) {
     const userId = session.user.id;
     const before = await getStreakForUser(userId);
     const { recorded } = await recordPracticeSession(userId);
+    const totalSessions = await incrementSessionCount(userId);
     const streak = await getStreakForUser(userId);
 
     setTimeout(() => {
@@ -47,7 +49,7 @@ export async function POST(request) {
       })();
     }, 0);
 
-    return Response.json({ recorded, ...streak });
+    return Response.json({ recorded, ...streak, totalSessions });
   } catch (error) {
     console.error("Streak record error:", error);
     return Response.json({ error: "Something went wrong." }, { status: 500 });
