@@ -3,6 +3,21 @@
  * the far-side test so HTML discover labels hide when a country rotates away.
  */
 
+/**
+ * Desktop game-map projection. `"globe"` wraps like a spinning earth;
+ * `"naturalEarth"` is the previous atlas oval. Mobile is always globe.
+ * Flip this one value to restore the old desktop map.
+ */
+export const DESKTOP_MAP_PROJECTION = "globe";
+
+export function getGameMapProjection(isMobile) {
+  return isMobile ? "globe" : DESKTOP_MAP_PROJECTION;
+}
+
+export function shouldUseGlobeProjection(isMobile) {
+  return getGameMapProjection(isMobile) === "globe";
+}
+
 /** Mapbox Transform default — cinematic mercator horizon, harmful on globe. */
 export const MAPBOX_DEFAULT_HORIZON_SHIFT = 0.1;
 

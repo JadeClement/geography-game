@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DESKTOP_MAP_PROJECTION,
+  getGameMapProjection,
   isLngLatBehindGlobe,
   MAPBOX_DEFAULT_HORIZON_SHIFT,
   setGlobeHorizonShift,
+  shouldUseGlobeProjection,
 } from "../lib/mapboxGlobe.js";
 
 function mockGlobeMap(centerLng, centerLat) {
@@ -43,6 +46,16 @@ test("globe horizon shift is cleared so space does not overlay the sphere", () =
   assert.equal(repaints, 1);
   assert.equal(setGlobeHorizonShift(map, false), true);
   assert.equal(map.transform._horizonShift, MAPBOX_DEFAULT_HORIZON_SHIFT);
+});
+
+test("desktop projection flag selects globe vs naturalEarth", () => {
+  assert.equal(getGameMapProjection(true), "globe");
+  assert.equal(shouldUseGlobeProjection(true), true);
+  assert.equal(getGameMapProjection(false), DESKTOP_MAP_PROJECTION);
+  assert.equal(
+    shouldUseGlobeProjection(false),
+    DESKTOP_MAP_PROJECTION === "globe"
+  );
 });
 
 test("horizon shift is a no-op without a Mapbox transform", () => {

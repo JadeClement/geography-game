@@ -36,7 +36,13 @@ import {
   playMapCountryClickExpand,
 } from "@/lib/mapCountryClickExpand";
 import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
-import { isLngLatBehindGlobe, isShowingGlobe, setGlobeHorizonShift } from "@/lib/mapboxGlobe";
+import {
+  getGameMapProjection,
+  isLngLatBehindGlobe,
+  isShowingGlobe,
+  setGlobeHorizonShift,
+  shouldUseGlobeProjection,
+} from "@/lib/mapboxGlobe";
 import { isMobileViewport, MOBILE_MEDIA_QUERY } from "@/lib/viewport";
 
 const MAP_THEME_COLORS = {
@@ -65,7 +71,7 @@ const MAP_THEME_COLORS = {
 };
 
 function getMapProjection() {
-  return isMobileViewport() ? "globe" : "naturalEarth";
+  return getGameMapProjection(isMobileViewport());
 }
 
 function configureGlobeAtmosphere(map, theme) {
@@ -98,7 +104,7 @@ function configureGlobeAtmosphere(map, theme) {
 }
 
 function applyMapProjection(map, theme) {
-  const useGlobe = isMobileViewport();
+  const useGlobe = shouldUseGlobeProjection(isMobileViewport());
   map.setProjection(useGlobe ? "globe" : "naturalEarth");
   if (typeof map.setMaxPitch === "function") {
     map.setMaxPitch(useGlobe ? 0 : 85);
@@ -1423,7 +1429,7 @@ export default function MapboxMap({
       mapView?.type === "camera" ? mapView.center : [10, 20];
     const initialZoom = mapView?.type === "camera" ? mapView.zoom : 1.2;
 
-    const useGlobe = isMobileViewport();
+    const useGlobe = shouldUseGlobeProjection(isMobileViewport());
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -1435,7 +1441,8 @@ export default function MapboxMap({
     });
     if (useGlobe) setGlobeHorizonShift(map, true);
 
-    if (!useGlobe) {
+    // Zoom buttons stay on desktop even when the globe is on; mobile uses pinch.
+    if (!isMobileViewport()) {
       map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
     }
     mapRef.current = map;
