@@ -26,6 +26,7 @@ export * from "./learn/mapGuess.js";
 export * from "./learn/factSelection.js";
 export * from "./learn/sessionSummary.js";
 export * from "./learn/continueNotes.js";
+export * from "./learn/coastlines.js";
 export * from "./learn/wrongReveal.js";
 export * from "./learn/resolveGuessedCountry.js";
 export * from "./learn/religionPie.js";

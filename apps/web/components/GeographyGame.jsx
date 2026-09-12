@@ -17,6 +17,7 @@ import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import { ShapeDropPlacement, DistanceRevealOverlay } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, getNeighborTeachExtraCountries, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
+import { formatCoastlineSubtitle } from "@/lib/learn/coastlines";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
 import {
   getOutOfRegionClickFeedback,
@@ -938,6 +939,10 @@ export default function GeographyGame() {
       ? `${country.name} is landlocked!`
       : `${country.name} is not landlocked!`;
   })();
+  const learnLandlockedTopSubtext =
+    learnLandlockedReveal && !learnLandlockedReveal.isLandlocked
+      ? formatCoastlineSubtitle(learnLandlockedReveal.countryId)
+      : null;
   // Area-compare / highlight-map continue: keep the question one-liner at the
   // top (no country cards) so the prompt still frames the map teach step.
   const learnAreaCompareTopPrompt =
@@ -4928,6 +4933,11 @@ export default function GeographyGame() {
                     <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col items-center gap-3 px-3 pt-3">
                       <p className="m-0 max-w-md rounded-xl border border-amber-300/45 bg-gradient-to-br from-amber-900/95 to-orange-800/90 px-4 py-3 text-center text-sm font-semibold leading-snug text-amber-50 shadow-[0_10px_40px_rgba(245,158,11,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur">
                         {learnLandlockedTopMessage}
+                        {learnLandlockedTopSubtext && (
+                          <span className="mt-1 block text-xs font-medium leading-snug text-amber-100/85">
+                            {learnLandlockedTopSubtext}
+                          </span>
+                        )}
                       </p>
                       {/* Desktop: Continue directly under the landlocked banner. */}
                       <div className="hidden w-full flex-col items-center gap-3 md:flex">

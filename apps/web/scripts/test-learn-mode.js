@@ -28,6 +28,7 @@ import { computeMasteryUpdate } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
+import { formatCoastlineSubtitle } from "@/lib/learn/coastlines";
 import {
   reorder,
   slotIndexFromY,
@@ -1228,6 +1229,34 @@ test("enclave fun fact only appears on landlocked questions", () => {
   const capital = generateQuestion("capital_free_recall", smr, ENABLED_BY_ID);
   assert.match(landlocked?.continueNote ?? "", /enclave/);
   assert.equal(capital?.continueNote, undefined);
+});
+
+test("not-landlocked subtitle names the ocean or sea", () => {
+  assert.equal(
+    formatCoastlineSubtitle("MRT"),
+    "It borders the Atlantic Ocean."
+  );
+  assert.equal(
+    formatCoastlineSubtitle("ESP"),
+    "It borders the Atlantic Ocean and the Mediterranean Sea."
+  );
+  assert.equal(
+    formatCoastlineSubtitle("USA"),
+    "It borders the Atlantic Ocean, the Pacific Ocean, and the Arctic Ocean."
+  );
+  assert.equal(formatCoastlineSubtitle("CHE"), null);
+  assert.equal(formatCoastlineSubtitle(null), null);
+});
+
+test("every coastal landlocked-check country has a coastline subtitle", () => {
+  const missing = [];
+  for (const country of ENABLED) {
+    const record = ENABLED_BY_ID.get(country.iso3);
+    const question = generateQuestion("landlocked_check", record, ENABLED_BY_ID);
+    if (!question || country.landlocked) continue;
+    if (!formatCoastlineSubtitle(country.iso3)) missing.push(country.name);
+  }
+  assert.deepEqual(missing, [], `missing coasts for ${missing.join(", ")}`);
 });
 
 test("resolveGuessedCountry matches a typed name anywhere in the world", () => {

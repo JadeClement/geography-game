@@ -36,6 +36,7 @@
     "./learn/factSelection": "./learn/factSelection.js",
     "./learn/sessionSummary": "./learn/sessionSummary.js",
     "./learn/continueNotes": "./learn/continueNotes.js",
+    "./learn/coastlines": "./learn/coastlines.js",
     "./learn/wrongReveal": "./learn/wrongReveal.js",
     "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js",
     "./learn/religionPie": "./learn/religionPie.js",

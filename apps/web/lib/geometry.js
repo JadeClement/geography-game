@@ -1008,7 +1008,7 @@ export function getLearnFocusMapView(
  * Contain-fit only — cover-fit of the region cropped Mauritania under chrome.
  */
 export const LEARN_LANDLOCKED_MAP_PADDING = {
-  top: 168,
+  top: 196,
   bottom: 56,
   left: 48,
   right: 48,
