@@ -47,7 +47,7 @@ import {
 import { getSpellingSuggestion } from "@/lib/spelling";
 import { cn } from "@/lib/cn";
 import { enrichGeojsonWithColors, getCountryColorMap, CORRECT_COUNTRY_COLOR, MISSED_COUNTRY_COLOR, WRONG_COUNTRY_COLOR } from "@/lib/countryColors";
-import { getMapViewForRegion, getLearnFocusMapView, getLearnHighlightMapView, getLearnLandlockedMapView, getGeographicBoundsFromCountries, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
+import { getMapViewForRegion, getLearnFocusMapView, getLearnHighlightMapView, getLearnLandlockedMapView, getCountryWithNeighbors, buildSmallCountriesGeoJSON } from "@/lib/geometry";
 import { GAME_TYPES, getGameTypeLabel } from "@/lib/gameTypes";
 import { GAME_TYPE_FOR_STATS, GO_SESSION_SIZE } from "@/lib/mastery";
 import {
@@ -1018,32 +1018,6 @@ export default function GeographyGame() {
   })();
 
   const mapViewForRender = useMemo(() => {
-    // Bust referential equality when the Learn question / camera mode changes so
-    // Mapbox always re-applies the camera (same region bounds after a neighbor
-    // close-up would otherwise no-op if we only keyed by question id).
-    const isHighlightPrompt =
-      currentLearnQuestion?.mapConfig?.display === "highlight";
-    const learnCameraMode = learnAreaCompareRevealActive
-      ? "area"
-      : learnNeighborRevealActive
-        ? "neighbors"
-        : learnLandlockedRevealActive
-          ? "landlocked"
-          : isLearnShapeDropQuestion
-            ? "shape-drop-region"
-            : isHighlightPrompt
-              ? "highlight-region"
-              : isNeighborBackdrop
-                ? "neighbor-region"
-                : "region";
-    const learnQuestionKey = learnEngineActive
-      ? `${currentLearnQuestion?.id ?? learnIndex}:${learnCameraMode}`
-      : null;
-    const withLearnKey = (view) =>
-      view && learnQuestionKey != null
-        ? { ...view, _learnQuestionId: learnQuestionKey }
-        : view;
-
     // Frame subject (+ land neighbors) at ~3× combined land area — for teach
     // steps that paint the whole border cluster on the map. Cover-fit with no
     // chrome padding: Correct/Continue overlay the map instead of shoving it
@@ -1068,85 +1042,37 @@ export default function GeographyGame() {
           regionId: session?.region,
           padding: 0,
         });
-        if (pairView) return withLearnKey(coverFocus(pairView));
+        if (pairView) return coverFocus(pairView);
       }
     }
     // Neighbor teach: subject + every land neighbor (what's painted on the map).
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       const view = focusCluster(currentLearnQuestion.countryId);
-      if (view) return withLearnKey(coverFocus(view));
+      if (view) return coverFocus(view);
     }
     // Landlocked teach: frame the subject (not the whole region). Cover-fitting
     // Africa cropped Mauritania's north under the header/banner.
     if (learnLandlockedRevealActive && learnLandlockedReveal?.countryId) {
       const subject = allCountriesById.get(learnLandlockedReveal.countryId);
       const view = getLearnLandlockedMapView(subject, { regionId: session?.region });
-      if (view) return withLearnKey(view);
+      if (view) return view;
     }
-    // Highlight / language / choice questions: full session region only — zoom
-    // all the way out from any prior teach close-up (e.g. Balkans → all Europe).
-    // Highlight gets its own camera mode key so we always re-fit even when the
-    // previous question was already on the region backdrop.
+    // All Learn prompts share one region camera. Overlay cards blur it; map
+    // questions read it. Per-question cover-fit / padding used to flash the globe.
     if (learnEngineActive) {
-      if (!mapView) return null;
-      // Shape-drop needs the full region at a fixed scale so the silhouette
-      // matches on-map size. Keep this camera after the drop too — Correct /
-      // Continue overlay the map and must not re-fit (that shoves land down).
-      if (isLearnShapeDropQuestion) {
-        if (session?.region === "oceania") {
-          return withLearnKey({
-            ...mapView,
-            maxZoom: Math.min(mapView.maxZoom ?? 5, 4),
-            clampToMaxZoom: true,
-          });
-        }
-        const regionBounds =
-          getGeographicBoundsFromCountries(activeCountries) ?? mapView.bounds;
-        return withLearnKey({
-          type: "bounds",
-          bounds: regionBounds,
-          padding: 48,
-          maxZoom: 3.2,
-          clampToMaxZoom: true,
-        });
-      }
-      if (isHighlightPrompt && !learnMapOnlyContinue) {
-        const subject = mapHighlightCountryId
-          ? allCountriesById.get(mapHighlightCountryId)
-          : null;
-        return withLearnKey(getLearnHighlightMapView(mapView, { country: subject }));
-      }
-      // Centered cards blur the region map behind the prompt. Cover-fit so
-      // land fills the stage instead of sitting in a letterboxed strip.
-      // Same after answer: Correct/Continue overlay the map rather than
-      // reserving a padded header band.
-      if (!isLearnMapClickQuestion) {
-        return withLearnKey({
-          ...mapView,
-          padding: 0,
-          fit: "cover",
-        });
-      }
-      return withLearnKey(mapView);
+      return mapView ? getLearnHighlightMapView(mapView) : null;
     }
     return mapView;
   }, [
     mapView,
     learnEngineActive,
-    learnIndex,
-    currentLearnQuestion,
-    learnMapOnlyContinue,
+    currentLearnQuestion?.countryId,
     learnNeighborRevealActive,
-    isNeighborBackdrop,
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
     learnLandlockedRevealActive,
     learnLandlockedReveal,
-    isLearnMapClickQuestion,
-    isLearnShapeDropQuestion,
     allCountriesById,
-    activeCountries,
-    mapHighlightCountryId,
     session?.region,
   ]);
 
@@ -4280,8 +4206,8 @@ export default function GeographyGame() {
       ? isLearnMapClickQuestion
       : isDiscoverGame || (session?.level != null && isFindLevel(session.level)));
 
-  // Overlay cards cover-fit the region behind a blur — hide outlines so land
-  // borders can't give the answer away. Teach-step reveals restore them.
+  // Overlay cards blur the region map — hide outlines so land borders can't
+  // give the answer away. Teach-step reveals restore them.
   const hideCountryBorders =
     Boolean(isLearnBorderlessQuestion) ||
     Boolean(isNeighborBackdrop) ||

@@ -1033,11 +1033,10 @@ export function getLearnLandlockedMapView(country, { regionId } = {}) {
 }
 
 /**
- * Pixel insets for Learn "what/which country is highlighted?" prompts.
- * The question card is pinned over the top of the map; top padding keeps the
- * fitted region — including northern land like Sweden — in the visible band
- * below the card. Never pair this with fit: "cover": cover-fit zooms back in
- * and hides that same northern land under the overlay.
+ * Pixel insets for every Learn prompt (highlight, find, and blurred cards).
+ * Shared so the region camera does not jump between questions. Top padding
+ * keeps northern land (Sweden) in the band below a top-pinned card. Never pair
+ * this with fit: "cover": cover-fit zooms back in and hides that land.
  */
 export const LEARN_HIGHLIGHT_MAP_PADDING = {
   top: 136,
@@ -1047,9 +1046,10 @@ export const LEARN_HIGHLIGHT_MAP_PADDING = {
 };
 
 /**
- * Region camera for highlight-map Learn prompts. Keeps the session region in
- * view (no subject close-up), expands bounds so the highlighted country's full
- * shape is inside the frame, and insets the top for the prompt card.
+ * Stable session-region camera for Learn prompts. Contain-fits the region with
+ * LEARN_HIGHLIGHT_MAP_PADDING. Optional `country` expands bounds so a subject
+ * that sits outside the centroid frame still fits — callers that need a
+ * motionless camera across questions should omit it.
  *
  * @param {object|null} regionMapView
  * @param {{ country?: object|null }} [opts]

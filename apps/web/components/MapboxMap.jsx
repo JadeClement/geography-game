@@ -698,7 +698,6 @@ function mapViewCameraKey(mapView) {
   const center = mapView.center;
   const centerKey = Array.isArray(center) ? center.join(",") : "";
   return [
-    mapView._learnQuestionId ?? "",
     mapView.type ?? "",
     mapView.fit ?? "",
     paddingKey,
@@ -709,6 +708,23 @@ function mapViewCameraKey(mapView) {
     centerKey,
     boundsKey,
   ].join("|");
+}
+
+function noteMapContainerSize(map) {
+  const container = map.getContainer?.();
+  const width = container?.clientWidth ?? 0;
+  const height = container?.clientHeight ?? 0;
+  map.__lastFitContainerSize = `${width}x${height}`;
+}
+
+function resizeMapIfNeeded(map) {
+  const container = map.getContainer?.();
+  const width = container?.clientWidth ?? 0;
+  const height = container?.clientHeight ?? 0;
+  const sizeKey = `${width}x${height}`;
+  if (map.__lastFitContainerSize === sizeKey) return;
+  map.resize();
+  noteMapContainerSize(map);
 }
 
 function applyMapView(map, mapView, { onSettled } = {}) {
@@ -733,7 +749,7 @@ function applyMapView(map, mapView, { onSettled } = {}) {
       map.stop();
     }
 
-    map.resize();
+    resizeMapIfNeeded(map);
 
     // fitBounds/jumpTo can leave sticky global padding that compounds on the
     // next fit (e.g. after a zoomed-in learn teach step). Clear it first and
@@ -1549,6 +1565,7 @@ export default function MapboxMap({
 
     const handleResize = () => {
       map.resize();
+      noteMapContainerSize(map);
       refreshSmallCountryCircles();
     };
 
@@ -1621,6 +1638,7 @@ export default function MapboxMap({
       }
 
       map.resize();
+      noteMapContainerSize(map);
     });
 
     window.addEventListener("resize", handleResize);

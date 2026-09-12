@@ -337,6 +337,7 @@ test("highlight-map camera insets the top so the prompt card cannot cover northe
   );
   const view = getLearnHighlightMapView(regionView);
   assert.ok(view);
+  assert.deepEqual(view.bounds, regionView.bounds, "prompt camera must not shift per country");
   assert.equal(view.fit, undefined, "must contain-fit; cover-fit would hide Scandinavia");
   assert.equal(view.padding.top, LEARN_HIGHLIGHT_MAP_PADDING.top);
   assert.ok(
