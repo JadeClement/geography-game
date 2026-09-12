@@ -354,16 +354,18 @@ export function selectQuestionForCountry({
   mastery = 0,
   attempts = 0,
   domainMap: domainMapArg = null,
+  forceTier = null,
 }) {
   const domainMap = domainMapArg ?? coerceDomainMasteryMap(masteryStats);
   const countryId = cid(record);
   const eligible = getEligibleTypesForCategory(category);
   const primaryDomains = new Set(getLearnModeContent(category).primaryDomains ?? []);
+  const pinnedTier = forceTier && TIER_NUMBER[forceTier] ? forceTier : null;
 
   const scored = eligible.map((type) => {
     const domain = getDomainForQuestionType(type.id);
     const domainScore = getDomainMastery(domainMap, countryId, domain, mastery);
-    const domainTier = getTierFromScore(domainScore);
+    const domainTier = pinnedTier ?? getTierFromScore(domainScore);
     const boost = primaryDomains.has(domain) ? PRIMARY_DOMAIN_BOOST : 1;
     return {
       type,
@@ -376,7 +378,9 @@ export function selectQuestionForCountry({
   });
 
   const matching = scored.filter((entry) => entry.catalogTier === entry.domainTier);
-  const fallbacks = scored.filter((entry) => entry.catalogTier !== entry.domainTier);
+  const fallbacks = pinnedTier
+    ? []
+    : scored.filter((entry) => entry.catalogTier !== entry.domainTier);
   matching.sort((a, b) => b.priority - a.priority + (Math.random() - 0.5) * 0.08);
   fallbacks.sort((a, b) => {
     const rank =
@@ -423,6 +427,8 @@ export function selectQuestionForCountry({
       domainMasteryScore: candidate.domainScore,
     });
   }
+
+  if (pinnedTier) return null;
 
   const fallback = attachPredictedSuccess(
     buildFallbackQuestion(record, category),

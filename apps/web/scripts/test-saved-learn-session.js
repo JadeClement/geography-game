@@ -54,6 +54,7 @@ function sampleSnapshot(overrides = {}) {
     masteryAfter: [["FRA", 0.35]],
     queueIds: ["FRA", "DEU"],
     seenFacts: { FRA: [0] },
+    escalation: { easeCap: 3, streak: 1 },
     ...overrides,
   });
 }
@@ -83,6 +84,7 @@ test("saved Learn sessions round-trip by user, mode, and region", () => {
   assert.equal(restored.index, 1);
   assert.equal(restored.questions[0].countryId, "FRA");
   assert.deepEqual(restored.masteryAfter, [["FRA", 0.35]]);
+  assert.deepEqual(restored.escalation, { easeCap: 3, streak: 1 });
   assert.equal(
     getSavedLearnSession({
       userId: "user-a",
@@ -145,6 +147,18 @@ test("expired or invalid Learn snapshots are ignored", () => {
     }),
     null
   );
+});
+
+test("saved Learn snapshots default missing escalation", () => {
+  const snapshot = parseSavedLearnSession({
+    version: 1,
+    savedAt: Date.now(),
+    mode: "countries",
+    region: "europe",
+    questions: [{ id: "q1", type: "find_country", countryId: "FRA" }],
+    index: 0,
+  });
+  assert.deepEqual(snapshot.escalation, { easeCap: 4, streak: 0 });
 });
 
 test("resume labels describe the next unanswered question", () => {

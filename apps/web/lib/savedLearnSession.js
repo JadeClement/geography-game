@@ -1,3 +1,5 @@
+import { normalizeLearnEscalation } from "@/lib/learn/escalation";
+
 const STORAGE_KEY = "worldly:savedLearnSessions";
 const VERSION = 1;
 export const LEARN_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -90,6 +92,7 @@ export function parseSavedLearnSession(raw, { now = Date.now() } = {}) {
     masteryAfter: Array.isArray(raw.masteryAfter) ? raw.masteryAfter : [],
     queueIds: Array.isArray(raw.queueIds) ? raw.queueIds : [],
     seenFacts: isPlainObject(raw.seenFacts) ? raw.seenFacts : {},
+    escalation: normalizeLearnEscalation(raw.escalation),
     totalRounds: total,
   };
 }
@@ -111,6 +114,7 @@ export function buildSavedLearnSession({
   masteryAfter,
   queueIds = [],
   seenFacts = {},
+  escalation = null,
   savedAt = Date.now(),
 } = {}) {
   const clonedQuestions = cloneJson(questions);
@@ -135,6 +139,7 @@ export function buildSavedLearnSession({
     masteryAfter: cloneJson(mapToEntries(masteryAfter)) ?? [],
     queueIds: cloneJson(queueIds) ?? [],
     seenFacts: cloneJson(seenFacts) ?? {},
+    escalation: cloneJson(escalation),
   });
 }
 

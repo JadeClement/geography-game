@@ -14,6 +14,12 @@ import { QUESTION_TIERS, getEligibleQuestionTypes, getEligibleQuestionTypesForCh
 import { buildLearnSession, getTierForCountry, selectQuestionForCountry } from "@/lib/learn/sessionSequencer";
 import { buildDomainMasteryMap, getDomainMastery, getOverallMastery } from "@/lib/learn/domainMastery";
 import {
+  applyLearnEscalation,
+  createLearnEscalation,
+  LEARN_ESCALATION,
+  shouldRewriteQuestion,
+} from "@/lib/learn/escalation";
+import {
   createDefaultChallenge,
   updateChallengeLevel,
   challengeOutcomeFromAnswer,
@@ -428,6 +434,110 @@ test("unseen skill domain on a known country is firstExposure", () => {
     assert.equal(question.firstExposure, true);
     assert.equal(question.domainMasteryScore, 0);
   }
+});
+
+test("4 first-try T4s raise the ease cap to T3", () => {
+  let state = createLearnEscalation();
+  for (let i = 0; i < 3; i += 1) {
+    state = applyLearnEscalation(state, {
+      tier: QUESTION_TIERS.TIER_4,
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+    });
+    assert.equal(state.easeCap, 4);
+    assert.equal(state.streak, i + 1);
+  }
+  state = applyLearnEscalation(state, {
+    tier: QUESTION_TIERS.TIER_4,
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+  });
+  assert.equal(state.easeCap, 3);
+  assert.equal(state.streak, 0);
+  assert.equal(
+    shouldRewriteQuestion({ tier: QUESTION_TIERS.TIER_4 }, state.easeCap),
+    true
+  );
+  assert.equal(
+    shouldRewriteQuestion({ tier: QUESTION_TIERS.TIER_3 }, state.easeCap),
+    false
+  );
+});
+
+test("a harder question in the middle of T4s zeros the streak", () => {
+  let state = createLearnEscalation();
+  for (let i = 0; i < 3; i += 1) {
+    state = applyLearnEscalation(state, {
+      tier: QUESTION_TIERS.TIER_4,
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+    });
+  }
+  state = applyLearnEscalation(state, {
+    tier: QUESTION_TIERS.TIER_2,
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+  });
+  assert.equal(state.easeCap, 4);
+  assert.equal(state.streak, 0);
+});
+
+test("second-try, reveal, and miss reset Learn escalation", () => {
+  const almostThere = () => {
+    let state = createLearnEscalation();
+    for (let i = 0; i < LEARN_ESCALATION.STREAK_TO_HARDEN[4] - 1; i += 1) {
+      state = applyLearnEscalation(state, {
+        tier: QUESTION_TIERS.TIER_4,
+        outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+      });
+    }
+    return state;
+  };
+
+  for (const outcome of [
+    ROUND_OUTCOMES.SECOND_TRY_CORRECT,
+    ROUND_OUTCOMES.NEEDED_REVEAL,
+    ROUND_OUTCOMES.INCORRECT,
+  ]) {
+    const state = applyLearnEscalation(almostThere(), {
+      tier: QUESTION_TIERS.TIER_4,
+      outcome,
+    });
+    assert.deepEqual(state, createLearnEscalation());
+  }
+});
+
+test("2 first-try T3s at cap 3 raise the ease cap to T2", () => {
+  let state = { easeCap: 3, streak: 0 };
+  state = applyLearnEscalation(state, {
+    tier: QUESTION_TIERS.TIER_3,
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+  });
+  assert.equal(state.easeCap, 3);
+  assert.equal(state.streak, 1);
+  state = applyLearnEscalation(state, {
+    tier: QUESTION_TIERS.TIER_3,
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+  });
+  assert.equal(state.easeCap, 2);
+  assert.equal(state.streak, 0);
+  assert.equal(
+    shouldRewriteQuestion({ tier: QUESTION_TIERS.TIER_3 }, state.easeCap),
+    true
+  );
+  assert.equal(
+    shouldRewriteQuestion({ tier: QUESTION_TIERS.TIER_2 }, state.easeCap),
+    false
+  );
+});
+
+test("forceTier T3 on an unseen country yields a T3 question", () => {
+  const question = selectQuestionForCountry({
+    category: "countries",
+    record: ENABLED_BY_ID.get("FRA"),
+    allCountries: ENABLED,
+    mastery: 0,
+    attempts: 0,
+    forceTier: QUESTION_TIERS.TIER_3,
+  });
+  assert.ok(question);
+  assert.equal(question.tier, QUESTION_TIERS.TIER_3);
 });
 
 test("island with no neighbors is never dropped", () => {

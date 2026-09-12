@@ -65,9 +65,16 @@ import {
 } from "@/lib/savedLearnSession";
 import { buildGoQueue, buildFullRegionLearningQueue } from "@/lib/learning";
 import { clampLearnSessionSize, getLearnSessionSize } from "@/lib/learnSessionSize";
-import { buildLearnSession } from "@/lib/learn/sessionSequencer";
+import { buildLearnSession, selectQuestionForCountry } from "@/lib/learn/sessionSequencer";
 import { buildDomainMasteryMap, getOverallMastery } from "@/lib/learn/domainMastery";
-import { buildLearnStatPayloads, logLearnEmaUpdate } from "@/lib/learn/emaIntegration";
+import { buildLearnStatPayloads, logLearnEmaUpdate, outcomeFromEvent } from "@/lib/learn/emaIntegration";
+import {
+  applyLearnEscalation,
+  createLearnEscalation,
+  normalizeLearnEscalation,
+  shouldRewriteQuestion,
+  tierFromEaseCap,
+} from "@/lib/learn/escalation";
 import {
   evaluateGeoGuess,
   evaluateShapeDrop,
@@ -380,6 +387,7 @@ export default function GeographyGame() {
   const learnMasteryStatsRef = useRef(new Map());
   const learnCategoryRef = useRef("countries");
   const learnRegionRef = useRef(null);
+  const learnEscalationRef = useRef(createLearnEscalation());
 
   const mapContainerRef = useRef(null);
   const gamePromptAnchorRef = useRef(null);
@@ -631,6 +639,7 @@ export default function GeographyGame() {
           activeSession.learningCountryIds ??
           (learnSampledRef.current ?? []).map((entry) => entry.countryId),
         seenFacts: learnSeenFactsRef.current,
+        escalation: learnEscalationRef.current,
       });
       if (!snapshot) return;
       saveLearnSession({ userId, snapshot });
@@ -742,6 +751,26 @@ export default function GeographyGame() {
       };
     },
     [allCountriesById]
+  );
+
+  const rewriteLearnQuestionForCap = useCallback(
+    (question, easeCap) => {
+      if (!shouldRewriteQuestion(question, easeCap)) return question;
+      const record = allCountriesById.get(question.countryId);
+      if (!record) return question;
+      const rewritten = selectQuestionForCountry({
+        category: learnCategoryRef.current,
+        record,
+        allCountries,
+        masteryStats: learnMasteryStatsRef.current,
+        mastery: question.domainMasteryScore ?? question.countryMastery ?? 0,
+        attempts: question.countryAttempts ?? 0,
+        forceTier: tierFromEaseCap(easeCap),
+      });
+      if (!rewritten || shouldRewriteQuestion(rewritten, easeCap)) return question;
+      return rewritten;
+    },
+    [allCountries, allCountriesById]
   );
 
   const lookupLearnCountryByName = useCallback(
@@ -2419,7 +2448,32 @@ export default function GeographyGame() {
           .filter((id) => id && id !== event.countryId),
       });
 
-      persistLearnProgress({ resumeIndex: learnIndexRef.current + 1 });
+      const question = currentLearnQuestionRef.current;
+      learnEscalationRef.current = applyLearnEscalation(learnEscalationRef.current, {
+        tier: question?.tier ?? event.tier,
+        outcome: outcomeFromEvent(event),
+      });
+
+      const questions = Array.isArray(learnQuestionsRef.current)
+        ? [...learnQuestionsRef.current]
+        : [];
+      const nextIndex = learnIndexRef.current + 1;
+      if (nextIndex < questions.length) {
+        const rewritten = rewriteLearnQuestionForCap(
+          questions[nextIndex],
+          learnEscalationRef.current.easeCap
+        );
+        if (rewritten && rewritten !== questions[nextIndex]) {
+          questions[nextIndex] = rewritten;
+          learnQuestionsRef.current = questions;
+          setLearnQuestions(questions);
+        }
+      }
+
+      persistLearnProgress({
+        resumeIndex: nextIndex,
+        questionsOverride: questions.length > 0 ? questions : undefined,
+      });
 
       if (signedInRef.current) {
         const applyRecordedStat = (res) => {
@@ -2471,7 +2525,6 @@ export default function GeographyGame() {
         }
       }
 
-      const question = currentLearnQuestionRef.current;
       const secondTry = Boolean(event.priorMiss);
       if (event.correct) {
         // Neighbor questions: always show every land border on the map.
@@ -2744,6 +2797,7 @@ export default function GeographyGame() {
       markRoundCorrect,
       markRoundIncorrect,
       persistLearnProgress,
+      rewriteLearnQuestionForCap,
       sessionRef,
       setFeedback,
       setHighlightCountryId,
@@ -3012,11 +3066,13 @@ export default function GeographyGame() {
       preCreditedIdsRef.current = preCreditedCountryIds ?? [];
       setMilestoneStats(undefined);
 
-      const questions = learn.questions ?? [];
       const resumeIndex = resume
-        ? Math.max(0, Math.min(Number(resume.index) || 0, questions.length))
+        ? Math.max(0, Math.min(Number(resume.index) || 0, (learn.questions ?? []).length))
         : 0;
-      const questionIndex = Math.min(resumeIndex, Math.max(questions.length - 1, 0));
+      const questionIndex = Math.min(
+        resumeIndex,
+        Math.max((learn.questions ?? []).length - 1, 0)
+      );
       const masteryAfterEntries = resume?.masteryAfter ?? [];
       const masteryStats = new Map(learn.masteryStats ?? []);
       for (const [countryId, score] of masteryAfterEntries) {
@@ -3030,13 +3086,24 @@ export default function GeographyGame() {
       learnMasteryAfterRef.current = new Map(masteryAfterEntries);
       learnSeenFactsRef.current = resume?.seenFacts ?? {};
       learnMapEmitRef.current = null;
-      learnIndexRef.current = questionIndex;
-      learnQuestionsRef.current = questions;
-      learnQuestionStartRef.current = Date.now();
       learnSampledRef.current = learn.sampled ?? [];
       learnMasteryStatsRef.current = masteryStats;
       learnCategoryRef.current = mode;
       learnRegionRef.current = region;
+      learnEscalationRef.current = resume
+        ? normalizeLearnEscalation(resume.escalation)
+        : createLearnEscalation();
+
+      const questions = [...(learn.questions ?? [])];
+      if (resume && questions[questionIndex]) {
+        questions[questionIndex] = rewriteLearnQuestionForCap(
+          questions[questionIndex],
+          learnEscalationRef.current.easeCap
+        );
+      }
+      learnIndexRef.current = questionIndex;
+      learnQuestionsRef.current = questions;
+      learnQuestionStartRef.current = Date.now();
       setLearnSummary(null);
       setLearnIndex(questionIndex);
       setLearnQuestions(questions);
@@ -3122,6 +3189,7 @@ export default function GeographyGame() {
       resetScoring,
       restoreGameTimer,
       restoreScoring,
+      rewriteLearnQuestionForCap,
       router,
       sessionRef,
       startGameBoard,
@@ -3227,6 +3295,7 @@ export default function GeographyGame() {
                   challenge: snapshot.challenge,
                   masteryAfter: snapshot.masteryAfter,
                   seenFacts: snapshot.seenFacts,
+                  escalation: snapshot.escalation,
                 },
               });
               return { ok: true };
@@ -3318,6 +3387,7 @@ export default function GeographyGame() {
       learnQuestionsRef.current = null;
       learnIndexRef.current = 0;
       learnLockRef.current = false;
+      learnEscalationRef.current = createLearnEscalation();
       resetQueue();
       resetScoring();
       beginRoundScoring();

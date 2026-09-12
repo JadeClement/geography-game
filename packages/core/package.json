@@ -30,6 +30,7 @@
     "./learn/challengeLevel": "./learn/challengeLevel.js",
     "./learn/predictedSuccess": "./learn/predictedSuccess.js",
     "./learn/emaIntegration": "./learn/emaIntegration.js",
+    "./learn/escalation": "./learn/escalation.js",
     "./learn/domainMastery": "./learn/domainMastery.js",
     "./learn/masteryTiers": "./learn/masteryTiers.js",
     "./learn/mapGuess": "./learn/mapGuess.js",
