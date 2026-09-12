@@ -273,7 +273,7 @@ function pickComparisonPeer(country, peerIds, index, predicate) {
   return null;
 }
 
-// ── Tier 1 · free recall ─────────────────────────────────────────────────────
+// ── Location recall (tier comes from QUESTION_TYPES) ─────────────────────────
 
 export function generateBlankMapClick(country) {
   return baseQuestion(QUESTION_TYPES.BLANK_MAP_CLICK, country, {
@@ -327,6 +327,15 @@ export function generateCapitalFreeRecall(country) {
     prompt: `What is the capital of ${country.name}?`,
     answerType: "text_entry",
     correctAnswer: capital,
+  });
+}
+
+export function generateFlagFreeRecall(country) {
+  return baseQuestion(QUESTION_TYPES.FLAG_FREE_RECALL, country, {
+    prompt: "Which country has this flag?",
+    promptSubtext: "Type its name.",
+    answerType: "text_entry",
+    correctAnswer: country.name,
   });
 }
 
@@ -449,6 +458,27 @@ export function generateFlagIdentification(country, allCountries) {
   });
 }
 
+export function generateCountryFromFlag(country, allCountries) {
+  const index = toCountryIndex(allCountries);
+  const needed = MAX_CHOICE_OPTIONS - 1;
+  const same = shuffle(sameRegionPool(country, index));
+  const others = shuffle(otherRegionPool(country, index));
+  const pool = [...same, ...others].slice(0, needed);
+  if (pool.length < needed) return null;
+
+  const options = shuffle([
+    countryOption(country),
+    ...pool.map(countryOption),
+  ]);
+
+  return baseQuestion(QUESTION_TYPES.COUNTRY_FROM_FLAG, country, {
+    prompt: "Which country has this flag?",
+    answerType: "multiple_choice",
+    correctAnswer: cid(country),
+    options,
+  });
+}
+
 export function generateCapitalMatching(country, allCountries) {
   const capital = country.capital?.trim();
   if (!capital) return null;
@@ -472,6 +502,31 @@ export function generateCapitalMatching(country, allCountries) {
     prompt: `What is the capital of ${country.name}?`,
     answerType: "multiple_choice",
     correctAnswer: capital,
+    options,
+  });
+}
+
+export function generateCountryFromCapital(country, allCountries) {
+  const capital = country.capital?.trim();
+  if (!capital) return null;
+
+  const index = toCountryIndex(allCountries);
+  const hasCapital = (record) => Boolean(record.capital?.trim());
+  const needed = MAX_CHOICE_OPTIONS - 1;
+  const same = shuffle(sameRegionPool(country, index).filter(hasCapital));
+  const others = shuffle(otherRegionPool(country, index).filter(hasCapital));
+  const pool = [...same, ...others].slice(0, needed);
+  if (pool.length < needed) return null;
+
+  const options = shuffle([
+    countryOption(country),
+    ...pool.map(countryOption),
+  ]);
+
+  return baseQuestion(QUESTION_TYPES.COUNTRY_FROM_CAPITAL, country, {
+    prompt: `Which country has the capital ${capital}?`,
+    answerType: "multiple_choice",
+    correctAnswer: cid(country),
     options,
   });
 }
@@ -941,12 +996,15 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.FREE_NAME_ENTRY.id]: generateFreeNameEntry,
   [QUESTION_TYPES.SHAPE_NAME_ENTRY.id]: generateShapeNameEntry,
   [QUESTION_TYPES.CAPITAL_FREE_RECALL.id]: generateCapitalFreeRecall,
+  [QUESTION_TYPES.FLAG_FREE_RECALL.id]: generateFlagFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_FREE_RECALL.id]: generateNeighborFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_RECALL_ALL.id]: generateNeighborRecallAll,
   [QUESTION_TYPES.BINARY_MAP_CHOICE.id]: generateBinaryMapChoice,
   [QUESTION_TYPES.SHAPE_IDENTIFICATION.id]: generateShapeIdentification,
   [QUESTION_TYPES.FLAG_IDENTIFICATION.id]: generateFlagIdentification,
+  [QUESTION_TYPES.COUNTRY_FROM_FLAG.id]: generateCountryFromFlag,
   [QUESTION_TYPES.CAPITAL_MATCHING.id]: generateCapitalMatching,
+  [QUESTION_TYPES.COUNTRY_FROM_CAPITAL.id]: generateCountryFromCapital,
   [QUESTION_TYPES.NEIGHBOR_CONFIRM.id]: generateNeighborConfirm,
   [QUESTION_TYPES.NEIGHBOR_SELECT_ALL.id]: generateNeighborSelectAll,
   [QUESTION_TYPES.POPULATION_COMPARE.id]: generatePopulationCompare,

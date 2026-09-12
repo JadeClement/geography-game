@@ -360,8 +360,13 @@ export function predictedSuccess({
     score += fame * 0.06 - 0.07;
   }
 
-  if (type === "flag_identification" || type === "capital_matching") {
+  if (type === "flag_identification" || type === "capital_matching" || type === "country_from_flag") {
     score += fameBoost * 0.9;
+  }
+
+  if (type === "country_from_capital") {
+    // City name is given; picking among four countries is easier than naming the capital.
+    score += fameBoost * 0.95;
   }
 
   if (type === "shape_identification") {
@@ -376,7 +381,8 @@ export function predictedSuccess({
     type === "shape_drop" ||
     type === "free_name_entry" ||
     type === "shape_name_entry" ||
-    type === "capital_free_recall"
+    type === "capital_free_recall" ||
+    type === "flag_free_recall"
   ) {
     // Free recall: fame helps a bit; still hard vs working tier.
     score += fameBoost * 0.35;

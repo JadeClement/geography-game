@@ -349,6 +349,31 @@ export function buildLearnWrongReveal(
     }
   }
 
+  if (question.type === "country_from_capital") {
+    const owner = allCountriesById?.get(question.countryId);
+    const capital = owner?.capital?.trim();
+    if (capital && owner?.name) {
+      return {
+        message: `${capital} is the capital of ${owner.name}.`,
+        neighborReveal: null,
+        areaCompareReveal: null,
+        landlockedReveal: null,
+      };
+    }
+  }
+
+  if (question.type === "country_from_flag") {
+    const owner = allCountriesById?.get(question.countryId);
+    if (owner?.name) {
+      return {
+        message: `That's the flag of ${owner.name}.`,
+        neighborReveal: null,
+        areaCompareReveal: null,
+        landlockedReveal: null,
+      };
+    }
+  }
+
   const correctLabel = resolveCorrectLabel(question, allCountriesById);
   if (correctLabel != null) {
     return {

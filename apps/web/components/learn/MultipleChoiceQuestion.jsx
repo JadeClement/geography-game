@@ -15,6 +15,7 @@ import {
   learnShapeChoiceSvg,
   learnPrompt,
   learnPromptMedia,
+  learnPromptFlagImg,
   learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
@@ -89,8 +90,10 @@ export default function MultipleChoiceQuestion({
   }, [question?.id]);
 
   const isFlagGrid = question?.type === "flag_identification";
+  const isFlagPrompt = question?.type === "country_from_flag";
   const isShapeGrid = question?.type === "shape_identification";
   const showsCountryOptions = question?.type === "neighbor_identification";
+  const hidePromptFlag = question?.type === "country_from_capital";
   const locked = selectedValue != null;
 
   const correctSet = useMemo(() => {
@@ -103,9 +106,10 @@ export default function MultipleChoiceQuestion({
   // When the map already highlights the country, skip the prompt flag.
   const promptIso2 = useMemo(() => {
     if (isFlagGrid || isShapeGrid) return null;
+    if (hidePromptFlag) return null;
     if (question?.mapConfig?.display === "highlight") return null;
     return resolveCountry?.(question?.countryId)?.iso2 ?? null;
-  }, [isFlagGrid, isShapeGrid, resolveCountry, question?.countryId, question?.mapConfig?.display]);
+  }, [isFlagGrid, isShapeGrid, hidePromptFlag, resolveCountry, question?.countryId, question?.mapConfig?.display]);
 
   const handleSelect = (value) => {
     if (locked) return;
@@ -134,7 +138,7 @@ export default function MultipleChoiceQuestion({
           <img
             src={getFlagUrl(promptIso2, 320)}
             alt=""
-            className="h-14 w-auto rounded-[4px] object-cover ring-1 ring-black/10"
+            className={isFlagPrompt ? learnPromptFlagImg : "h-14 w-auto rounded-[4px] object-cover ring-1 ring-black/10"}
             draggable={false}
           />
         </div>

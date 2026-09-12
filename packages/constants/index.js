@@ -141,7 +141,7 @@ export const WORLDLY_WEIGHTS = {
 /**
  * Domain mix for the domain-weighted % Worldly score.
  * Location is the spine of the game; neighbors are the next hardest recall
- * skill; capital/flag are classic Test modes; statistics/facts are Learn-only.
+ * skill; capital/flag are classic Test modes; comparisons/facts are Learn-only.
  */
 export const WORLDLY_DOMAIN_WEIGHTS = {
   location: 0.35,
@@ -154,7 +154,7 @@ export const WORLDLY_DOMAIN_WEIGHTS = {
 
 /**
  * Extra Learn write-rate for domains that also have a Test mode.
- * Neighbors, statistics, and facts have no Test, so Learn is the only way they move (1.0x).
+ * Neighbors, comparisons, and facts have no Test, so Learn is the only way they move (1.0x).
  */
 export const LEARN_CONTRIBUTION_RATE = {
   location: 0.8,
@@ -206,7 +206,7 @@ export const SKILL_DOMAIN_LABELS = {
   neighbors: "Neighbors",
   capital: "Capital",
   flag: "Flag",
-  statistics: "Statistics",
+  statistics: "Comparisons",
   facts: "Facts",
 };
 
@@ -242,146 +242,165 @@ export const LEARN_EMA_MULTIPLIERS = {
   tier_4_wrong: 0.1,
 };
 
-const ALL_CATEGORIES = ["countries", "capitals", "flags"];
-
 export const QUESTION_TYPES = {
   BLANK_MAP_CLICK: {
-    tier: QUESTION_TIERS.TIER_1,
+    tier: QUESTION_TIERS.TIER_3,
     id: "blank_map_click",
-    categories: ["countries"],
   },
   BORDERLESS_MAP_CLICK: {
     tier: QUESTION_TIERS.TIER_1,
     id: "borderless_map_click",
-    categories: ["countries"],
   },
   SHAPE_DROP: {
     tier: QUESTION_TIERS.TIER_1,
     id: "shape_drop",
-    categories: ["countries"],
   },
   FREE_NAME_ENTRY: {
-    tier: QUESTION_TIERS.TIER_1,
+    tier: QUESTION_TIERS.TIER_2,
     id: "free_name_entry",
-    categories: ["countries"],
   },
   CAPITAL_FREE_RECALL: {
     tier: QUESTION_TIERS.TIER_2,
     id: "capital_free_recall",
-    categories: ["capitals"],
+  },
+  FLAG_FREE_RECALL: {
+    tier: QUESTION_TIERS.TIER_2,
+    id: "flag_free_recall",
   },
   SHAPE_NAME_ENTRY: {
     tier: QUESTION_TIERS.TIER_1,
     id: "shape_name_entry",
-    categories: ["countries"],
   },
   NEIGHBOR_RECALL_ALL: {
     tier: QUESTION_TIERS.TIER_1,
     id: "neighbor_recall_all",
-    categories: ["countries"],
     requires: ["neighbors"],
   },
   NEIGHBOR_FREE_RECALL: {
     tier: QUESTION_TIERS.TIER_2,
     id: "neighbor_free_recall",
-    categories: ["countries"],
     requires: ["neighbors"],
   },
   SHAPE_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_2,
     id: "shape_identification",
-    categories: ["countries"],
   },
   FLAG_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_3,
     id: "flag_identification",
-    categories: ["flags"],
+  },
+  COUNTRY_FROM_FLAG: {
+    tier: QUESTION_TIERS.TIER_3,
+    id: "country_from_flag",
   },
   CAPITAL_MATCHING: {
     tier: QUESTION_TIERS.TIER_3,
     id: "capital_matching",
-    categories: ["capitals"],
+  },
+  COUNTRY_FROM_CAPITAL: {
+    tier: QUESTION_TIERS.TIER_4,
+    id: "country_from_capital",
   },
   NEIGHBOR_CONFIRM: {
     tier: QUESTION_TIERS.TIER_3,
     id: "neighbor_confirm",
-    categories: ["countries"],
     requires: ["neighbors"],
   },
   NEIGHBOR_SELECT_ALL: {
     tier: QUESTION_TIERS.TIER_2,
     id: "neighbor_select_all",
-    categories: ["countries"],
     requires: ["neighbors"],
   },
   POPULATION_COMPARE: {
     tier: QUESTION_TIERS.TIER_3,
     id: "population_compare",
-    categories: ALL_CATEGORIES,
   },
   AREA_COMPARE: {
     tier: QUESTION_TIERS.TIER_3,
     id: "area_compare",
-    categories: ALL_CATEGORIES,
   },
   GDP_COMPARE: {
     tier: QUESTION_TIERS.TIER_3,
     id: "gdp_compare",
-    categories: ALL_CATEGORIES,
   },
   POPULATION_RANK: {
     tier: QUESTION_TIERS.TIER_3,
     id: "population_rank",
-    categories: ALL_CATEGORIES,
   },
   AREA_RANK: {
     tier: QUESTION_TIERS.TIER_3,
     id: "area_rank",
-    categories: ALL_CATEGORIES,
   },
   GDP_RANK: {
-    tier: QUESTION_TIERS.TIER_3,
+    tier: QUESTION_TIERS.TIER_2,
     id: "gdp_rank",
-    categories: ALL_CATEGORIES,
   },
   NEIGHBOR_IDENTIFICATION: {
     tier: QUESTION_TIERS.TIER_3,
     id: "neighbor_identification",
-    categories: ["countries"],
     requires: ["neighbors"],
   },
   BINARY_MAP_CHOICE: {
     tier: QUESTION_TIERS.TIER_4,
     id: "binary_map_choice",
-    categories: ["countries"],
   },
   LANDLOCKED_CHECK: {
     tier: QUESTION_TIERS.TIER_4,
     id: "landlocked_check",
-    categories: ALL_CATEGORIES,
   },
   LANGUAGE_FAMILY: {
     tier: QUESTION_TIERS.TIER_2,
     id: "language_family",
-    categories: ALL_CATEGORIES,
     requires: ["languages"],
   },
   RELIGION_MAJORITY: {
     tier: QUESTION_TIERS.TIER_2,
     id: "religion_majority",
-    categories: ALL_CATEGORIES,
     requires: ["religions"],
   },
   RELIGION_PIE: {
     tier: QUESTION_TIERS.TIER_1,
     id: "religion_pie",
-    categories: ALL_CATEGORIES,
     requires: ["religions"],
   },
   BRAZIL_NON_NEIGHBORS: {
-    tier: QUESTION_TIERS.TIER_3,
+    tier: QUESTION_TIERS.TIER_2,
     id: "brazil_non_neighbors",
-    categories: ["countries"],
+  },
+};
+
+/**
+ * Learn session mix by game mode. A type is eligible when its skill domain
+ * is in `domains`, or when its id is listed in `extraTypes`.
+ * `primaryDomains` only affects pick priority (not eligibility).
+ */
+export const LEARN_MODE_CONTENT = {
+  [GAME_MODES.COUNTRIES]: {
+    domains: ["location", "neighbors", "statistics", "facts"],
+  },
+  [GAME_MODES.CAPITALS]: {
+    primaryDomains: ["capital"],
+    domains: ["capital"],
+    extraTypes: [
+      "language_family",
+      "religion_majority",
+      "population_compare",
+      "population_rank",
+      "gdp_compare",
+      "gdp_rank",
+    ],
+  },
+  [GAME_MODES.FLAGS]: {
+    primaryDomains: ["flag"],
+    domains: ["flag"],
+    extraTypes: [
+      "language_family",
+      "religion_majority",
+      "population_compare",
+      "population_rank",
+      "gdp_compare",
+      "gdp_rank",
+    ],
   },
 };
 
@@ -401,11 +420,14 @@ export const TYPE_DISPLAY_NAMES = {
   free_name_entry: "Name entry",
   shape_name_entry: "Shape name",
   capital_free_recall: "Capital recall",
+  flag_free_recall: "Flag recall",
   neighbor_recall_all: "All neighbors",
   neighbor_free_recall: "Neighbor recall",
   shape_identification: "Shape ID",
   flag_identification: "Flag ID",
+  country_from_flag: "Country from flag",
   capital_matching: "Capital match",
+  country_from_capital: "Country from capital",
   neighbor_confirm: "Neighbor yes/no",
   neighbor_select_all: "Select neighbors",
   population_compare: "Population compare",
@@ -426,38 +448,41 @@ export const TYPE_DISPLAY_NAMES = {
 /** Group question type ids by tier for UI filters. */
 export const TYPE_GROUPS = {
   [QUESTION_TIERS.TIER_1]: [
-    "blank_map_click",
     "borderless_map_click",
     "shape_drop",
-    "free_name_entry",
     "shape_name_entry",
     "neighbor_recall_all",
     "religion_pie",
   ],
   [QUESTION_TIERS.TIER_2]: [
+    "free_name_entry",
     "neighbor_free_recall",
     "shape_identification",
     "capital_free_recall",
+    "flag_free_recall",
     "neighbor_select_all",
     "language_family",
     "religion_majority",
+    "gdp_rank",
+    "brazil_non_neighbors",
   ],
   [QUESTION_TIERS.TIER_3]: [
+    "blank_map_click",
     "population_compare",
     "area_compare",
     "gdp_compare",
     "population_rank",
     "area_rank",
-    "gdp_rank",
     "neighbor_identification",
-    "brazil_non_neighbors",
     "flag_identification",
+    "country_from_flag",
     "capital_matching",
     "neighbor_confirm",
   ],
   [QUESTION_TIERS.TIER_4]: [
     "binary_map_choice",
     "landlocked_check",
+    "country_from_capital",
   ],
 };
 

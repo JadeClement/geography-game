@@ -102,6 +102,8 @@ import {
   getPrimaryTierForMastery,
   getEligibleTypesForCategory,
   getDomainForQuestionType,
+  getLearnModeContent,
+  isTypeAllowedForCategory,
 } from "./questionTypes.js";
 import {
   coerceDomainMasteryMap,
@@ -122,6 +124,7 @@ const TRIVIAL_MASTERY = 0.92;
 const MAX_CONSECUTIVE_SAME_TYPE = 2;
 const MIN_SESSION_FOR_TIER_RULES = 10;
 const BONUS_COMPARATIVE_COUNT = 2;
+const PRIMARY_DOMAIN_BOOST = 1.6;
 const BONUS_SLOT_A = 3;
 const BONUS_SLOT_B = 7;
 const TIER_NUMBER = {
@@ -284,8 +287,11 @@ function buildFallbackQuestion(record, category) {
   if (category === "flags") {
     return applyContinueNote({
       ...base,
+      type: "flag_free_recall",
+      tier: QUESTION_TIERS.TIER_2,
+      emaMultiplierKey: QUESTION_TIERS.TIER_2,
       answerType: "text_entry",
-      prompt: "Which country's flag is shown?",
+      prompt: "Which country has this flag?",
       promptSubtext: "Type its name.",
       correctAnswer: record.name,
       mapConfig: null,
@@ -352,18 +358,20 @@ export function selectQuestionForCountry({
   const domainMap = domainMapArg ?? coerceDomainMasteryMap(masteryStats);
   const countryId = cid(record);
   const eligible = getEligibleTypesForCategory(category);
+  const primaryDomains = new Set(getLearnModeContent(category).primaryDomains ?? []);
 
   const scored = eligible.map((type) => {
     const domain = getDomainForQuestionType(type.id);
     const domainScore = getDomainMastery(domainMap, countryId, domain, mastery);
     const domainTier = getTierFromScore(domainScore);
+    const boost = primaryDomains.has(domain) ? PRIMARY_DOMAIN_BOOST : 1;
     return {
       type,
       domain,
       domainScore,
       domainTier,
       catalogTier: type.tier,
-      priority: computeTypePriority(domainScore),
+      priority: computeTypePriority(domainScore) * boost,
     };
   });
 
@@ -496,14 +504,26 @@ function mostTestedRegion(sampled, index) {
   return best;
 }
 
+const BONUS_COMPARE_GENERATORS = [
+  ["population_compare", generatePopulationCompare],
+  ["area_compare", generateAreaCompare],
+  ["gdp_compare", generateGdpCompare],
+];
+
 function buildBonusQuestions(
   region,
   index,
   usedIds,
   allCountries,
   masteryStats,
-  count
+  count,
+  category
 ) {
+  const generators = BONUS_COMPARE_GENERATORS.filter(([typeId]) =>
+    isTypeAllowedForCategory(typeId, category)
+  );
+  if (generators.length === 0) return [];
+
   const candidates = shuffle(
     [...index.values()].filter(
       (record) =>
@@ -516,10 +536,11 @@ function buildBonusQuestions(
   const bonus = [];
   for (const record of candidates) {
     if (bonus.length >= count) break;
-    const raw =
-      generatePopulationCompare(record, allCountries, masteryStats) ??
-      generateAreaCompare(record, allCountries, masteryStats) ??
-      generateGdpCompare(record, allCountries, masteryStats);
+    let raw = null;
+    for (const [, generate] of generators) {
+      raw = generate(record, allCountries, masteryStats);
+      if (raw) break;
+    }
     if (raw) {
       bonus.push(
         decorateQuestion(
@@ -725,7 +746,8 @@ export function buildLearnSession({
         usedIds,
         allCountries,
         masteryStats,
-        BONUS_COMPARATIVE_COUNT
+        BONUS_COMPARATIVE_COUNT,
+        category
       );
     }
   }

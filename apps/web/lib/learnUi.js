@@ -22,6 +22,9 @@ export const learnPromptSubtext = "m-0 text-center text-sm text-text-muted";
 export const learnPromptMedia =
   "mx-auto flex items-center justify-center";
 
+export const learnPromptFlagImg =
+  "h-[min(7rem,22vh)] w-auto max-w-[min(14rem,70vw)] rounded-[4px] object-cover shadow-sm ring-1 ring-black/10";
+
 // ── multiple choice ────────────────────────────────────────────────────────────
 
 // 2x2 grid on mobile, single 1x4 row on desktop (single-select MC).

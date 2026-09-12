@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { normalizeName } from "@/lib/constants";
+import { getFlagUrl } from "@/lib/flags";
 import { isFastResponse } from "@/lib/mastery";
 import {
   learnPrompt,
+  learnPromptMedia,
+  learnPromptFlagImg,
   learnPromptSubtext,
   learnQuestion,
   learnTextForm,
@@ -108,9 +111,14 @@ function TextEntryQuestion({
   // stays visible under a top-pinned prompt.
   const compact = question?.mapConfig?.display === "highlight";
   const isShapePrompt = question?.type === "shape_name_entry";
+  const isFlagPrompt = question?.type === "flag_free_recall";
   const shapeMeta = isShapePrompt
     ? resolveCountry?.(question?.countryId) ?? {}
     : null;
+  const flagIso2 = isFlagPrompt
+    ? resolveCountry?.(question?.countryId)?.iso2 ?? null
+    : null;
+  const flagSrc = getFlagUrl(flagIso2, 320);
   const correctLabel = formatCorrectAnswerLabel(question?.correctAnswer);
   // After submit, Continue takes Submit's place (arrow beside a compact
   // highlight prompt; full-width button on centered cards) so the footer
@@ -208,6 +216,15 @@ function TextEntryQuestion({
           className={learnShapePromptSvg}
           label={outcome ? question?.correctAnswer : "Country outline"}
         />
+      ) : isFlagPrompt && flagSrc ? (
+        <div className={learnPromptMedia}>
+          <img
+            src={flagSrc}
+            alt=""
+            className={learnPromptFlagImg}
+            draggable={false}
+          />
+        </div>
       ) : null}
       <p className={cn(learnPrompt, compact && "text-base max-md:text-sm")}>
         {question?.prompt}

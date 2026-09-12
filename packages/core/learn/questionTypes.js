@@ -6,6 +6,7 @@ import {
   MASTERY_BANDS,
   GAME_MODES,
   LEARN_CONTRIBUTION_RATE,
+  LEARN_MODE_CONTENT,
 } from "@worldly/constants";
 import { orderedTiersForChallenge } from "./challengeLevel.js";
 
@@ -85,8 +86,11 @@ export const QUESTION_TYPE_TO_DOMAIN = {
 
   capital_free_recall: SKILL_DOMAINS.CAPITAL,
   capital_matching: SKILL_DOMAINS.CAPITAL,
+  country_from_capital: SKILL_DOMAINS.CAPITAL,
 
   flag_identification: SKILL_DOMAINS.FLAG,
+  country_from_flag: SKILL_DOMAINS.FLAG,
+  flag_free_recall: SKILL_DOMAINS.FLAG,
   flag_color: SKILL_DOMAINS.FLAG,
 
   population_compare: SKILL_DOMAINS.STATISTICS,
@@ -125,9 +129,22 @@ export function getDomainForQuestionType(questionTypeId) {
   return DEFAULT_SKILL_DOMAIN;
 }
 
+export function getLearnModeContent(category) {
+  return LEARN_MODE_CONTENT[category] ?? LEARN_MODE_CONTENT[GAME_MODES.COUNTRIES];
+}
+
+export function isTypeAllowedForCategory(type, category) {
+  const policy = getLearnModeContent(category);
+  const typeId = typeof type === "string" ? type : type?.id;
+  if (!typeId) return false;
+  if ((policy.extraTypes ?? []).includes(typeId)) return true;
+  const domain = getDomainForQuestionType(typeId);
+  return (policy.domains ?? []).includes(domain);
+}
+
 export function getEligibleTypesForCategory(category) {
-  return Object.values(QUESTION_TYPES).filter(
-    (type) => !category || type.categories.includes(category)
+  return Object.values(QUESTION_TYPES).filter((type) =>
+    isTypeAllowedForCategory(type, category)
   );
 }
 
@@ -183,7 +200,7 @@ function typesForTiers(orderedTiers, category) {
     .filter(
       (type) =>
         tierPriority.has(type.tier) &&
-        (!category || type.categories.includes(category))
+        isTypeAllowedForCategory(type, category)
     )
     .sort((a, b) => tierPriority.get(a.tier) - tierPriority.get(b.tier));
 }

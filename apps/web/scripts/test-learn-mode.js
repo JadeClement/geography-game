@@ -10,7 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { QUESTION_TIERS, getEligibleQuestionTypes, getEligibleQuestionTypesForChallenge, getPrimaryTierForMastery, QUESTION_TYPES, getDomainForQuestionType, SKILL_DOMAINS, QUESTION_TYPE_TO_DOMAIN } from "@/lib/learn/questionTypes";
+import { QUESTION_TIERS, getEligibleQuestionTypes, getEligibleQuestionTypesForChallenge, getPrimaryTierForMastery, QUESTION_TYPES, getDomainForQuestionType, SKILL_DOMAINS, QUESTION_TYPE_TO_DOMAIN, getEligibleTypesForCategory } from "@/lib/learn/questionTypes";
 import { buildLearnSession, getTierForCountry, selectQuestionForCountry } from "@/lib/learn/sessionSequencer";
 import { buildDomainMasteryMap, getDomainMastery, getOverallMastery } from "@/lib/learn/domainMastery";
 import {
@@ -157,6 +157,86 @@ test("challenge workingTier 4 yields Tier 4 (+ adjacent) types", () => {
 test("challenge workingTier 1 yields Tier 1 (+ adjacent) types", () => {
   const eligible = getEligibleQuestionTypesForChallenge(1, "countries");
   assert.ok(eligible.some((t) => t.tier === QUESTION_TIERS.TIER_1));
+});
+
+test("Learn mode content: countries excludes capital and flag types", () => {
+  const ids = getEligibleTypesForCategory("countries").map((t) => t.id);
+  for (const banned of [
+    "capital_free_recall",
+    "capital_matching",
+    "country_from_capital",
+    "flag_identification",
+    "country_from_flag",
+    "flag_free_recall",
+  ]) {
+    assert.ok(!ids.includes(banned), `countries should not include ${banned}`);
+  }
+  for (const required of [
+    "blank_map_click",
+    "neighbor_confirm",
+    "population_compare",
+    "area_compare",
+    "religion_pie",
+    "landlocked_check",
+  ]) {
+    assert.ok(ids.includes(required), `countries should include ${required}`);
+  }
+});
+
+test("Learn mode content: capitals is capital plus language/religion/pop/gdp", () => {
+  const ids = getEligibleTypesForCategory("capitals").map((t) => t.id).sort();
+  assert.deepEqual(ids, [
+    "capital_free_recall",
+    "capital_matching",
+    "country_from_capital",
+    "gdp_compare",
+    "gdp_rank",
+    "language_family",
+    "population_compare",
+    "population_rank",
+    "religion_majority",
+  ]);
+  for (const banned of [
+    "flag_identification",
+    "flag_free_recall",
+    "neighbor_confirm",
+    "blank_map_click",
+    "area_compare",
+    "religion_pie",
+  ]) {
+    assert.ok(!ids.includes(banned), `capitals should not include ${banned}`);
+  }
+});
+
+test("Learn mode content: flags is flag plus language/religion/pop/gdp", () => {
+  const ids = getEligibleTypesForCategory("flags").map((t) => t.id).sort();
+  assert.deepEqual(ids, [
+    "country_from_flag",
+    "flag_free_recall",
+    "flag_identification",
+    "gdp_compare",
+    "gdp_rank",
+    "language_family",
+    "population_compare",
+    "population_rank",
+    "religion_majority",
+  ]);
+  for (const banned of [
+    "capital_free_recall",
+    "country_from_capital",
+    "neighbor_confirm",
+    "blank_map_click",
+    "area_compare",
+    "religion_pie",
+  ]) {
+    assert.ok(!ids.includes(banned), `flags should not include ${banned}`);
+  }
+});
+
+test("Learn mode content: unknown mode falls back to countries", () => {
+  const countries = getEligibleTypesForCategory("countries").map((t) => t.id).sort();
+  const unknown = getEligibleTypesForCategory("not-a-mode").map((t) => t.id).sort();
+  assert.deepEqual(unknown, countries);
 });
 
 // ── Session building rules (Steps 3–4) ────────────────────────────────────────
@@ -1210,6 +1290,37 @@ test("wrong capital pick names the selected city and its country", () => {
   assert.equal(moldova?.name, "Moldova");
 });
 
+test("country-from-capital is a Tier 4 four-country multiple choice", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("country_from_capital", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.tier, QUESTION_TIERS.TIER_4);
+  assert.equal(question.answerType, "multiple_choice");
+  assert.equal(question.correctAnswer, "FRA");
+  assert.match(question.prompt, /Paris/);
+  assert.equal(question.options.length, 4);
+  const ids = question.options.map((option) => option.value);
+  assert.equal(new Set(ids).size, 4);
+  assert.ok(ids.includes("FRA"));
+  assert.ok(question.options.every((option) => option.label && option.countryId));
+});
+
+test("wrong country-from-capital pick names the true capital pairing", () => {
+  const question = {
+    type: "country_from_capital",
+    countryId: "FRA",
+    correctAnswer: "FRA",
+    options: [
+      { value: "FRA", label: "France", countryId: "FRA" },
+      { value: "DEU", label: "Germany", countryId: "DEU" },
+    ],
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "DEU",
+  });
+  assert.equal(reveal.message, "Paris is the capital of France.");
+});
+
 test("wrong typed capital does not add That's-copy above Continue", () => {
   const question = {
     type: "capital_free_recall",
@@ -1219,6 +1330,61 @@ test("wrong typed capital does not add That's-copy above Continue", () => {
   };
   const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
     selectedValue: "fjksl",
+  });
+  assert.equal(reveal.message, null);
+});
+
+test("country-from-flag is a Tier 3 four-country multiple choice", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("country_from_flag", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.tier, QUESTION_TIERS.TIER_3);
+  assert.equal(question.answerType, "multiple_choice");
+  assert.equal(question.correctAnswer, "FRA");
+  assert.match(question.prompt, /which country has this flag/i);
+  assert.equal(question.options.length, 4);
+  const ids = question.options.map((option) => option.value);
+  assert.equal(new Set(ids).size, 4);
+  assert.ok(ids.includes("FRA"));
+  assert.ok(question.options.every((option) => option.label && option.countryId));
+});
+
+test("wrong country-from-flag pick names the true flag owner", () => {
+  const question = {
+    type: "country_from_flag",
+    countryId: "FRA",
+    correctAnswer: "FRA",
+    options: [
+      { value: "FRA", label: "France", countryId: "FRA" },
+      { value: "DEU", label: "Germany", countryId: "DEU" },
+    ],
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "DEU",
+  });
+  assert.equal(reveal.message, "That's the flag of France.");
+});
+
+test("flag-free-recall is a Tier 2 typed country name", () => {
+  const japan = ENABLED_BY_ID.get("JPN");
+  const question = generateQuestion("flag_free_recall", japan, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.tier, QUESTION_TIERS.TIER_2);
+  assert.equal(question.answerType, "text_entry");
+  assert.equal(question.correctAnswer, japan.name);
+  assert.match(question.prompt, /which country has this flag/i);
+  assert.equal(question.clueEligible, true);
+});
+
+test("wrong typed flag recall does not add That's-copy above Continue", () => {
+  const question = {
+    type: "flag_free_recall",
+    answerType: "text_entry",
+    countryId: "JPN",
+    correctAnswer: "Japan",
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "china",
   });
   assert.equal(reveal.message, null);
 });
