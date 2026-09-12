@@ -159,7 +159,10 @@ export async function POST(request) {
         typeof predictedSuccess === "number" && Number.isFinite(predictedSuccess)
           ? Math.min(1, Math.max(0, predictedSuccess))
           : null,
-      questionType: typeof questionType === "string" ? questionType : null,
+      questionType:
+        typeof questionType === "string" && questionType.trim()
+          ? questionType.trim()
+          : null,
       currentSessionNumber:
         Number.isInteger(currentSessionNumber) && currentSessionNumber >= 0
           ? currentSessionNumber

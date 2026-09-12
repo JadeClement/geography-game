@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS country_attempts (
   response_time_ms INT,
   question_tier TEXT,
   predicted_success REAL,
+  question_type_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -218,6 +219,7 @@ ALTER TABLE push_tokens
 
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS question_tier TEXT;
 ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS predicted_success REAL;
+ALTER TABLE country_attempts ADD COLUMN IF NOT EXISTS question_type_id TEXT;
 
 -- deprecated — superseded by per-country EMA tier selection.
 CREATE TABLE IF NOT EXISTS learn_challenge (

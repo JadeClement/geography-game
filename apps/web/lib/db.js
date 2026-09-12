@@ -45,7 +45,8 @@
  *    plus the legacy `general` row. Domain is resolved SERVER-SIDE — never
  *    from a client skillDomain field. Learn applies LEARN_CONTRIBUTION_RATE
  *    (0.8x on Test-mode domains) on top of the question-type multiplier.
- *    Also INSERTs one country_attempts row per answer.
+ *    Also INSERTs one country_attempts row per answer (question_tier,
+ *    predicted_success, question_type_id). Test rows leave question_type_id NULL.
  *
  * 4. Read path for Learn session building
  *    GET /api/mastery?mode= → getCountryStatsForUser → mapStatsToMasteryEntries
@@ -60,9 +61,9 @@
  *
  * 6. QUESTION_TYPES ids (packages/constants QUESTION_TYPES):
  *    blank_map_click, borderless_map_click, shape_drop, free_name_entry,
- *    capital_free_recall, shape_name_entry, neighbor_recall_all,
+ *    capital_free_recall, flag_free_recall, shape_name_entry, neighbor_recall_all,
  *    neighbor_free_recall, shape_identification, flag_identification,
- *    capital_matching, neighbor_confirm, neighbor_select_all,
+ *    country_from_flag, capital_matching, country_from_capital, neighbor_confirm, neighbor_select_all,
  *    population_compare, area_compare, gdp_compare, population_rank,
  *    area_rank, gdp_rank, neighbor_identification, binary_map_choice,
  *    landlocked_check, language_family, religion_majority, religion_pie,
@@ -740,7 +741,11 @@ export async function recordCountryPerformance({
     throw new Error(`Invalid outcome: ${outcome}`);
   }
   const column = outcome;
-  const skillDomain = resolveSkillDomain({ questionType, mode });
+  const questionTypeId =
+    typeof questionType === "string" && questionType.trim()
+      ? questionType.trim()
+      : null;
+  const skillDomain = resolveSkillDomain({ questionType: questionTypeId, mode });
   const isLearn = gameType === "learning";
   const contributionRate = isLearn ? getLearnContributionRate(skillDomain) : 1;
   const appliedMultiplier =
@@ -885,9 +890,9 @@ export async function recordCountryPerformance({
     await client.query(
       `INSERT INTO country_attempts (
          id, user_id, country_id, mode, level, game_type, outcome, response_time_ms,
-         question_tier, predicted_success
+         question_tier, predicted_success, question_type_id
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         attemptId,
         userId,
@@ -901,6 +906,7 @@ export async function recordCountryPerformance({
         predictedSuccess != null && Number.isFinite(predictedSuccess)
           ? predictedSuccess
           : null,
+        questionTypeId,
       ]
     );
 
