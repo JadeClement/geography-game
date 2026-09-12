@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import { loadCountriesGeoJSON } from "@/lib/countries";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { computeWorldlyScoreFromMastery } from "@/lib/worldlyScore";
+import { SKILL_DOMAIN_LABELS } from "@/lib/masteryTiers";
 import {
   infoBack,
   infoCallout,
@@ -150,7 +151,7 @@ const DOMAIN_WEIGHTS = [
   { label: "Neighbors", pct: 25, bar: "bg-sky-500", swatch: "bg-sky-500" },
   { label: "Capital", pct: 15, bar: "bg-violet-500", swatch: "bg-violet-500" },
   { label: "Flag", pct: 10, bar: "bg-amber-500", swatch: "bg-amber-500" },
-  { label: "Statistics", pct: 10, bar: "bg-emerald-500", swatch: "bg-emerald-500" },
+  { label: SKILL_DOMAIN_LABELS.statistics, pct: 10, bar: "bg-emerald-500", swatch: "bg-emerald-500" },
   { label: "Facts", pct: 5, bar: "bg-rose-400", swatch: "bg-rose-400" },
 ];
 
@@ -496,7 +497,7 @@ export default function HowItWorksPage() {
           <p>
             Your Worldly Score is a skill mix for every country. Location is the spine of
             the game; neighbors are the next hardest recall skill; capital and flag are the
-            classic Test modes; statistics and facts come from Learn:
+            classic Test modes; comparisons and facts come from Learn:
           </p>
           <WeightBreakdown items={DOMAIN_WEIGHTS} />
 
@@ -509,7 +510,7 @@ export default function HowItWorksPage() {
           </p>
           <p>
             Learn answers still count, but domains that also have a Test mode (location,
-            capital, flag) move at 80% speed in Learn. Neighbors, statistics, and facts
+            capital, flag) move at 80% speed in Learn. Neighbors, comparisons, and facts
             have no Test, so Learn is how they grow.
           </p>
           <p>
