@@ -97,7 +97,8 @@ export const GAME_TYPE_FOR_STATS = {
 // ── Mastery thresholds (exported; used by @worldly/core/mastery) ─────────────
 
 export const MASTERY_GRADUATION_THRESHOLD = 0.9;
-export const MASTERY_FAST_STREAK_REQUIRED = 3;
+/** Fast first-try Test answers needed in a row to locate a country. */
+export const MASTERY_FAST_STREAK_REQUIRED = 1;
 export const MASTERY_REENTRY_THRESHOLD = 0.75;
 export const MASTERY_DECAY_HALF_LIFE_DAYS = 30;
 export const MASTERY_MIN_WEIGHT = 0.05;

@@ -43,7 +43,7 @@ The "find" levels ask users to click a country on the map; "name" levels ask use
 ### Mastery system
 `lib/mastery.js` implements an EMA (exponential moving average) mastery score per country per user per mode per level. Key concepts:
 - `masteryScore` (0–1) updated on each attempt via `computeMasteryUpdate()`
-- `graduated` flag: set when mastery ≥ 0.9 and `fastStreak` ≥ 3 in Test mode
+- `graduated` flag: set when mastery ≥ 0.9 and `fastStreak` ≥ 1 in Test mode
 - Time decay applied to graduated countries via `getDecayAdjustedMastery()`
 - Mastery "proves downward" within sections: F2 mastery counts toward F1, N2 toward N1 (`getMasteryProvingLevels`)
 

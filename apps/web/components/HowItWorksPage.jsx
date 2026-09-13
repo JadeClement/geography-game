@@ -391,9 +391,9 @@ export default function HowItWorksPage() {
             window so it stays fair for everyone).
           </p>
           <p>
-            Fast answers give the bigger <strong>+0.20</strong> boost and build a
-            &ldquo;fast streak.&rdquo; Slower ones still count, just less. Your personal
-            baseline speed is itself a running average, so the game calibrates to you.
+            Fast answers give the bigger <strong>+0.20</strong> boost. Slower ones still
+            count, just less. Your personal baseline speed is itself a running average,
+            so the game calibrates to you.
           </p>
         </SectionCard>
 
@@ -413,8 +413,7 @@ export default function HowItWorksPage() {
             <div className={infoStep}>
               <span className={infoStepNum}>2</span>
               <span className={infoStepText}>
-                You answer it <strong>fast and first-try, 3 times in a row</strong> (a fast
-                streak of 3).
+                You answer it <strong>fast and first-try</strong>.
               </span>
             </div>
           </div>

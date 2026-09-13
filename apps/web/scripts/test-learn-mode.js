@@ -688,6 +688,45 @@ test("Tier 4 correct produces a smaller EMA gain than Tier 1 correct", () => {
   assert.ok(t4 < t1, `expected Tier 4 gain (${t4}) < Tier 1 gain (${t1})`);
 });
 
+test("one fast first-try Test answer at 0.90 locates a country", () => {
+  const after = computeMasteryUpdate(
+    { masteryScore: 0.9, fastStreak: 0, graduated: false },
+    {
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+      responseTimeMs: 1000,
+      gameType: "test",
+    }
+  );
+  assert.equal(after.fastStreak, 1);
+  assert.equal(after.graduated, true);
+});
+
+test("a slow first-try Test answer at 0.90 does not locate", () => {
+  const after = computeMasteryUpdate(
+    { masteryScore: 0.9, fastStreak: 0, graduated: false },
+    {
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+      responseTimeMs: 9000,
+      gameType: "test",
+    }
+  );
+  assert.equal(after.fastStreak, 0);
+  assert.equal(after.graduated, false);
+});
+
+test("a fast first-try Learn answer at 0.90 does not locate", () => {
+  const after = computeMasteryUpdate(
+    { masteryScore: 0.9, fastStreak: 0, graduated: false },
+    {
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+      responseTimeMs: 1000,
+      gameType: "learning",
+    }
+  );
+  assert.equal(after.fastStreak, 1);
+  assert.equal(after.graduated, false);
+});
+
 test("Test-mode EMA (no multiplier) equals Tier 1 Learn multiplier (1.0)", () => {
   const before = { masteryScore: 0.4 };
   const test = computeMasteryUpdate(before, {
