@@ -13,7 +13,7 @@ import {
   WORLDLY_CURVE_BREAKPOINTS,
   WORLDLY_DOMAIN_WEIGHTS,
 } from "@/lib/worldlyScore";
-import { ALL_MODE, paintScoreForTab } from "@/lib/masteryMap";
+import { ALL_MODE, countLocatedForTab, paintScoreForTab, regionScoresForTab } from "@/lib/masteryMap";
 import {
   getMasteryTier,
   MASTERY_TIERS,
@@ -203,4 +203,50 @@ test("paintScoreForTab uses location on Countries and the Worldly blend on All",
     paintScoreForTab(ALL_MODE, aLot) > paintScoreForTab(ALL_MODE, once),
     "a heavily practiced country paints stronger on All than a one-session country"
   );
+});
+
+test("countLocatedForTab only counts the active tab's domain", () => {
+  const scores = new Map([
+    ["FRA", { location: 0.95, capital: 0.2, flag: 0 }],
+    ["DEU", { location: 0.1, capital: 0.92, flag: 0.91 }],
+  ]);
+  const ids = ["FRA", "DEU"];
+  assert.equal(countLocatedForTab(GAME_MODES.COUNTRIES, ids, scores), 1);
+  assert.equal(countLocatedForTab(GAME_MODES.CAPITALS, ids, scores), 1);
+  assert.equal(countLocatedForTab(GAME_MODES.FLAGS, ids, scores), 1);
+  assert.equal(countLocatedForTab(ALL_MODE, ids, scores), 0);
+});
+
+test("regionScoresForTab omits World and follows the active tab", () => {
+  const regions = [
+    { id: "world", label: "World" },
+    { id: "europe", label: "Europe" },
+    { id: "asia", label: "Asia" },
+  ];
+  const idsByRegion = {
+    world: ["FRA", "JPN"],
+    europe: ["FRA"],
+    asia: ["JPN"],
+  };
+  const scores = new Map([
+    ["FRA", { location: 1, capital: 0, flag: 0, neighbors: 0, statistics: 0, facts: 0 }],
+    ["JPN", { location: 0, capital: 1, flag: 0, neighbors: 0, statistics: 0, facts: 0 }],
+  ]);
+  const getIds = (id) => idsByRegion[id];
+
+  const countries = regionScoresForTab(GAME_MODES.COUNTRIES, regions, getIds, scores);
+  assert.deepEqual(
+    countries.map((row) => row.id),
+    ["europe", "asia"]
+  );
+  assert.equal(countries.find((row) => row.id === "europe").pct, 100);
+  assert.equal(countries.find((row) => row.id === "asia").pct, 0);
+
+  const capitals = regionScoresForTab(GAME_MODES.CAPITALS, regions, getIds, scores);
+  assert.equal(capitals.find((row) => row.id === "europe").pct, 0);
+  assert.equal(capitals.find((row) => row.id === "asia").pct, 100);
+
+  const all = regionScoresForTab(ALL_MODE, regions, getIds, scores);
+  assert.ok(all.find((row) => row.id === "europe").pct < 100);
+  assert.ok(all.find((row) => row.id === "europe").pct > 0);
 });

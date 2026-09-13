@@ -1,6 +1,6 @@
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
-import { buildLevelScoreMap, computeCountryDomainScore, computeCountryScore } from "@/lib/worldlyScore";
+import { applyWorldlyCurve, buildLevelScoreMap, computeCountryDomainScore, computeCountryScore } from "@/lib/worldlyScore";
 import {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
@@ -83,6 +83,44 @@ export function paintScoreForTab(mode, domainScores = {}) {
   if (mode === ALL_MODE) return computeCountryDomainScore(domainScores);
   const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
   return Number(domainScores?.[domainKey]) || 0;
+}
+
+/**
+ * Count countries whose active-tab score clears the located bar (0.9).
+ * All uses the %Worldly domain blend; Countries / Capitals / Flags use
+ * that tab's domain only.
+ */
+export function countLocatedForTab(mode, countryIds, domainScoresByCountry) {
+  let count = 0;
+  for (const id of countryIds ?? []) {
+    if (paintScoreForTab(mode, domainScoresByCountry?.get(id)) >= MASTERY_MODE_THRESHOLD) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Curved average score per geographic region for the active mastery-map tab.
+ * `world` is omitted — that's already the headline ring.
+ */
+export function regionScoresForTab(mode, regions, getCountryIds, domainScoresByCountry) {
+  const rows = [];
+  for (const region of regions ?? []) {
+    if (!region || region.id === "world") continue;
+    const ids = getCountryIds?.(region.id) ?? [];
+    let sum = 0;
+    for (const id of ids) {
+      sum += paintScoreForTab(mode, domainScoresByCountry?.get(id));
+    }
+    const raw = ids.length ? sum / ids.length : 0;
+    rows.push({
+      id: region.id,
+      label: region.label,
+      pct: Math.round(applyWorldlyCurve(raw)),
+    });
+  }
+  return rows;
 }
 
 /**
