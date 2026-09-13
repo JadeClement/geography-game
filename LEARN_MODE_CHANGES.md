@@ -627,3 +627,153 @@ Test mode still quizzes the full remaining region with no sampling weight. EMA d
 4. Mobile Learn does not call `POST /api/streak` today (only mobile Go does). Hours-based lifting still applies on mobile; session-based lifting depends on web (or Go) completions until mobile Learn posts the same endpoint.
 5. `practice_sessions` is still a **daily** streak table, not a per-game log.
 6. `last_outcome` was not added in this migration; it already existed.
+
+---
+
+## Mode Content, Domain Rotation, Boring Escalation, Type-Level Tracking
+
+Learn mix is now constrained per game mode, rotated across skill domains,
+and can harden mid-session when easy formats keep getting first-try
+corrects. Attempt rows now store the question type so per-type EMA can be
+built later. Catalog generators, domain EMA writes, graduation, % Worldly,
+and Test / Go! / Discover are unchanged.
+
+### 1. Mode content constraints
+
+`LEARN_MODE_CONTENT` is the allowlist. A type is eligible when its skill
+domain is in `domains`, or when its id is listed in `extraTypes`.
+`primaryDomains` only affects pick priority (see domain rotation below),
+not eligibility. Unknown modes fall back to Countries.
+
+| Mode | Allowed domains | Extra types |
+|---|---|---|
+| countries | location, neighbors, statistics, facts | — |
+| capitals | capital | `language_family`, `religion_majority`, `population_compare`, `population_rank`, `gdp_compare`, `gdp_rank` |
+| flags | flag | same extras as capitals |
+
+Countries Learn no longer serves capital or flag items. Capitals / Flags
+stay on their primary skill, with a small language / religion / population /
+GDP mix. Area, landlocked, neighbor, and map-location types are Countries-only.
+
+#### Files modified
+
+- `packages/constants/index.js` — `LEARN_MODE_CONTENT`.
+- `packages/core/learn/questionTypes.js` — `getLearnModeContent`,
+  `isTypeAllowedForCategory`, `getEligibleTypesForCategory` (replaces the
+  old `categories` field on each type).
+- `packages/core/learn/sessionSequencer.js` — eligibility + bonus
+  comparatives go through `isTypeAllowedForCategory`; mode-specific
+  Find/Name fallbacks unchanged (`blank_map_click` / `capital_free_recall` /
+  `flag_free_recall`).
+- `apps/web/scripts/test-learn-mode.js` — allowlist tests per mode.
+
+### 2. Domain rotation
+
+Still one question per sampled country. Across a session, the type pick
+rotates through that mode’s allowed domains instead of locking onto one.
+
+`selectQuestionForCountry` scores every eligible type by that country’s
+**domain** EMA (`computeTypePriority`): priority peaks near 0.5, with an
+extra boost for weaker domains, plus small random jitter. Types whose
+catalog tier matches the domain’s `MASTERY_BANDS` primary tier are tried
+first. Capitals / Flags multiply the primary domain by
+`PRIMARY_DOMAIN_BOOST` (1.6) so capital/flag formats stay the majority
+without a hard quota.
+
+Session arrange still forbids three-in-a-row of the **same type** (Rule 2).
+That is type variety, not a hard “no two consecutive same domain” rule —
+two location formats in a row (`blank_map_click` then `shape_drop`) can
+happen. The rotation is the per-country domain-EMA priority, so a mixed
+Countries session typically spreads across location, neighbors,
+comparisons, and facts.
+
+### 3. Boring detection and escalation
+
+Per-session “doing too well” ladder. Country order is unchanged; only the
+**next** queued format may be rewritten harder.
+
+| State | Meaning |
+|---|---|
+| `easeCap` | hardest-easy tier allowed (4 = T4 ok, 3 = rewrite T4→T3, 2 = rewrite T3/T4→T2). Floor is 2. |
+| `streak` | consecutive first-try corrects **at the current cap** |
+
+```
+{ 4: 4 first-try T4s → easeCap 3 }
+{ 3: 2 first-try T3s → easeCap 2 }
+```
+
+A miss, second-try, or reveal resets to `{ easeCap: 4, streak: 0 }`. A
+first-try on a different tier than the current cap zeros the streak but
+keeps the cap. Default at session start is cap 4 (no rewrites).
+
+`handleLearnAnswer` applies `applyLearnEscalation`, then
+`rewriteLearnQuestionForCap` on the next item via `selectQuestionForCountry({
+forceTier })`. Resume snapshots store `escalation` and rewrite the current
+question on restore.
+
+#### Files created
+
+- `packages/core/learn/escalation.js` — `LEARN_ESCALATION`,
+  `createLearnEscalation`, `normalizeLearnEscalation`, `applyLearnEscalation`,
+  `shouldRewriteQuestion`, `tierFromEaseCap`.
+- `apps/web/lib/learn/escalation.js` — re-export.
+
+#### Files modified
+
+- `packages/core/learn/sessionSequencer.js` — `forceTier` pins the domain
+  tier (matching pool only; no easier-tier fallback when pinned).
+- `packages/core/package.json` — export `./learn/escalation`.
+- `apps/web/components/GeographyGame.jsx` — session state + next-question
+  rewrite + persist/resume.
+- `apps/web/lib/savedLearnSession.js` — `escalation` on snapshots
+  (missing → `{ easeCap: 4, streak: 0 }`).
+- `apps/web/scripts/test-learn-mode.js` / `test-saved-learn-session.js`.
+
+This is **not** the deprecated regional `workingTier` / `learn_challenge`
+path. That remains unused.
+
+### 4. Per-question-type tracking (started, not yet an EMA)
+
+Learn answers already sent `questionType` on `POST /api/country-stats` so
+the server could resolve `skill_domain`. That id is now stored on the
+attempt row. There is **no** per-type mastery column yet — live EMA is
+still per `skill_domain` (plus the dual-written `general` row).
+
+#### Column added
+
+`country_attempts.question_type_id TEXT` (nullable). Learn writes the
+catalog id (`blank_map_click`, `capital_matching`, …). Test / Go! /
+Discover leave it `NULL`.
+
+29 live `QUESTION_TYPES` ids. Unmapped strings still fall back to
+location for the domain write and are stored as-is on the attempt.
+
+#### Files modified
+
+- `apps/web/scripts/setup-db.js` — column on `CREATE TABLE` +
+  `ALTER … IF NOT EXISTS`.
+- `apps/web/lib/db.js` — `recordCountryPerformance` INSERTs
+  `question_type_id` from `questionType`.
+- `apps/web/app/api/country-stats/route.js` — already accepted
+  `questionType`; now forwarded through to the INSERT.
+
+### Unchanged
+
+- Domain EMA formula, `LEARN_EMA_MULTIPLIERS`, `LEARN_CONTRIBUTION_RATE`.
+- Graduation / Located / % Worldly.
+- Test / Go! / Discover question flow.
+- Recency sampling and country queue building (escalation only rewrites
+  formats of countries already in the Learn queue).
+
+### Assumptions / follow-up
+
+- Per-type EMA is **telemetry only** until a later step reads
+  `question_type_id` (or adds type-keyed `country_stats` rows). Type mix
+  is not yet gated on per-type mastery.
+- No mix-percentage quotas. Capitals/Flags “primarily capital/flag” is
+  the 1.6× priority boost, not a guaranteed count.
+- Escalation never rewrites the current question after it is shown (only
+  the next one, plus the current one on resume). If `forceTier` cannot
+  generate, the original easier question is kept.
+- Mobile Learn does not yet persist `escalation` unless it shares the
+  web snapshot format.
