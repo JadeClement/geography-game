@@ -8,10 +8,12 @@ import assert from "node:assert/strict";
 
 import {
   applyWorldlyCurve,
+  computeCountryDomainScore,
   computeWorldlyScoreFromMastery,
   WORLDLY_CURVE_BREAKPOINTS,
   WORLDLY_DOMAIN_WEIGHTS,
 } from "@/lib/worldlyScore";
+import { ALL_MODE, paintScoreForTab } from "@/lib/masteryMap";
 import {
   getMasteryTier,
   MASTERY_TIERS,
@@ -176,5 +178,29 @@ test("getWeakestDomain picks the lowest raw domain", () => {
       facts: 0.2,
     }),
     "neighbors"
+  );
+});
+
+test("paintScoreForTab uses location on Countries and the Worldly blend on All", () => {
+  const once = domainScoresFromStats([
+    { countryId: "FRA", mode: "countries", skillDomain: "location", masteryScore: 0.15 },
+  ]);
+  const aLot = domainScoresFromStats([
+    { countryId: "KEN", mode: "countries", skillDomain: "location", masteryScore: 0.85 },
+    { countryId: "KEN", mode: "capitals", skillDomain: "capital", masteryScore: 0.7 },
+    { countryId: "KEN", mode: "neighbors", skillDomain: "neighbors", masteryScore: 0.6 },
+    { countryId: "KEN", mode: "flags", skillDomain: "flag", masteryScore: 0.4 },
+  ]);
+
+  assert.equal(paintScoreForTab(GAME_MODES.COUNTRIES, once), 0.15);
+  assert.equal(paintScoreForTab(GAME_MODES.COUNTRIES, aLot), 0.85);
+  assert.equal(paintScoreForTab(GAME_MODES.CAPITALS, aLot), 0.7);
+  assert.equal(paintScoreForTab(GAME_MODES.FLAGS, aLot), 0.4);
+
+  assert.equal(paintScoreForTab(ALL_MODE, once), computeCountryDomainScore(once));
+  assert.equal(paintScoreForTab(ALL_MODE, aLot), computeCountryDomainScore(aLot));
+  assert.ok(
+    paintScoreForTab(ALL_MODE, aLot) > paintScoreForTab(ALL_MODE, once),
+    "a heavily practiced country paints stronger on All than a one-session country"
   );
 });

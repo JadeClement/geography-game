@@ -41,19 +41,23 @@ function configureStyle(map, colors) {
   }
 }
 
+function scoreFillOpacity() {
+  return [
+    "interpolate",
+    ["linear"],
+    ["coalesce", ["feature-state", "score"], 0],
+    0, 0,
+    0.2, 0.22,
+    0.6, 0.55,
+    1, 0.95,
+  ];
+}
+
 function singleFillOpacity() {
   return [
     "case",
     ["==", ["feature-state", "lit"], true],
-    [
-      "interpolate",
-      ["linear"],
-      ["coalesce", ["feature-state", "score"], 0],
-      0, 0,
-      0.2, 0.22,
-      0.6, 0.55,
-      1, 0.95,
-    ],
+    scoreFillOpacity(),
     0,
   ];
 }
@@ -83,6 +87,9 @@ function tierFillColor() {
 }
 
 function tierFillOpacity() {
+  // Same continuous-score idea as Capitals/Flags, but Learn's first EMA
+  // step is ~0.01 (and All blends that further), so the low end has to
+  // land in a visible faint-teal range instead of interpolating from 0.
   return [
     "case",
     [
@@ -90,7 +97,16 @@ function tierFillOpacity() {
       ["==", ["feature-state", "lit"], true],
       [">", ["coalesce", ["feature-state", "tier"], 0], 0],
     ],
-    ["match", ["coalesce", ["feature-state", "tier"], 0], 3, 0.95, 2, 0.82, 1, 0.6, 0],
+    [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["feature-state", "score"], 0],
+      0, 0,
+      0.003, 0.28,
+      0.2, 0.55,
+      0.6, 0.8,
+      1, 0.95,
+    ],
     0,
   ];
 }

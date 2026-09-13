@@ -21,6 +21,7 @@ import {
   getScore,
   isMastered,
   MASTERY_MODES,
+  paintScoreForTab,
   TIER_COLORS,
   TIER_STATE,
 } from "@/lib/masteryMap";
@@ -72,7 +73,7 @@ import {
 } from "@/lib/ui";
 import { cn } from "@/lib/cn";
 
-const MODE_TABS = [...MASTERY_MODES, ALL_MODE];
+const MODE_TABS = [ALL_MODE, ...MASTERY_MODES];
 const BASE_DIM = {
   [THEMES.LIGHT]: "#e2e8f0",
   [THEMES.DARK]: "#1a2740",
@@ -114,7 +115,7 @@ export default function MasteryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
-  const [mode, setMode] = useState(GAME_MODES.COUNTRIES);
+  const [mode, setMode] = useState(ALL_MODE);
   const [hover, setHover] = useState(null);
   const [selectedCountryId, setSelectedCountryId] = useState(null);
 
@@ -255,15 +256,14 @@ export default function MasteryPage() {
   }, [data, countryIds, neighborCountById]);
 
   const scoreByCountry = useMemo(() => {
-    if (!data || paintMode === "tiers") return new Map();
-    const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
+    if (!data) return new Map();
     const out = new Map();
     for (const id of countryIds) {
       const scores = domainScoresFromStats(data.statsByCountry.get(id) ?? []);
-      out.set(id, scores[domainKey] ?? 0);
+      out.set(id, paintScoreForTab(mode, scores));
     }
     return out;
-  }, [data, mode, countryIds, paintMode]);
+  }, [data, mode, countryIds]);
 
   const visual = getModeVisual(mode);
 

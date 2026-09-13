@@ -1,6 +1,6 @@
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
-import { buildLevelScoreMap, computeCountryScore } from "@/lib/worldlyScore";
+import { buildLevelScoreMap, computeCountryDomainScore, computeCountryScore } from "@/lib/worldlyScore";
 import {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
@@ -73,6 +73,16 @@ export const TIER_COLORS = {
 export function getModeVisual(mode) {
   if (mode === ALL_MODE) return ALL_VISUAL;
   return MODE_VISUALS[mode] ?? MODE_VISUALS[GAME_MODES.COUNTRIES];
+}
+
+/**
+ * Continuous 0–1 paint score for a mastery-map tab.
+ * All uses the same domain blend as %Worldly; other tabs use that domain.
+ */
+export function paintScoreForTab(mode, domainScores = {}) {
+  if (mode === ALL_MODE) return computeCountryDomainScore(domainScores);
+  const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
+  return Number(domainScores?.[domainKey]) || 0;
 }
 
 /**
