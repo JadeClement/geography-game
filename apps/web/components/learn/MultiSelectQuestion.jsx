@@ -6,12 +6,10 @@ import {
   learnChoiceButton,
   learnChoiceFlag,
   learnMultiSelectGrid,
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
-import { primaryBtn } from "@/lib/ui";
 import ClueButton from "./ClueButton";
+import LearnPromptBar from "./LearnPromptBar";
 
 const FEEDBACK_DELAY_MS = 1100;
 
@@ -88,6 +86,22 @@ export default function MultiSelectQuestion({
     }, FEEDBACK_DELAY_MS);
   };
 
+  const handleGiveUp = () => {
+    if (locked) return;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    setSubmitted(true);
+    timerRef.current = setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: [...selected],
+        givenUp: true,
+      });
+    }, FEEDBACK_DELAY_MS);
+  };
+
   const optionState = (option) => {
     const isCorrect = correctSet.has(option.value);
     const isSelected = selected.has(option.value);
@@ -100,10 +114,16 @@ export default function MultiSelectQuestion({
 
   return (
     <div className={learnQuestion}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={question?.promptSubtext}
+        showSubmit={!locked}
+        onSubmit={submit}
+        submitLabel={selected.size > 0 ? `Check (${selected.size})` : "Check"}
+        submitDisabled={selected.size === 0}
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
 
       <div className={learnMultiSelectGrid} role="group" aria-label={question?.prompt}>
         {options.map((option) => {
@@ -133,21 +153,11 @@ export default function MultiSelectQuestion({
       </div>
 
       {!locked && (
-        <>
-          <button
-            type="button"
-            className={primaryBtn}
-            onClick={submit}
-            disabled={selected.size === 0}
-          >
-            Check{selected.size > 0 ? ` (${selected.size})` : ""}
-          </button>
-          <ClueButton
-            question={question}
-            clues={clues}
-            onReveal={() => setRevealUsed(true)}
-          />
-        </>
+        <ClueButton
+          question={question}
+          clues={clues}
+          onReveal={() => setRevealUsed(true)}
+        />
       )}
     </div>
   );

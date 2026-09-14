@@ -87,10 +87,24 @@ export const gameTutorialFooter =
 export const gameTutorialSkip =
   "min-w-0 shrink cursor-pointer border-0 bg-transparent p-0 text-[0.85rem] font-semibold text-text-muted underline-offset-2 hover:text-text hover:underline";
 
-/** Quiet escape hatch on Test/Learn questions — never competes with the answer CTA. */
+/** Quiet escape hatch beside a prompt or text box — never competes with Submit. */
 export const giveUpBtn = cn(
-  "self-center cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-text-muted underline underline-offset-2",
-  "hover:text-text-secondary disabled:cursor-not-allowed disabled:opacity-50",
+  "inline-flex min-h-9 shrink-0 items-center justify-center self-stretch rounded-sm border border-border bg-transparent px-3",
+  "text-sm font-semibold text-text-muted cursor-pointer whitespace-nowrap",
+  "transition-[background,color,border-color] duration-150 ease-out",
+  "hover:bg-menu-hover hover:text-text",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+  focusRing
+);
+
+export const promptActionGroup = "flex shrink-0 items-center gap-1.5";
+
+export const promptSubmitBtn = cn(
+  "inline-flex min-h-9 shrink-0 items-center justify-center self-stretch rounded-sm px-3 text-sm font-semibold text-white",
+  "cursor-pointer border-0 bg-[image:var(--accent-gradient)] shadow-[var(--shadow-accent)]",
+  "transition-[transform,box-shadow,background] duration-150 ease-out",
+  "enabled:hover:-translate-y-px enabled:hover:bg-[image:var(--accent-gradient-hover)]",
+  "enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
   focusRing
 );
 
@@ -663,7 +677,7 @@ export const exploreBtnDesc =
 export const gameShell = "flex h-dvh flex-col";
 
 export const gameHeader =
-  "grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border bg-header px-4 py-3 backdrop-blur-[12px] backdrop-saturate-[140%] max-md:gap-y-0 max-md:px-3.5 max-md:py-2.5";
+  "grid min-h-[4.5rem] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border bg-header px-4 py-3 backdrop-blur-[12px] backdrop-saturate-[140%] max-md:min-h-0 max-md:gap-y-0 max-md:px-3.5 max-md:py-2.5";
 
 /** Play mobile: controls + score in one row. */
 export const gameHeaderMobileDefault =
@@ -680,7 +694,7 @@ export const gameHeaderLeftDiscoverMobile =
   "flex shrink-0 items-center justify-self-start [grid-area:left]";
 
 export const gameHeaderCenter =
-  "justify-self-center text-center max-md:hidden";
+  "relative min-w-0 justify-self-center text-center max-md:hidden";
 
 export const gameHeaderCenterDiscoverMobile =
   "min-w-0 w-full max-w-full justify-self-stretch px-1 text-center [grid-area:center]";
@@ -752,7 +766,7 @@ export function promptFeedback({ wrong = false, className } = {}) {
 }
 
 export const promptWithPronunciation =
-  "inline-flex max-w-full items-center justify-center gap-2";
+  "inline-flex max-w-full min-w-0 items-center justify-center gap-2";
 
 export const mapStage = "relative min-h-0 flex-1";
 
@@ -899,21 +913,23 @@ export const discoverCountrySheetEmpty =
 export const flagCard =
   "pointer-events-none absolute left-4 top-4 z-[2] rounded-md border border-border bg-surface p-2.5 shadow-lg backdrop-blur-[10px] max-md:left-2 max-md:top-2 max-md:p-2";
 
-export const answerPrompt = "flex flex-col items-center gap-2";
+export const answerPrompt =
+  "relative flex min-h-9 w-full min-w-0 flex-nowrap items-center justify-center gap-2";
 
 export const answerInput = cn(
-  "w-[min(100%,18rem)] rounded-sm border border-border-subtle bg-input px-4 py-2.5 text-center text-lg font-semibold text-text shadow-sm",
+  "min-w-0 w-[min(100%,16rem)] shrink rounded-sm border border-border-subtle bg-input px-4 py-2 text-center text-lg font-semibold text-text shadow-sm",
   "transition-[border-color,box-shadow] duration-150 ease-out focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)] focus:outline-none",
-  "disabled:cursor-not-allowed disabled:opacity-70 max-md:w-full max-md:text-[1.1rem]",
+  "disabled:cursor-not-allowed disabled:opacity-70 max-md:flex-1 max-md:text-[1.1rem]",
   focusRing
 );
 
 export const gamePromptMobileInput = cn(
   answerInput,
-  "w-auto min-w-[10rem] max-w-[min(100%,16rem)] max-md:w-auto max-md:min-w-[10rem] max-md:max-w-[min(100%,16rem)]"
+  "w-auto min-w-[7.5rem] max-w-[min(100%,12rem)] max-md:w-auto max-md:min-w-[7.5rem] max-md:max-w-[min(100%,12rem)]"
 );
 
-export const spellingSuggestion = "m-0 text-[0.9rem] font-medium text-text-muted";
+export const spellingSuggestion =
+  "absolute left-1/2 top-[calc(100%+0.4rem)] z-10 m-0 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1 text-[0.9rem] font-medium text-text-muted shadow-md";
 
 export const spellingSuggestionLink = cn(
   "cursor-pointer border-0 bg-transparent p-0 font-[inherit] font-semibold text-inherit underline hover:text-link",

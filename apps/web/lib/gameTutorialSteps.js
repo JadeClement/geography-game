@@ -108,8 +108,8 @@ function buildSharedSteps(ctx) {
           ? "Instructions appear in the header while you explore."
           : ctx.isNameGame
             ? ctx.isMobile
-              ? "Type your answer in the text box. Press Enter to submit."
-              : "Type your answer here. Press Enter to submit."
+              ? "Type your answer in the text box. Press Enter or Submit."
+              : "Type your answer here. Press Enter or use Submit. Give up if you don't know."
             : ctx.isMobile
               ? `The ${promptItem} you are looking for appears in this floating card.`
               : `The ${promptItem} you are looking for appears here.`,

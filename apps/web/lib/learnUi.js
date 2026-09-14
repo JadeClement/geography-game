@@ -15,7 +15,13 @@ const ERROR_BG = "bg-[color-mix(in_srgb,var(--color-error)_16%,transparent)]";
 export const learnQuestion = "flex w-full flex-col gap-4";
 
 export const learnPrompt =
-  "m-0 text-center text-lg font-semibold leading-snug text-text max-md:text-base";
+  "m-0 min-w-0 text-center text-lg font-semibold leading-snug text-text max-md:text-base";
+
+export const learnPromptBar =
+  "flex min-h-9 w-full min-w-0 flex-nowrap items-center justify-center gap-2";
+
+export const learnTextFormRow =
+  "flex w-full min-w-0 flex-nowrap items-center justify-center gap-2";
 
 export const learnPromptSubtext = "m-0 text-center text-sm text-text-muted";
 
@@ -164,7 +170,7 @@ export const learnClueText = "mt-1 text-center text-sm text-text-muted";
 
 export const learnTextForm = "flex w-full flex-col items-center gap-3";
 export const learnTextInput =
-  "w-full max-w-sm rounded-sm border border-border-subtle bg-input px-3 py-2.5 text-center text-base text-text shadow-sm outline-none transition-[border-color,box-shadow,color] duration-150 placeholder:text-text-muted focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)]";
+  "min-w-0 w-full max-w-sm rounded-sm border border-border-subtle bg-input px-3 py-2.5 text-center text-base text-text shadow-sm outline-none transition-[border-color,box-shadow,color] duration-150 placeholder:text-text-muted focus:border-accent focus:shadow-[0_0_0_4px_var(--color-accent-soft)]";
 
 /** Post-submit tint for free-recall answers (green correct / red wrong). */
 export function learnTextInputOutcome(outcome) {

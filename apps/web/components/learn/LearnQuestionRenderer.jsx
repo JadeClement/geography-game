@@ -12,6 +12,7 @@ import {
   learnPromptSubtext,
   learnQuestion,
   learnTextForm,
+  learnTextFormRow,
   learnTextInput,
   learnTextInputOutcome,
   learnTextCorrectReveal,
@@ -25,7 +26,9 @@ import {
   learnShapeCompareCaptionWrong,
 } from "@/lib/learnUi";
 import { primaryBtn } from "@/lib/ui";
+import PromptActions from "@/components/PromptActions";
 import ClueButton from "./ClueButton";
+import LearnPromptBar from "./LearnPromptBar";
 import CountrySilhouette from "./CountrySilhouette";
 import MultipleChoiceQuestion from "./MultipleChoiceQuestion";
 import MultiSelectQuestion from "./MultiSelectQuestion";
@@ -170,6 +173,38 @@ function TextEntryQuestion({
     });
   };
 
+  const handleGiveUp = () => {
+    if (submitted) return;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    setSubmitted(true);
+    setOutcome("wrong");
+    setGuessedShape(null);
+    onSelectFeedback?.({ correct: false, selectedValue: null });
+    onEmit({
+      correct: false,
+      responseTimeMs,
+      revealUsed: false,
+      timedOut: false,
+      selectedValue: null,
+      givenUp: true,
+    });
+  };
+
+  const actionButtons = !submitted ? (
+    <PromptActions
+      showSubmit
+      submitType="submit"
+      submitDisabled={!value.trim()}
+      showGiveUp
+      onGiveUp={handleGiveUp}
+    />
+  ) : showInlineContinue && compact ? (
+    <ContinueArrowButton
+      onClick={onContinue}
+      className="h-[2.25rem] shrink-0 self-stretch"
+    />
+  ) : null;
+
   return (
     <div className={cn(learnQuestion, compact && "gap-2")}>
       {isShapePrompt && guessedShape ? (
@@ -238,7 +273,7 @@ function TextEntryQuestion({
       >
         {compact ? (
           <>
-            <div className="flex w-full items-stretch gap-2">
+            <div className={learnTextFormRow}>
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <input
                   className={cn(
@@ -264,23 +299,7 @@ function TextEntryQuestion({
                   </div>
                 ) : null}
               </div>
-              {!submitted ? (
-                <button
-                  type="submit"
-                  className={cn(
-                    primaryBtn,
-                    "h-[2.25rem] w-auto shrink-0 self-start px-3 py-1.5 text-sm"
-                  )}
-                  disabled={!value.trim()}
-                >
-                  Submit
-                </button>
-              ) : showInlineContinue ? (
-                <ContinueArrowButton
-                  onClick={onContinue}
-                  className="h-[2.25rem] shrink-0 self-start"
-                />
-              ) : null}
+              {actionButtons}
             </div>
             {continueNote ? (
               <p className="m-0 max-w-prose text-center text-sm leading-snug text-text-muted">
@@ -290,17 +309,24 @@ function TextEntryQuestion({
           </>
         ) : (
           <>
-            <input
-              className={cn(learnTextInput, learnTextInputOutcome(outcome))}
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder="Type your answer…"
-              autoComplete="off"
-              autoCapitalize="words"
-              autoFocus={!submitted}
-              disabled={submitted}
-              aria-label={question?.prompt}
-            />
+            <div className={learnTextFormRow}>
+              <input
+                className={cn(
+                  learnTextInput,
+                  "max-w-none flex-1",
+                  learnTextInputOutcome(outcome)
+                )}
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                placeholder="Type your answer…"
+                autoComplete="off"
+                autoCapitalize="words"
+                autoFocus={!submitted}
+                disabled={submitted}
+                aria-label={question?.prompt}
+              />
+              {actionButtons}
+            </div>
             {outcome === "wrong" && correctLabel && !guessedShape ? (
               <div className={learnTextCorrectReveal} role="status">
                 {correctLabel}
@@ -311,15 +337,7 @@ function TextEntryQuestion({
                 {continueNote}
               </p>
             ) : null}
-            {!submitted ? (
-              <button
-                type="submit"
-                className={primaryBtn}
-                disabled={!value.trim()}
-              >
-                Submit
-              </button>
-            ) : showInlineContinue ? (
+            {showInlineContinue && !compact ? (
               <button
                 type="button"
                 className={primaryBtn}
@@ -345,18 +363,42 @@ function TextEntryQuestion({
  * and clue ladder. The host wires the actual map click to the `emit` function via
  * `onMapClickReady(emit)`, keeping the answer-event shape centralized here.
  */
-function MapClickPrompt({ question, emit, onMapClickReady, clues }) {
+function MapClickPrompt({ question, emit, onMapClickReady, clues, awaitingContinue = false }) {
+  const [givenUp, setGivenUp] = useState(false);
+  const startedAtRef = useRef(Date.now());
+
+  useEffect(() => {
+    setGivenUp(false);
+    startedAtRef.current = Date.now();
+  }, [question?.id]);
+
   useEffect(() => {
     onMapClickReady?.(emit);
   }, [onMapClickReady, emit]);
 
+  const locked = givenUp || awaitingContinue;
+
   return (
-    <div className={learnQuestion}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
-      <ClueButton question={question} clues={clues} />
+    <div className={cn(learnQuestion, "gap-2")}>
+      <LearnPromptBar
+        prompt={question?.prompt}
+        promptClassName="text-base max-md:text-sm"
+        subtext={question?.promptSubtext}
+        showGiveUp={!locked}
+        onGiveUp={() => {
+          if (locked) return;
+          setGivenUp(true);
+          emit?.({
+            correct: false,
+            responseTimeMs: Date.now() - startedAtRef.current,
+            revealUsed: false,
+            timedOut: false,
+            selectedValue: null,
+            givenUp: true,
+          });
+        }}
+      />
+      {!locked && <ClueButton question={question} clues={clues} />}
     </div>
   );
 }
@@ -404,6 +446,7 @@ export default function LearnQuestionRenderer({
         fast: Boolean(fast),
         timedOut: Boolean(partial.timedOut),
         revealUsed: Boolean(partial.revealUsed),
+        givenUp: Boolean(partial.givenUp),
         priorMiss: Boolean(partial.priorMiss),
         questionType: question?.type ?? null,
         tier: question?.tier ?? null,
@@ -515,6 +558,7 @@ export default function LearnQuestionRenderer({
           emit={emit}
           onMapClickReady={onMapClickReady}
           clues={clues}
+          awaitingContinue={awaitingContinue}
         />
       );
     case "shape_drop":

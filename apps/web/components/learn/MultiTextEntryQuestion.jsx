@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
 import { normalizeName } from "@/lib/constants";
-import { learnPrompt, learnPromptSubtext, learnQuestion, learnTextForm, learnTextInput } from "@/lib/learnUi";
-import { primaryBtn } from "@/lib/ui";
+import { learnQuestion, learnTextFormRow, learnTextInput } from "@/lib/learnUi";
+import PromptActions from "@/components/PromptActions";
+import LearnPromptBar from "./LearnPromptBar";
 
 const FEEDBACK_DELAY_MS = 900;
 
@@ -68,7 +70,7 @@ export default function MultiTextEntryQuestion({
     flashTimerRef.current = setTimeout(() => setFlash(null), 1100);
   };
 
-  const emitResult = ({ correct, revealUsed, found }) => {
+  const emitResult = ({ correct, revealUsed, givenUp, found }) => {
     const foundSet = found ?? foundIds;
     const responseTimeMs = Date.now() - startedAtRef.current;
     onEmit?.({
@@ -76,6 +78,7 @@ export default function MultiTextEntryQuestion({
       responseTimeMs,
       revealUsed,
       timedOut: false,
+      givenUp: Boolean(givenUp),
       selectedValue: [...foundSet],
       wrongValues: wrongGuesses.map((guess) => guess.key),
     });
@@ -140,17 +143,17 @@ export default function MultiTextEntryQuestion({
     if (done) return;
     setRevealed(true);
     // Reveal chips immediately; host shows Continue (no auto-advance timer).
-    emitResult({ correct: false, revealUsed: true, found: foundIds });
+    emitResult({ correct: false, revealUsed: false, givenUp: true, found: foundIds });
   };
 
   return (
     <div className={learnQuestion}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={question?.promptSubtext}
+      />
 
-      <p className={learnPromptSubtext}>
+      <p className="m-0 text-center text-sm text-text-muted">
         {foundCount} / {total} found
       </p>
 
@@ -189,32 +192,32 @@ export default function MultiTextEntryQuestion({
       )}
 
       {!done && (
-        <form className={learnTextForm} onSubmit={submit}>
-          <input
-            className={learnTextInput}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder="Type a bordering country…"
-            autoComplete="off"
-            autoCapitalize="words"
-            autoFocus
-            aria-label={question?.prompt}
-          />
+        <form className="flex w-full flex-col items-center gap-2" onSubmit={submit}>
+          <div className={learnTextFormRow}>
+            <input
+              className={cn(learnTextInput, "max-w-none flex-1")}
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder="Type a bordering country…"
+              autoComplete="off"
+              autoCapitalize="words"
+              autoFocus
+              aria-label={question?.prompt}
+            />
+            <PromptActions
+              showSubmit
+              submitType="submit"
+              submitLabel="Add"
+              submitDisabled={!value.trim()}
+              showGiveUp
+              onGiveUp={handleGiveUp}
+            />
+          </div>
           {flash === "dupe" && (
             <p className="m-0 text-center text-sm font-semibold text-text-muted">
               Already entered.
             </p>
           )}
-          <button type="submit" className={primaryBtn} disabled={!value.trim()}>
-            Add
-          </button>
-          <button
-            type="button"
-            onClick={handleGiveUp}
-            className="cursor-pointer border-0 bg-transparent text-sm font-semibold text-text-muted underline underline-offset-2 hover:text-text-secondary"
-          >
-            Give up
-          </button>
         </form>
       )}
     </div>

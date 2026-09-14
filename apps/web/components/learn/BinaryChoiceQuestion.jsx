@@ -11,10 +11,9 @@ import {
   learnBinaryRow,
   learnBinaryStat,
   learnBinaryStatHidden,
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
+import LearnPromptBar from "./LearnPromptBar";
 
 const FEEDBACK_DELAY_MS = 1200;
 
@@ -85,6 +84,23 @@ export default function BinaryChoiceQuestion({
     }, FEEDBACK_DELAY_MS);
   };
 
+  const handleGiveUp = () => {
+    if (locked) return;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    setSelected("__give_up__");
+    onSelectFeedback?.({ correct: false, selectedValue: null });
+    timerRef.current = setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: null,
+        givenUp: true,
+      });
+    }, FEEDBACK_DELAY_MS);
+  };
+
   const cardState = (countryId) => {
     if (!locked) return "idle";
     if (countryId === question.correctAnswer) return "winner";
@@ -94,12 +110,13 @@ export default function BinaryChoiceQuestion({
 
   return (
     <div className={cn(learnQuestion, compact && "gap-2")}>
-      <p className={cn(learnPrompt, compact && "text-base max-md:text-sm")}>
-        {question?.prompt}
-      </p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        promptClassName={compact ? "text-base max-md:text-sm" : undefined}
+        subtext={question?.promptSubtext}
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
 
       <div className={learnBinaryRow}>
         {options.map((option) => {

@@ -6,8 +6,6 @@ import { cn } from "@/lib/cn";
 import { getFlagUrl } from "@/lib/flags";
 import { formatGdp, formatPopulation } from "@/lib/referencePanel";
 import {
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
   learnRankList,
   learnRankRow,
@@ -24,7 +22,7 @@ import {
   learnRankMoveGroup,
   learnRankMoveBtn,
 } from "@/lib/learnUi";
-import { primaryBtn } from "@/lib/ui";
+import LearnPromptBar from "./LearnPromptBar";
 import {
   reorder,
   slotIndexFromY,
@@ -364,6 +362,32 @@ export default function RankQuestion({ question, onAnswer, resolveCountry }) {
     }, 1400);
   };
 
+  const handleGiveUp = () => {
+    if (locked || submittingRef.current) return;
+    submittingRef.current = true;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    const countryUpdates = (question?.options ?? []).map((option) => {
+      const countryId = option.countryId;
+      return {
+        countryId,
+        correct: order.indexOf(countryId) === correctOrder.indexOf(countryId),
+      };
+    });
+    setSubmitted(true);
+    setSelectedId(null);
+    submitTimerRef.current = window.setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: order,
+        countryUpdates,
+        givenUp: true,
+      });
+    }, 1400);
+  };
+
   const submitRef = useRef(submit);
   submitRef.current = submit;
 
@@ -409,8 +433,15 @@ export default function RankQuestion({ question, onAnswer, resolveCountry }) {
 
   return (
     <div className={learnQuestion}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {hint && <p className={learnPromptSubtext}>{hint}</p>}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={hint}
+        showSubmit={!locked}
+        onSubmit={submit}
+        submitLabel="Submit ranking"
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
       <div className="sr-only" aria-live="polite">
         {announcement}
       </div>
@@ -545,12 +576,6 @@ export default function RankQuestion({ question, onAnswer, resolveCountry }) {
             document.body
           )
         : null}
-
-      {!locked && (
-        <button type="button" className={primaryBtn} onClick={submit}>
-          Submit ranking
-        </button>
-      )}
     </div>
   );
 }

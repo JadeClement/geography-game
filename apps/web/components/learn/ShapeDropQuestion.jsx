@@ -4,13 +4,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import {
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
   learnShapePromptSvg,
 } from "@/lib/learnUi";
 import ClueButton from "./ClueButton";
 import CountrySilhouette from "./CountrySilhouette";
+import LearnPromptBar from "./LearnPromptBar";
 
 /**
  * Viewport-fixed country silhouette. Portaled to `document.body` so
@@ -320,10 +319,23 @@ export default function ShapeDropQuestion({
 
   return (
     <div className={cn(learnQuestion, "select-none")}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={question?.promptSubtext}
+        showGiveUp={!dropped}
+        onGiveUp={() => {
+          if (dropped || dragging) return;
+          setDropped(true);
+          emit?.({
+            correct: false,
+            responseTimeMs: Date.now() - startedAtRef.current,
+            revealUsed: false,
+            timedOut: false,
+            selectedValue: null,
+            givenUp: true,
+          });
+        }}
+      />
       <div
         data-learn-shape-source
         className={cn(

@@ -12,11 +12,10 @@ import {
   learnPieNudgeGroup,
   learnPieSwatch,
   learnPieValue,
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
-import { primaryBtn } from "@/lib/ui";
+import ClueButton from "./ClueButton";
+import LearnPromptBar from "./LearnPromptBar";
 import {
   RELIGION_PIE_MIN_SLICE,
   RELIGION_PIE_TOLERANCE,
@@ -26,7 +25,6 @@ import {
   scoreReligionPie,
   startingPiePercents,
 } from "@/lib/learn/religionPie";
-import ClueButton from "./ClueButton";
 
 const CX = 100;
 const CY = 100;
@@ -245,6 +243,28 @@ export default function ReligionPieQuestion({ question, onAnswer, clues = [] }) 
     }, 1400);
   };
 
+  const handleGiveUp = () => {
+    if (locked || submittingRef.current) return;
+    submittingRef.current = true;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    const currentGuessed = names.map((name, index) => ({
+      name,
+      percent: percentsRef.current[index],
+    }));
+    setSubmitted(true);
+    setActiveHandle(null);
+    submitTimerRef.current = window.setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: currentGuessed,
+        givenUp: true,
+      });
+    }, 1400);
+  };
+
   const submitRef = useRef(submit);
   submitRef.current = submit;
 
@@ -266,10 +286,14 @@ export default function ReligionPieQuestion({ question, onAnswer, clues = [] }) 
 
   return (
     <div className={cn(learnQuestion, "gap-3")}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {!locked && question?.promptSubtext ? (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      ) : null}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={!locked ? question?.promptSubtext : null}
+        showSubmit={!locked}
+        onSubmit={submit}
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
 
       <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className={learnPieChartWrap}>
@@ -433,12 +457,6 @@ export default function ReligionPieQuestion({ question, onAnswer, clues = [] }) 
           clues={clues}
           onReveal={() => setRevealUsed(true)}
         />
-      )}
-
-      {!locked && (
-        <button type="button" className={primaryBtn} onClick={submit}>
-          Submit
-        </button>
       )}
     </div>
   );

@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  learnPrompt,
-  learnPromptSubtext,
   learnQuestion,
   learnYesNoButton,
   learnYesNoRow,
 } from "@/lib/learnUi";
 import ClueButton from "./ClueButton";
+import LearnPromptBar from "./LearnPromptBar";
 
 const FEEDBACK_DELAY_MS = 800;
 
@@ -31,7 +30,7 @@ export default function YesNoQuestion({ question, onAnswer, clues = [] }) {
     };
   }, [question?.id]);
 
-  const locked = selected != null;
+  const locked = selected !== null;
 
   const handleSelect = (value) => {
     if (locked) return;
@@ -40,6 +39,22 @@ export default function YesNoQuestion({ question, onAnswer, clues = [] }) {
     const correct = value === question.correctAnswer;
     timerRef.current = setTimeout(() => {
       onAnswer?.({ correct, responseTimeMs, revealUsed, timedOut: false, selectedValue: value });
+    }, FEEDBACK_DELAY_MS);
+  };
+
+  const handleGiveUp = () => {
+    if (locked) return;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    setSelected("__give_up__");
+    timerRef.current = setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: null,
+        givenUp: true,
+      });
     }, FEEDBACK_DELAY_MS);
   };
 
@@ -52,10 +67,12 @@ export default function YesNoQuestion({ question, onAnswer, clues = [] }) {
 
   return (
     <div className={learnQuestion}>
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        subtext={question?.promptSubtext}
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
 
       <div className={learnYesNoRow}>
         <button

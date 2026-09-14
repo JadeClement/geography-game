@@ -13,14 +13,13 @@ import {
   learnShapeChoiceButton,
   learnShapeChoiceGrid,
   learnShapeChoiceSvg,
-  learnPrompt,
   learnPromptMedia,
   learnPromptFlagImg,
-  learnPromptSubtext,
   learnQuestion,
 } from "@/lib/learnUi";
 import ClueButton from "./ClueButton";
 import CountrySilhouette from "./CountrySilhouette";
+import LearnPromptBar from "./LearnPromptBar";
 
 const FEEDBACK_DELAY_MS = 800;
 
@@ -94,6 +93,7 @@ export default function MultipleChoiceQuestion({
   const isShapeGrid = question?.type === "shape_identification";
   const showsCountryOptions = question?.type === "neighbor_identification";
   const hidePromptFlag = question?.type === "country_from_capital";
+  const compact = question?.mapConfig?.display === "highlight";
   const locked = selectedValue != null;
 
   const correctSet = useMemo(() => {
@@ -121,6 +121,22 @@ export default function MultipleChoiceQuestion({
     }, FEEDBACK_DELAY_MS);
   };
 
+  const handleGiveUp = () => {
+    if (locked) return;
+    const responseTimeMs = Date.now() - startedAtRef.current;
+    setSelectedValue("__give_up__");
+    timerRef.current = setTimeout(() => {
+      onAnswer?.({
+        correct: false,
+        responseTimeMs,
+        revealUsed: false,
+        timedOut: false,
+        selectedValue: null,
+        givenUp: true,
+      });
+    }, FEEDBACK_DELAY_MS);
+  };
+
   const optionState = (option) => {
     if (!locked) return "idle";
     // Every accepted answer paints green (e.g. East Timor accepts all five).
@@ -132,7 +148,7 @@ export default function MultipleChoiceQuestion({
   const options = question?.options ?? [];
 
   return (
-    <div className={learnQuestion}>
+    <div className={cn(learnQuestion, compact && "gap-2")}>
       {promptIso2 && (
         <div className={learnPromptMedia}>
           <img
@@ -144,10 +160,13 @@ export default function MultipleChoiceQuestion({
         </div>
       )}
 
-      <p className={learnPrompt}>{question?.prompt}</p>
-      {question?.promptSubtext && (
-        <p className={learnPromptSubtext}>{question.promptSubtext}</p>
-      )}
+      <LearnPromptBar
+        prompt={question?.prompt}
+        promptClassName={compact ? "text-base max-md:text-sm" : undefined}
+        subtext={question?.promptSubtext}
+        showGiveUp={!locked}
+        onGiveUp={handleGiveUp}
+      />
 
       {isFlagGrid ? (
         <div className={learnFlagChoiceGrid}>
@@ -223,7 +242,7 @@ export default function MultipleChoiceQuestion({
           })}
         </div>
       ) : (
-        <div className={learnChoiceGrid}>
+        <div className={cn(learnChoiceGrid, compact && "gap-2")}>
           {options.map((option) => {
             const iso2 = showsCountryOptions
               ? resolveCountry?.(option.countryId)?.iso2 ?? null

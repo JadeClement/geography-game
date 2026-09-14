@@ -28,7 +28,7 @@ import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
 import PronunciationButton from "@/components/PronunciationButton";
 import FitText from "@/components/FitText";
-import GiveUpButton from "@/components/GiveUpButton";
+import PromptActions from "@/components/PromptActions";
 import SoundVolumeButton from "@/components/SoundVolumeButton";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeName } from "@/lib/constants";
@@ -201,12 +201,15 @@ function CountryPromptLabel({
   if (!text) return null;
 
   if (!iso3) {
-    return toneClassName ? <span className={toneClassName}>{text}</span> : text;
+    return toneClassName ? (
+      <span className={cn(toneClassName, "whitespace-nowrap")}>{text}</span>
+    ) : (
+      text
+    );
   }
 
   return (
     <span className={promptWithPronunciation}>
-      <span className={toneClassName}>{text}</span>
       <PronunciationButton
         iso3={iso3}
         label={text}
@@ -214,6 +217,7 @@ function CountryPromptLabel({
         inline
         disabled={pronunciationDisabled}
       />
+      <span className={cn(toneClassName, "whitespace-nowrap")}>{text}</span>
     </span>
   );
 }
@@ -4438,8 +4442,6 @@ export default function GeographyGame() {
     feedback.type !== "incorrect" &&
     feedback.type !== "reveal";
 
-  const giveUpControl = canGiveUp ? <GiveUpButton onClick={handleGiveUp} /> : null;
-
   const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => {
     if (isDiscoverGame) {
       return (
@@ -4448,6 +4450,16 @@ export default function GeographyGame() {
         </FitText>
       );
     }
+
+    const promptActions = (
+      <PromptActions
+        showSubmit={isNameGame}
+        onSubmit={handleAnswerSubmit}
+        submitDisabled={!gameActive || gamePaused || !answerText.trim()}
+        showGiveUp={canGiveUp}
+        onGiveUp={handleGiveUp}
+      />
+    );
 
     return (
     <div className={promptFeedback({ wrong: promptWrong, className })}>
@@ -4476,6 +4488,7 @@ export default function GeographyGame() {
             onChange={handleAnswerInputChange}
             onKeyDown={handleAnswerKeyDown}
           />
+          {promptActions}
           {spellingSuggestionText && (
             <p className={spellingSuggestion}>
               Did you mean{" "}
@@ -4489,7 +4502,6 @@ export default function GeographyGame() {
               ?
             </p>
           )}
-          {giveUpControl}
         </div>
       ) : (
         <div className={answerPrompt}>
@@ -4521,9 +4533,9 @@ export default function GeographyGame() {
               pronunciationDisabled={!pronunciationAllowed}
             />
           ) : (
-            promptText
+            <span className="whitespace-nowrap">{promptText}</span>
           )}
-          {giveUpControl}
+          {promptActions}
         </div>
       )}
     </div>
@@ -4688,12 +4700,12 @@ export default function GeographyGame() {
                     </>
                   )}
                   <div className={gameControls} ref={gameControlsRef}>
+                    <SoundVolumeButton />
                     <span className={cn(isDiscoverGame && "max-md:hidden")}>
                       <GameTutorialButton
                         onClick={() => openGameTutorial({ manual: true })}
                       />
                     </span>
-                    <SoundVolumeButton />
                     {!isDiscoverGame && (
                       <button
                         type="button"
