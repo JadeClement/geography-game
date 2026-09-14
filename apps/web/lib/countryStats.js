@@ -77,10 +77,8 @@ export async function fetchAllMasteryStats() {
     },
     score: data.score,
     percent: data.percent,
-    rawPercent: data.rawPercent,
     categories: data.categories,
     byDomain: data.byDomain,
-    byDomainDisplay: data.byDomainDisplay,
   };
 }
 

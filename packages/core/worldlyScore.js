@@ -30,31 +30,20 @@ function clamp01(value) {
 }
 
 /**
- * Piecewise-linear display curve. `applyWorldlyCurve(0.75) === 80`.
+ * Display percent for a raw 0–1 score. Currently the identity `raw × 100`
+ * (the old piecewise curve is unused). Kept as a named helper so a future
+ * curve can slot back in without rewriting call sites.
  *
  * @param {number} rawScore 0–1
- * @returns {number} 0–100 display value
+ * @returns {number} 0–100 display value (unrounded)
  */
 export function applyWorldlyCurve(rawScore) {
-  const x = clamp01(rawScore);
-  const bps = WORLDLY_CURVE_BREAKPOINTS;
-  if (!Array.isArray(bps) || bps.length === 0) return Math.round(x * 1000) / 10;
-
-  if (x <= bps[0].raw) return bps[0].display;
-  for (let i = 1; i < bps.length; i += 1) {
-    const prev = bps[i - 1];
-    const next = bps[i];
-    if (x <= next.raw) {
-      const span = next.raw - prev.raw;
-      const t = span <= 0 ? 1 : (x - prev.raw) / span;
-      return prev.display + t * (next.display - prev.display);
-    }
-  }
-  return bps[bps.length - 1].display;
+  return clamp01(rawScore) * 100;
 }
 
-function roundDisplay(value) {
-  return Math.round(value * 10) / 10;
+/** Whole-number percent at every display scope: `round(raw × 100)`. */
+export function displayPercent(rawScore) {
+  return Math.round(applyWorldlyCurve(rawScore));
 }
 
 /**
@@ -216,24 +205,17 @@ export function computeWorldlyScore(maps, countryIds, stats = null) {
 
   const rawScore = n > 0 ? domainTotal / n : 0;
   const byDomain = emptyByDomain();
-  const byDomainDisplay = emptyByDomain();
   if (n > 0) {
     for (const domain of DOMAIN_KEYS) {
-      const raw = domainSums[domain] / n;
-      byDomain[domain] = raw;
-      byDomainDisplay[domain] = roundDisplay(applyWorldlyCurve(raw));
+      byDomain[domain] = domainSums[domain] / n;
     }
   }
 
-  const display = roundDisplay(applyWorldlyCurve(rawScore));
-
   return {
     score: rawScore,
-    percent: display,
-    rawPercent: Math.round(rawScore * 1000) / 10,
+    percent: displayPercent(rawScore),
     categories,
     byDomain,
-    byDomainDisplay,
   };
 }
 
@@ -256,7 +238,7 @@ export function computeWorldlyScoreFromMastery(mastery, countryIds) {
 
 /**
  * The highest %Worldly milestone strictly crossed going from `beforePercent`
- * to `afterPercent`, or null if none. Both inputs are full-precision (0-100).
+ * to `afterPercent`, or null if none. Both inputs are displayed percents (0-100).
  */
 export function getCrossedWorldlyMilestone(beforePercent, afterPercent) {
   let crossed = null;
@@ -305,7 +287,7 @@ export function computeWorldlyBeforeAfter({
     }
     const afterRaw = after.score;
     const beforeRaw = afterRaw - deltaSum / total;
-    beforePercent = applyWorldlyCurve(clamp01(beforeRaw));
+    beforePercent = displayPercent(clamp01(beforeRaw));
   }
 
   return { beforePercent, afterPercent };

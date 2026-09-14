@@ -167,8 +167,8 @@ export const LEARN_CONTRIBUTION_RATE = {
 };
 
 /**
- * Piecewise display curve. Raw 0.75 (the “located / worldly-domain” bar)
- * maps to 80 on the header so that milestone feels earned but visible.
+ * Unused by `applyWorldlyCurve` (which is currently the identity `raw × 100`).
+ * Kept so a differently-shaped display curve can slot back in later.
  */
 export const WORLDLY_CURVE_BREAKPOINTS = [
   { raw: 0, display: 0, label: "Unseen" },

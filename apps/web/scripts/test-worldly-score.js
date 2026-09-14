@@ -12,10 +12,23 @@ import {
   computeCountryScore,
   buildLevelScoreMap,
   computeWorldlyScoreFromMastery,
-  WORLDLY_CURVE_BREAKPOINTS,
+  displayPercent,
+  getCrossedWorldlyMilestone,
   WORLDLY_DOMAIN_WEIGHTS,
 } from "@/lib/worldlyScore";
-import { ALL_MODE, collectStatsByCountry, countLocatedForTab, DOMAIN_COLUMNS, paintScoreForTab, regionDomainDisplayPcts, regionScoresForTab } from "@/lib/masteryMap";
+import {
+  ALL_MODE,
+  collectStatsByCountry,
+  countLocatedForTab,
+  countStartedForTab,
+  countryStartedForTab,
+  DOMAIN_COLUMNS,
+  paintScoreForTab,
+  regionDomainDisplayPcts,
+  regionScoresForTab,
+  tabDisplayPercent,
+  tooltipRowsForTab,
+} from "@/lib/masteryMap";
 import {
   getMasteryTier,
   MASTERY_TIERS,
@@ -33,18 +46,22 @@ import {
 import { GAME_MODES } from "@/lib/regions";
 import { LEARN_CONTRIBUTION_RATE } from "@worldly/constants";
 
-test("applyWorldlyCurve(0.75) === 80 exactly", () => {
-  assert.equal(applyWorldlyCurve(0.75), 80);
-});
-
-test("applyWorldlyCurve stays in 0–100", () => {
+test("applyWorldlyCurve is the identity raw × 100", () => {
+  assert.equal(applyWorldlyCurve(0.75), 75);
+  assert.equal(applyWorldlyCurve(0.125), 12.5);
   assert.equal(applyWorldlyCurve(-1), 0);
   assert.equal(applyWorldlyCurve(0), 0);
   assert.equal(applyWorldlyCurve(1), 100);
   assert.equal(applyWorldlyCurve(2), 100);
-  for (const { raw, display } of WORLDLY_CURVE_BREAKPOINTS) {
-    assert.equal(applyWorldlyCurve(raw), display);
-  }
+});
+
+test("displayPercent is round(raw × 100) at every scope", () => {
+  assert.equal(displayPercent(0), 0);
+  assert.equal(displayPercent(0.044), 4);
+  assert.equal(displayPercent(0.125), 13);
+  assert.equal(displayPercent(1), 100);
+  assert.equal(displayPercent(-0.2), 0);
+  assert.equal(displayPercent(1.4), 100);
 });
 
 test("getMasteryTier NONE for a country with no data", () => {
@@ -146,7 +163,7 @@ test("resolveSkillDomain infers from mode when questionType is missing", () => {
   );
 });
 
-test("computeWorldlyScoreFromMastery returns byDomain and a curved percent", () => {
+test("computeWorldlyScoreFromMastery returns byDomain and an uncurved whole percent", () => {
   const countryIds = ["AAA", "BBB"];
   const mastery = {
     countries: [
@@ -166,7 +183,9 @@ test("computeWorldlyScoreFromMastery returns byDomain and a curved percent", () 
   const result = computeWorldlyScoreFromMastery(mastery, countryIds);
   assert.ok("byDomain" in result);
   assert.ok("location" in result.byDomain);
-  assert.ok(result.percent >= 0 && result.percent <= 100);
+  assert.equal(result.percent, Math.round(result.score * 100));
+  assert.ok(!("rawPercent" in result));
+  assert.ok(!("byDomainDisplay" in result));
   assert.ok(Object.keys(WORLDLY_DOMAIN_WEIGHTS).every((key) => key in result.byDomain));
 });
 
@@ -270,7 +289,7 @@ test("collectStatsByCountry keeps Test general rows and Learn domain rows togeth
   assert.ok(rows.some((row) => row.mode === "neighbors"));
 });
 
-test("regionDomainDisplayPcts averages raw domain scores then applies the curve", () => {
+test("regionDomainDisplayPcts averages raw domain scores then rounds raw × 100", () => {
   const statsByCountry = collectStatsByCountry({
     countries: [
       { countryId: "FRA", skillDomain: "location", masteryScore: 0.75 },
@@ -281,8 +300,8 @@ test("regionDomainDisplayPcts averages raw domain scores then applies the curve"
     neighbors: [],
   });
   const pcts = regionDomainDisplayPcts(["FRA", "DEU"], statsByCountry);
-  assert.equal(pcts.location, 80);
-  assert.equal(pcts.capital, Math.round(applyWorldlyCurve(0.5)));
+  assert.equal(pcts.location, 75);
+  assert.equal(pcts.capital, displayPercent(0.5));
   assert.equal(pcts.flag, 0);
   assert.deepEqual(
     Object.keys(pcts),
@@ -318,3 +337,157 @@ test("legacy category header projects one score into all four level slots", () =
   ]);
   assert.equal(computeCountryScore(map.get("FRA")), 0.4);
 });
+
+const EMPTY_DOMAINS = {
+  location: 0,
+  neighbors: 0,
+  capital: 0,
+  flag: 0,
+  statistics: 0,
+  facts: 0,
+};
+
+test("uncurved percent equals raw × 100 at world, region, and country scope", () => {
+  const countryIds = ["FRA", "DEU"];
+  const mastery = {
+    countries: [
+      { countryId: "FRA", skillDomain: "location", masteryScore: 0.125, mode: "countries" },
+    ],
+    capitals: [],
+    flags: [],
+    neighbors: [],
+  };
+  const worldly = computeWorldlyScoreFromMastery(mastery, countryIds);
+  assert.equal(worldly.percent, Math.round(worldly.score * 100));
+
+  const statsByCountry = collectStatsByCountry(mastery);
+  const scores = new Map(
+    countryIds.map((id) => [id, domainScoresFromStats(statsByCountry.get(id) ?? [])])
+  );
+  assert.equal(paintScoreForTab(GAME_MODES.COUNTRIES, scores.get("FRA")), 0.125);
+  assert.equal(displayPercent(paintScoreForTab(GAME_MODES.COUNTRIES, scores.get("FRA"))), 13);
+
+  const regions = regionScoresForTab(
+    GAME_MODES.COUNTRIES,
+    [{ id: "europe", label: "Europe" }],
+    () => ["FRA"],
+    scores
+  );
+  assert.equal(regions[0].pct, 13);
+});
+
+test("ring equals the country-count-weighted average of region rows, not the mean of percents", () => {
+  const regions = [
+    { id: "world", label: "World" },
+    { id: "europe", label: "Europe" },
+    { id: "asia", label: "Asia" },
+  ];
+  const idsByRegion = {
+    world: ["FRA", "JPN", "CHN", "IND"],
+    europe: ["FRA"],
+    asia: ["JPN", "CHN", "IND"],
+  };
+  const scores = new Map([
+    ["FRA", { ...EMPTY_DOMAINS, location: 1 }],
+    ["JPN", { ...EMPTY_DOMAINS }],
+    ["CHN", { ...EMPTY_DOMAINS }],
+    ["IND", { ...EMPTY_DOMAINS }],
+  ]);
+  const getIds = (id) => idsByRegion[id];
+  const ring = tabDisplayPercent(GAME_MODES.COUNTRIES, idsByRegion.world, scores);
+  assert.equal(ring, 25);
+
+  const rows = regionScoresForTab(GAME_MODES.COUNTRIES, regions, getIds, scores);
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  const weighted = rows.reduce((sum, row) => sum + row.pct * row.count, 0) / total;
+  assert.equal(Math.round(weighted), ring);
+
+  const meanOfPercents = rows.reduce((sum, row) => sum + row.pct, 0) / rows.length;
+  assert.equal(meanOfPercents, 50);
+  assert.notEqual(Math.round(meanOfPercents), ring);
+});
+
+test("a country with no rows contributes 0 and is not-started", () => {
+  assert.equal(paintScoreForTab(GAME_MODES.COUNTRIES, domainScoresFromStats([])), 0);
+  assert.equal(paintScoreForTab(ALL_MODE, undefined), 0);
+  assert.equal(countryStartedForTab(GAME_MODES.COUNTRIES, []), false);
+  assert.equal(countryStartedForTab(ALL_MODE, []), false);
+});
+
+test("coverage count matches countries with at least one row for the active domain", () => {
+  const statsByCountry = collectStatsByCountry({
+    countries: [
+      { countryId: "FRA", skillDomain: "location", masteryScore: 0.1 },
+      { countryId: "ITA", skillDomain: "general", masteryScore: 0.4 },
+    ],
+    capitals: [{ countryId: "JPN", skillDomain: "capital", masteryScore: 0.2 }],
+    flags: [],
+    neighbors: [{ countryId: "KEN", skillDomain: "neighbors", masteryScore: 0.9 }],
+  });
+  const ids = ["FRA", "ITA", "JPN", "KEN", "DEU"];
+  assert.equal(countStartedForTab(GAME_MODES.COUNTRIES, ids, statsByCountry), 2);
+  assert.equal(countStartedForTab(GAME_MODES.CAPITALS, ids, statsByCountry), 1);
+  assert.equal(countStartedForTab(GAME_MODES.FLAGS, ids, statsByCountry), 0);
+  assert.equal(countStartedForTab(ALL_MODE, ids, statsByCountry), 4);
+});
+
+test("All-tab tooltip leads with the weighted EMA then Countries / Capitals / Flags", () => {
+  const scores = {
+    location: 1,
+    neighbors: 0,
+    capital: 0.5,
+    flag: 0.25,
+    statistics: 0,
+    facts: 0,
+  };
+  const all = tooltipRowsForTab(ALL_MODE, scores);
+  assert.deepEqual(
+    all.map((row) => row.key),
+    [ALL_MODE, GAME_MODES.COUNTRIES, GAME_MODES.CAPITALS, GAME_MODES.FLAGS]
+  );
+  assert.equal(all[0].label, "Worldly");
+  assert.equal(all[0].pct, displayPercent(computeCountryDomainScore(scores)));
+  assert.equal(all[1].label, "Countries");
+  assert.equal(all[1].pct, 100);
+  assert.equal(all[2].label, "Capitals");
+  assert.equal(all[2].pct, 50);
+  assert.equal(all[3].label, "Flags");
+  assert.equal(all[3].pct, 25);
+  assert.ok(all[0].pct < 100, "composite is the domain-weighted mix, not location alone");
+
+  const countries = tooltipRowsForTab(GAME_MODES.COUNTRIES, scores);
+  assert.equal(countries.length, 1);
+  assert.equal(countries[0].label, "Countries");
+  assert.equal(countries[0].pct, 100);
+});
+
+test("header % Worldly and the All-tab ring return the identical number", () => {
+  const countryIds = ["FRA", "DEU", "JPN"];
+  const mastery = {
+    countries: [
+      { countryId: "FRA", skillDomain: "location", masteryScore: 0.4, mode: "countries" },
+    ],
+    capitals: [
+      { countryId: "DEU", skillDomain: "capital", masteryScore: 0.8, mode: "capitals" },
+    ],
+    flags: [],
+    neighbors: [],
+  };
+  const worldly = computeWorldlyScoreFromMastery(mastery, countryIds);
+  const statsByCountry = collectStatsByCountry(mastery);
+  const scores = new Map(
+    countryIds.map((id) => [id, domainScoresFromStats(statsByCountry.get(id) ?? [])])
+  );
+  assert.equal(tabDisplayPercent(ALL_MODE, countryIds, scores), worldly.percent);
+});
+
+test("milestone crossing fires once, on an upward crossing, against the uncurved percent", () => {
+  assert.equal(getCrossedWorldlyMilestone(24, 25), 25);
+  assert.equal(getCrossedWorldlyMilestone(25, 26), null);
+  assert.equal(getCrossedWorldlyMilestone(26, 24), null);
+  assert.equal(getCrossedWorldlyMilestone(24, 24), null);
+  assert.equal(getCrossedWorldlyMilestone(49, 76), 75);
+  assert.equal(getCrossedWorldlyMilestone(89, 100), 100);
+  assert.equal(getCrossedWorldlyMilestone(0, 24), null);
+});
+

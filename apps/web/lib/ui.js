@@ -1650,7 +1650,7 @@ export const masteryMapWrap =
 export const masteryMapCanvas = "h-full w-full";
 
 export const masteryTooltip =
-  "pointer-events-none absolute z-[5] flex min-w-36 flex-col gap-0.5 rounded-md border border-border bg-surface px-2.5 py-2 text-[0.82rem] text-text shadow-lg [&_strong]:mb-0.5 [&_strong]:text-[0.92rem]";
+  "pointer-events-none absolute z-[5] flex min-w-40 flex-col gap-0.5 rounded-md border border-border bg-surface px-2.5 py-2 text-[0.82rem] text-text shadow-lg [&_strong]:mb-0.5 [&_strong]:text-[0.92rem]";
 
 export const masteryTooltipRow =
   "flex items-center gap-1.5 text-text-secondary [&_em]:ml-auto [&_em]:font-bold [&_em]:not-italic [&_em]:text-text";

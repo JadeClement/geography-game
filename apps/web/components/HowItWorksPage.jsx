@@ -503,9 +503,9 @@ export default function HowItWorksPage() {
           <p className="mt-5">
             Those per-country mixes are averaged across{" "}
             <strong>every country in the world</strong> (places you haven&apos;t touched count
-            as 0 — it&apos;s a true fraction of the whole world). The number you see is then
-            curved so that a raw 0.75 — the located / worldly-domain bar — displays as{" "}
-            <strong>80%</strong>.
+            as 0 — it&apos;s a true fraction of the whole world). The number you see is that
+            average as a whole percent — a raw 0.125 displays as{" "}
+            <strong>13%</strong>.
           </p>
           <p>
             Learn answers still count, but domains that also have a Test mode (location,

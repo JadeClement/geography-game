@@ -1,6 +1,6 @@
 "use client";
 
-import { applyWorldlyCurve } from "@/lib/worldlyScore";
+import { displayPercent } from "@/lib/worldlyScore";
 import {
   SKILL_DOMAIN_LABELS,
   WORLDLY_DOMAIN_WEIGHTS,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/ui";
 
 function displayPct(raw) {
-  return Math.round(applyWorldlyCurve(Number(raw) || 0));
+  return displayPercent(Number(raw) || 0);
 }
 
 export default function CountryMasteryModal({

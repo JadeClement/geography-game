@@ -22,10 +22,8 @@ export async function GET() {
       totalSessions,
       score: worldly.score,
       percent: worldly.percent,
-      rawPercent: worldly.rawPercent,
       categories: worldly.categories,
       byDomain: worldly.byDomain,
-      byDomainDisplay: worldly.byDomainDisplay,
     });
   } catch (error) {
     console.error("Mastery fetch error:", error);
@@ -34,10 +32,8 @@ export async function GET() {
         mastery: { countries: [], capitals: [], flags: [], neighbors: [] },
         score: 0,
         percent: 0,
-        rawPercent: 0,
         categories: { countries: 0, capitals: 0, flags: 0 },
         byDomain: {},
-        byDomainDisplay: {},
         totalSessions: 0,
       });
     }

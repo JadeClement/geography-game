@@ -1,7 +1,8 @@
+import { inferDomainFromMode } from "@/lib/learn/questionTypes";
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
 import { domainScoresFromStats } from "@/lib/masteryTiers";
-import { applyWorldlyCurve, buildLevelScoreMap, computeCountryDomainScore, computeCountryScore } from "@/lib/worldlyScore";
+import { buildLevelScoreMap, computeCountryDomainScore, computeCountryScore, displayPercent } from "@/lib/worldlyScore";
 import {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
@@ -92,9 +93,27 @@ export function paintScoreForTab(mode, domainScores = {}) {
 }
 
 /**
+ * Tooltip rows for a country on the active tab. All leads with the
+ * domain-weighted EMA, then Countries / Capitals / Flags. Other tabs
+ * show only that tab's domain.
+ */
+export function tooltipRowsForTab(mode, domainScores = {}) {
+  const tabs = mode === ALL_MODE ? [ALL_MODE, ...MASTERY_MODES] : [mode];
+  return tabs.map((tab) => {
+    const visual = getModeVisual(tab);
+    return {
+      key: tab,
+      label: tab === ALL_MODE ? "Worldly" : visual.label,
+      pct: displayPercent(paintScoreForTab(tab, domainScores)),
+      accent: visual.accent,
+    };
+  });
+}
+
+/**
  * Count countries whose active-tab score clears the located bar (0.9).
  * All uses the %Worldly domain blend; Countries / Capitals / Flags use
- * that tab's domain only.
+ * that tab's domain only. Not shown on the mastery map panel.
  */
 export function countLocatedForTab(mode, countryIds, domainScoresByCountry) {
   let count = 0;
@@ -104,6 +123,48 @@ export function countLocatedForTab(mode, countryIds, domainScoresByCountry) {
     }
   }
   return count;
+}
+
+function rowDomain(row) {
+  const domain = row?.skillDomain ?? row?.skill_domain ?? "general";
+  if (domain === "general") return inferDomainFromMode(row?.mode);
+  return domain;
+}
+
+/** True when the country has at least one country_stats row for this tab. */
+export function countryStartedForTab(mode, stats = []) {
+  const rows = stats ?? [];
+  if (rows.length === 0) return false;
+  if (mode === ALL_MODE) return true;
+  const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
+  return rows.some((row) => rowDomain(row) === domainKey);
+}
+
+/**
+ * Countries with at least one row for the active tab's domain (any domain
+ * on All). Unseen countries are not-started and contribute 0 to the average.
+ */
+export function countStartedForTab(mode, countryIds, statsByCountry) {
+  let count = 0;
+  for (const id of countryIds ?? []) {
+    if (countryStartedForTab(mode, statsByCountry?.get(id))) count += 1;
+  }
+  return count;
+}
+
+/** Mean of `paintScoreForTab` over the full country universe (missing = 0). */
+export function tabAverageRaw(mode, countryIds, domainScoresByCountry) {
+  const ids = countryIds ?? [];
+  if (!ids.length) return 0;
+  let sum = 0;
+  for (const id of ids) {
+    sum += paintScoreForTab(mode, domainScoresByCountry?.get(id));
+  }
+  return sum / ids.length;
+}
+
+export function tabDisplayPercent(mode, countryIds, domainScoresByCountry) {
+  return displayPercent(tabAverageRaw(mode, countryIds, domainScoresByCountry));
 }
 
 /**
@@ -127,8 +188,7 @@ export function collectStatsByCountry(mastery = {}) {
 }
 
 /**
- * Region averages per skill domain. Raw scores are averaged first, then the
- * Worldly display curve is applied — same order as `computeWorldlyScore`.
+ * Region averages per skill domain. Displayed percent is `round(raw × 100)`.
  * @returns {Record<string, number>|null}
  */
 export function regionDomainDisplayPcts(countryIds, statsByCountry) {
@@ -144,14 +204,16 @@ export function regionDomainDisplayPcts(countryIds, statsByCountry) {
   return Object.fromEntries(
     DOMAIN_COLUMNS.map((domain) => [
       domain,
-      Math.round(applyWorldlyCurve(sums[domain] / n)),
+      displayPercent(sums[domain] / n),
     ])
   );
 }
 
 /**
- * Curved average score per geographic region for the active mastery-map tab.
- * `world` is omitted — that's already the headline ring.
+ * Average score per geographic region for the active mastery-map tab.
+ * `world` is omitted — that's already the headline ring. `count` is the
+ * country-universe size for that region so the ring can be checked as the
+ * country-count-weighted average of these rows.
  */
 export function regionScoresForTab(mode, regions, getCountryIds, domainScoresByCountry) {
   const rows = [];
@@ -166,7 +228,8 @@ export function regionScoresForTab(mode, regions, getCountryIds, domainScoresByC
     rows.push({
       id: region.id,
       label: region.label,
-      pct: Math.round(applyWorldlyCurve(raw)),
+      pct: displayPercent(raw),
+      count: ids.length,
     });
   }
   return rows;

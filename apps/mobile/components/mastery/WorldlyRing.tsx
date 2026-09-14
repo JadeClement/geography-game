@@ -34,7 +34,7 @@ export function WorldlyRing({ percent }: { percent: number }) {
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      <Text style={styles.value}>{Math.round(percent * 10) / 10}%</Text>
+      <Text style={styles.value}>{Math.round(percent)}%</Text>
       <Text style={styles.label}>Worldly</Text>
     </View>
   );
