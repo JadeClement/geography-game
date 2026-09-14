@@ -7,6 +7,12 @@ import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { getLevelShortLabel } from "@/lib/levels";
+import {
+  collectStatsByCountry,
+  DOMAIN_COLUMNS,
+  regionDomainDisplayPcts,
+  SKILL_DOMAIN_LABELS,
+} from "@/lib/masteryMap";
 import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion, getModeLabel } from "@/lib/regions";
 import { fetchScores, LEVELS } from "@/lib/scores";
 import { cn } from "@/lib/cn";
@@ -109,16 +115,6 @@ function ScoreTable({ title, mode, scoreMap }) {
   );
 }
 
-function regionMasteryPct(lookup, regionId) {
-  const ids = getCountryIdsForRegion(regionId);
-  if (ids.length === 0) return null;
-  let sum = 0;
-  for (const id of ids) {
-    sum += lookup.get(id) ?? 0;
-  }
-  return Math.round((sum / ids.length) * 100);
-}
-
 function MasteryCell({ pct }) {
   if (pct == null) return <td>—</td>;
   return (
@@ -129,21 +125,29 @@ function MasteryCell({ pct }) {
   );
 }
 
-function MasteryTableMobile({ title, lookup }) {
+function MasteryTableMobile({ statsByCountry }) {
   return (
     <section className={cn(resultsSection, "md:hidden")}>
-      <h2 className={resultsTableTitle}>{title}</h2>
       <div className={resultsMobileCards}>
         {REGIONS.map((region) => {
-          const pct = regionMasteryPct(lookup, region.id);
+          const pcts = regionDomainDisplayPcts(getCountryIdsForRegion(region.id), statsByCountry);
           return (
             <div key={region.id} className={resultsMobileCard}>
               <h3 className={resultsMobileCardTitle}>{region.label}</h3>
               <div className={resultsMobileGrid}>
-                <div className={resultsMobileCell}>
-                  <span className={resultsMobileCellLabel}>Mastery</span>
-                  <span className={resultsMobileCellValue}>{pct == null ? "—" : `${pct}%`}</span>
-                </div>
+                {DOMAIN_COLUMNS.map((domain) => {
+                  const pct = pcts?.[domain];
+                  return (
+                    <div key={domain} className={resultsMobileCell}>
+                      <span className={resultsMobileCellLabel}>
+                        {SKILL_DOMAIN_LABELS[domain] ?? domain}
+                      </span>
+                      <span className={resultsMobileCellValue}>
+                        {pct == null ? "—" : `${pct}%`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -153,11 +157,10 @@ function MasteryTableMobile({ title, lookup }) {
   );
 }
 
-function MasteryTable({ title, lookup }) {
+function MasteryTable({ statsByCountry }) {
   return (
     <>
       <section className={cn(resultsSection, "max-md:hidden")}>
-        <h2 className={resultsTableTitle}>{title}</h2>
         <div className={resultsTableWrap}>
           <table className={resultsTable}>
             <thead>
@@ -165,25 +168,35 @@ function MasteryTable({ title, lookup }) {
                 <th scope="col" className={resultsTableColHeader}>
                   Region
                 </th>
-                <th scope="col" className={resultsTableColHeader}>
-                  Mastery
-                </th>
+                {DOMAIN_COLUMNS.map((domain) => (
+                  <th key={domain} scope="col" className={resultsTableColHeader}>
+                    {SKILL_DOMAIN_LABELS[domain] ?? domain}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {REGIONS.map((region) => (
-                <tr key={region.id}>
-                  <th scope="row" className={resultsTableRowHeader}>
-                    {region.label}
-                  </th>
-                  <MasteryCell pct={regionMasteryPct(lookup, region.id)} />
-                </tr>
-              ))}
+              {REGIONS.map((region) => {
+                const pcts = regionDomainDisplayPcts(
+                  getCountryIdsForRegion(region.id),
+                  statsByCountry
+                );
+                return (
+                  <tr key={region.id}>
+                    <th scope="row" className={resultsTableRowHeader}>
+                      {region.label}
+                    </th>
+                    {DOMAIN_COLUMNS.map((domain) => (
+                      <MasteryCell key={domain} pct={pcts?.[domain] ?? null} />
+                    ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </section>
-      <MasteryTableMobile title={title} lookup={lookup} />
+      <MasteryTableMobile statsByCountry={statsByCountry} />
     </>
   );
 }
@@ -244,23 +257,7 @@ export default function ResultsPage() {
     return map;
   }, [scores]);
 
-  const masteryLookups = useMemo(() => {
-    const build = (rows) => {
-      const map = new Map();
-      for (const row of rows) {
-        if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
-        const score = Number(row.masteryScore) || 0;
-        const prev = map.get(row.countryId);
-        if (prev == null || score > prev) map.set(row.countryId, score);
-      }
-      return map;
-    };
-    return {
-      countries: build(mastery.countries),
-      capitals: build(mastery.capitals),
-      flags: build(mastery.flags),
-    };
-  }, [mastery]);
+  const statsByCountry = useMemo(() => collectStatsByCountry(mastery), [mastery]);
 
   return (
     <div className={resultsPage}>
@@ -273,7 +270,7 @@ export default function ResultsPage() {
 
         <h1 className={resultsTitle}>Results</h1>
         <p className={resultsSubtitle}>
-          Your best scores and mastery for each mode, region, and level.{" "}
+          Best scores by mode and level, plus mastery by skill.{" "}
           <Link href="/results/how-it-works" className={resultsInfoLink}>
             How does scoring work?
           </Link>
@@ -317,11 +314,9 @@ export default function ResultsPage() {
 
             <h2 className={resultsGroupTitle}>Mastery</h2>
             <p className={resultsGroupNote}>
-              Average mastery across each region. World combines every region.
+              Average of each skill across the countries in a region. World combines every region.
             </p>
-            <MasteryTable title={getModeLabel(GAME_MODES.COUNTRIES)} lookup={masteryLookups.countries} />
-            <MasteryTable title={getModeLabel(GAME_MODES.CAPITALS)} lookup={masteryLookups.capitals} />
-            <MasteryTable title={getModeLabel(GAME_MODES.FLAGS)} lookup={masteryLookups.flags} />
+            <MasteryTable statsByCountry={statsByCountry} />
           </div>
         )}
       </main>

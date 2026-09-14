@@ -15,7 +15,7 @@ import {
   WORLDLY_CURVE_BREAKPOINTS,
   WORLDLY_DOMAIN_WEIGHTS,
 } from "@/lib/worldlyScore";
-import { ALL_MODE, countLocatedForTab, paintScoreForTab, regionScoresForTab } from "@/lib/masteryMap";
+import { ALL_MODE, collectStatsByCountry, countLocatedForTab, DOMAIN_COLUMNS, paintScoreForTab, regionDomainDisplayPcts, regionScoresForTab } from "@/lib/masteryMap";
 import {
   getMasteryTier,
   MASTERY_TIERS,
@@ -252,6 +252,42 @@ test("regionScoresForTab omits World and follows the active tab", () => {
   const all = regionScoresForTab(ALL_MODE, regions, getIds, scores);
   assert.ok(all.find((row) => row.id === "europe").pct < 100);
   assert.ok(all.find((row) => row.id === "europe").pct > 0);
+});
+
+test("collectStatsByCountry keeps Test general rows and Learn domain rows together", () => {
+  const byCountry = collectStatsByCountry({
+    countries: [
+      { countryId: "FRA", skillDomain: "general", masteryScore: 0.4 },
+      { countryId: "FRA", skillDomain: "statistics", masteryScore: 0.8 },
+    ],
+    capitals: [{ countryId: "FRA", skillDomain: "general", masteryScore: 0.6 }],
+    flags: [],
+    neighbors: [{ countryId: "FRA", skillDomain: "neighbors", masteryScore: 0.5 }],
+  });
+  const rows = byCountry.get("FRA");
+  assert.equal(rows.length, 4);
+  assert.ok(rows.some((row) => row.mode === GAME_MODES.COUNTRIES && row.skillDomain === "general"));
+  assert.ok(rows.some((row) => row.mode === "neighbors"));
+});
+
+test("regionDomainDisplayPcts averages raw domain scores then applies the curve", () => {
+  const statsByCountry = collectStatsByCountry({
+    countries: [
+      { countryId: "FRA", skillDomain: "location", masteryScore: 0.75 },
+      { countryId: "DEU", skillDomain: "location", masteryScore: 0.75 },
+    ],
+    capitals: [{ countryId: "FRA", skillDomain: "capital", masteryScore: 1 }],
+    flags: [],
+    neighbors: [],
+  });
+  const pcts = regionDomainDisplayPcts(["FRA", "DEU"], statsByCountry);
+  assert.equal(pcts.location, 80);
+  assert.equal(pcts.capital, Math.round(applyWorldlyCurve(0.5)));
+  assert.equal(pcts.flag, 0);
+  assert.deepEqual(
+    Object.keys(pcts),
+    DOMAIN_COLUMNS
+  );
 });
 
 test("domainScoresFromStats with only a general row still fills the domain", () => {

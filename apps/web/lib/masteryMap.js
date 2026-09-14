@@ -1,17 +1,23 @@
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
+import { domainScoresFromStats } from "@/lib/masteryTiers";
 import { applyWorldlyCurve, buildLevelScoreMap, computeCountryDomainScore, computeCountryScore } from "@/lib/worldlyScore";
 import {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
   MASTERY_TIER_LABELS,
+  SKILL_DOMAIN_LABELS,
+  WORLDLY_DOMAIN_WEIGHTS,
 } from "@worldly/constants";
 
 export {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
   MASTERY_TIER_LABELS,
+  SKILL_DOMAIN_LABELS,
 };
+
+export const DOMAIN_COLUMNS = Object.keys(WORLDLY_DOMAIN_WEIGHTS);
 
 // A country counts as "located" in a mode once its weighted blend across all
 // four levels (same formula as the category header) clears the graduation bar.
@@ -98,6 +104,49 @@ export function countLocatedForTab(mode, countryIds, domainScoresByCountry) {
     }
   }
   return count;
+}
+
+/**
+ * Flatten /api/mastery/all buckets into per-country stats, matching the
+ * mastery map. `mode` on a row is required so Test `general` cells infer a domain.
+ */
+export function collectStatsByCountry(mastery = {}) {
+  const statsByCountry = new Map();
+  const addRows = (rows, modeKey) => {
+    for (const row of rows ?? []) {
+      if (!row?.countryId) continue;
+      if (!statsByCountry.has(row.countryId)) statsByCountry.set(row.countryId, []);
+      statsByCountry.get(row.countryId).push({ ...row, mode: row.mode ?? modeKey });
+    }
+  };
+  addRows(mastery.countries, GAME_MODES.COUNTRIES);
+  addRows(mastery.capitals, GAME_MODES.CAPITALS);
+  addRows(mastery.flags, GAME_MODES.FLAGS);
+  addRows(mastery.neighbors, "neighbors");
+  return statsByCountry;
+}
+
+/**
+ * Region averages per skill domain. Raw scores are averaged first, then the
+ * Worldly display curve is applied — same order as `computeWorldlyScore`.
+ * @returns {Record<string, number>|null}
+ */
+export function regionDomainDisplayPcts(countryIds, statsByCountry) {
+  if (!countryIds?.length) return null;
+  const sums = Object.fromEntries(DOMAIN_COLUMNS.map((domain) => [domain, 0]));
+  for (const id of countryIds) {
+    const scores = domainScoresFromStats(statsByCountry?.get(id) ?? []);
+    for (const domain of DOMAIN_COLUMNS) {
+      sums[domain] += Number(scores[domain]) || 0;
+    }
+  }
+  const n = countryIds.length;
+  return Object.fromEntries(
+    DOMAIN_COLUMNS.map((domain) => [
+      domain,
+      Math.round(applyWorldlyCurve(sums[domain] / n)),
+    ])
+  );
 }
 
 /**

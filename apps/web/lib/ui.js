@@ -1153,7 +1153,7 @@ export const countryFactHighlight = cn(
 export const resultsPage = "flex min-h-dvh flex-col";
 
 export const resultsContent =
-  "mx-auto w-full max-w-4xl flex-1 px-4 pb-10 pt-6 max-md:px-3 max-md:pb-[max(2.5rem,env(safe-area-inset-bottom))]";
+  "mx-auto w-full max-w-5xl flex-1 px-4 pb-10 pt-6 max-md:px-3 max-md:pb-[max(2.5rem,env(safe-area-inset-bottom))]";
 
 export const resultsBack =
   "mb-4 inline-block text-[0.9rem] font-semibold text-link no-underline hover:underline";
