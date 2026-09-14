@@ -28,6 +28,7 @@ import {
   getMasteryTier,
   MASTERY_TIER_LABELS,
   MASTERY_TIERS,
+  SKILL_DOMAIN_LABELS,
 } from "@/lib/masteryTiers";
 import { applyWorldlyCurve } from "@/lib/worldlyScore";
 import { THEMES } from "@/lib/theme";
@@ -174,6 +175,7 @@ export default function MasteryPage() {
             features: [...geo.geojson.features, ...territoryFeatures],
           },
           statsByCountry,
+          byDomainDisplay: masteryData.byDomainDisplay,
         });
         setLoading(false);
       })
@@ -475,15 +477,27 @@ export default function MasteryPage() {
                   </div>
                 )}
 
-                <div className={masteryLegend}>
-                  <span className={masteryLegendTitle}>Region score</span>
-                  {regionScores.map((region) => (
-                    <span key={region.id} className={masteryLegendRow}>
-                      {region.label}
-                      <em>{region.pct}%</em>
-                    </span>
-                  ))}
-                </div>
+                {mode === ALL_MODE && data.byDomainDisplay ? (
+                  <div className={masteryLegend}>
+                    <span className={masteryLegendTitle}>Skills</span>
+                    {Object.entries(data.byDomainDisplay).map(([domain, pct]) => (
+                      <span key={domain} className={masteryLegendRow}>
+                        {SKILL_DOMAIN_LABELS[domain] ?? domain}
+                        <em>{Math.round(pct)}%</em>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={masteryLegend}>
+                    <span className={masteryLegendTitle}>Region score</span>
+                    {regionScores.map((region) => (
+                      <span key={region.id} className={masteryLegendRow}>
+                        {region.label}
+                        <em>{region.pct}%</em>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </aside>
             </div>
           </>
