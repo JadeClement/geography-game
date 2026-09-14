@@ -1,4 +1,5 @@
 import { pool, query, backfillMissingUsernames } from "../lib/db.js";
+import { collapseCountryStatsLevels } from "./collapse-country-stats-levels.js";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -43,12 +44,8 @@ CREATE TABLE IF NOT EXISTS country_stats (
   last_attempt_at TIMESTAMPTZ,
   last_outcome TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, country_id, mode, level)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-CREATE INDEX IF NOT EXISTS country_stats_user_lookup_idx
-  ON country_stats (user_id, mode, level);
 
 CREATE TABLE IF NOT EXISTS country_attempts (
   id TEXT PRIMARY KEY,
@@ -237,20 +234,11 @@ CREATE TABLE IF NOT EXISTS learn_challenge (
 ALTER TABLE country_stats
   ADD COLUMN IF NOT EXISTS skill_domain TEXT NOT NULL DEFAULT 'general';
 
--- Convert the old 4-column unique so domain rows can coexist.
+-- Convert the old 4-column unique so domain rows can coexist (legacy DBs).
+-- The live unique is rebuilt after collapsing `level` out of the key
+-- (see collapse-country-stats-levels.js).
 ALTER TABLE country_stats
   DROP CONSTRAINT IF EXISTS country_stats_user_id_country_id_mode_level_key;
-
-CREATE UNIQUE INDEX IF NOT EXISTS country_stats_general_unique_idx
-  ON country_stats (user_id, country_id, mode, level)
-  WHERE skill_domain = 'general';
-
-CREATE UNIQUE INDEX IF NOT EXISTS country_stats_domain_unique_idx
-  ON country_stats (user_id, country_id, mode, level, skill_domain)
-  WHERE skill_domain <> 'general';
-
-CREATE INDEX IF NOT EXISTS country_stats_domain_lookup_idx
-  ON country_stats (user_id, mode, level, skill_domain);
 
 -- Global session counter on users.
 -- Increments every time any session
@@ -269,10 +257,10 @@ ALTER TABLE country_stats
     INTEGER;
 
 -- Index for efficient session building queries
--- that filter by last_correct_session
+-- that filter by last_correct_session. Recreated without `level` after collapse.
 CREATE INDEX IF NOT EXISTS
   country_stats_recency_idx
-  ON country_stats (user_id, mode, level,
+  ON country_stats (user_id, mode,
     last_correct_session)
   WHERE last_correct_session IS NOT NULL;
 `;
@@ -304,6 +292,13 @@ async function main() {
   await query(SCHEMA);
   await query(MIGRATIONS);
   await query(LEVEL_MIGRATIONS);
+  const collapse = await collapseCountryStatsLevels();
+  if (collapse.deleteCount > 0) {
+    console.log(
+      `Collapsed country_stats levels: ${collapse.totalRows} → ${collapse.groupCount} rows` +
+        (collapse.backupTable ? ` (backup ${collapse.backupTable})` : "")
+    );
+  }
   const backfilled = await backfillMissingUsernames();
   if (backfilled > 0) {
     console.log(`Backfilled usernames for ${backfilled} user(s).`);

@@ -21,6 +21,10 @@ function countryIdOf(stat) {
 }
 
 /**
+ * One score per (country, skill_domain). After collapsing `level` out of the
+ * country_stats key there is a single row per cell; `.set` is then identity,
+ * not last-write-across-levels. Duplicates (shouldn't exist) last-write.
+ *
  * @param {Array<{ countryId: string, skillDomain?: string, masteryScore?: number }>} stats
  * @returns {Map<string, Map<string, number>>}
  */

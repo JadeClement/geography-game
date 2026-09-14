@@ -124,8 +124,9 @@ export function regionScoresForTab(mode, regions, getCountryIds, domainScoresByC
 }
 
 /**
- * Collapse per-level mastery rows into a weighted per-country score, using
- * the same level weights and cascade rules as the category header.
+ * Collapse the single general-row score into a weighted per-country score.
+ * After level left the country_stats key the score is projected into every
+ * LEVEL_WEIGHTS slot, so this equals the cell mastery.
  * @param {{countryId:string, level:string, masteryScore:number}[]} rows
  * @returns {Map<string,{score:number}>}
  */

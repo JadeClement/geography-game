@@ -32,6 +32,7 @@
     "./learn/emaIntegration": "./learn/emaIntegration.js",
     "./learn/escalation": "./learn/escalation.js",
     "./learn/domainMastery": "./learn/domainMastery.js",
+    "./learn/collapseLevelRows": "./learn/collapseLevelRows.js",
     "./learn/masteryTiers": "./learn/masteryTiers.js",
     "./learn/mapGuess": "./learn/mapGuess.js",
     "./learn/factSelection": "./learn/factSelection.js",

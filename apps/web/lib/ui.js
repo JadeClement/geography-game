@@ -87,6 +87,13 @@ export const gameTutorialFooter =
 export const gameTutorialSkip =
   "min-w-0 shrink cursor-pointer border-0 bg-transparent p-0 text-[0.85rem] font-semibold text-text-muted underline-offset-2 hover:text-text hover:underline";
 
+/** Quiet escape hatch on Test/Learn questions — never competes with the answer CTA. */
+export const giveUpBtn = cn(
+  "self-center cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-text-muted underline underline-offset-2",
+  "hover:text-text-secondary disabled:cursor-not-allowed disabled:opacity-50",
+  focusRing
+);
+
 export const gameTutorialProgress =
   "shrink-0 whitespace-nowrap text-[0.8rem] font-semibold tabular-nums text-text-muted";
 

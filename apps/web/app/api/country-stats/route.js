@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getCountryStatsForUser, recordCountryPerformance, recordPracticeSession, getStreakForUser } from "@/lib/db";
 import { GAME_TYPE_FOR_STATS, ROUND_OUTCOMES } from "@worldly/constants";
 import { buildCascadedStat, hasEverStruggled } from "@/lib/mastery";
-import { getMasteryProvingLevels, isValidLevel } from "@/lib/levels";
+import { isValidLevel } from "@/lib/levels";
 import { GAME_MODES } from "@/lib/regions";
 import { getMobileSession } from "@/lib/mobile-auth";
 import {
@@ -60,14 +60,13 @@ export async function GET(request) {
       statsByCountry.get(stat.countryId).push(stat);
     }
 
-    const provingLevels = getMasteryProvingLevels(level);
     const eligibleStats = [];
     for (const [countryId, countryStats] of statsByCountry) {
-      const ownStat = countryStats.find((s) => s.level === level) ?? null;
-      const provingStats = countryStats.filter((s) => provingLevels.includes(s.level));
-      const effectiveStat = buildCascadedStat(countryId, ownStat, provingStats);
+      const ownStat = countryStats[0] ?? null;
+      const effectiveStat = buildCascadedStat(countryId, ownStat, []);
+      const struggled = countryStats.some((stat) => hasEverStruggled(stat));
 
-      if (hasEverStruggled(ownStat) && !effectiveStat.graduated) {
+      if (struggled && !effectiveStat.graduated) {
         eligibleStats.push(effectiveStat);
       }
     }

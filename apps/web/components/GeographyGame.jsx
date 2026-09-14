@@ -28,6 +28,7 @@ import MapboxMap from "@/components/MapboxMap";
 import PacificMap from "@/components/PacificMap";
 import PronunciationButton from "@/components/PronunciationButton";
 import FitText from "@/components/FitText";
+import GiveUpButton from "@/components/GiveUpButton";
 import SoundVolumeButton from "@/components/SoundVolumeButton";
 import StartScreen from "@/components/StartScreen";
 import { CORRECT_ROUND_DELAY_MS, MAX_ATTEMPTS, REVEAL_ROUND_DELAY_MS, normalizeName } from "@/lib/constants";
@@ -99,7 +100,6 @@ import {
   COUNTRY_FLASH_MS,
   GAME_LEVELS,
   getLevelLabel,
-  getMasteryProvingLevels,
   isFindLevel,
   isNameLevel,
   isProgressiveFillLevel,
@@ -218,16 +218,14 @@ function CountryPromptLabel({
   );
 }
 
-// A country counts as already mastered for a level if it is effectively
-// graduated at that level or at a proving level (the mastery API applies decay).
-function getMasteredCountryIds(masteryRows, level) {
-  const relevantLevels = new Set([level, ...getMasteryProvingLevels(level)]);
+// A country counts as already mastered if its general cell is graduated.
+// `level` on the row is last-played, not identity, so it is not a filter.
+function getMasteredCountryIds(masteryRows) {
   const mastered = new Set();
   for (const row of masteryRows) {
-    if (row.graduated && relevantLevels.has(row.level)) {
-      if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
-      mastered.add(row.countryId);
-    }
+    if (!row.graduated) continue;
+    if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
+    mastered.add(row.countryId);
   }
   return mastered;
 }
@@ -1904,7 +1902,6 @@ export default function GeographyGame() {
         }
         const regionIds = new Set(regionPool.map((country) => country.id));
         for (const row of data.mastery ?? []) {
-          if (row.level !== GAME_LEVELS.FIND_FILL) continue;
           if ((row.skillDomain ?? "general") !== "general") continue;
           if (!regionIds.has(row.countryId)) continue;
           if (row.graduated) continue;
@@ -1948,14 +1945,14 @@ export default function GeographyGame() {
     });
   }, [allCountries, signedIn, startGame]);
 
-  // World Test: pre-credit countries already mastered (graduated, with the level
-  // cascade) in any region so they aren't re-quizzed.
+  // World Test: pre-credit countries already mastered (graduated general cell)
+  // in any region so they aren't re-quizzed.
   const buildWorldTestCountries = useCallback(
     async ({ mode, level }) => {
       const worldPool = filterCountriesByRegion(allCountries, "world");
       try {
         const data = await fetchMasteryStats({ mode });
-        const masteredIds = getMasteredCountryIds(data.mastery ?? [], level);
+        const masteredIds = getMasteredCountryIds(data.mastery ?? []);
         return {
           countries: worldPool.filter((country) => !masteredIds.has(country.id)),
           preCreditedCountryIds: worldPool
@@ -1991,10 +1988,7 @@ export default function GeographyGame() {
           currentSessionNumberRef.current = data.totalSessions;
           setCurrentSessionNumber(data.totalSessions);
         }
-        const provingLevels = new Set(getMasteryProvingLevels(level));
-        masteryRows = (data.mastery ?? []).filter(
-          (row) => row.level === level || provingLevels.has(row.level)
-        );
+        masteryRows = data.mastery ?? [];
         const domainMap = buildDomainMasteryMap(masteryRows);
         for (const country of regionPool) {
           masteryById.set(country.id, getOverallMastery(domainMap, country.id));
@@ -2595,6 +2589,45 @@ export default function GeographyGame() {
         // Correct path keeps a brief pause so option/map feedback is seen.
         setFeedback(outcomeFeedback({ correct: true, secondTry }));
         advanceLearnAfterAnswer(650);
+        return;
+      }
+
+      // Give up on map/shape questions: no guess to measure, so teach the
+      // country in place and pause for Continue (same as a scored miss).
+      if (
+        event.givenUp &&
+        (question?.answerType === "map_click" || question?.answerType === "shape_drop")
+      ) {
+        const targetId = question.correctAnswer ?? question.countryId;
+        const target = allCountriesById.get(targetId);
+        const name = target?.name ?? "this country";
+        learnAwaitingContinueRef.current = true;
+        setLearnAwaitingContinue(true);
+        setLearnContinueMessage(`That's ${name}.`);
+        if (targetId) {
+          addRoundWrongCountry(targetId);
+          setHighlightCountryId(targetId);
+          setLearnFeedbackLabelsById(
+            target?.name
+              ? {
+                  [targetId]: {
+                    kind: "text",
+                    text: target.name,
+                    countryId: targetId,
+                    emphasized: true,
+                    alwaysShow: true,
+                  },
+                }
+              : {}
+          );
+        }
+        setShowColorCountryIds([]);
+        setLearnNeighborMapVisible(false);
+        setLearnAreaCompareReveal(null);
+        setLearnLandlockedReveal(null);
+        setLearnHighlightWrongReveal(null);
+        setLearnDistanceReveal(null);
+        setFeedback(outcomeFeedback({ correct: false }));
         return;
       }
 
@@ -3664,10 +3697,10 @@ export default function GeographyGame() {
   );
 
   const handleRevealRound = useCallback(
-    (target) => {
+    (target, { outcome = ROUND_OUTCOMES.NEEDED_REVEAL } = {}) => {
       if (!revealStatRecordedRef.current) {
         revealStatRecordedRef.current = true;
-        recordRoundOutcome(ROUND_OUTCOMES.NEEDED_REVEAL);
+        recordRoundOutcome(outcome);
       }
 
       const revealDetail = isNameGame
@@ -3729,6 +3762,29 @@ export default function GeographyGame() {
       triggerColorFlash,
     ]
   );
+
+  const handleGiveUp = useCallback(() => {
+    if (gamePausedRef.current) {
+      setShowResumeConfirm(true);
+      return;
+    }
+
+    const target = targetCountryRef.current;
+    if (!gameActiveRef.current || !target || revealModeRef.current) return;
+
+    markRoundIncorrect(target);
+    playIncorrectSound();
+    setSpellingSuggestionText(null);
+    setAnswerText("");
+    handleRevealRound(target, { outcome: ROUND_OUTCOMES.INCORRECT });
+  }, [
+    gameActiveRef,
+    gamePausedRef,
+    handleRevealRound,
+    markRoundIncorrect,
+    revealModeRef,
+    targetCountryRef,
+  ]);
 
   const handleCountryClick = useCallback(
     (feature, context = {}) => {
@@ -4369,6 +4425,21 @@ export default function GeographyGame() {
       ? PRONUNCIATION_KINDS.CAPITAL
       : PRONUNCIATION_KINDS.COUNTRY;
 
+  const canGiveUp =
+    gameActive &&
+    !gamePaused &&
+    !gameComplete &&
+    !revealMode &&
+    !learnEngineActive &&
+    !isDiscoverGame &&
+    feedback.type !== "correct" &&
+    feedback.type !== "second-try" &&
+    feedback.type !== "got-it" &&
+    feedback.type !== "incorrect" &&
+    feedback.type !== "reveal";
+
+  const giveUpControl = canGiveUp ? <GiveUpButton onClick={handleGiveUp} /> : null;
+
   const renderGamePrompt = (className, { showFlagInPrompt = false, compactInput = false } = {}) => {
     if (isDiscoverGame) {
       return (
@@ -4418,36 +4489,42 @@ export default function GeographyGame() {
               ?
             </p>
           )}
+          {giveUpControl}
         </div>
-      ) : isFindFlagsGame ? (
-        flagsClickHeader ? (
-          <CountryPromptLabel
-            text={flagsClickHeader.name}
-            iso3={flagsClickHeader.iso3}
-            toneClassName={
-              flagsClickHeader.tone === "correct" ? "prompt-correct" : "prompt-wrong"
-            }
-            pronunciationDisabled={!pronunciationAllowed}
-          />
-        ) : showFlagPrompt ? (
-          <span className="sr-only">{flagPromptAlt}</span>
-        ) : null
-      ) : showFlagInPrompt && showFlagPrompt ? (
-        <FlagPrompt
-          iso2={targetCountry.iso2}
-          size="card"
-          className="mx-auto"
-          alt={flagPromptAlt}
-        />
-      ) : isFlagsMode ? null : showTargetPronunciation ? (
-        <CountryPromptLabel
-          text={promptText}
-          iso3={targetCountry.id}
-          kind={targetPronunciationKind}
-          pronunciationDisabled={!pronunciationAllowed}
-        />
       ) : (
-        promptText
+        <div className={answerPrompt}>
+          {isFindFlagsGame ? (
+            flagsClickHeader ? (
+              <CountryPromptLabel
+                text={flagsClickHeader.name}
+                iso3={flagsClickHeader.iso3}
+                toneClassName={
+                  flagsClickHeader.tone === "correct" ? "prompt-correct" : "prompt-wrong"
+                }
+                pronunciationDisabled={!pronunciationAllowed}
+              />
+            ) : showFlagPrompt ? (
+              <span className="sr-only">{flagPromptAlt}</span>
+            ) : null
+          ) : showFlagInPrompt && showFlagPrompt ? (
+            <FlagPrompt
+              iso2={targetCountry.iso2}
+              size="card"
+              className="mx-auto"
+              alt={flagPromptAlt}
+            />
+          ) : isFlagsMode ? null : showTargetPronunciation ? (
+            <CountryPromptLabel
+              text={promptText}
+              iso3={targetCountry.id}
+              kind={targetPronunciationKind}
+              pronunciationDisabled={!pronunciationAllowed}
+            />
+          ) : (
+            promptText
+          )}
+          {giveUpControl}
+        </div>
       )}
     </div>
     );

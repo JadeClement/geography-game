@@ -13,6 +13,7 @@ import { DEFAULT_LEARN_LEVEL, DEFAULT_LEARN_SESSION_SIZE } from "@worldly/consta
 import { buildFullRegionLearningQueue } from "@worldly/core/learning";
 import { buildLearnSession } from "@worldly/core/learn/sessionSequencer";
 import { buildLearnStatPayload } from "@worldly/core/learn/emaIntegration";
+import { buildDomainMasteryMap, getOverallMastery } from "@worldly/core/learn/domainMastery";
 import { selectLearnFact } from "@worldly/core/learn/factSelection";
 import { normalizeName } from "@worldly/core/nameUtils";
 import { BinaryChoice } from "../../components/game/BinaryChoice";
@@ -115,21 +116,29 @@ export default function GameSessionScreen() {
             : countries.filter((c) => c.region === region);
 
         const masteryRows = mastery.mastery?.[mode] || [];
-        const levelRows = masteryRows.filter(
-          (r: any) => r.level === DEFAULT_LEARN_LEVEL
-        );
+        const domainMap = buildDomainMasteryMap(masteryRows);
         const masteryById = new Map(
-          levelRows.map((r: any) => [r.countryId, r.masteryScore ?? 0])
+          regionCountries.map((c) => {
+            const id = c.id || c.iso3;
+            return [id, getOverallMastery(domainMap, id)];
+          })
         );
-        const recencyById = new Map(
-          levelRows.map((r: any) => [
-            r.countryId,
-            {
-              lastAttemptAt: r.lastAttemptAt ?? null,
-              lastOutcome: r.lastOutcome ?? null,
-            },
-          ])
-        );
+        const recencyById = new Map();
+        for (const row of masteryRows) {
+          const prev = recencyById.get(row.countryId);
+          const rowAttempt = row.lastAttemptAt
+            ? new Date(row.lastAttemptAt).getTime()
+            : 0;
+          const prevAttempt = prev?.lastAttemptAt
+            ? new Date(prev.lastAttemptAt).getTime()
+            : 0;
+          if (!prev || rowAttempt >= prevAttempt) {
+            recencyById.set(row.countryId, {
+              lastAttemptAt: row.lastAttemptAt ?? null,
+              lastOutcome: row.lastOutcome ?? null,
+            });
+          }
+        }
 
         if (gameType === "learning") {
           const queueIds = buildFullRegionLearningQueue(

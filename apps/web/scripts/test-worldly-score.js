@@ -9,6 +9,8 @@ import assert from "node:assert/strict";
 import {
   applyWorldlyCurve,
   computeCountryDomainScore,
+  computeCountryScore,
+  buildLevelScoreMap,
   computeWorldlyScoreFromMastery,
   WORLDLY_CURVE_BREAKPOINTS,
   WORLDLY_DOMAIN_WEIGHTS,
@@ -20,6 +22,7 @@ import {
   domainScoresFromStats,
   getWeakestDomain,
 } from "@/lib/masteryTiers";
+import { buildDomainMasteryMap, getDomainMastery } from "@/lib/learn/domainMastery";
 import {
   DOMAINS_WITH_TEST_MODE,
   getLearnContributionRate,
@@ -249,4 +252,33 @@ test("regionScoresForTab omits World and follows the active tab", () => {
   const all = regionScoresForTab(ALL_MODE, regions, getIds, scores);
   assert.ok(all.find((row) => row.id === "europe").pct < 100);
   assert.ok(all.find((row) => row.id === "europe").pct > 0);
+});
+
+test("domainScoresFromStats with only a general row still fills the domain", () => {
+  const scores = domainScoresFromStats([
+    { countryId: "FRA", mode: "countries", skillDomain: "general", masteryScore: 0.42, level: "N2" },
+  ]);
+  assert.equal(scores.location, 0.42);
+  assert.equal(scores.capital, 0);
+});
+
+test("buildDomainMasteryMap matches the display path for the same rows", () => {
+  const rows = [
+    { countryId: "FRA", mode: "countries", skillDomain: "location", masteryScore: 0.55, level: "N2" },
+    { countryId: "FRA", mode: "countries", skillDomain: "general", masteryScore: 0.55, level: "N2" },
+    { countryId: "FRA", mode: "capitals", skillDomain: "capital", masteryScore: 0.3, level: "F1" },
+  ];
+  const display = domainScoresFromStats(rows);
+  const map = buildDomainMasteryMap(rows);
+  assert.equal(getDomainMastery(map, "FRA", SKILL_DOMAINS.LOCATION), display.location);
+  assert.equal(getDomainMastery(map, "FRA", SKILL_DOMAINS.CAPITAL), display.capital);
+  assert.equal(display.location, 0.55);
+  assert.equal(display.capital, 0.3);
+});
+
+test("legacy category header projects one score into all four level slots", () => {
+  const map = buildLevelScoreMap([
+    { countryId: "FRA", level: "F2", masteryScore: 0.4, skillDomain: "general" },
+  ]);
+  assert.equal(computeCountryScore(map.get("FRA")), 0.4);
 });

@@ -58,12 +58,14 @@ function roundDisplay(value) {
 }
 
 /**
- * Collapse per-(level) mastery rows for one mode into a per-country map of
- * per-level decay-adjusted scores. Duplicate rows for the same country+level
- * keep the higher score.
+ * Collapse per-(country) mastery rows for one mode into a per-country map of
+ * per-level decay-adjusted scores.
  *
- * Domain-level Learn rows are ignored so the legacy countries/capitals/flags
- * header breakdown stays Test/`general`-based.
+ * After `level` left the country_stats key there is one general-row score per
+ * country. That score is projected into every LEVEL_WEIGHTS slot so
+ * `computeCountryScore` (legacy countries/capitals/flags header) is unchanged
+ * — a weighted average of the same number four times. Domain-level Learn rows
+ * are ignored so the header stays Test/`general`-based.
  *
  * @param {{countryId:string, level:string, masteryScore:number}[]} rows
  * @returns {Map<string, Record<string, number>>} countryId -> { [level]: score }
@@ -71,7 +73,6 @@ function roundDisplay(value) {
 export function buildLevelScoreMap(rows = []) {
   const map = new Map();
   for (const row of rows) {
-    if (!(row.level in LEVEL_WEIGHTS)) continue;
     const domain = row.skillDomain ?? row.skill_domain ?? "general";
     if (domain !== "general") continue;
     const score = row.masteryScore ?? 0;
@@ -80,7 +81,9 @@ export function buildLevelScoreMap(rows = []) {
       entry = {};
       map.set(row.countryId, entry);
     }
-    entry[row.level] = Math.max(entry[row.level] ?? 0, score);
+    for (const level of WEIGHTED_LEVELS) {
+      entry[level] = Math.max(entry[level] ?? 0, score);
+    }
   }
   return map;
 }
@@ -297,10 +300,6 @@ export function computeWorldlyBeforeAfter({
         ...afterDomains,
         [playedDomain]: clamp01(record?.beforeMastery ?? afterDomains[playedDomain] ?? 0),
       };
-      // If this session also wrote a matching general row, keep other domains.
-      if (level && rows.some((row) => row.level === level)) {
-        // no-op: domainScoresFromStats already collapsed levels via max
-      }
       const beforeCountry = computeCountryDomainScore(beforeDomains);
       deltaSum += afterCountry - beforeCountry;
     }

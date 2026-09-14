@@ -44,8 +44,10 @@ function isGeneralRow(stat) {
 }
 
 /**
- * Best per-domain scores for one country, with Test `general` rows filling
- * the matching mode's domain when a dedicated domain row is missing.
+ * Per-domain scores for one country. After collapsing `level` out of the
+ * country_stats key there is at most one row per (mode, skill_domain); if a
+ * leftover duplicate appears, the last value wins. Test `general` rows still
+ * fill the matching mode's domain when a dedicated domain row is missing.
  *
  * @param {object[]} stats
  * @returns {Record<string, number>}
@@ -58,10 +60,10 @@ export function domainScoresFromStats(stats = []) {
     const domain = domainOf(stat);
     if (domain === "general") {
       const inferred = inferDomainFromMode(stat.mode);
-      fromGeneral[inferred] = Math.max(fromGeneral[inferred] ?? 0, score);
+      fromGeneral[inferred] = score;
       continue;
     }
-    explicit[domain] = Math.max(explicit[domain] ?? 0, score);
+    explicit[domain] = score;
   }
   const out = {};
   for (const domain of Object.keys(WORLDLY_DOMAIN_WEIGHTS)) {

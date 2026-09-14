@@ -7,7 +7,6 @@ import AppHeader from "@/components/AppHeader";
 import AuthModal from "@/components/AuthModal";
 import { fetchAllMasteryStats } from "@/lib/countryStats";
 import { getLevelShortLabel } from "@/lib/levels";
-import { getMasteryProvingLevels } from "@/lib/levels";
 import { GAME_MODES, REGIONS, formatGameScore, getCountryIdsForRegion, getModeLabel } from "@/lib/regions";
 import { fetchScores, LEVELS } from "@/lib/scores";
 import { cn } from "@/lib/cn";
@@ -110,20 +109,12 @@ function ScoreTable({ title, mode, scoreMap }) {
   );
 }
 
-function cascadedMastery(lookup, countryId, level) {
-  let value = lookup.get(`${countryId}:${level}`) ?? 0;
-  for (const proving of getMasteryProvingLevels(level)) {
-    value = Math.max(value, lookup.get(`${countryId}:${proving}`) ?? 0);
-  }
-  return value;
-}
-
-function regionMasteryPct(lookup, regionId, level) {
+function regionMasteryPct(lookup, regionId) {
   const ids = getCountryIdsForRegion(regionId);
   if (ids.length === 0) return null;
   let sum = 0;
   for (const id of ids) {
-    sum += cascadedMastery(lookup, id, level);
+    sum += lookup.get(id) ?? 0;
   }
   return Math.round((sum / ids.length) * 100);
 }
@@ -143,22 +134,20 @@ function MasteryTableMobile({ title, lookup }) {
     <section className={cn(resultsSection, "md:hidden")}>
       <h2 className={resultsTableTitle}>{title}</h2>
       <div className={resultsMobileCards}>
-        {REGIONS.map((region) => (
-          <div key={region.id} className={resultsMobileCard}>
-            <h3 className={resultsMobileCardTitle}>{region.label}</h3>
-            <div className={resultsMobileGrid}>
-              {LEVELS.map((level) => {
-                const pct = regionMasteryPct(lookup, region.id, level);
-                return (
-                  <div key={level} className={resultsMobileCell}>
-                    <span className={resultsMobileCellLabel}>{getLevelShortLabel(level)}</span>
-                    <span className={resultsMobileCellValue}>{pct == null ? "—" : `${pct}%`}</span>
-                  </div>
-                );
-              })}
+        {REGIONS.map((region) => {
+          const pct = regionMasteryPct(lookup, region.id);
+          return (
+            <div key={region.id} className={resultsMobileCard}>
+              <h3 className={resultsMobileCardTitle}>{region.label}</h3>
+              <div className={resultsMobileGrid}>
+                <div className={resultsMobileCell}>
+                  <span className={resultsMobileCellLabel}>Mastery</span>
+                  <span className={resultsMobileCellValue}>{pct == null ? "—" : `${pct}%`}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -176,11 +165,9 @@ function MasteryTable({ title, lookup }) {
                 <th scope="col" className={resultsTableColHeader}>
                   Region
                 </th>
-                {LEVELS.map((level) => (
-                  <th key={level} scope="col" className={resultsTableColHeader}>
-                    {getLevelShortLabel(level)}
-                  </th>
-                ))}
+                <th scope="col" className={resultsTableColHeader}>
+                  Mastery
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -189,9 +176,7 @@ function MasteryTable({ title, lookup }) {
                   <th scope="row" className={resultsTableRowHeader}>
                     {region.label}
                   </th>
-                  {LEVELS.map((level) => (
-                    <MasteryCell key={level} pct={regionMasteryPct(lookup, region.id, level)} />
-                  ))}
+                  <MasteryCell pct={regionMasteryPct(lookup, region.id)} />
                 </tr>
               ))}
             </tbody>
@@ -264,7 +249,9 @@ export default function ResultsPage() {
       const map = new Map();
       for (const row of rows) {
         if ((row.skillDomain ?? row.skill_domain ?? "general") !== "general") continue;
-        map.set(`${row.countryId}:${row.level}`, row.masteryScore);
+        const score = Number(row.masteryScore) || 0;
+        const prev = map.get(row.countryId);
+        if (prev == null || score > prev) map.set(row.countryId, score);
       }
       return map;
     };
@@ -330,8 +317,7 @@ export default function ResultsPage() {
 
             <h2 className={resultsGroupTitle}>Mastery</h2>
             <p className={resultsGroupNote}>
-              Average mastery across each region. World combines every region, and
-              mastering a harder level counts toward its easier counterpart.
+              Average mastery across each region. World combines every region.
             </p>
             <MasteryTable title={getModeLabel(GAME_MODES.COUNTRIES)} lookup={masteryLookups.countries} />
             <MasteryTable title={getModeLabel(GAME_MODES.CAPITALS)} lookup={masteryLookups.capitals} />

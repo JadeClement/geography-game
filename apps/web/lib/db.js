@@ -8,8 +8,8 @@
  *    user_id             TEXT NOT NULL → users(id) ON DELETE CASCADE
  *    country_id          TEXT NOT NULL  (ISO3)
  *    mode                TEXT NOT NULL  (countries | capitals | flags)
- *    level               TEXT NOT NULL  (F1/F2/N1/N2)
-    *    first_try_correct   INT  count of first-try corrects
+ *    level               TEXT NOT NULL  (F1/F2/N1/N2) — informational last-played
+ *    first_try_correct   INT  count of first-try corrects
  *    second_try_correct  INT  count of second-try corrects (got it right after a miss)
  *    needed_reveal       INT  count of reveal / clue outcomes
  *    incorrect           INT  count of complete misses (never got it right, no reveal)
@@ -27,13 +27,9 @@
  *                        statistics|facts|general)
  *
  * 2. Unique key
- *    Original: UNIQUE (user_id, country_id, mode, level)
- *    After domain rows: that 4-tuple cannot stay as a full-table unique or
- *    a second domain row for the same country is impossible. It is converted
- *    to a PARTIAL unique index WHERE skill_domain = 'general' (legacy rows
- *    stay unique on the old key). Domain rows use
- *    UNIQUE (user_id, country_id, mode, level, skill_domain)
- *    WHERE skill_domain <> 'general'.
+ *    One cell per (user_id, country_id, mode, skill_domain). `level` is the
+ *    most recently played Test/Learn level on that cell, never a lookup
+ *    predicate. `general` is just another skill_domain value.
  *
  * 3. Write path after each answer
  *    LearnQuestionRenderer → GeographyGame.handleLearnAnswer
@@ -55,8 +51,8 @@
  *    getOverallMastery; type selection uses getDomainMastery.
  *
  * 5. computeMasteryUpdate inputs
- *    (stat, { outcome, responseTimeMs, gameType, learnModeMultiplier = 1 })
- *    stat: country_stats-shaped object or null. Returns
+ *    (stat, { outcome, responseTimeMs, gameType, gainMultiplier, penaltyMultiplier })
+ *    Test folds LEVEL_GAIN_MULTIPLIERS into gainMultiplier only. Returns
  *    { masteryScore, fastStreak, speedBaselineMs, graduated }.
  *
  * 6. QUESTION_TYPES ids (packages/constants QUESTION_TYPES):
@@ -80,6 +76,7 @@ import {
 import {
   computeMasteryUpdate,
   getDecayAdjustedMastery,
+  getLevelGainMultiplier,
   isEffectivelyGraduated,
 } from "./mastery.js";
 import { resolveSkillDomain, getLearnContributionRate } from "./learn/questionTypes.js";
@@ -697,17 +694,13 @@ const STAT_RETURNING = `
   skill_domain AS "skillDomain"
 `;
 
-export async function getCountryStatsForUser(userId, { mode, level } = {}) {
+export async function getCountryStatsForUser(userId, { mode } = {}) {
   const conditions = ["user_id = $1"];
   const params = [userId];
 
   if (mode) {
     params.push(mode);
     conditions.push(`mode = $${params.length}`);
-  }
-  if (level != null) {
-    params.push(level);
-    conditions.push(`level = $${params.length}`);
   }
 
   const result = await query(
@@ -748,10 +741,13 @@ export async function recordCountryPerformance({
   const skillDomain = resolveSkillDomain({ questionType: questionTypeId, mode });
   const isLearn = gameType === "learning";
   const contributionRate = isLearn ? getLearnContributionRate(skillDomain) : 1;
-  const appliedMultiplier =
+  const learnFactor =
     Number.isFinite(learnModeMultiplier) && learnModeMultiplier >= 0
       ? learnModeMultiplier * contributionRate
       : contributionRate;
+  const levelGain = getLevelGainMultiplier(level, gameType);
+  const gainMultiplier = learnFactor * levelGain;
+  const penaltyMultiplier = learnFactor;
 
   if (!pool) {
     throw new Error("DATABASE_URL is not configured.");
@@ -760,7 +756,7 @@ export async function recordCountryPerformance({
   const client = await pool.connect();
   const trackResponseTime = responseTimeMs != null && outcome !== "needed_reveal";
 
-  async function upsertStatRow(rowId, domain, multiplier) {
+  async function upsertStatRow(rowId, domain) {
     const existingResult = await client.query(
       `SELECT country_id AS "countryId",
               first_try_correct AS "firstTryCorrect",
@@ -775,10 +771,10 @@ export async function recordCountryPerformance({
               graduated,
               skill_domain AS "skillDomain"
        FROM country_stats
-       WHERE user_id = $1 AND country_id = $2 AND mode = $3 AND level = $4
-         AND skill_domain = $5
+       WHERE user_id = $1 AND country_id = $2 AND mode = $3
+         AND skill_domain = $4
        FOR UPDATE`,
-      [userId, countryId, mode, level, domain]
+      [userId, countryId, mode, domain]
     );
 
     const existing = existingResult.rows[0] ?? null;
@@ -788,7 +784,8 @@ export async function recordCountryPerformance({
       outcome,
       responseTimeMs: trackResponseTime ? responseTimeMs : null,
       gameType,
-      learnModeMultiplier: multiplier,
+      gainMultiplier,
+      penaltyMultiplier,
     });
 
     const sessionNumber =
@@ -824,11 +821,6 @@ export async function recordCountryPerformance({
         response_time_count = country_stats.response_time_count + 1`;
     }
 
-    const isLegacyGeneral = domain === "general";
-    const conflictTarget = isLegacyGeneral
-      ? `(user_id, country_id, mode, level) WHERE skill_domain = 'general'`
-      : `(user_id, country_id, mode, level, skill_domain) WHERE skill_domain <> 'general'`;
-
     const result = await client.query(
       `INSERT INTO country_stats (
          id, user_id, country_id, mode, level,
@@ -854,10 +846,11 @@ export async function recordCountryPerformance({
          CASE WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN NOW() ELSE NULL END,
          CASE WHEN $10 IN ('first_try_correct', 'second_try_correct') THEN $12::integer ELSE NULL::integer END
        )
-       ON CONFLICT ${conflictTarget}
+       ON CONFLICT (user_id, country_id, mode, skill_domain)
        DO UPDATE SET
          ${column} = country_stats.${column} + 1
          ${responseTimeUpdate},
+         level = $5,
          mastery_score = $6,
          fast_streak = $7,
          speed_baseline_ms = $8,
@@ -910,11 +903,11 @@ export async function recordCountryPerformance({
       ]
     );
 
-    const domainStat = await upsertStatRow(statId, skillDomain, appliedMultiplier);
+    const domainStat = await upsertStatRow(statId, skillDomain);
     const generalStat =
       skillDomain === "general"
         ? domainStat
-        : await upsertStatRow(randomUUID(), "general", appliedMultiplier);
+        : await upsertStatRow(randomUUID(), "general");
 
     await client.query("COMMIT");
     return {

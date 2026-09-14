@@ -21,6 +21,7 @@ import {
   MASTERY_SECOND_TRY_PENALTY,
   MASTERY_REVEAL_PENALTY,
   GAME_TYPE_FOR_STATS,
+  LEVEL_GAIN_MULTIPLIERS,
 } from "@worldly/constants";
 import { getSamplingWeight } from "./learn/recencySuppression.js";
 
@@ -42,6 +43,7 @@ export {
   GO_MIX_SPREAD_MIN,
   GO_MIX_MIN_FOR_THIRDS,
   GAME_TYPE_FOR_STATS,
+  LEVEL_GAIN_MULTIPLIERS,
 };
 
 const MS_PER_DAY = 86_400_000;
@@ -70,6 +72,34 @@ const SPEED_BASELINE_BLEND = 0.15;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function finiteMultiplier(value, fallback = 1) {
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+/**
+ * Test-only first-try gain weight. Unknown/missing level and every non-Test
+ * game type (Learn, Review) return 1.0 so existing Learn multipliers are unchanged.
+ */
+export function getLevelGainMultiplier(level, gameType) {
+  if (gameType !== GAME_TYPE_FOR_STATS.TEST) return 1;
+  if (level == null || !Object.prototype.hasOwnProperty.call(LEVEL_GAIN_MULTIPLIERS, level)) {
+    return 1;
+  }
+  return finiteMultiplier(LEVEL_GAIN_MULTIPLIERS[level], 1);
+}
+
+function resolveBranchMultipliers({
+  gainMultiplier,
+  penaltyMultiplier,
+  learnModeMultiplier,
+} = {}) {
+  const shared = finiteMultiplier(learnModeMultiplier, 1);
+  return {
+    gain: gainMultiplier == null ? shared : finiteMultiplier(gainMultiplier, shared),
+    penalty: penaltyMultiplier == null ? shared : finiteMultiplier(penaltyMultiplier, shared),
+  };
 }
 
 export function isFastResponse(responseTimeMs, speedBaselineMs) {
@@ -116,23 +146,29 @@ export function deriveMasteryFromAggregates(stat) {
 
 /**
  * @param {object|null} stat - existing country_stats row
- * @param {{ outcome: string, responseTimeMs?: number|null, gameType: string, learnModeMultiplier?: number }} attempt
+ * @param {{ outcome: string, responseTimeMs?: number|null, gameType: string, learnModeMultiplier?: number, gainMultiplier?: number, penaltyMultiplier?: number }} attempt
  *
- * `learnModeMultiplier` (default 1.0) scales the EMA delta for this update. Test
- * mode never passes it, so its behavior is unchanged; Learn mode passes a
- * per-question-type multiplier (see lib/learn/questionTypes.LEARN_EMA_MULTIPLIERS)
- * so easier question formats move mastery less than full free recall.
+ * `gainMultiplier` scales first-try EMA steps; `penaltyMultiplier` scales misses.
+ * Both default to 1. Passing only `learnModeMultiplier` (legacy Learn path) applies
+ * that value to both branches. Test-mode level difficulty is folded into
+ * `gainMultiplier` only, by the write path — never into penalties.
  */
 export function computeMasteryUpdate(
   stat,
-  { outcome, responseTimeMs, gameType, learnModeMultiplier = 1 }
+  {
+    outcome,
+    responseTimeMs,
+    gameType,
+    learnModeMultiplier,
+    gainMultiplier,
+    penaltyMultiplier,
+  }
 ) {
-  // Guard against a bad/zero multiplier silently freezing mastery; treat any
-  // non-finite value as the neutral 1.0 (Test-equivalent) default.
-  const emaMultiplier =
-    Number.isFinite(learnModeMultiplier) && learnModeMultiplier >= 0
-      ? learnModeMultiplier
-      : 1;
+  const { gain: emaGain, penalty: emaPenalty } = resolveBranchMultipliers({
+    gainMultiplier,
+    penaltyMultiplier,
+    learnModeMultiplier,
+  });
   const hadHistory =
     (stat?.firstTryCorrect ?? 0) +
       (stat?.secondTryCorrect ?? 0) +
@@ -158,22 +194,22 @@ export function computeMasteryUpdate(
     speedBaselineMs = updateSpeedBaseline(speedBaselineMs, responseTimeMs);
 
     if (fast) {
-      mastery += emaMultiplier * MASTERY_EMA_FAST * (1 - mastery);
+      mastery += emaGain * MASTERY_EMA_FAST * (1 - mastery);
       fastStreak += 1;
     } else {
-      mastery += emaMultiplier * MASTERY_EMA_SLOW * (1 - mastery);
+      mastery += emaGain * MASTERY_EMA_SLOW * (1 - mastery);
       fastStreak = 0;
     }
   } else if (outcome === ROUND_OUTCOMES.SECOND_TRY_CORRECT) {
-    mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_SECOND);
+    mastery = Math.max(0, mastery - emaPenalty * MASTERY_PENALTY_SECOND);
     fastStreak = 0;
   } else if (outcome === ROUND_OUTCOMES.INCORRECT) {
     // Complete miss (never got it right). Same EMA miss penalty as the old
     // collapsed path; last_outcome is distinct so recency does not suppress.
-    mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_SECOND);
+    mastery = Math.max(0, mastery - emaPenalty * MASTERY_PENALTY_SECOND);
     fastStreak = 0;
   } else if (outcome === ROUND_OUTCOMES.NEEDED_REVEAL) {
-    mastery = Math.max(0, mastery - emaMultiplier * MASTERY_PENALTY_REVEAL);
+    mastery = Math.max(0, mastery - emaPenalty * MASTERY_PENALTY_REVEAL);
     fastStreak = 0;
   }
 

@@ -218,6 +218,19 @@ export const LEVEL_WEIGHTS = {
   [GAME_LEVELS.NAME_FLASH]: 0.35,
 };
 
+/**
+ * Test-mode first-try EMA gain by level. Applied server-side only (the client
+ * `learnModeMultiplier` is capped at 1). Penalties ignore this map, so a harder
+ * level is never riskier than an easier one. Learn does not use these values —
+ * its difficulty signal is LEARN_EMA_MULTIPLIERS (reconcile when those are retuned).
+ */
+export const LEVEL_GAIN_MULTIPLIERS = {
+  [GAME_LEVELS.FIND_FILL]: 0.5,
+  [GAME_LEVELS.FIND_FLASH]: 0.8,
+  [GAME_LEVELS.NAME_FILL]: 1.0,
+  [GAME_LEVELS.NAME_FLASH]: 1.2,
+};
+
 export const WORLDLY_MILESTONES = [25, 50, 75, 90, 100];
 
 // ── Learn question catalog ───────────────────────────────────────────────────

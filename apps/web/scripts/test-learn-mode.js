@@ -30,8 +30,9 @@ import {
   pickByPredictedSuccess,
 } from "@/lib/learn/predictedSuccess";
 import { resolveLearnEma, neighborSetCredit, outcomeFromEvent } from "@/lib/learn/emaIntegration";
-import { computeMasteryUpdate } from "@/lib/mastery";
+import { computeMasteryUpdate, getLevelGainMultiplier, LEVEL_GAIN_MULTIPLIERS } from "@/lib/mastery";
 import { ROUND_OUTCOMES } from "@/lib/countryStats";
+import { GAME_LEVELS, GAME_TYPE_FOR_STATS } from "@worldly/constants";
 import countriesManifest from "@/data/countries.json";
 import { generateQuestion } from "@/lib/learn/questionGenerator";
 import { formatCoastlineSubtitle } from "@/lib/learn/coastlines";
@@ -729,7 +730,7 @@ test("a fast first-try Learn answer at 0.90 does not locate", () => {
 
 test("Test-mode EMA (no multiplier) equals Tier 1 Learn multiplier (1.0)", () => {
   const before = { masteryScore: 0.4 };
-  const test = computeMasteryUpdate(before, {
+  const testRun = computeMasteryUpdate(before, {
     outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
     responseTimeMs: 1000,
     gameType: "test",
@@ -740,7 +741,89 @@ test("Test-mode EMA (no multiplier) equals Tier 1 Learn multiplier (1.0)", () =>
     gameType: "learning",
     learnModeMultiplier: 1.0,
   });
-  assert.equal(test.masteryScore, learnT1.masteryScore);
+  assert.equal(testRun.masteryScore, learnT1.masteryScore);
+});
+
+function testWriteGain(level, gameType = GAME_TYPE_FOR_STATS.TEST, before = 0) {
+  const learnFactor = 1;
+  const gainMultiplier = learnFactor * getLevelGainMultiplier(level, gameType);
+  return computeMasteryUpdate(
+    { masteryScore: before },
+    {
+      outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+      responseTimeMs: 1000,
+      gameType,
+      gainMultiplier,
+      penaltyMultiplier: learnFactor,
+    }
+  ).masteryScore;
+}
+
+function testWriteMiss(level, gameType = GAME_TYPE_FOR_STATS.TEST, before = 0.5) {
+  const learnFactor = 1;
+  const gainMultiplier = learnFactor * getLevelGainMultiplier(level, gameType);
+  return computeMasteryUpdate(
+    { masteryScore: before },
+    {
+      outcome: ROUND_OUTCOMES.INCORRECT,
+      gameType,
+      gainMultiplier,
+      penaltyMultiplier: learnFactor,
+    }
+  ).masteryScore;
+}
+
+test("Test level gain multipliers apply on first-try; unknown level is 1.0", () => {
+  assert.equal(getLevelGainMultiplier(GAME_LEVELS.FIND_FILL, "test"), 0.5);
+  assert.equal(getLevelGainMultiplier(GAME_LEVELS.FIND_FLASH, "test"), 0.8);
+  assert.equal(getLevelGainMultiplier(GAME_LEVELS.NAME_FILL, "test"), 1.0);
+  assert.equal(getLevelGainMultiplier(GAME_LEVELS.NAME_FLASH, "test"), 1.2);
+  assert.equal(getLevelGainMultiplier("??", "test"), 1);
+  assert.equal(getLevelGainMultiplier(null, "test"), 1);
+  assert.equal(getLevelGainMultiplier(GAME_LEVELS.FIND_FILL, "learning"), 1);
+  assert.equal(LEVEL_GAIN_MULTIPLIERS.N1, 1);
+
+  const n1 = testWriteGain(GAME_LEVELS.NAME_FILL);
+  const f1 = testWriteGain(GAME_LEVELS.FIND_FILL);
+  const f2 = testWriteGain(GAME_LEVELS.FIND_FLASH);
+  const n2 = testWriteGain(GAME_LEVELS.NAME_FLASH);
+  const unknown = testWriteGain("nope");
+  assert.equal(n1, 0.2);
+  assert.equal(f1, 0.1);
+  assert.equal(Number(f2.toFixed(4)), 0.16);
+  assert.equal(Number(n2.toFixed(4)), 0.24);
+  assert.equal(unknown, n1);
+});
+
+test("penalties are identical at every Test level", () => {
+  const f1 = testWriteMiss(GAME_LEVELS.FIND_FILL);
+  const n2 = testWriteMiss(GAME_LEVELS.NAME_FLASH);
+  assert.equal(f1, n2);
+  assert.equal(f1, 0.35);
+});
+
+test("Test at N1 is unchanged from current behaviour", () => {
+  const before = { masteryScore: 0.4 };
+  const current = computeMasteryUpdate(before, {
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+    responseTimeMs: 1000,
+    gameType: "test",
+  });
+  const n1 = computeMasteryUpdate(before, {
+    outcome: ROUND_OUTCOMES.FIRST_TRY_CORRECT,
+    responseTimeMs: 1000,
+    gameType: "test",
+    gainMultiplier: getLevelGainMultiplier(GAME_LEVELS.NAME_FILL, "test"),
+    penaltyMultiplier: 1,
+  });
+  assert.equal(n1.masteryScore, current.masteryScore);
+  assert.equal(n1.fastStreak, current.fastStreak);
+});
+
+test("Learn F1 does not receive the Test level-gain factor", () => {
+  const learnF1 = testWriteGain(GAME_LEVELS.FIND_FILL, GAME_TYPE_FOR_STATS.LEARNING);
+  const testN1 = testWriteGain(GAME_LEVELS.NAME_FILL, GAME_TYPE_FOR_STATS.TEST);
+  assert.equal(learnF1, testN1);
 });
 
 test("resolveLearnEma maps events to the correct multiplier key", () => {
