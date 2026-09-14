@@ -282,6 +282,31 @@ export function buildLearnWrongReveal(
     };
   }
 
+  // Wrong capital pick: the green option already marks the right city.
+  // Teach which country the chosen capital belongs to. Runs before the
+  // highlight skip so a map backdrop doesn't swallow this teaching copy.
+  if (question.type === "capital_matching") {
+    const option = (question.options ?? []).find(
+      (entry) =>
+        entry?.value === selectedValue || entry?.label === selectedValue
+    );
+    const capital =
+      (typeof option?.label === "string" && option.label.trim()) ||
+      (typeof option?.value === "string" && option.value.trim()) ||
+      (typeof selectedValue === "string" ? selectedValue.trim() : "");
+    const owner = option?.countryId
+      ? allCountriesById?.get(option.countryId)
+      : null;
+    if (capital && owner?.name) {
+      return {
+        message: `${capital} is the capital of ${owner.name}.`,
+        neighborReveal: null,
+        areaCompareReveal: null,
+        landlockedReveal: null,
+      };
+    }
+  }
+
   // "Which country is highlighted" titles the answer on the map — don't also
   // toast "That's Malta." as a floating banner.
   if (question.mapConfig?.display === "highlight") {
@@ -325,31 +350,11 @@ export function buildLearnWrongReveal(
     };
   }
 
-  // Wrong capital pick: the green option already marks the right city.
-  // Teach which country the chosen capital belongs to.
-  if (question.type === "capital_matching") {
-    const option = (question.options ?? []).find(
-      (entry) =>
-        entry?.value === selectedValue || entry?.label === selectedValue
-    );
-    const capital =
-      (typeof option?.label === "string" && option.label.trim()) ||
-      (typeof option?.value === "string" && option.value.trim()) ||
-      (typeof selectedValue === "string" ? selectedValue.trim() : "");
-    const owner = option?.countryId
-      ? allCountriesById?.get(option.countryId)
-      : null;
-    if (capital && owner?.name) {
-      return {
-        message: `${capital} is the capital of ${owner.name}.`,
-        neighborReveal: null,
-        areaCompareReveal: null,
-        landlockedReveal: null,
-      };
-    }
-  }
-
-  if (question.type === "country_from_capital") {
+  if (
+    question.type === "country_from_capital" ||
+    question.type === "capital_map_click" ||
+    question.type === "capital_map_choice"
+  ) {
     const owner = allCountriesById?.get(question.countryId);
     const capital = owner?.capital?.trim();
     if (capital && owner?.name) {

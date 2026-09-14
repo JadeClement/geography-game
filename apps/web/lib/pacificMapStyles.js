@@ -7,6 +7,7 @@ import {
   WRONG_COUNTRY_COLOR,
 } from "@/lib/countryColors";
 import { MIN_CLICK_TARGET_PX, shouldUseSmallCountryCircle } from "@/lib/geometry";
+import { isHighlightedCountry } from "@/lib/mapHighlight";
 import { GAME_LEVELS } from "@/lib/levels";
 
 /** Match Mapbox feature-state highlightKind values. */
@@ -45,7 +46,7 @@ export function getPacificCountryFill({
   const isCorrect = correctCountryIds.includes(countryId);
   const isMissed = missedCountryIds.includes(countryId);
   const isTarget = highlightTargetCountryId === countryId;
-  const isHighlighted = highlightCountryId === countryId;
+  const isHighlighted = isHighlightedCountry(highlightCountryId, countryId);
 
   if (!isActive) {
     return null;

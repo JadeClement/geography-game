@@ -57,9 +57,9 @@
  *
  * 6. QUESTION_TYPES ids (packages/constants QUESTION_TYPES):
  *    blank_map_click, borderless_map_click, shape_drop, free_name_entry,
- *    capital_free_recall, flag_free_recall, shape_name_entry, neighbor_recall_all,
+ *    capital_free_recall, capital_map_click, flag_free_recall, shape_name_entry, neighbor_recall_all,
  *    neighbor_free_recall, shape_identification, flag_identification,
- *    country_from_flag, capital_matching, country_from_capital, neighbor_confirm, neighbor_select_all,
+ *    country_from_flag, capital_matching, country_from_capital, capital_map_choice, neighbor_confirm, neighbor_select_all,
  *    population_compare, area_compare, gdp_compare, population_rank,
  *    area_rank, gdp_rank, neighbor_identification, binary_map_choice,
  *    landlocked_check, language_family, religion_majority, religion_pie,

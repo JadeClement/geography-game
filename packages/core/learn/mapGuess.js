@@ -31,6 +31,15 @@ export function isBorderlessMapQuestion(question) {
   return question?.mapConfig?.display === "borderless";
 }
 
+/** Map-click multiple choice: several labeled countries, click one. */
+export function isMapChoiceQuestion(question) {
+  return (
+    question?.answerType === "map_click" &&
+    Array.isArray(question?.mapConfig?.highlightIds) &&
+    question.mapConfig.highlightIds.length > 1
+  );
+}
+
 /**
  * @param {{ lng: number, lat: number, geometry: object, hitKm?: number }} args
  * @returns {{

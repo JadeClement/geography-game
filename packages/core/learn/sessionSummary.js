@@ -20,6 +20,8 @@ export const LEARN_TYPE_LABELS = {
   free_name_entry: ["name entry", "name entries"],
   shape_name_entry: ["shape name", "shape names"],
   capital_free_recall: ["capital recall", "capital recalls"],
+  capital_map_click: ["capital map click", "capital map clicks"],
+  capital_map_choice: ["capital map choice", "capital map choices"],
   flag_free_recall: ["flag recall", "flag recalls"],
   neighbor_free_recall: ["neighbor recall", "neighbor recalls"],
   neighbor_recall_all: ["all-borders recall", "all-borders recalls"],

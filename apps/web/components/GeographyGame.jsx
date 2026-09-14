@@ -82,6 +82,7 @@ import {
   formatDistanceKm,
   formatMapClickDistanceFeedback,
   isBorderlessMapQuestion,
+  isMapChoiceQuestion,
   MAP_CLICK_HIT_KM,
   SHAPE_DROP_HIT_KM,
 } from "@/lib/learn/mapGuess";
@@ -1032,7 +1033,7 @@ export default function GeographyGame() {
   // Derive Learn highlights from the question / teach step — never rely on a
   // board-state race between startRoundBoard, clearLearnContinueState, and a
   // follow-up useEffect (that race left language prompts with no yellow fill).
-  const mapHighlightCountryId = (() => {
+  const mapHighlightCountryId = useMemo(() => {
     if (isDiscoverGame) return null;
     if (!learnEngineActive) return highlightCountryId;
     if (learnAreaCompareReveal?.largerId) return learnAreaCompareReveal.largerId;
@@ -1041,12 +1042,26 @@ export default function GeographyGame() {
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       return currentLearnQuestion.countryId;
     }
+    if (learnHighlightWrongReveal?.correctId) {
+      return learnHighlightWrongReveal.correctId;
+    }
     if (currentLearnQuestion?.mapConfig?.display === "highlight") {
-      const fromConfig = currentLearnQuestion.mapConfig.highlightIds?.[0];
-      return fromConfig ?? currentLearnQuestion.countryId ?? null;
+      const ids = currentLearnQuestion.mapConfig.highlightIds ?? [];
+      if (ids.length > 1) return ids;
+      return ids[0] ?? currentLearnQuestion.countryId ?? null;
     }
     return highlightCountryId;
-  })();
+  }, [
+    isDiscoverGame,
+    learnEngineActive,
+    highlightCountryId,
+    learnAreaCompareReveal,
+    learnDistanceReveal,
+    learnLandlockedReveal,
+    learnNeighborRevealActive,
+    learnHighlightWrongReveal,
+    currentLearnQuestion,
+  ]);
 
   const mapViewForRender = useMemo(() => {
     // Frame subject (+ land neighbors) at ~3× combined land area — for teach
@@ -1076,6 +1091,28 @@ export default function GeographyGame() {
         if (pairView) return coverFocus(pairView);
       }
     }
+    const choiceIds = currentLearnQuestion?.mapConfig?.highlightIds;
+    if (
+      learnEngineActive &&
+      Array.isArray(choiceIds) &&
+      choiceIds.length > 1 &&
+      !learnNeighborRevealActive &&
+      !learnLandlockedRevealActive
+    ) {
+      const focusIds = learnHighlightWrongReveal
+        ? [learnHighlightWrongReveal.correctId, learnHighlightWrongReveal.guessedId]
+        : choiceIds;
+      const cluster = focusIds
+        .map((id) => allCountriesById.get(id))
+        .filter(Boolean);
+      if (cluster.length > 0) {
+        const choiceView = getLearnFocusMapView(cluster, {
+          regionId: session?.region,
+          padding: 0,
+        });
+        if (choiceView) return coverFocus(choiceView);
+      }
+    }
     // Neighbor teach: subject + every land neighbor (what's painted on the map).
     if (learnNeighborRevealActive && currentLearnQuestion?.countryId) {
       const view = focusCluster(currentLearnQuestion.countryId);
@@ -1097,12 +1134,13 @@ export default function GeographyGame() {
   }, [
     mapView,
     learnEngineActive,
-    currentLearnQuestion?.countryId,
+    currentLearnQuestion,
     learnNeighborRevealActive,
     learnAreaCompareRevealActive,
     learnAreaCompareReveal,
     learnLandlockedRevealActive,
     learnLandlockedReveal,
+    learnHighlightWrongReveal,
     allCountriesById,
     session?.region,
   ]);
@@ -2358,10 +2396,22 @@ export default function GeographyGame() {
       // Highlight free-recall paints the typed answer green/red in the form —
       // skip the floating toast so the card stays compact.
       const inlineTextFeedback = question.answerType === "text_entry";
+      // Capital / language / religion prompts highlight a named country as
+      // backdrop. Only identity questions should treat the answer as a country.
+      const answersHighlightedCountry =
+        question.type === "free_name_entry" ||
+        question.type === "binary_map_choice";
 
       if (event.correct) {
         if (!inlineTextFeedback) {
           setFeedback(outcomeFeedback({ correct: true }));
+        }
+        return;
+      }
+
+      if (!answersHighlightedCountry) {
+        if (!inlineTextFeedback) {
+          setFeedback(outcomeFeedback({ correct: false }));
         }
         return;
       }
@@ -2605,9 +2655,16 @@ export default function GeographyGame() {
         const targetId = question.correctAnswer ?? question.countryId;
         const target = allCountriesById.get(targetId);
         const name = target?.name ?? "this country";
+        const capital = target?.capital?.trim();
         learnAwaitingContinueRef.current = true;
         setLearnAwaitingContinue(true);
-        setLearnContinueMessage(`That's ${name}.`);
+        setLearnContinueMessage(
+          (question.type === "capital_map_click" ||
+            question.type === "capital_map_choice") &&
+            capital
+            ? `${capital} is the capital of ${name}.`
+            : `That's ${name}.`
+        );
         if (targetId) {
           addRoundWrongCountry(targetId);
           setHighlightCountryId(targetId);
@@ -2769,12 +2826,15 @@ export default function GeographyGame() {
       ) {
         // Keep the question card: typed answer turns red in-form and Submit
         // becomes the continue arrow. Keep the correct country yellow; paint
-        // the guess red.
-        const guessed = resolveGuessedCountryInRegion(event.selectedValue, {
-          allCountriesById,
-          activeCountries,
-          excludeIds: question.countryId ? [question.countryId] : [],
-        });
+        // the guess red when the answer is a country identity.
+        const guessed =
+          question.type === "free_name_entry"
+            ? resolveGuessedCountryInRegion(event.selectedValue, {
+                allCountriesById,
+                activeCountries,
+                excludeIds: question.countryId ? [question.countryId] : [],
+              })
+            : null;
         if (guessed) {
           clearWrongFlash();
           addRoundWrongCountry(guessed.id);
@@ -2968,6 +3028,32 @@ export default function GeographyGame() {
 
       const clicked = countryFromFeature(feature, activeCountries);
       if (!clicked) return;
+
+      if (isMapChoiceQuestion(question)) {
+        const choiceIds = question.mapConfig?.highlightIds ?? [];
+        if (!choiceIds.includes(clicked.id)) {
+          setFeedback({
+            text: "Pick one of the highlighted countries.",
+            type: "wrong",
+          });
+          return;
+        }
+        const correct = clicked.id === question.correctAnswer;
+        if (correct) {
+          addFilledCountry(clicked.id);
+          setFeedback(outcomeFeedback({ correct: true }));
+        } else {
+          playIncorrectSound();
+        }
+        emit({
+          correct,
+          responseTimeMs: Date.now() - learnQuestionStartRef.current,
+          revealUsed: false,
+          timedOut: false,
+          selectedValue: clicked.id,
+        });
+        return;
+      }
 
       const correctIds = Array.isArray(question.correctAnswer)
         ? question.correctAnswer
@@ -4049,12 +4135,32 @@ export default function GeographyGame() {
       }
     }
 
+    if (
+      currentLearnQuestion?.mapConfig?.showLabels &&
+      !learnHighlightWrongReveal &&
+      !learnDistanceReveal
+    ) {
+      for (const id of currentLearnQuestion.mapConfig.highlightIds ?? []) {
+        if (!id || labels[id]) continue;
+        const country =
+          activeCountriesById[id] ?? allCountriesById.get(id) ?? null;
+        if (!country?.name) continue;
+        labels[id] = {
+          kind: "text",
+          text: country.name,
+          countryId: id,
+          alwaysShow: true,
+        };
+      }
+    }
+
     return labels;
   }, [
     learnAreaCompareReveal,
     learnHighlightWrongReveal,
     learnDistanceReveal,
     learnFeedbackLabelsById,
+    currentLearnQuestion,
     activeCountriesById,
     allCountriesById,
   ]);

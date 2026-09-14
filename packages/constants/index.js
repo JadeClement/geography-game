@@ -277,6 +277,14 @@ export const QUESTION_TYPES = {
     tier: QUESTION_TIERS.TIER_2,
     id: "capital_free_recall",
   },
+  CAPITAL_MAP_CLICK: {
+    tier: QUESTION_TIERS.TIER_1,
+    id: "capital_map_click",
+  },
+  CAPITAL_MAP_CHOICE: {
+    tier: QUESTION_TIERS.TIER_4,
+    id: "capital_map_choice",
+  },
   FLAG_FREE_RECALL: {
     tier: QUESTION_TIERS.TIER_2,
     id: "flag_free_recall",
@@ -434,6 +442,8 @@ export const TYPE_DISPLAY_NAMES = {
   free_name_entry: "Name entry",
   shape_name_entry: "Shape name",
   capital_free_recall: "Capital recall",
+  capital_map_click: "Capital map",
+  capital_map_choice: "Capital map choice",
   flag_free_recall: "Flag recall",
   neighbor_recall_all: "All neighbors",
   neighbor_free_recall: "Neighbor recall",
@@ -463,6 +473,7 @@ export const TYPE_DISPLAY_NAMES = {
 export const TYPE_GROUPS = {
   [QUESTION_TIERS.TIER_1]: [
     "borderless_map_click",
+    "capital_map_click",
     "shape_drop",
     "shape_name_entry",
     "neighbor_recall_all",
@@ -497,6 +508,7 @@ export const TYPE_GROUPS = {
     "binary_map_choice",
     "landlocked_check",
     "country_from_capital",
+    "capital_map_choice",
   ],
 };
 

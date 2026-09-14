@@ -42,6 +42,7 @@ import {
   TUTORIAL_CIRCLE_STROKE_COLOR,
   TUTORIAL_CIRCLE_STROKE_WIDTH,
 } from "@/lib/geometry";
+import { highlightIdList, isHighlightedCountry } from "@/lib/mapHighlight";
 import { getDiscoverLabelScale as getDiscoverLabelScaleFromRatio } from "@/lib/discoverLabelScale";
 import { COUNTRY_CLICK_EXPAND_MS } from "@/lib/mapCountryClickExpand";
 import { getCountryClickExpandEnabled } from "@/lib/countryClickExpandPrefs";
@@ -259,7 +260,7 @@ export default function PacificMap({
         wrongCountryIds.includes(country.id) ||
         flashWrongCountryIds.includes(country.id) ||
         filledCountryIds.includes(country.id) ||
-        highlightCountryId === country.id;
+        isHighlightedCountry(highlightCountryId, country.id);
       if (hideCountryBorders && !isFeedback) return false;
       if (forceShowSmallCountryCircles && country.isSmall) return true;
       return shouldShowPacificCircle(country, getCountryScreenSizePx(country));
@@ -285,8 +286,16 @@ export default function PacificMap({
     [activeCountries, countryColorMap, landColor]
   );
 
+  const highlightIds = highlightIdList(highlightCountryId);
+  const multiHighlight = highlightIds.length > 1;
+
   useEffect(() => {
-    if (!highlightCountryId || highlightTone === "success" || highlightTone === "correct") {
+    if (
+      highlightIds.length === 0 ||
+      multiHighlight ||
+      highlightTone === "success" ||
+      highlightTone === "correct"
+    ) {
       setHighlightVisible(true);
       return undefined;
     }
@@ -296,10 +305,14 @@ export default function PacificMap({
     }, 450);
 
     return () => clearInterval(intervalId);
-  }, [highlightCountryId, highlightTone]);
+  }, [highlightCountryId, highlightTone, highlightIds.length, multiHighlight]);
 
   useEffect(() => {
-    if ((!flashSmallCountryId && !highlightCountryId) || highlightTone === "success" || highlightTone === "correct") {
+    if (
+      (!flashSmallCountryId && highlightIds.length === 0) ||
+      highlightTone === "success" ||
+      highlightTone === "correct"
+    ) {
       if (highlightTone === "success" || highlightTone === "correct") setFlashVisible(true);
       return undefined;
     }
@@ -309,7 +322,7 @@ export default function PacificMap({
     }, 450);
 
     return () => clearInterval(intervalId);
-  }, [flashSmallCountryId, highlightCountryId, highlightTone]);
+  }, [flashSmallCountryId, highlightCountryId, highlightTone, highlightIds.length]);
 
   useEffect(() => {
     if (!highlightTargetCountryId || level !== GAME_LEVELS.NAME_FILL) {
@@ -781,7 +794,8 @@ export default function PacificMap({
               neighborWrongIds.includes(country.id) ||
               wrongCountryIds.includes(country.id);
             const isCorrectHighlight =
-              highlightCountryId === country.id && highlightTone === "correct";
+              isHighlightedCountry(highlightCountryId, country.id) &&
+              highlightTone === "correct";
             const outline =
               isWrong
                 ? WRONG_COUNTRY_COLOR
@@ -835,7 +849,8 @@ export default function PacificMap({
             const [cx, cy] = point;
             const isFlashing = flashSmallCountryId === country.id;
             const isHighlighted =
-              highlightCountryId === country.id && showCountryCircle(country);
+              isHighlightedCountry(highlightCountryId, country.id) &&
+              showCountryCircle(country);
             const showFlashMarker = isFlashing || isHighlighted;
             const flashMarkerColor =
               isFlashing || highlightTone === "error"
@@ -940,12 +955,12 @@ export default function PacificMap({
           })}
         </g>
 
-        {(highlightCountryId || flashSmallCountryId) && (
+        {(highlightIds.length > 0 || flashSmallCountryId) && (
           <g className="pacific-map-highlight" pointerEvents="none">
             {activePaths
               .filter(
                 (country) =>
-                  country.id === highlightCountryId ||
+                  isHighlightedCountry(highlightCountryId, country.id) ||
                   country.id === flashSmallCountryId
               )
               .map((country) => {

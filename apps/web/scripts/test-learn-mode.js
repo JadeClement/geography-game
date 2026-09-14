@@ -134,6 +134,13 @@ test("mastery >= 0.9 (countries) yields only Tier 1 types", () => {
   assert.ok(eligible.every((t) => t.tier === QUESTION_TIERS.TIER_1));
 });
 
+test("mastery >= 0.9 (capitals) yields only Tier 1 capital map click", () => {
+  const eligible = getEligibleQuestionTypes(0.95, "capitals");
+  assert.ok(eligible.length > 0);
+  assert.ok(eligible.every((t) => t.tier === QUESTION_TIERS.TIER_1));
+  assert.ok(eligible.some((t) => t.id === "capital_map_click"));
+});
+
 test("mastery 0.0 yields only Tier 4 types", () => {
   const eligible = getEligibleQuestionTypes(0, "countries");
   assert.ok(eligible.length > 0);
@@ -170,6 +177,8 @@ test("Learn mode content: countries excludes capital and flag types", () => {
   const ids = getEligibleTypesForCategory("countries").map((t) => t.id);
   for (const banned of [
     "capital_free_recall",
+    "capital_map_choice",
+    "capital_map_click",
     "capital_matching",
     "country_from_capital",
     "flag_identification",
@@ -194,6 +203,8 @@ test("Learn mode content: capitals is capital plus language/religion/pop/gdp", (
   const ids = getEligibleTypesForCategory("capitals").map((t) => t.id).sort();
   assert.deepEqual(ids, [
     "capital_free_recall",
+    "capital_map_choice",
+    "capital_map_click",
     "capital_matching",
     "country_from_capital",
     "gdp_compare",
@@ -230,6 +241,8 @@ test("Learn mode content: flags is flag plus language/religion/pop/gdp", () => {
   ]);
   for (const banned of [
     "capital_free_recall",
+    "capital_map_choice",
+    "capital_map_click",
     "country_from_capital",
     "neighbor_confirm",
     "blank_map_click",
@@ -1510,6 +1523,11 @@ test("wrong capital pick names the selected city and its country", () => {
     type: "capital_matching",
     countryId: "CYP",
     correctAnswer: "Nicosia",
+    mapConfig: {
+      display: "highlight",
+      highlightIds: ["CYP"],
+      keepOverlay: true,
+    },
     options: [
       { value: "Nicosia", label: "Nicosia", countryId: "CYP" },
       { value: "Chisinau", label: "Chisinau", countryId: "MDA" },
@@ -1520,6 +1538,31 @@ test("wrong capital pick names the selected city and its country", () => {
   });
   assert.equal(reveal.message, "Chisinau is the capital of Moldova.");
   assert.equal(moldova?.name, "Moldova");
+});
+
+test("capital free recall highlights the named country on the map", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("capital_free_recall", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.answerType, "text_entry");
+  assert.equal(question.correctAnswer, "Paris");
+  assert.match(question.prompt, /France/);
+  assert.equal(question.mapConfig?.display, "highlight");
+  assert.deepEqual(question.mapConfig?.highlightIds, ["FRA"]);
+  assert.equal(question.mapConfig?.keepOverlay, true);
+});
+
+test("capital matching highlights the named country on the map", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("capital_matching", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.answerType, "multiple_choice");
+  assert.equal(question.correctAnswer, "Paris");
+  assert.match(question.prompt, /France/);
+  assert.equal(question.options.length, 4);
+  assert.equal(question.mapConfig?.display, "highlight");
+  assert.deepEqual(question.mapConfig?.highlightIds, ["FRA"]);
+  assert.equal(question.mapConfig?.keepOverlay, true);
 });
 
 test("country-from-capital is a Tier 4 four-country multiple choice", () => {
@@ -1535,6 +1578,57 @@ test("country-from-capital is a Tier 4 four-country multiple choice", () => {
   assert.equal(new Set(ids).size, 4);
   assert.ok(ids.includes("FRA"));
   assert.ok(question.options.every((option) => option.label && option.countryId));
+  assert.notEqual(question.mapConfig?.display, "highlight");
+});
+
+test("capital-map-click is a Tier 1 blank-map find by capital", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("capital_map_click", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.type, "capital_map_click");
+  assert.equal(question.tier, QUESTION_TIERS.TIER_1);
+  assert.equal(question.answerType, "map_click");
+  assert.equal(question.correctAnswer, "FRA");
+  assert.equal(question.clueEligible, true);
+  assert.match(question.prompt, /Paris/);
+  assert.match(question.prompt, /click the country/i);
+  assert.equal(question.mapConfig?.display, "blank");
+  assert.equal(question.mapConfig?.targetId, "FRA");
+  assert.equal(
+    generateQuestion("capital_map_click", { ...france, capital: "" }, ENABLED_BY_ID),
+    null
+  );
+});
+
+test("capital-map-choice is a Tier 4 labeled four-country map pick", () => {
+  const france = ENABLED_BY_ID.get("FRA");
+  const question = generateQuestion("capital_map_choice", france, ENABLED_BY_ID);
+  assert.ok(question);
+  assert.equal(question.type, "capital_map_choice");
+  assert.equal(question.tier, QUESTION_TIERS.TIER_4);
+  assert.equal(question.answerType, "map_click");
+  assert.equal(question.correctAnswer, "FRA");
+  assert.equal(question.clueEligible, false);
+  assert.match(question.prompt, /Paris/);
+  assert.equal(question.options.length, 4);
+  assert.deepEqual(
+    question.mapConfig?.highlightIds,
+    question.options.map((option) => option.value)
+  );
+  assert.equal(question.mapConfig?.display, "highlight");
+  assert.equal(question.mapConfig?.showLabels, true);
+  const ids = question.options.map((option) => option.value);
+  assert.equal(new Set(ids).size, 4);
+  assert.ok(ids.includes("FRA"));
+  assert.ok(
+    question.options.every(
+      (option) => ENABLED_BY_ID.get(option.countryId)?.region === "europe"
+    )
+  );
+  assert.equal(
+    generateQuestion("capital_map_choice", { ...france, capital: "" }, ENABLED_BY_ID),
+    null
+  );
 });
 
 test("wrong country-from-capital pick names the true capital pairing", () => {
@@ -1546,6 +1640,32 @@ test("wrong country-from-capital pick names the true capital pairing", () => {
       { value: "FRA", label: "France", countryId: "FRA" },
       { value: "DEU", label: "Germany", countryId: "DEU" },
     ],
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "DEU",
+  });
+  assert.equal(reveal.message, "Paris is the capital of France.");
+});
+
+test("wrong capital-map-click names the true capital pairing", () => {
+  const question = {
+    type: "capital_map_click",
+    countryId: "FRA",
+    correctAnswer: "FRA",
+    answerType: "map_click",
+  };
+  const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
+    selectedValue: "DEU",
+  });
+  assert.equal(reveal.message, "Paris is the capital of France.");
+});
+
+test("wrong capital-map-choice names the true capital pairing", () => {
+  const question = {
+    type: "capital_map_choice",
+    countryId: "FRA",
+    correctAnswer: "FRA",
+    answerType: "map_click",
   };
   const reveal = buildLearnWrongReveal(question, ENABLED_BY_ID, {
     selectedValue: "DEU",

@@ -28,6 +28,7 @@ import {
   TUTORIAL_CIRCLE_STROKE_COLOR,
   TUTORIAL_CIRCLE_STROKE_WIDTH,
 } from "@/lib/geometry";
+import { highlightIdList, isHighlightedCountry, hasHighlight } from "@/lib/mapHighlight";
 import { GAME_LEVELS, isProgressiveFillLevel } from "@/lib/levels";
 import { THEMES } from "@/lib/theme";
 import { getCountryClickExpandEnabled } from "@/lib/countryClickExpandPrefs";
@@ -164,8 +165,16 @@ function highlightColorFromTone(tone) {
 
 /** Paint by feature property so a Learn highlight survives setData wiping feature-state. */
 function withCountryIdHighlight(highlightCountryId, highlightValue, rest) {
-  if (!highlightCountryId) return rest;
-  return ["case", ["==", ["get", "id"], highlightCountryId], highlightValue, rest];
+  const ids = highlightIdList(highlightCountryId);
+  if (ids.length === 0) return rest;
+  if (ids.length === 1) {
+    return ["case", ["==", ["get", "id"], ids[0]], highlightValue, rest];
+  }
+  return ["case", ["match", ["get", "id"], ids, true, false], highlightValue, rest];
+}
+
+function highlightLayerFilter(highlightCountryId) {
+  return featureIdFilter(highlightIdList(highlightCountryId));
 }
 
 function uniquePaintIds(...lists) {
@@ -1167,7 +1176,9 @@ function syncCountryFeatureStates(
   const showColorSet = new Set(showColorCountryIds);
   const filledSet = new Set(filledCountryIds);
   const secondTrySet = new Set(secondTryCountryIds);
-  const highlightKind = highlightCountryId
+  const highlightIds = highlightIdList(highlightCountryId);
+  const highlightSet = new Set(highlightIds);
+  const highlightKind = highlightIds.length
     ? highlightKindFromTone(highlightTone)
     : 0;
 
@@ -1183,7 +1194,7 @@ function syncCountryFeatureStates(
         showColor: showColorSet.has(id),
         filled: filledSet.has(id),
         secondTry: secondTrySet.has(id),
-        highlightKind: id === highlightCountryId ? highlightKind : 0,
+        highlightKind: highlightSet.has(id) ? highlightKind : 0,
       }
     );
   }
@@ -1572,11 +1583,13 @@ export default function MapboxMap({
     const handleViewChangeForCircles = () => {
       refreshSmallCountryCircles();
       const highlightId = highlightSmallCircleIdRef.current;
-      if (highlightId && map.getSource("small-countries")) {
-        map.setFeatureState(
-          { source: "small-countries", id: highlightId },
-          { highlight: true, highlightPulse: 1 }
-        );
+      for (const id of highlightIdList(highlightId)) {
+        if (map.getSource("small-countries")) {
+          map.setFeatureState(
+            { source: "small-countries", id },
+            { highlight: true, highlightPulse: 1 }
+          );
+        }
       }
     };
 
@@ -1772,7 +1785,7 @@ export default function MapboxMap({
     });
     applyNeighborTeachOverlays(map, boardPaintRef.current);
     if (highlightId && map.getLayer("country-highlight")) {
-      map.setFilter("country-highlight", ["==", ["get", "id"], highlightId]);
+      map.setFilter("country-highlight", highlightLayerFilter(highlightId));
     }
 
     if (map.getLayer("small-country-circles")) {
@@ -1891,13 +1904,15 @@ export default function MapboxMap({
           syncSmallCountryFeatureStates(map, smallData, paint);
         }
         if (highlightId && map.getLayer("country-highlight")) {
-          map.setFilter("country-highlight", ["==", ["get", "id"], highlightId]);
+          map.setFilter("country-highlight", highlightLayerFilter(highlightId));
         }
         if (highlightId && map.getSource("small-countries")) {
-          map.setFeatureState(
-            { source: "small-countries", id: highlightId },
-            { highlight: true, highlightPulse: 1 }
-          );
+          for (const id of highlightIdList(highlightId)) {
+            map.setFeatureState(
+              { source: "small-countries", id },
+              { highlight: true, highlightPulse: 1 }
+            );
+          }
         }
       },
     });
@@ -2033,8 +2048,13 @@ export default function MapboxMap({
 
     // Circle-marker reveal owns the red landmass+circle pulse — don't fight it
     // with the yellow prompt highlight flash on the same country.
+    const highlightIds = highlightIdList(highlightCountryId);
+    const highlightKey = highlightIds.join("\0");
+    const multiHighlight = highlightIds.length > 1;
     const circleRevealOwnsFlash =
-      Boolean(flashSmallCountryId) && flashSmallCountryId === highlightCountryId;
+      Boolean(flashSmallCountryId) &&
+      highlightIds.length === 1 &&
+      flashSmallCountryId === highlightIds[0];
 
     const highlightColor =
       highlightTone === "error"
@@ -2047,11 +2067,12 @@ export default function MapboxMap({
     const mapColors = getMapThemeColors(theme);
     const landColor = getActiveLandColor(theme);
     // Solid subject fill for post-wrong neighbor teaching / area-compare winner;
-    // yellow/red prompts still flash.
+    // yellow/red prompts still flash. Multi-country choice prompts stay solid.
     const shouldFlash =
       highlightTone !== "success" &&
       highlightTone !== "correct" &&
-      !circleRevealOwnsFlash;
+      !circleRevealOwnsFlash &&
+      !multiHighlight;
 
     if (!circleRevealOwnsFlash) {
       map.setPaintProperty("country-highlight", "fill-color", highlightColor);
@@ -2092,6 +2113,11 @@ export default function MapboxMap({
         // Map removed mid-update — ignore.
       }
     };
+    const setSmallCircleHighlights = (ids, on, pulse = 1) => {
+      for (const id of highlightIdList(ids)) {
+        setSmallCircleHighlight(id, on, pulse);
+      }
+    };
     // Larger pulsing ring (same layer as wrong-answer flash) so tiny landmasses
     // stay obvious at regional zoom. Filter by feature id so it still shows
     // after setData clears feature-state.
@@ -2101,11 +2127,10 @@ export default function MapboxMap({
         return;
       }
       try {
-        activeMap.setFilter("small-country-flash", [
-          "==",
-          ["get", "id"],
-          highlightCountryId,
-        ]);
+        activeMap.setFilter(
+          "small-country-flash",
+          highlightLayerFilter(highlightCountryId)
+        );
         activeMap.setPaintProperty(
           "small-country-flash",
           "circle-color",
@@ -2141,8 +2166,9 @@ export default function MapboxMap({
         // Map removed mid-update — ignore.
       }
     };
-    if (highlightSmallCircleIdRef.current !== highlightCountryId) {
-      setSmallCircleHighlight(highlightSmallCircleIdRef.current, false);
+    const prevHighlight = highlightSmallCircleIdRef.current;
+    if (highlightIdList(prevHighlight).join("\0") !== highlightKey) {
+      setSmallCircleHighlights(prevHighlight, false);
       highlightSmallCircleIdRef.current = highlightCountryId ?? null;
     }
 
@@ -2151,7 +2177,7 @@ export default function MapboxMap({
     if (smallCountriesGeojson?.features?.length && map.getSource("small-countries")) {
       for (const feature of smallCountriesGeojson.features) {
         const id = feature.properties?.id;
-        if (!id || id === highlightCountryId) continue;
+        if (!id || isHighlightedCountry(highlightCountryId, id)) continue;
         map.setFeatureState(
           { source: "small-countries", id },
           { highlight: false, highlightPulse: 0 }
@@ -2159,7 +2185,7 @@ export default function MapboxMap({
       }
     }
 
-    if (!highlightCountryId) {
+    if (highlightIds.length === 0) {
       if (!flashSmallCountryId) {
         map.setFilter("country-highlight", ["==", ["get", "id"], ""]);
       }
@@ -2180,11 +2206,7 @@ export default function MapboxMap({
     }
 
     if (!circleRevealOwnsFlash) {
-      map.setFilter("country-highlight", [
-        "==",
-        ["get", "id"],
-        highlightCountryId,
-      ]);
+      map.setFilter("country-highlight", highlightLayerFilter(highlightCountryId));
     }
 
     // Keep circle fill + stroke in sync with prompt/error/success/correct tones.
@@ -2216,11 +2238,7 @@ export default function MapboxMap({
       if (shouldFlash) {
         map.setFilter("country-target-outline", ["==", ["get", "id"], ""]);
       } else {
-        map.setFilter("country-target-outline", [
-          "==",
-          ["get", "id"],
-          highlightCountryId,
-        ]);
+        map.setFilter("country-target-outline", highlightLayerFilter(highlightCountryId));
         map.setPaintProperty(
           "country-target-outline",
           "line-color",
@@ -2242,7 +2260,7 @@ export default function MapboxMap({
       }
     }
 
-    setSmallCircleHighlight(highlightCountryId, true, 1);
+    setSmallCircleHighlights(highlightCountryId, true, 1);
     paintSmallHighlightRing(true);
 
     const clearCountryHighlightFilter = () => {
@@ -2257,12 +2275,12 @@ export default function MapboxMap({
 
     if (!shouldFlash) {
       return () => {
-        setSmallCircleHighlight(highlightCountryId, false);
+        setSmallCircleHighlights(highlightCountryId, false);
         clearSmallHighlightRing();
         // Only blank the layer when nothing should stay highlighted. Clearing on
         // every tone/geojson identity change raced with camera settles and left
         // language prompts (Israel, Georgia, …) with no yellow fill.
-        if (!highlightCountryIdRef.current) {
+        if (!hasHighlight(highlightCountryIdRef.current)) {
           clearCountryHighlightFilter();
         }
       };
@@ -2284,7 +2302,7 @@ export default function MapboxMap({
       }
       // Keep highlight=true and pulse opacity — toggling highlight off made
       // tiny circled countries (e.g. Brunei) look unhighlighted (white ring).
-      setSmallCircleHighlight(highlightCountryId, true, visible ? 1 : 0.3);
+      setSmallCircleHighlights(highlightCountryId, true, visible ? 1 : 0.3);
       paintSmallHighlightRing(visible);
     }, 450);
 
@@ -2293,9 +2311,9 @@ export default function MapboxMap({
         clearInterval(fillFlashIntervalRef.current);
         fillFlashIntervalRef.current = null;
       }
-      setSmallCircleHighlight(highlightCountryId, false);
+      setSmallCircleHighlights(highlightCountryId, false);
       clearSmallHighlightRing();
-      if (!highlightCountryIdRef.current) {
+      if (!hasHighlight(highlightCountryIdRef.current)) {
         clearCountryHighlightFilter();
       }
     };

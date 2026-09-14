@@ -85,6 +85,8 @@ export const QUESTION_TYPE_TO_DOMAIN = {
   neighbor_yes_no: SKILL_DOMAINS.NEIGHBORS,
 
   capital_free_recall: SKILL_DOMAINS.CAPITAL,
+  capital_map_click: SKILL_DOMAINS.CAPITAL,
+  capital_map_choice: SKILL_DOMAINS.CAPITAL,
   capital_matching: SKILL_DOMAINS.CAPITAL,
   country_from_capital: SKILL_DOMAINS.CAPITAL,
 

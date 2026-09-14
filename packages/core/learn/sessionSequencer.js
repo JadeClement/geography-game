@@ -281,7 +281,11 @@ function buildFallbackQuestion(record, category) {
       answerType: "text_entry",
       prompt: `What is the capital of ${record.name}?`,
       correctAnswer: record.capital.trim(),
-      mapConfig: null,
+      mapConfig: {
+        display: "highlight",
+        highlightIds: [cid(record)],
+        keepOverlay: true,
+      },
     });
   }
   if (category === "flags") {

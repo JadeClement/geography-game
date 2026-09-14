@@ -13,6 +13,8 @@ const NEIGHBOR_QUESTION_TYPES = new Set([
 
 const CAPITAL_QUESTION_TYPES = new Set([
   "capital_free_recall",
+  "capital_map_click",
+  "capital_map_choice",
   "capital_matching",
   "country_from_capital",
 ]);

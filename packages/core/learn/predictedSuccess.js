@@ -369,6 +369,11 @@ export function predictedSuccess({
     score += fameBoost * 0.95;
   }
 
+  if (type === "capital_map_choice") {
+    // Same four-country pick, with names and locations already on the map.
+    score += fameBoost * 0.97;
+  }
+
   if (type === "shape_identification") {
     // Famous outlines (Italy, Chile, India) are easy; obscure ones are not.
     score += fameBoost * 0.85;
@@ -378,6 +383,7 @@ export function predictedSuccess({
   if (
     type === "blank_map_click" ||
     type === "borderless_map_click" ||
+    type === "capital_map_click" ||
     type === "shape_drop" ||
     type === "free_name_entry" ||
     type === "shape_name_entry" ||
@@ -392,6 +398,10 @@ export function predictedSuccess({
     if (type === "borderless_map_click") {
       // Harder than outlined blank-map click — no visual scaffolding.
       score -= 0.08;
+    }
+    if (type === "capital_map_click") {
+      // Capital cue instead of the country name, plus a locate-on-map step.
+      score -= 0.05;
     }
     if (type === "shape_drop") {
       score -= 0.06;

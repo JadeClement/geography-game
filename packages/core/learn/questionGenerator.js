@@ -327,6 +327,22 @@ export function generateCapitalFreeRecall(country) {
     prompt: `What is the capital of ${country.name}?`,
     answerType: "text_entry",
     correctAnswer: capital,
+    mapConfig: {
+      display: "highlight",
+      highlightIds: [cid(country)],
+      keepOverlay: true,
+    },
+  });
+}
+
+export function generateCapitalMapClick(country) {
+  const capital = country.capital?.trim();
+  if (!capital) return null;
+  return baseQuestion(QUESTION_TYPES.CAPITAL_MAP_CLICK, country, {
+    prompt: `Click the country that has the capital ${capital}.`,
+    answerType: "map_click",
+    correctAnswer: cid(country),
+    mapConfig: { display: "blank", targetId: cid(country) },
   });
 }
 
@@ -503,6 +519,11 @@ export function generateCapitalMatching(country, allCountries) {
     answerType: "multiple_choice",
     correctAnswer: capital,
     options,
+    mapConfig: {
+      display: "highlight",
+      highlightIds: [cid(country)],
+      keepOverlay: true,
+    },
   });
 }
 
@@ -528,6 +549,40 @@ export function generateCountryFromCapital(country, allCountries) {
     answerType: "multiple_choice",
     correctAnswer: cid(country),
     options,
+  });
+}
+
+export function generateCapitalMapChoice(country, allCountries) {
+  const capital = country.capital?.trim();
+  if (!capital) return null;
+
+  const index = toCountryIndex(allCountries);
+  const hasCapital = (record) => Boolean(record.capital?.trim());
+  const needed = MAX_CHOICE_OPTIONS - 1;
+  // All four must sit on the current regional map, so same-region only.
+  const pool = shuffle(sameRegionPool(country, index).filter(hasCapital)).slice(
+    0,
+    needed
+  );
+  if (pool.length < needed) return null;
+
+  const options = shuffle([
+    countryOption(country),
+    ...pool.map(countryOption),
+  ]);
+  const choiceIds = options.map((option) => option.value);
+
+  return baseQuestion(QUESTION_TYPES.CAPITAL_MAP_CHOICE, country, {
+    prompt: `Which country has the capital ${capital}?`,
+    promptSubtext: "Click one of the highlighted countries.",
+    answerType: "map_click",
+    correctAnswer: cid(country),
+    options,
+    mapConfig: {
+      display: "highlight",
+      highlightIds: choiceIds,
+      showLabels: true,
+    },
   });
 }
 
@@ -996,6 +1051,7 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.FREE_NAME_ENTRY.id]: generateFreeNameEntry,
   [QUESTION_TYPES.SHAPE_NAME_ENTRY.id]: generateShapeNameEntry,
   [QUESTION_TYPES.CAPITAL_FREE_RECALL.id]: generateCapitalFreeRecall,
+  [QUESTION_TYPES.CAPITAL_MAP_CLICK.id]: generateCapitalMapClick,
   [QUESTION_TYPES.FLAG_FREE_RECALL.id]: generateFlagFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_FREE_RECALL.id]: generateNeighborFreeRecall,
   [QUESTION_TYPES.NEIGHBOR_RECALL_ALL.id]: generateNeighborRecallAll,
@@ -1005,6 +1061,7 @@ export const QUESTION_GENERATORS = {
   [QUESTION_TYPES.COUNTRY_FROM_FLAG.id]: generateCountryFromFlag,
   [QUESTION_TYPES.CAPITAL_MATCHING.id]: generateCapitalMatching,
   [QUESTION_TYPES.COUNTRY_FROM_CAPITAL.id]: generateCountryFromCapital,
+  [QUESTION_TYPES.CAPITAL_MAP_CHOICE.id]: generateCapitalMapChoice,
   [QUESTION_TYPES.NEIGHBOR_CONFIRM.id]: generateNeighborConfirm,
   [QUESTION_TYPES.NEIGHBOR_SELECT_ALL.id]: generateNeighborSelectAll,
   [QUESTION_TYPES.POPULATION_COMPARE.id]: generatePopulationCompare,
