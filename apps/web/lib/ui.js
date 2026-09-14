@@ -620,6 +620,9 @@ export const startLevelSectionList =
 export const startLevelBtn =
   "box-border h-[5.75rem] w-full justify-center";
 
+export const startLevelNote =
+  "m-0 mx-auto max-w-xl text-center text-[0.88rem] leading-snug text-text-muted max-md:text-[0.82rem]";
+
 export const startGameTypeList = "w-full max-w-md items-stretch [&>button]:w-full";
 
 export const startMessage = cn(

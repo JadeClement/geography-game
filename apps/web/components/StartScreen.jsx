@@ -50,6 +50,7 @@ import {
   startHomeGreeting,
   startLevelList,
   startLevelBtn,
+  startLevelNote,
   startLevelSection,
   startLevelSectionDesc,
   startLevelSectionHeader,
@@ -287,6 +288,11 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
             </div>
           ))}
         </div>
+
+        <p className={startLevelNote}>
+          The harder the level, the faster a first-try correct answer raises your
+          mastery. Misses cost the same at every level.
+        </p>
       </div>
     );
   }
