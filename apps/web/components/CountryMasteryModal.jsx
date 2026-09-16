@@ -1,6 +1,7 @@
 "use client";
 
-import { displayPercent } from "@/lib/worldlyScore";
+import { countryDisplayPercent } from "@/lib/worldlyScore";
+import { countryStartedForDomain } from "@/lib/masteryMap";
 import {
   SKILL_DOMAIN_LABELS,
   WORLDLY_DOMAIN_WEIGHTS,
@@ -14,14 +15,11 @@ import {
   modalTitle,
 } from "@/lib/ui";
 
-function displayPct(raw) {
-  return displayPercent(Number(raw) || 0);
-}
-
 export default function CountryMasteryModal({
   open,
   countryName,
   domainScores,
+  stats,
   onClose,
 }) {
   if (!open) return null;
@@ -50,7 +48,10 @@ export default function CountryMasteryModal({
         <ul className="m-0 mb-4 flex list-none flex-col gap-2 p-0">
           {domains.map((domain) => {
             const raw = domainScores?.[domain] ?? 0;
-            const pct = displayPct(raw);
+            const pct = countryDisplayPercent(
+              Number(raw) || 0,
+              countryStartedForDomain(domain, stats)
+            );
             const isWeakest = domain === weakest;
             return (
               <li

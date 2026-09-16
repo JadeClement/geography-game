@@ -12,6 +12,7 @@ import {
   computeCountryScore,
   buildLevelScoreMap,
   computeWorldlyScoreFromMastery,
+  countryDisplayPercent,
   displayPercent,
   getCrossedWorldlyMilestone,
   WORLDLY_DOMAIN_WEIGHTS,
@@ -21,6 +22,7 @@ import {
   collectStatsByCountry,
   countLocatedForTab,
   countStartedForTab,
+  countryStartedForDomain,
   countryStartedForTab,
   DOMAIN_COLUMNS,
   paintScoreForTab,
@@ -62,6 +64,14 @@ test("displayPercent is round(raw × 100) at every scope", () => {
   assert.equal(displayPercent(1), 100);
   assert.equal(displayPercent(-0.2), 0);
   assert.equal(displayPercent(1.4), 100);
+});
+
+test("countryDisplayPercent floors started-but-zero to 1%", () => {
+  assert.equal(countryDisplayPercent(0, false), 0);
+  assert.equal(countryDisplayPercent(0, true), 1);
+  assert.equal(countryDisplayPercent(0.004, true), 1);
+  assert.equal(countryDisplayPercent(0.2, true), 20);
+  assert.equal(countryDisplayPercent(1, true), 100);
 });
 
 test("getMasteryTier NONE for a country with no data", () => {
@@ -459,6 +469,38 @@ test("All-tab tooltip leads with the weighted EMA then Countries / Capitals / Fl
   assert.equal(countries.length, 1);
   assert.equal(countries[0].label, "Countries");
   assert.equal(countries[0].pct, 100);
+});
+
+test("started-but-never-correct country percents display as 1%, unseen stay 0%", () => {
+  const empty = { ...EMPTY_DOMAINS };
+  const unseen = tooltipRowsForTab(GAME_MODES.CAPITALS, empty, []);
+  assert.equal(unseen[0].pct, 0);
+
+  const seenNeverRight = tooltipRowsForTab(
+    GAME_MODES.CAPITALS,
+    empty,
+    [{ countryId: "UZB", mode: "capitals", skillDomain: "capital", masteryScore: 0 }]
+  );
+  assert.equal(seenNeverRight[0].pct, 1);
+
+  const all = tooltipRowsForTab(
+    ALL_MODE,
+    empty,
+    [{ countryId: "UZB", mode: "capitals", skillDomain: "capital", masteryScore: 0 }]
+  );
+  assert.equal(all.find((row) => row.key === ALL_MODE).pct, 1);
+  assert.equal(all.find((row) => row.key === GAME_MODES.CAPITALS).pct, 1);
+  assert.equal(all.find((row) => row.key === GAME_MODES.COUNTRIES).pct, 0);
+  assert.equal(all.find((row) => row.key === GAME_MODES.FLAGS).pct, 0);
+
+  assert.equal(
+    countryStartedForDomain("capital", [{ mode: "capitals", skillDomain: "capital" }]),
+    true
+  );
+  assert.equal(
+    countryStartedForDomain("location", [{ mode: "capitals", skillDomain: "capital" }]),
+    false
+  );
 });
 
 test("header % Worldly and the All-tab ring return the identical number", () => {

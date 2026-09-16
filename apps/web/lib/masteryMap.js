@@ -2,7 +2,13 @@ import { inferDomainFromMode } from "@/lib/learn/questionTypes";
 import { GAME_MODES } from "@/lib/regions";
 import { MASTERY_GRADUATION_THRESHOLD } from "@/lib/mastery";
 import { domainScoresFromStats } from "@/lib/masteryTiers";
-import { buildLevelScoreMap, computeCountryDomainScore, computeCountryScore, displayPercent } from "@/lib/worldlyScore";
+import {
+  buildLevelScoreMap,
+  computeCountryDomainScore,
+  computeCountryScore,
+  countryDisplayPercent,
+  displayPercent,
+} from "@/lib/worldlyScore";
 import {
   MASTERY_TIERS,
   MASTERY_TIER_COLORS,
@@ -95,16 +101,19 @@ export function paintScoreForTab(mode, domainScores = {}) {
 /**
  * Tooltip rows for a country on the active tab. All leads with the
  * domain-weighted EMA, then Countries / Capitals / Flags. Other tabs
- * show only that tab's domain.
+ * show only that tab's domain. Started-but-zero scores display as 1%.
  */
-export function tooltipRowsForTab(mode, domainScores = {}) {
+export function tooltipRowsForTab(mode, domainScores = {}, stats = []) {
   const tabs = mode === ALL_MODE ? [ALL_MODE, ...MASTERY_MODES] : [mode];
   return tabs.map((tab) => {
     const visual = getModeVisual(tab);
     return {
       key: tab,
       label: tab === ALL_MODE ? "Worldly" : visual.label,
-      pct: displayPercent(paintScoreForTab(tab, domainScores)),
+      pct: countryDisplayPercent(
+        paintScoreForTab(tab, domainScores),
+        countryStartedForTab(tab, stats)
+      ),
       accent: visual.accent,
     };
   });
@@ -131,13 +140,18 @@ function rowDomain(row) {
   return domain;
 }
 
+/** True when the country has at least one country_stats row for this domain. */
+export function countryStartedForDomain(domain, stats = []) {
+  if (!domain) return false;
+  return (stats ?? []).some((row) => rowDomain(row) === domain);
+}
+
 /** True when the country has at least one country_stats row for this tab. */
 export function countryStartedForTab(mode, stats = []) {
   const rows = stats ?? [];
   if (rows.length === 0) return false;
   if (mode === ALL_MODE) return true;
-  const domainKey = DOMAIN_TAB_TO_DOMAIN[mode];
-  return rows.some((row) => rowDomain(row) === domainKey);
+  return countryStartedForDomain(DOMAIN_TAB_TO_DOMAIN[mode], rows);
 }
 
 /**

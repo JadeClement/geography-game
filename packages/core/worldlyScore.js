@@ -47,6 +47,16 @@ export function displayPercent(rawScore) {
 }
 
 /**
+ * Country-scope percent. 0% is unseen; a started country that has never
+ * cleared a whole percent (seen, never gotten right) displays as 1%.
+ */
+export function countryDisplayPercent(rawScore, started = false) {
+  const pct = displayPercent(rawScore);
+  if (started && pct <= 0) return 1;
+  return pct;
+}
+
+/**
  * Collapse per-(country) mastery rows for one mode into a per-country map of
  * per-level decay-adjusted scores.
  *

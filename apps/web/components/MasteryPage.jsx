@@ -273,7 +273,7 @@ export default function MasteryPage() {
     const scores = domainScoresByCountry.get(hover.id) ?? {};
     return {
       name,
-      rows: tooltipRowsForTab(mode, scores),
+      rows: tooltipRowsForTab(mode, scores, data.statsByCountry.get(hover.id) ?? []),
       point: hover.point,
     };
   }, [hover, data, nameById, mode, domainScoresByCountry]);
@@ -284,6 +284,7 @@ export default function MasteryPage() {
       id: selectedCountryId,
       name: nameById.get(selectedCountryId) ?? selectedCountryId,
       domainScores: domainScoresByCountry.get(selectedCountryId) ?? {},
+      stats: data.statsByCountry.get(selectedCountryId) ?? [],
     };
   }, [selectedCountryId, data, nameById, domainScoresByCountry]);
 
@@ -434,6 +435,7 @@ export default function MasteryPage() {
         open={Boolean(selectedCountry)}
         countryName={selectedCountry?.name}
         domainScores={selectedCountry?.domainScores}
+        stats={selectedCountry?.stats}
         onClose={() => setSelectedCountryId(null)}
       />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
