@@ -19,6 +19,7 @@ import {
   parseStartScreenSearchParams,
 } from "@/lib/startNavigation";
 import { cn } from "@/lib/cn";
+import { fetchLearnQuota, openBillingPortal, startCheckout } from "@/lib/billingClient";
 import { buildHomeGreeting } from "@/lib/homeGreeting";
 import {
   formatSavedLearnResumeLabel,
@@ -76,6 +77,11 @@ import {
   linkBtn,
 } from "@/lib/ui";
 
+function formatLearnQuotaLabel({ sessionsRemaining }) {
+  if (sessionsRemaining === 0) return "No free Learn sessions left today";
+  return `${sessionsRemaining} free Learn session${sessionsRemaining === 1 ? "" : "s"} left today`;
+}
+
 function StartStepHeader({ title, subtitle }) {
   return (
     <div className={startStepHeader}>
@@ -98,6 +104,8 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
   const [exploreMode, setExploreMode] = useState(null);
   const [exploreRegion, setExploreRegion] = useState(null);
   const [homeGreeting, setHomeGreeting] = useState(null);
+  const [learnQuota, setLearnQuota] = useState(null);
+  const [billingBusy, setBillingBusy] = useState(false);
 
   const route = normalizeStartScreenRoute(parseStartScreenSearchParams(searchParams));
   const { step, mode: selectedMode, region: selectedRegion } = route;
@@ -125,6 +133,24 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
       })
     );
   }, [signedIn, session?.user?.id, selectedMode, selectedRegion, step]);
+
+  // Learn quota badge: fetched once each time the Learn entry step is shown.
+  // Display only — the server decides allowed/not-allowed on session start.
+  useEffect(() => {
+    if (step !== START_STEPS.CHOOSE_TYPE || !signedIn) {
+      setLearnQuota(null);
+      return;
+    }
+    let cancelled = false;
+    fetchLearnQuota()
+      .then((quota) => {
+        if (!cancelled) setLearnQuota(quota);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [step, signedIn]);
 
   useEffect(() => {
     const syncSize = () => setLearnSessionSize(getLearnSessionSize());
@@ -213,12 +239,32 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
         fresh,
       });
       if (result?.ok === false) {
-        setLearnStartError(
-          result.message || "Could not start learning session. Please try again."
-        );
+        if (result.reason === "quota") {
+          // GeographyGame shows the upgrade modal; just sync the badge.
+          setLearnQuota((prev) => ({ ...prev, ...result.quota }));
+        } else if (result.reason === "auth") {
+          setAuthPendingLearn(true);
+          setAuthOpen(true);
+        } else {
+          setLearnStartError(
+            result.message || "Could not start learning session. Please try again."
+          );
+        }
       }
     } finally {
       setStarting(false);
+    }
+  };
+
+  const handleBillingAction = async (action) => {
+    if (billingBusy) return;
+    setLearnStartError(null);
+    setBillingBusy(true);
+    try {
+      await action();
+    } catch (error) {
+      setLearnStartError(error.message);
+      setBillingBusy(false);
     }
   };
 
@@ -382,6 +428,30 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
                 onClick={() => startLearningSession({ fresh: true })}
               >
                 Start over
+              </button>
+            )}
+            {learnQuota && !learnQuota.isPremium && (
+              <p className="m-0 text-center text-sm text-text-muted">
+                {formatLearnQuotaLabel(learnQuota)}
+                {" · "}
+                <button
+                  type="button"
+                  className={cn(linkBtn, "text-sm")}
+                  disabled={billingBusy}
+                  onClick={() => handleBillingAction(startCheckout)}
+                >
+                  {billingBusy ? "Opening checkout…" : "Upgrade for unlimited"}
+                </button>
+              </p>
+            )}
+            {learnQuota?.isPremium && (
+              <button
+                type="button"
+                className={cn(linkBtn, "text-sm text-text-muted")}
+                disabled={billingBusy}
+                onClick={() => handleBillingAction(openBillingPortal)}
+              >
+                {billingBusy ? "Opening…" : "Manage subscription"}
               </button>
             )}
           </div>

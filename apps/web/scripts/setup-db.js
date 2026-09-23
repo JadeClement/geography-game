@@ -263,6 +263,28 @@ CREATE INDEX IF NOT EXISTS
   ON country_stats (user_id, mode,
     last_correct_session)
   WHERE last_correct_session IS NOT NULL;
+
+-- Stripe subscription (single tier) + client-reported IANA timezone used to
+-- compute the user's local calendar day for the free Learn quota.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_current_period_end TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT;
+
+-- Webhooks look users up by customer id; one Stripe customer per user.
+CREATE UNIQUE INDEX IF NOT EXISTS users_stripe_customer_id_idx
+  ON users (stripe_customer_id)
+  WHERE stripe_customer_id IS NOT NULL;
+
+-- Learn sessions started per user per LOCAL calendar day (free-tier quota).
+CREATE TABLE IF NOT EXISTS daily_learn_usage (
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  usage_date    DATE NOT NULL,   -- the user's LOCAL calendar date, not UTC
+  session_count INT NOT NULL DEFAULT 0,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, usage_date)
+);
 `;
 
 // Convert numeric levels (1-4) to section codes. Idempotent: already-converted

@@ -20,7 +20,10 @@
     "test:labels": "node --test scripts/test-discover-label-visibility.js scripts/test-discover-label-layout.js",
     "test:territories": "node --import ./scripts/register-alias.mjs --test scripts/test-discover-territories.js",
     "test:pacific": "node --test scripts/test-pacific-islands.js",
-    "test": "npm run test:learn && npm run test:recency && npm run test:labels && npm run test:territories && npm run test:pacific"
+    "test:subscription": "node --import ./scripts/register-alias.mjs --test scripts/test-daily-limit.js",
+    "test": "npm run test:learn && npm run test:recency && npm run test:labels && npm run test:territories && npm run test:pacific && npm run test:subscription",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
+    "stripe:trigger-update": "stripe trigger customer.subscription.updated"
   },
   "dependencies": {
     "@worldly/api-client": "*",
@@ -33,9 +36,10 @@
     "next-auth": "^5.0.0-beta.31",
     "pg": "^8.16.0",
     "polygon-clipping": "^0.15.7",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "resend": "^6.14.0",
+    "stripe": "^22.6.2",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0"
   },

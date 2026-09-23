@@ -25,6 +25,9 @@ function getMasteryThemeColors(theme) {
   return MASTERY_THEME_COLORS[theme] ?? MASTERY_THEME_COLORS[THEMES.DARK];
 }
 
+const MASTERY_MAP_CENTER = [12, 28];
+const MASTERY_MAP_ZOOM = 1.1;
+
 function configureStyle(map, colors) {
   const layers = map.getStyle()?.layers ?? [];
   for (const layer of layers) {
@@ -283,8 +286,10 @@ export default forwardRef(function MasteryMap(
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
-      center: [12, 28],
-      zoom: 1.1,
+      center: MASTERY_MAP_CENTER,
+      zoom: MASTERY_MAP_ZOOM,
+      minZoom: MASTERY_MAP_ZOOM,
+      renderWorldCopies: false,
       projection: "naturalEarth",
       attributionControl: false,
       preserveDrawingBuffer: true,

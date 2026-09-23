@@ -18,6 +18,7 @@ import {
   primaryBtn,
 } from "@/lib/ui";
 import { cn } from "@/lib/cn";
+import { getClientTimeZone } from "@/lib/billingClient";
 
 export default function AuthModal({
   open,
@@ -77,6 +78,8 @@ export default function AuthModal({
       const result = await signIn("credentials", {
         email,
         password,
+        // Local day for the free Learn quota (stored server-side on login).
+        timezone: getClientTimeZone() ?? "",
         redirect: false,
       });
 

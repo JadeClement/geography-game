@@ -14,9 +14,22 @@
     "build:web": "turbo run build --filter=web",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "db:setup": "node --env-file=.env apps/web/scripts/setup-db.js"
+    "db:setup": "node --env-file=.env apps/web/scripts/setup-db.js",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
+    "patch-package": "^8.0.1",
     "turbo": "^2.0.0"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~57.0.24",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
   }
 }
