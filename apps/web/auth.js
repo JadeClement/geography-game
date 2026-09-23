@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { getUserByEmail } from "@/lib/db";
+import { getUserByEmail, setUserTimezone } from "@/lib/db";
+import { isValidTimeZone } from "@/lib/subscription";
 import { isRateLimited, recordRateLimitEvent } from "@/lib/rate-limit";
 
 // Brute-force / credential-stuffing protection for the sign-in endpoint.
@@ -58,6 +59,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               recordRateLimitEvent(ipKey),
             ]);
             return null;
+          }
+
+          // Client-reported IANA zone for the free Learn quota's local day.
+          // Spoofable by design (soft cap); a failed write never blocks login.
+          if (isValidTimeZone(credentials?.timezone)) {
+            await setUserTimezone(user.id, credentials.timezone).catch(() => {});
           }
 
           return {

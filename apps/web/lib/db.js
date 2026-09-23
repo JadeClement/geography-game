@@ -1059,3 +1059,115 @@ export async function upsertLearnChallenge(
     updatedAt: row.updatedAt ?? null,
   };
 }
+
+// ── Subscription / free Learn quota ─────────────────────────────────────────
+
+const USER_BILLING_FIELDS = `
+  id, email, timezone,
+  stripe_customer_id AS "stripeCustomerId",
+  stripe_subscription_id AS "stripeSubscriptionId",
+  subscription_status AS "subscriptionStatus",
+  subscription_current_period_end AS "subscriptionCurrentPeriodEnd"
+`;
+
+export async function getUserBillingState(userId) {
+  const result = await query(
+    `SELECT ${USER_BILLING_FIELDS} FROM users WHERE id = $1`,
+    [userId]
+  );
+  return result.rows[0] ?? null;
+}
+
+// Caller must validate `timeZone` (isValidTimeZone) — it is client-reported.
+export async function setUserTimezone(userId, timeZone) {
+  await query(
+    `UPDATE users SET timezone = $2 WHERE id = $1 AND timezone IS DISTINCT FROM $2`,
+    [userId, timeZone]
+  );
+}
+
+/**
+ * Stores `customerId` only if the user has none yet, then returns whichever id
+ * is stored (so a concurrent checkout can't leave two customers attached).
+ */
+export async function claimStripeCustomerId(userId, customerId) {
+  await query(
+    `UPDATE users SET stripe_customer_id = $2
+     WHERE id = $1 AND stripe_customer_id IS NULL`,
+    [userId, customerId]
+  );
+  const result = await query(`SELECT stripe_customer_id FROM users WHERE id = $1`, [userId]);
+  return result.rows[0]?.stripe_customer_id ?? null;
+}
+
+/**
+ * Idempotent sync of one subscription's state onto its customer's user row.
+ * Safe to replay: the same subscription always writes the same values. A stale
+ * event for an older subscription can't clobber a newer one — it only applies
+ * when the row has no subscription yet, already points at this one, or this
+ * one is the live (active/trialing) subscription.
+ * @returns {Promise<boolean>} whether a user row was updated
+ */
+export async function syncUserSubscription({
+  customerId,
+  userId = null,
+  subscriptionId,
+  status,
+  currentPeriodEnd,
+}) {
+  const result = await query(
+    `UPDATE users SET
+       stripe_customer_id = COALESCE(stripe_customer_id, $1),
+       stripe_subscription_id = $3,
+       subscription_status = $4,
+       subscription_current_period_end = $5
+     WHERE (stripe_customer_id = $1 OR (stripe_customer_id IS NULL AND id = $2))
+       AND (
+         stripe_subscription_id IS NULL
+         OR stripe_subscription_id = $3
+         OR $4 IN ('active', 'trialing')
+       )`,
+    [customerId, userId, subscriptionId, status ?? null, currentPeriodEnd ?? null]
+  );
+  return result.rowCount > 0;
+}
+
+function mapDailyUsage(row, localDate) {
+  return {
+    usageDate: localDate,
+    sessionCount: Number(row?.session_count ?? 0),
+  };
+}
+
+/** Today's usage row for `localDate` (YYYY-MM-DD), created at 0 if missing. */
+export async function getOrCreateDailyUsage(userId, localDate) {
+  const result = await query(
+    `INSERT INTO daily_learn_usage (user_id, usage_date, session_count)
+     VALUES ($1, $2, 0)
+     ON CONFLICT (user_id, usage_date)
+       DO UPDATE SET session_count = daily_learn_usage.session_count
+     RETURNING session_count`,
+    [userId, localDate]
+  );
+  return mapDailyUsage(result.rows[0], localDate);
+}
+
+/**
+ * Atomically adds one session to `localDate`. With `maxCount`, the increment
+ * only happens while the stored count is below it, so two concurrent starts
+ * can't both slip past the free cap; returns `null` when the cap blocked it.
+ */
+export async function incrementDailyUsage(userId, localDate, { maxCount = null } = {}) {
+  const result = await query(
+    `INSERT INTO daily_learn_usage (user_id, usage_date, session_count)
+     VALUES ($1, $2, 1)
+     ON CONFLICT (user_id, usage_date)
+       DO UPDATE SET session_count = daily_learn_usage.session_count + 1,
+                     updated_at = NOW()
+       WHERE $3::int IS NULL OR daily_learn_usage.session_count < $3::int
+     RETURNING session_count`,
+    [userId, localDate, maxCount]
+  );
+  if (result.rows.length === 0) return null;
+  return mapDailyUsage(result.rows[0], localDate);
+}

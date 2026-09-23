@@ -112,6 +112,10 @@ export const GO_SESSION_SIZE = 10;
 export const DEFAULT_LEARN_SESSION_SIZE = 20;
 export const MIN_LEARN_SESSION_SIZE = 5;
 export const MAX_LEARN_SESSION_SIZE = 100;
+/** Learn sessions a free (non-subscribed) account can start per local calendar day. */
+export const FREE_DAILY_LEARN_SESSION_LIMIT = 3;
+/** Stripe subscription statuses that unlock unlimited Learn sessions. */
+export const PREMIUM_SUBSCRIPTION_STATUSES = ["active", "trialing"];
 export const GO_MIX_WEAK = 4;
 export const GO_MIX_MIDDLE = 2;
 export const GO_MIX_NEAR = 2;

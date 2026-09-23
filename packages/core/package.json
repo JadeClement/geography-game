@@ -42,7 +42,8 @@
     "./learn/wrongReveal": "./learn/wrongReveal.js",
     "./learn/resolveGuessedCountry": "./learn/resolveGuessedCountry.js",
     "./learn/religionPie": "./learn/religionPie.js",
-    "./learn/recencySuppression": "./learn/recencySuppression.js"
+    "./learn/recencySuppression": "./learn/recencySuppression.js",
+    "./subscription/dailyLimit": "./subscription/dailyLimit.js"
   },
   "dependencies": {
     "@worldly/constants": "*"

@@ -16,6 +16,7 @@ import GameCompleteModal from "@/components/GameCompleteModal";
 import LearnRoundOverlay from "@/components/learn/LearnRoundOverlay";
 import { ShapeDropPlacement, DistanceRevealOverlay } from "@/components/learn/ShapeDropQuestion";
 import IdlePromptModal from "@/components/IdlePromptModal";
+import UpgradeModal from "@/components/UpgradeModal";
 import { buildLearnWrongReveal, isNeighborLearnQuestion, isShapeLearnQuestion, getNeighborIdsForQuestion, getNeighborTeachExtraCountries, classifyNeighborTeachPaint } from "@/lib/learn/wrongReveal";
 import { formatCoastlineSubtitle } from "@/lib/learn/coastlines";
 import { resolveGuessedCountry, resolveGuessedCountryInRegion } from "@/lib/learn/resolveGuessedCountry";
@@ -87,6 +88,7 @@ import {
   SHAPE_DROP_HIT_KM,
 } from "@/lib/learn/mapGuess";
 import { fetchSeenFacts } from "@/lib/learn/factsClient";
+import { claimLearnSessionStart } from "@/lib/billingClient";
 import { buildLearnSessionSummary } from "@/lib/learn/sessionSummary";
 import { getGameTourId } from "@/lib/gameTutorial";
 import { getGameModeIntro } from "@/lib/gameModeIntro";
@@ -345,6 +347,7 @@ export default function GeographyGame() {
   // so the first country is not announced during the open-race before the modal mounts.
   const [onboardingGateOpen, setOnboardingGateOpen] = useState(false);
   const [masteryLoadWarning, setMasteryLoadWarning] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState({ open: false, cap: null });
 
   // ── Learn-mode mixed-question engine (separate from the classic Find/Name loop).
   // Only active for Learn sessions started from the wizard — NOT Go (find-only) or
@@ -3160,6 +3163,21 @@ export default function GeographyGame() {
     [allCountriesById, applyLearnGeoGuess, gamePausedRef, tutorialStepId]
   );
 
+  // Subscription seam: the server counts a fresh Learn session against the
+  // free daily quota (or lets premium through) before any session is built.
+  // Resumed sessions were already counted when they first started.
+  const claimFreshLearnSession = useCallback(async () => {
+    const claim = await claimLearnSessionStart();
+    if (claim.unauthorized) {
+      return { ok: false, reason: "auth", message: "Please sign in to use Learn." };
+    }
+    if (!claim.allowed) {
+      setUpgradeModal({ open: true, cap: claim.cap ?? null });
+      return { ok: false, reason: "quota", quota: claim };
+    }
+    return { ok: true, quota: claim };
+  }, []);
+
   const startLearnEngineGame = useCallback(
     ({
       gameType = GAME_TYPES.LEARNING,
@@ -3425,6 +3443,9 @@ export default function GeographyGame() {
             }
           }
 
+          const claim = await claimFreshLearnSession();
+          if (!claim.ok) return claim;
+
           const learn = await buildLearnEngineData(config);
           if (!learn) {
             return { ok: false, reason: "no-eligible" };
@@ -3471,6 +3492,7 @@ export default function GeographyGame() {
     [
       buildLearnEngineData,
       buildWorldTestCountries,
+      claimFreshLearnSession,
       signedIn,
       startDiscoverGame,
       startGame,
@@ -3666,6 +3688,14 @@ export default function GeographyGame() {
   const startLearningAgain = useCallback(async () => {
     if (!session || !isLearningGame || isGoGame) return;
 
+    try {
+      const claim = await claimFreshLearnSession();
+      if (!claim.ok) return;
+    } catch (error) {
+      console.error("Failed to start learning session:", error);
+      return;
+    }
+
     const learn = await buildLearnEngineData({
       mode: session.mode,
       level: session.level,
@@ -3680,7 +3710,14 @@ export default function GeographyGame() {
       learningSessionSize: learn.sessionSize,
       learn,
     });
-  }, [buildLearnEngineData, isGoGame, isLearningGame, session, startLearnEngineGame]);
+  }, [
+    buildLearnEngineData,
+    claimFreshLearnSession,
+    isGoGame,
+    isLearningGame,
+    session,
+    startLearnEngineGame,
+  ]);
 
   const handlePlayAgain = () => {
     if (!session) return;
@@ -5383,6 +5420,11 @@ export default function GeographyGame() {
           )}
         </>
       )}
+      <UpgradeModal
+        open={upgradeModal.open}
+        cap={upgradeModal.cap}
+        onClose={() => setUpgradeModal({ open: false, cap: null })}
+      />
     </div>
   );
 }
