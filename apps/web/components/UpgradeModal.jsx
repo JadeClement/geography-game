@@ -51,7 +51,7 @@ export default function UpgradeModal({ open, onClose, cap = null }) {
         </h2>
         <p className={modalSubtitle}>
           {cap ? `Free accounts get ${cap} Learn sessions a day. ` : ""}
-          Upgrade for unlimited Learn sessions, or come back tomorrow. Test,
+          Get unlimited Learn sessions with Learn+, or come back tomorrow. Test,
           Discover, and Go! are always free.
         </p>
         {error && <p className="m-0 mb-3 text-sm text-error">{error}</p>}
@@ -62,7 +62,7 @@ export default function UpgradeModal({ open, onClose, cap = null }) {
             disabled={loading}
             onClick={handleUpgrade}
           >
-            {loading ? "Opening checkout…" : "Upgrade"}
+            {loading ? "Opening checkout…" : "Upgrade to Learn+"}
           </button>
           <button type="button" className={secondaryBtn} onClick={onClose}>
             Maybe later
