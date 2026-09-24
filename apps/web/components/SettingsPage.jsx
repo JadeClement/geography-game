@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import LearnPlusSettings from "@/components/LearnPlusSettings";
 import ThemeToggle from "@/components/ThemeToggle";
 import { usePronunciationPrefs } from "@/lib/hooks/usePronunciationPrefs";
 import { useSoundPrefs } from "@/lib/hooks/useSoundPrefs";
@@ -240,6 +241,8 @@ export default function SettingsPage() {
             <span>Reference panel on by default</span>
           </label>
         </section>
+
+        {signedIn && <LearnPlusSettings />}
 
         {signedIn && (
           <section className={settingsSection}>

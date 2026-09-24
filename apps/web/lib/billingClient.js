@@ -23,6 +23,13 @@ export async function fetchLearnQuota() {
   return response.json();
 }
 
+/** Learn+ subscription summary for Settings, or `null` when unavailable. */
+export async function fetchBillingStatus() {
+  const response = await fetch("/api/billing/status");
+  if (!response.ok) return null;
+  return response.json();
+}
+
 /**
  * Asks the server to count a new Learn session. Resolves to the server's
  * decision (`{ allowed, cap, sessionsUsedToday, ... }`) or

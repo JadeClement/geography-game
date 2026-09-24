@@ -310,3 +310,30 @@ by **Manage subscription**.
    may strip it, and nothing reads it yet.
 9. No annual pricing, tiers, trials, or coupons. `trialing` is accepted only
    because the spec lists it as a premium status.
+
+---
+
+## Follow-up: Learn+ section in Settings
+
+The subscription is branded **Learn+** in the UI.
+
+- **New `apps/web/components/LearnPlusSettings.jsx`**, rendered in
+  `SettingsPage.jsx` for signed-in users just above "Reset practice". It has
+  these states:
+  - **Active:** "Renews on {date}", with **Manage subscription** (Billing Portal).
+  - **Cancelled but still paid up:** "Ends {date}; you keep unlimited Learn
+    sessions until then", with **Manage subscription** so they can renew.
+  - **Payment problem** (`past_due` / `unpaid` / `incomplete`): **Update payment method**.
+  - **Free:** the plan description and **Upgrade to Learn+**. A **View billing
+    history** link is shown if they've subscribed before.
+  - **Just returned from Checkout** (`?billing=success`): a thank-you message.
+    The status is re-checked every 2s, up to 6 times, until the webhook marks
+    them premium.
+- **New `GET /api/billing/status`** (web session auth) returns
+  `{ isPremium, status, currentPeriodEnd, cancelAt, hasBillingAccount }`.
+  Renewal and cancellation details come live from Stripe
+  (`cancel_at`, or `cancel_at_period_end` on older API versions), so there's
+  no schema change. If Stripe can't be reached, it falls back to the
+  webhook-synced columns.
+- **Copy:** the upgrade modal and the Learn entry badge now say "Learn+"
+  ("Upgrade to Learn+", "Get unlimited with Learn+").

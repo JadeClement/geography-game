@@ -440,7 +440,7 @@ export default function StartScreen({ onStart, gameReady = false, countries = []
                   disabled={billingBusy}
                   onClick={() => handleBillingAction(startCheckout)}
                 >
-                  {billingBusy ? "Opening checkout…" : "Upgrade for unlimited"}
+                  {billingBusy ? "Opening checkout…" : "Get unlimited with Learn+"}
                 </button>
               </p>
             )}
