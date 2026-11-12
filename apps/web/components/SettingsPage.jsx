@@ -5,6 +5,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import LearnPlusSettings from "@/components/LearnPlusSettings";
+import { PrivacyPolicyContent } from "@/components/PrivacyPolicyPage";
 import ThemeToggle from "@/components/ThemeToggle";
 import { usePronunciationPrefs } from "@/lib/hooks/usePronunciationPrefs";
 import { useSoundPrefs } from "@/lib/hooks/useSoundPrefs";
@@ -301,6 +302,11 @@ export default function SettingsPage() {
             </button>
           </section>
         )}
+
+        <section className="mt-10">
+          <h2 className={settingsTitle}>Privacy policy</h2>
+          <PrivacyPolicyContent />
+        </section>
       </main>
 
       {resetConfirmOpen && (

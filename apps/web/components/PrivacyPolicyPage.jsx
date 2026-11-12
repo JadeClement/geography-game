@@ -13,20 +13,12 @@ import {
 
 const LAST_UPDATED = "November 12, 2026";
 
-export default function PrivacyPolicyPage() {
+export function PrivacyPolicyContent() {
   return (
-    <div className={infoPage}>
-      <AppHeader />
+    <>
+      <p className={infoIntro}>Last updated {LAST_UPDATED}.</p>
 
-      <main className={infoContent}>
-        <Link href="/" className={infoBack}>
-          Play now!
-        </Link>
-
-        <h1 className={infoTitle}>Privacy Policy</h1>
-        <p className={infoIntro}>Last updated {LAST_UPDATED}.</p>
-
-        <section className={infoSection}>
+      <section className={infoSection}>
           <h2 className={infoSectionTitle}>Overview</h2>
           <div className={infoSectionBody}>
             <p>
@@ -198,6 +190,22 @@ export default function PrivacyPolicyPage() {
             </p>
           </div>
         </section>
+    </>
+  );
+}
+
+export default function PrivacyPolicyPage() {
+  return (
+    <div className={infoPage}>
+      <AppHeader />
+
+      <main className={infoContent}>
+        <Link href="/" className={infoBack}>
+          Play now!
+        </Link>
+
+        <h1 className={infoTitle}>Privacy Policy</h1>
+        <PrivacyPolicyContent />
       </main>
     </div>
   );
