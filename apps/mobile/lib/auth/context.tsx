@@ -34,6 +34,7 @@ type AuthContextValue = {
     password: string
   ) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshUser: () => Promise<void>;
   loginWithBiometricToken: () => Promise<void>;
 };
@@ -143,6 +144,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount();
+    try {
+      await tokenStorage.clearBiometricToken();
+      await tokenStorage.clear();
+      await clearLocalUserData();
+    } catch {
+      // The server already deleted the account. Still sign this device out.
+    }
+    useSettingsStore.getState().setBiometricEnabled(false);
+    setUser(null);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -151,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      deleteAccount,
       refreshUser,
       loginWithBiometricToken,
     }),
@@ -160,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      deleteAccount,
       refreshUser,
       loginWithBiometricToken,
     ]

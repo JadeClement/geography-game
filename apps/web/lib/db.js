@@ -957,6 +957,17 @@ export async function recordFactSeen(userId, countryId, factIndex) {
 }
 
 /**
+ * Delete the account. Child rows (stats, scores, friends, push tokens,
+ * visited countries, auth tokens, and the rest) reference users.id with
+ * ON DELETE CASCADE, so this one delete removes them.
+ * @returns {Promise<boolean>} true when a row was deleted
+ */
+export async function deleteUser(userId) {
+  const result = await query(`DELETE FROM users WHERE id = $1`, [userId]);
+  return result.rowCount > 0;
+}
+
+/**
  * Wipe all practice / mastery / score history for a user.
  * Keeps the account itself (profile, friends, auth).
  */

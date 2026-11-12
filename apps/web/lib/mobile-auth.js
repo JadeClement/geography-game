@@ -4,6 +4,14 @@ import { generateToken, hashToken } from "@/lib/auth-tokens";
 
 const MOBILE_TOKEN_TTL_DAYS = 90;
 
+/**
+ * How long after a mobile token's own expiry Face ID may still exchange it
+ * for a new one. The token itself lasts MOBILE_TOKEN_TTL_DAYS; this is only
+ * the grace past that expiry. Password reset clears the hash immediately, so
+ * this window does not survive a reset.
+ */
+export const BIOMETRIC_REFRESH_GRACE_DAYS = 30;
+
 const MOBILE_USER_FIELDS = `
   id, name, username, email, email_verified_at AS "emailVerifiedAt",
   avatar_type AS "avatarType", avatar_color AS "avatarColor",

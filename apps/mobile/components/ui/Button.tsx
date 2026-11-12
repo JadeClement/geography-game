@@ -4,7 +4,7 @@ import { Colors, Font, Radius, Spacing } from "../../constants/theme";
 type Props = {
   title: string;
   onPress?: () => void;
-  variant?: "primary" | "secondary" | "outline";
+  variant?: "primary" | "secondary" | "outline" | "danger";
   disabled?: boolean;
   style?: ViewStyle;
 };
@@ -25,6 +25,7 @@ export function Button({
         variant === "primary" && styles.primary,
         variant === "secondary" && styles.secondary,
         variant === "outline" && styles.outline,
+        variant === "danger" && styles.danger,
         disabled && styles.disabled,
         style,
       ]}
@@ -33,6 +34,7 @@ export function Button({
         style={[
           styles.text,
           variant === "outline" && { color: Colors.brand.teal },
+          variant === "danger" && { color: Colors.status.incorrect },
         ]}
       >
         {title}
@@ -54,6 +56,11 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: Colors.border.teal,
+  },
+  danger: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: Colors.status.incorrect,
   },
   disabled: { opacity: 0.5 },
   text: {

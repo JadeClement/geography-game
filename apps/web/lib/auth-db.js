@@ -99,7 +99,17 @@ export async function getLatestAuthTokenCreatedAt({ userId, type }) {
 }
 
 export async function updateUserPassword(userId, hashedPassword) {
-  await query(`UPDATE users SET password = $1 WHERE id = $2`, [hashedPassword, userId]);
+  // Clearing the mobile Bearer hash signs every device out, including Face ID
+  // refresh of an expired token. Resetting a password has to do that — otherwise
+  // a stolen phone keeps the account after the password change.
+  await query(
+    `UPDATE users
+     SET password = $1,
+         mobile_token_hash = NULL,
+         mobile_token_expires_at = NULL
+     WHERE id = $2`,
+    [hashedPassword, userId]
+  );
 }
 
 export async function getUserByEmailWithVerification(email) {

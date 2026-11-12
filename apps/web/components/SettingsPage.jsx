@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import LearnPlusSettings from "@/components/LearnPlusSettings";
@@ -25,6 +25,7 @@ import {
   setLearnSessionSize,
 } from "@/lib/learnSessionSize";
 import { previewCorrectSound } from "@/lib/sounds";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { cn } from "@/lib/cn";
 import {
   dangerBtn,
@@ -60,6 +61,10 @@ export default function SettingsPage() {
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const deleteDialogRef = useFocusTrap(deleteConfirmOpen);
   const { volume, setVolume } = useSoundPrefs();
   const { voiceId, voices, setVoiceId } = usePronunciationPrefs();
   const volumePercent = Math.round(volume * 100);
@@ -87,6 +92,27 @@ export default function SettingsPage() {
     setResetError("");
     setResetMessage("");
     setResetConfirmOpen(true);
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteError("");
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const response = await fetch("/api/users/account", { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Could not delete your account.");
+      }
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      setDeleteError(error.message || "Could not delete your account.");
+      setDeleting(false);
+    }
   };
 
   const handleConfirmReset = async () => {
@@ -262,6 +288,19 @@ export default function SettingsPage() {
             )}
           </section>
         )}
+
+        {signedIn && (
+          <section className={settingsSection}>
+            <h2 className={settingsSectionTitle}>Delete account</h2>
+            <p className={settingsSectionDescription}>
+              Permanently delete your account and everything attached to it: mastery, scores,
+              streaks, friends, and visited countries. This cannot be undone.
+            </p>
+            <button type="button" className={dangerBtn} onClick={handleDeleteClick}>
+              Delete account
+            </button>
+          </section>
+        )}
       </main>
 
       {resetConfirmOpen && (
@@ -298,6 +337,56 @@ export default function SettingsPage() {
                 onClick={() => {
                   setResetConfirmOpen(false);
                   setResetError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmOpen && (
+        <div className={modalOverlay}>
+          <div
+            ref={deleteDialogRef}
+            className={modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !deleting) {
+                setDeleteConfirmOpen(false);
+                setDeleteError("");
+              }
+            }}
+          >
+            <h2 id="delete-account-title" className={modalTitle}>
+              Delete your account?
+            </h2>
+            <p className={modalSubtitle}>
+              This permanently deletes your account and all of its data. You will be signed out.
+              This cannot be undone.
+            </p>
+            {deleteError && (
+              <p className="mb-4 text-[0.9rem] font-medium text-error">{deleteError}</p>
+            )}
+            <div className={modalActions}>
+              <button
+                type="button"
+                className={dangerBtn}
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+              >
+                {deleting ? "Deleting…" : "Delete account"}
+              </button>
+              <button
+                type="button"
+                className={secondaryBtn}
+                disabled={deleting}
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setDeleteError("");
                 }}
               >
                 Cancel

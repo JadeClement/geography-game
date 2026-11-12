@@ -1,8 +1,16 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { Linking, StyleSheet, Switch, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { Colors, Font, Spacing } from "../../constants/theme";
@@ -16,9 +24,11 @@ import {
 import { useSettingsStore } from "../../store/settingsStore";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const settings = useSettingsStore();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -29,7 +39,8 @@ export default function ProfileScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.label}>Account</Text>
       <Text style={styles.value}>@{user?.username}</Text>
@@ -131,6 +142,52 @@ export default function ProfileScreen() {
           router.replace("/(auth)/login");
         }}
       />
+
+      <Text style={[styles.label, { marginTop: Spacing.xl }]}>Delete account</Text>
+      <Text style={styles.value}>
+        Permanently deletes your account, mastery, friends, and visited countries.
+        This cannot be undone.
+      </Text>
+      <Button
+        title={deleting ? "Deleting…" : "Delete account"}
+        variant="danger"
+        disabled={deleting}
+        style={{ marginTop: Spacing.md }}
+        onPress={() => {
+          Alert.alert(
+            "Delete your account?",
+            "This permanently deletes your account and all of its data. You will be signed out. This cannot be undone.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete account",
+                style: "destructive",
+                onPress: () => {
+                  if (deletingRef.current) return;
+                  deletingRef.current = true;
+                  setDeleting(true);
+                  deleteAccount()
+                    .then(() => {
+                      router.replace("/(auth)/login");
+                    })
+                    .catch((error: unknown) => {
+                      const message =
+                        error instanceof Error
+                          ? error.message
+                          : "Could not delete your account.";
+                      Alert.alert("Couldn't delete account", message);
+                    })
+                    .finally(() => {
+                      deletingRef.current = false;
+                      setDeleting(false);
+                    });
+                },
+              },
+            ]
+          );
+        }}
+      />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -139,7 +196,10 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  content: {
     padding: Spacing.xl,
+    paddingBottom: Spacing.section,
   },
   title: { color: Colors.text.primary, fontSize: Font.xl, fontWeight: "800" },
   label: {

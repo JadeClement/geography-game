@@ -1,5 +1,6 @@
 import { hashToken } from "@/lib/auth-tokens";
 import {
+  BIOMETRIC_REFRESH_GRACE_DAYS,
   issueMobileToken,
   serializeMobileUser,
 } from "@/lib/mobile-auth";
@@ -17,9 +18,9 @@ const USER_FIELDS = `
 /**
  * POST { expiredToken }
  * Re-issues a mobile token after Face ID without storing a password.
- * Accepts tokens that are expired but still within a 180-day biometric window
- * (token expiry was set ≤ 90 days out, so expires_at > NOW() - 180 days covers
- * tokens issued within ~90 days of expiry + 90 days).
+ * Accepts a token that has expired but is still within
+ * BIOMETRIC_REFRESH_GRACE_DAYS of its own expiry. Password reset nulls the
+ * hash, so this grace does not keep a reset account signed in.
  */
 export async function POST(request) {
   try {
@@ -35,8 +36,8 @@ export async function POST(request) {
        FROM users
        WHERE mobile_token_hash = $1
          AND mobile_token_expires_at IS NOT NULL
-         AND mobile_token_expires_at > NOW() - INTERVAL '180 days'`,
-      [tokenHash]
+         AND mobile_token_expires_at > NOW() - ($2::int * INTERVAL '1 day')`,
+      [tokenHash, BIOMETRIC_REFRESH_GRACE_DAYS]
     );
 
     const user = result.rows[0];

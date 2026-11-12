@@ -77,5 +77,7 @@ export function createWorldlyClient({ baseURL, getToken, onUnauthorized }) {
 
     getGameTour: () => request("GET", "/api/users/game-tour"),
     completeGameTour: () => request("POST", "/api/users/game-tour"),
+
+    deleteAccount: () => request("DELETE", "/api/users/account"),
   };
 }
